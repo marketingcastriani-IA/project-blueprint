@@ -29,7 +29,6 @@ interface DbLeg {
   strike: number;
   price: number;
   quantity: number;
-  current_price: number | null;
 }
 
 interface DbAnalysis {
@@ -178,7 +177,7 @@ export default function AnalysisDetail() {
         const legs = lRes.data as unknown as DbLeg[];
         setDbLegs(legs);
         const prices: Record<string, string> = {};
-        legs.forEach(l => { prices[l.id] = l.current_price?.toString() ?? ''; });
+        legs.forEach(l => { prices[l.id] = ''; });
         setCurrentPrices(prices);
       }
       setLoading(false);
