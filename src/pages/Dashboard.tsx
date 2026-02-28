@@ -11,7 +11,7 @@ import MetricsCards from '@/components/MetricsCards';
 import CDIComparison from '@/components/CDIComparison';
 import ImageUpload from '@/components/ImageUpload';
 import { Leg } from '@/lib/types';
-import { generatePayoffCurve, calculateMetrics, calculateCDIReturn, calculateCDIOpportunityCost } from '@/lib/payoff';
+import { generatePayoffCurve, calculateMetrics, calculateCDIOpportunityCost } from '@/lib/payoff';
 import { getExpiryFromTicker, countBusinessDays } from '@/lib/b3-calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,7 +35,7 @@ export default function Dashboard() {
   const [analysisName, setAnalysisName] = useState('');
   const [cdiRate, setCdiRate] = useState(14.90);
   const [daysToExpiry, setDaysToExpiry] = useState(0);
-  const [aiSuggestion, setAiSuggestion] = useState('');
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const [loadingAI, setLoadingAI] = useState(false);
   const [saving, setSaving] = useState(false);
   const [inputMode, setInputMode] = useState<InputMode>(null);
@@ -73,7 +73,6 @@ export default function Dashboard() {
   if (authLoading || access.status === 'loading') return null;
   if (!user) return <Navigate to="/auth" replace />;
 
-  // Access gate
   if (access.status === 'pending' || access.status === 'rejected' || access.status === 'expired') {
     return <AccessBlocked status={access.status} />;
   }
@@ -90,7 +89,8 @@ export default function Dashboard() {
         },
       });
       if (error) throw error;
-      setAiSuggestion(data.suggestion || 'Sem sugestão disponível.');
+      setAiAnalysis(data);
+      toast.success('Análise de IA concluída!');
     } catch (err: any) {
       toast.error('Erro ao obter sugestão: ' + (err.message || 'Tente novamente'));
     } finally { setLoadingAI(false); }
@@ -104,7 +104,7 @@ export default function Dashboard() {
         .from('analyses').insert({
           user_id: user.id, name: analysisName || 'Análise sem nome',
           underlying_asset: legs[0]?.asset || null, cdi_rate: cdiRate || null,
-          days_to_expiry: daysToExpiry || null, ai_suggestion: aiSuggestion || null,
+          days_to_expiry: daysToExpiry || null, ai_suggestion: aiAnalysis ? JSON.stringify(aiAnalysis) : null,
         }).select().single();
       if (aError) throw aError;
 
@@ -126,19 +126,6 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background pb-16">
       <Header />
       <main className="container py-6 space-y-6 animate-fade-in">
-        {/* Access banner */}
-        {access.daysRemaining !== null && access.daysRemaining <= 7 && (
-          <div className="rounded-lg border border-warning/40 bg-warning/5 px-4 py-3 flex items-center gap-3">
-            <Badge className="bg-warning text-warning-foreground text-[10px] shrink-0">TRIAL</Badge>
-            <p className="text-sm text-warning">
-              {access.daysRemaining === 0
-                ? 'Seu período de acesso expira hoje!'
-                : `Seu acesso expira em ${access.daysRemaining} dia(s).`}
-            </p>
-          </div>
-        )}
-
-        {/* Page title */}
         <ProfessionalHeader
           title="Nova Análise"
           subtitle="Monte sua estrutura de opções e analise os riscos em tempo real"
@@ -153,6 +140,7 @@ export default function Dashboard() {
             </div>
           }
         />
+        
         <div className="flex gap-3 flex-wrap">
           <Button 
             onClick={getAISuggestion} 
@@ -173,92 +161,39 @@ export default function Dashboard() {
           </Button>
         </div>
 
-        {/* Analysis name */}
         <div className="space-y-2">
           <Label>Nome da análise</Label>
           <Input value={analysisName} onChange={e => setAnalysisName(e.target.value)} placeholder="Ex: Trava de alta PETR4" className="max-w-md" />
         </div>
 
-        {/* Input Mode Selector */}
         {inputMode === null ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button
-              onClick={() => setInputMode('image')}
-              className="group relative overflow-hidden rounded-2xl border-2 border-dashed border-primary/30 bg-gradient-to-br from-primary/5 via-card to-card p-8 text-left transition-all duration-300 hover:border-primary/60 hover:shadow-[0_0_50px_-12px_hsl(var(--primary)/0.3)] hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -translate-y-8 translate-x-8 group-hover:bg-primary/10 transition-colors" />
+            <button onClick={() => setInputMode('image')} className="group relative overflow-hidden rounded-2xl border-2 border-dashed border-primary/30 bg-gradient-to-br from-primary/5 via-card to-card p-8 text-left transition-all duration-300 hover:border-primary/60 hover:shadow-[0_0_50px_-12px_hsl(var(--primary)/0.3)] hover:-translate-y-1">
               <div className="relative space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
-                    <Camera className="h-7 w-7" />
-                  </div>
-                  <div>
-                    <Badge variant="outline" className="text-[9px] border-primary/40 text-primary mb-1">IA + OCR</Badge>
-                    <h3 className="text-xl font-bold">Upload de Imagem</h3>
-                  </div>
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Camera className="h-7 w-7" /></div>
+                  <div><Badge variant="outline" className="text-[9px] border-primary/40 text-primary mb-1">IA + OCR</Badge><h3 className="text-xl font-bold">Upload de Imagem</h3></div>
                 </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Tire um <strong className="text-foreground">print da sua corretora</strong> (Bolsa de Valores e Derivativos) e a IA extrai automaticamente todas as pernas.
-                </p>
-                <div className="flex items-center gap-2 text-primary text-sm font-medium">
-                  Começar com imagem <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </div>
+                <p className="text-sm text-muted-foreground">Tire um print da sua corretora e a IA extrai as pernas.</p>
               </div>
             </button>
-
-            <button
-              onClick={() => setInputMode('manual')}
-              className="group relative overflow-hidden rounded-2xl border-2 border-dashed border-accent/40 bg-gradient-to-br from-accent/[0.08] via-card to-card p-8 text-left transition-all duration-300 hover:border-accent/60 hover:shadow-[0_0_50px_-12px_hsl(var(--accent)/0.3)] hover:-translate-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-            >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 rounded-full blur-3xl -translate-y-8 translate-x-8 group-hover:bg-accent/15 transition-colors" />
+            <button onClick={() => setInputMode('manual')} className="group relative overflow-hidden rounded-2xl border-2 border-dashed border-accent/40 bg-gradient-to-br from-accent/[0.08] via-card to-card p-8 text-left transition-all duration-300 hover:border-accent/60 hover:shadow-[0_0_50px_-12px_hsl(var(--accent)/0.3)] hover:-translate-y-1">
               <div className="relative space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/20 text-accent group-hover:bg-accent/30 transition-colors">
-                    <Keyboard className="h-7 w-7" />
-                  </div>
-                  <div>
-                    <Badge variant="outline" className="text-[9px] border-accent/40 text-accent mb-1">PRECISO</Badge>
-                    <h3 className="text-xl font-bold">Entrada Manual</h3>
-                  </div>
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/20 text-accent"><Keyboard className="h-7 w-7" /></div>
+                  <div><Badge variant="outline" className="text-[9px] border-accent/40 text-accent mb-1">PRECISO</Badge><h3 className="text-xl font-bold">Entrada Manual</h3></div>
                 </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Insira manualmente cada perna: <strong className="text-foreground">ativo, strike, prêmio, quantidade</strong>. Controle total.
-                </p>
-                <div className="flex items-center gap-2 text-accent group-hover:text-accent text-sm font-medium transition-colors">
-                  Inserir manualmente <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </div>
+                <p className="text-sm text-muted-foreground">Insira manualmente cada perna da operação.</p>
               </div>
             </button>
           </div>
         ) : (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <button onClick={() => setInputMode('manual')} className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all', inputMode === 'manual' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}>
-                <Keyboard className="h-4 w-4" /> Manual
-              </button>
-              <button onClick={() => setInputMode('image')} className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all', inputMode === 'image' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}>
-                <Camera className="h-4 w-4" /> Upload OCR
-              </button>
+              <button onClick={() => setInputMode('manual')} className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all', inputMode === 'manual' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}><Keyboard className="h-4 w-4" /> Manual</button>
+              <button onClick={() => setInputMode('image')} className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all', inputMode === 'image' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}><Camera className="h-4 w-4" /> Upload OCR</button>
             </div>
-            {inputMode === 'manual' ? (
-              <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
-                <CardHeader><CardTitle className="text-base">Adicionar Perna</CardTitle></CardHeader>
-                <CardContent><LegForm onAdd={addLeg} /></CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                <ImageUpload 
-                  onLegsExtracted={handleLegsFromImage}
-                  onImageChange={() => setLegs([])}
-                />
-                {legs.length > 0 && (
-                  <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
-                    <CardHeader><CardTitle className="text-base">Adicionar Perna Manual</CardTitle></CardHeader>
-                    <CardContent><LegForm onAdd={addLeg} /></CardContent>
-                  </Card>
-                )}
-              </div>
-            )}
+            {inputMode === 'manual' ? <Card className="border-border/40 bg-card/50 backdrop-blur-sm"><CardContent className="pt-6"><LegForm onAdd={addLeg} /></CardContent></Card> : <ImageUpload onLegsExtracted={handleLegsFromImage} onImageChange={() => setLegs([])} />}
           </div>
         )}
 
@@ -266,6 +201,10 @@ export default function Dashboard() {
 
         {legs.length > 0 && (
           <>
+            <SectionDivider title="Análise de IA" />
+            <AIInsights analysis={aiAnalysis} loading={loadingAI} />
+            
+            <SectionDivider title="Métricas e Payoff" />
             <MetricsCards metrics={metrics} cdiReturn={cdiReturn} daysToExpiry={daysToExpiry} investedCapital={investedCapital} />
             <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
               <CardHeader><CardTitle className="text-base">Gráfico de Payoff</CardTitle></CardHeader>
@@ -274,18 +213,6 @@ export default function Dashboard() {
               </CardContent>
             </Card>
             <CDIComparison metrics={metrics} cdiRate={cdiRate} setCdiRate={setCdiRate} daysToExpiry={daysToExpiry} setDaysToExpiry={setDaysToExpiry} />
-            {legs.length > 0 && (
-              <>
-                <SectionDivider title="Análise de IA" />
-                <AIInsights 
-                  metrics={metrics} 
-                  suggestion={aiSuggestion} 
-                  cdiReturn={cdiReturn}
-                  daysToExpiry={daysToExpiry}
-                  loading={loadingAI}
-                />
-              </>
-            )}
           </>
         )}
       </main>
