@@ -15,8 +15,11 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")
     
     if (!LOVABLE_API_KEY) {
+      console.error("[analyze-structure] LOVABLE_API_KEY não configurada")
       throw new Error("LOVABLE_API_KEY is not configured")
     }
+
+    console.log("[analyze-structure] Iniciando análise da estrutura...", { legsCount: legs.length })
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -25,40 +28,52 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.0-flash",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
-            content: `Você é um analista sênior de derivativos da B3. Sua tarefa é analisar estruturas de opções e dar um veredito claro.
-            Retorne APENAS um JSON com a seguinte estrutura:
+            content: `Você é um analista sênior de derivativos da B3. Analise a estrutura de opções e retorne APENAS um JSON válido.
+            Estrutura do JSON:
             {
               "verdict": "Compra Forte" | "Atrativo" | "Neutro" | "Evitar" | "Perigoso",
               "score": number (0-10),
               "risk_level": "Baixo" | "Moderado" | "Alto" | "Crítico",
-              "cdi_comparison": "string curta comparando com CDI",
-              "pros": ["ponto positivo 1", "ponto positivo 2"],
-              "cons": ["ponto negativo 1", "ponto negativo 2"],
-              "summary": "resumo executivo de 2 linhas",
+              "cdi_comparison": "string curta",
+              "pros": ["string"],
+              "cons": ["string"],
+              "summary": "string",
               "probability_success": "Alta" | "Média" | "Baixa"
             }`
           },
           { 
             role: "user", 
-            content: `Analise esta estrutura: ${JSON.stringify({ legs, metrics, cdiRate, daysToExpiry })}` 
+            content: `Analise: ${JSON.stringify({ legs, metrics, cdiRate, daysToExpiry })}` 
           },
         ],
         response_format: { type: "json_object" }
       }),
     })
 
-    if (!response.ok) throw new Error(`AI Gateway error: ${response.status}`)
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`[analyze-structure] Erro no Gateway de IA: ${response.status}`, errorText)
+      throw new Error(`AI Gateway error: ${response.status}`)
+    }
+
     const result = await response.json()
-    const analysis = JSON.parse(result.choices[0].message.content)
+    let content = result.choices[0].message.content
+    
+    // Limpeza básica caso a IA retorne markdown
+    content = content.replace(/```json\n?/, '').replace(/\n?```/, '').trim()
+    
+    const analysis = JSON.parse(content)
+    console.log("[analyze-structure] Análise concluída com sucesso")
 
     return new Response(JSON.stringify(analysis), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     })
   } catch (e: any) {
+    console.error("[analyze-structure] Erro crítico:", e.message)
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
