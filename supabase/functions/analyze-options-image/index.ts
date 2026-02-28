@@ -19,7 +19,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured")
     }
 
-    console.log("[analyze-options-image] Processando imagem para OCR...")
+    console.log("[analyze-options-image] Iniciando OCR avançado de imagem B3...")
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -32,12 +32,28 @@ serve(async (req) => {
         messages: [
           { 
             role: "system", 
-            content: "Extraia dados de opções da B3 da imagem. Retorne APENAS um JSON com a chave 'legs'. Cada perna: side (buy/sell), option_type (call/put/stock), asset (ticker), strike (number), price (number), quantity (number)." 
+            content: `Você é um especialista em leitura de notas de corretagem e telas de home broker da B3 (Brasil).
+            Sua tarefa é extrair as pernas de uma operação de opções ou ativos.
+            
+            REGRAS DE EXTRAÇÃO:
+            1. Identifique o Ticker (ex: PETR4, VALEC385).
+            2. Identifique o Lado: 'buy' (compra, C, +) ou 'sell' (venda, V, -).
+            3. Identifique o Tipo: 'call', 'put' ou 'stock' (se for o ativo principal).
+            4. Identifique o Strike: Se for opção, extraia o valor numérico. Se for 'stock', o strike é 0.
+            5. Identifique o Preço: O preço médio ou preço de execução.
+            6. Identifique a Quantidade: Valor inteiro positivo.
+
+            Retorne APENAS um JSON puro no formato:
+            {
+              "legs": [
+                { "side": "buy"|"sell", "option_type": "call"|"put"|"stock", "asset": "TICKER", "strike": number, "price": number, "quantity": number }
+              ]
+            }` 
           },
           {
             role: "user",
             content: [
-              { type: "text", text: "Extraia as pernas desta operação." },
+              { type: "text", text: "Extraia os dados desta operação financeira da B3. Ignore cabeçalhos e foque na tabela de ativos/opções." },
               { type: "image_url", image_url: { url: imageDataUrl } },
             ],
           },
@@ -49,21 +65,23 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text()
       console.error(`[analyze-options-image] Erro no Gateway: ${response.status}`, errorText)
-      throw new Error(`AI Gateway error: ${response.status}`)
+      throw new Error(`Erro na comunicação com a IA: ${response.status}`)
     }
 
     const result = await response.json()
     let content = result.choices[0].message.content
+    
+    // Limpeza rigorosa de markdown ou textos extras
     content = content.replace(/```json\n?/, '').replace(/\n?```/, '').trim()
     
     const data = JSON.parse(content)
-    console.log(`[analyze-options-image] OCR concluído: ${data.legs?.length || 0} pernas`)
+    console.log(`[analyze-options-image] OCR concluído com sucesso. Pernas detectadas: ${data.legs?.length || 0}`)
 
     return new Response(JSON.stringify({ legs: data.legs || [] }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     })
   } catch (e: any) {
-    console.error("[analyze-options-image] Erro crítico:", e.message)
+    console.error("[analyze-options-image] Erro crítico no processamento:", e.message)
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
