@@ -10,199 +10,20 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.4"
   }
   public: {
     Tables: {
-      analyses: {
-        Row: {
-          ai_suggestion: string | null
-          cdi_rate: number | null
-          closed_at: string | null
-          created_at: string
-          days_to_expiry: number | null
-          id: string
-          name: string
-          status: string
-          underlying_asset: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          ai_suggestion?: string | null
-          cdi_rate?: number | null
-          closed_at?: string | null
-          created_at?: string
-          days_to_expiry?: number | null
-          id?: string
-          name?: string
-          status?: string
-          underlying_asset?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          ai_suggestion?: string | null
-          cdi_rate?: number | null
-          closed_at?: string | null
-          created_at?: string
-          days_to_expiry?: number | null
-          id?: string
-          name?: string
-          status?: string
-          underlying_asset?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      legs: {
-        Row: {
-          analysis_id: string
-          asset: string
-          created_at: string
-          current_price: number | null
-          id: string
-          option_type: string
-          price: number
-          quantity: number
-          side: string
-          strike: number
-        }
-        Insert: {
-          analysis_id: string
-          asset: string
-          created_at?: string
-          current_price?: number | null
-          id?: string
-          option_type: string
-          price: number
-          quantity?: number
-          side: string
-          strike: number
-        }
-        Update: {
-          analysis_id?: string
-          asset?: string
-          created_at?: string
-          current_price?: number | null
-          id?: string
-          option_type?: string
-          price?: number
-          quantity?: number
-          side?: string
-          strike?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "legs_analysis_id_fkey"
-            columns: ["analysis_id"]
-            isOneToOne: false
-            referencedRelation: "analyses"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      profiles: {
-        Row: {
-          created_at: string
-          display_name: string | null
-          id: string
-          theme_preference: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          display_name?: string | null
-          id?: string
-          theme_preference?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          display_name?: string | null
-          id?: string
-          theme_preference?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_access: {
-        Row: {
-          approved_at: string | null
-          created_at: string
-          expires_at: string | null
-          id: string
-          notes: string | null
-          status: string
-          trial_days: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          approved_at?: string | null
-          created_at?: string
-          expires_at?: string | null
-          id?: string
-          notes?: string | null
-          status?: string
-          trial_days?: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          approved_at?: string | null
-          created_at?: string
-          expires_at?: string | null
-          id?: string
-          notes?: string | null
-          status?: string
-          trial_days?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_roles: {
-        Row: {
-          created_at: string
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      has_active_access: { Args: { _user_id: string }; Returns: boolean }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
-      app_role: "admin" | "user"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -329,8 +150,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      app_role: ["admin", "user"],
-    },
+    Enums: {},
   },
 } as const
