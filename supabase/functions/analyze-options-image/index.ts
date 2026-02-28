@@ -155,7 +155,7 @@ const USER_PROMPT = "Extraia TODAS as pernas desta operação estruturada. Leia 
 
 async function callAI(apiKey: string, imageUrl: string, useToolCalls: boolean): Promise<{ legs?: RawLeg[]; total_rows_in_image?: number } | null> {
   const body: any = {
-    model: "google/gemini-2.5-flash",
+    model: "google/gemini-2.0-flash",
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
       {
@@ -305,7 +305,7 @@ serve(async (req) => {
 
     console.log("Starting OCR, image size:", Math.round(resolvedImage.length / 1024), "KB");
 
-    // Attempt 1: tool_calls with gemini-2.5-flash
+    // Attempt 1: tool_calls with gemini-2.0-flash
     let parsedResult = await callAI(LOVABLE_API_KEY, resolvedImage, true);
 
     // Attempt 2: if tool_calls failed, try plain JSON response

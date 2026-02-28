@@ -24,7 +24,12 @@ export default function ImageUpload({ onLegsExtracted, onImageChange }: ImageUpl
       const { data, error } = await supabase.functions.invoke('analyze-options-image', {
         body: { imageDataUrl },
       });
-      if (error) throw error;
+      
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message || 'Erro ao chamar a função de análise');
+      }
+      
       if (data?.legs && data.legs.length > 0) {
         onLegsExtracted(data.legs);
         toast.success(`✓ ${data.legs.length} perna(s) extraída(s) com sucesso!`, {
@@ -37,9 +42,17 @@ export default function ImageUpload({ onLegsExtracted, onImageChange }: ImageUpl
       }
     } catch (err: any) {
       console.error('OCR error:', err);
-      toast.error('Erro ao processar imagem', {
-        description: err.message || 'Tente novamente',
-      });
+      const message = err.message || 'Tente novamente';
+      
+      if (message.includes('Failed to send a request')) {
+        toast.error('Erro de conexão com o servidor', {
+          description: 'Verifique se as Edge Functions foram implantadas corretamente.',
+        });
+      } else {
+        toast.error('Erro ao processar imagem', {
+          description: message,
+        });
+      }
     } finally {
       setLoading(false);
     }
