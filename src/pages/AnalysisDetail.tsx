@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import PayoffChart from '@/components/PayoffChart';
 import MetricsCards from '@/components/MetricsCards';
 import CDIComparison from '@/components/CDIComparison';
+import AIInsights from '@/components/AIInsights';
 import { supabase } from '@/integrations/supabase/client';
 import { Leg, AnalysisMetrics } from '@/lib/types';
 import { generatePayoffCurve, calculateMetrics, calculateCDIOpportunityCost } from '@/lib/payoff';
@@ -20,6 +21,7 @@ import {
   TrendingUp, TrendingDown, AlertTriangle, Clock, CheckCircle2, ShieldAlert, Edit2, RotateCcw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SectionDivider } from '@/components/ProfessionalLayout';
 
 interface DbLeg {
   id: string;
@@ -143,7 +145,7 @@ export default function AnalysisDetail() {
   const [saving, setSaving] = useState(false);
   const [closing, setClosing] = useState(false);
   const [loadingAI, setLoadingAI] = useState(false);
-  const [aiSuggestion, setAiSuggestion] = useState('');
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const [cdiRate, setCdiRate] = useState(14.90);
   const [daysToExpiry, setDaysToExpiry] = useState(0);
   const [editingLegId, setEditingLegId] = useState<string | null>(null);
@@ -171,7 +173,14 @@ export default function AnalysisDetail() {
         setNewAnalysisName(a.name);
         setCdiRate(a.cdi_rate ?? 14.90);
         setDaysToExpiry(a.days_to_expiry ?? 0);
-        setAiSuggestion(a.ai_suggestion ?? '');
+        
+        if (a.ai_suggestion) {
+          try {
+            setAiAnalysis(JSON.parse(a.ai_suggestion));
+          } catch (e) {
+            console.error("Erro ao parsear sugestão da IA", e);
+          }
+        }
       }
       if (lRes.data) {
         const legs = lRes.data as unknown as DbLeg[];
@@ -341,18 +350,18 @@ export default function AnalysisDetail() {
       const { data, error } = await supabase.functions.invoke('analyze-structure', {
         body: {
           legs,
-          metrics: { ...metrics, cdiReturn },
+          metrics: { ...metrics, cdiReturn, cdiEfficiency: cdiReturn > 0 && typeof metrics.maxGain === 'number' ? Math.round((metrics.maxGain / cdiReturn) * 100) : null },
           cdiRate,
           daysToExpiry,
-          currentPrices: dbLegs.map(l => ({
-            asset: l.asset,
-            original: l.price,
-            current: parseFloat(currentPrices[l.id] || '') || null,
-          })),
         },
       });
       if (error) throw error;
-      setAiSuggestion(data.suggestion || 'Sem sugestão.');
+      setAiAnalysis(data);
+      
+      // Salvar a sugestão no banco
+      await supabase.from('analyses').update({ ai_suggestion: JSON.stringify(data) }).eq('id', id!);
+      
+      toast.success('Análise de IA concluída!');
     } catch (err: any) {
       toast.error('Erro IA: ' + err.message);
     } finally {
@@ -710,7 +719,12 @@ export default function AnalysisDetail() {
           />
         )}
 
+        {/* AI Insights */}
+        <SectionDivider title="Análise de IA" />
+        <AIInsights analysis={aiAnalysis} loading={loadingAI} />
+
         {/* Metrics + Chart + CDI */}
+        <SectionDivider title="Métricas e Payoff" />
         <MetricsCards metrics={metrics} cdiReturn={cdiReturn} daysToExpiry={daysToExpiry} />
 
         <Card>
@@ -734,20 +748,6 @@ export default function AnalysisDetail() {
           daysToExpiry={daysToExpiry}
           setDaysToExpiry={setDaysToExpiry}
         />
-
-        {aiSuggestion && (
-          <Card className="border-primary/30">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                Sugestão da IA
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm whitespace-pre-wrap">{aiSuggestion}</p>
-            </CardContent>
-          </Card>
-        )}
       </main>
     </div>
   );
