@@ -48,44 +48,44 @@
   }
 
   .dark {
-    --background: 0 0% 6%;
-    --foreground: 0 0% 96%;
-    --card: 0 0% 11%;
-    --card-foreground: 0 0% 96%;
-    --popover: 0 0% 11%;
-    --popover-foreground: 0 0% 96%;
+    --background: 220 25% 4%;
+    --foreground: 0 0% 98%;
+    --card: 220 25% 7%;
+    --card-foreground: 0 0% 98%;
+    --popover: 220 25% 7%;
+    --popover-foreground: 0 0% 98%;
     --primary: 152 100% 50%;
-    --primary-foreground: 0 0% 6%;
-    --secondary: 0 0% 18%;
-    --secondary-foreground: 0 0% 96%;
-    --muted: 0 0% 16%;
-    --muted-foreground: 0 0% 62%;
-    --accent: 270 100% 60%;
-    --accent-foreground: 0 0% 6%;
-    --destructive: 0 62% 45%;
+    --primary-foreground: 220 25% 4%;
+    --secondary: 220 20% 12%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 220 20% 12%;
+    --muted-foreground: 220 10% 65%;
+    --accent: 270 100% 65%;
+    --accent-foreground: 220 25% 4%;
+    --destructive: 0 85% 60%;
     --destructive-foreground: 0 0% 100%;
     --success: 152 100% 50%;
-    --success-foreground: 0 0% 6%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 6%;
-    --info: 210 100% 56%;
+    --success-foreground: 220 25% 4%;
+    --warning: 45 100% 50%;
+    --warning-foreground: 220 25% 4%;
+    --info: 210 100% 60%;
     --info-foreground: 0 0% 100%;
     --highlight: 48 96% 53%;
-    --highlight-foreground: 0 0% 6%;
-    --border: 0 0% 19%;
-    --input: 0 0% 19%;
+    --highlight-foreground: 220 25% 4%;
+    --border: 220 20% 15%;
+    --input: 220 20% 15%;
     --ring: 152 100% 50%;
-    --sidebar-background: 0 0% 9%;
-    --sidebar-foreground: 0 0% 86%;
+    --sidebar-background: 220 25% 6%;
+    --sidebar-foreground: 220 10% 85%;
     --sidebar-primary: 152 100% 50%;
-    --sidebar-primary-foreground: 0 0% 6%;
-    --sidebar-accent: 0 0% 16%;
-    --sidebar-accent-foreground: 0 0% 96%;
-    --sidebar-border: 0 0% 17%;
+    --sidebar-primary-foreground: 220 25% 4%;
+    --sidebar-accent: 220 20% 15%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 220 20% 15%;
     --sidebar-ring: 152 100% 50%;
     --chart-profit: 152 100% 50%;
-    --chart-loss: 0 62% 45%;
-    --chart-neutral: 0 0% 50%;
+    --chart-loss: 0 85% 60%;
+    --chart-neutral: 220 10% 50%;
   }
 }
 
@@ -111,4 +111,13 @@
 .card-accent-hover:hover {
   border-color: hsl(var(--accent) / 0.5);
   box-shadow: 0 0 50px -12px hsl(var(--accent) / 0.3);
+}
+
+/* Glassmorphism effects */
+.glass-card {
+  @apply bg-card/60 backdrop-blur-xl border-border/40;
+}
+
+.glass-card-hover:hover {
+  @apply bg-card/80 border-primary/40 shadow-[0_0_40px_-12px_hsl(var(--primary)/0.25)];
 }
