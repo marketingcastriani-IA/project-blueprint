@@ -188,7 +188,7 @@ export default function Dashboard() {
   const incrementSimulations = async () => {
     if (!user) return;
     
-    // Incrementa no banco de dados
+    // Incrementa no banco de dados usando o valor mais atualizado
     const { error } = await supabase
       .from('user_access')
       .update({ simulations_count: access.simulationsCount + 1 } as any)
@@ -196,15 +196,13 @@ export default function Dashboard() {
     
     if (error) {
       console.error("Erro ao incrementar simulações:", error);
-      toast.error("Erro ao contabilizar simulação. Verifique sua conexão.");
+      toast.error("Erro ao contabilizar simulação.");
     }
   };
 
   const handleLegsFromImage = useCallback(async (extractedLegs: any[]) => { 
     if (isLimitReached) {
-      toast.error('Limite de simulações atingido!', {
-        description: 'Faça o upgrade para PRO para continuar usando o OCR.'
-      });
+      toast.error('Limite atingido!');
       return;
     }
 
@@ -220,7 +218,6 @@ export default function Dashboard() {
     setLegs(prev => [...prev, ...sanitizedLegs]); 
     setInputMode('manual');
     
-    // Contabiliza a simulação pelo uso do OCR
     await incrementSimulations();
     toast.info("Simulação contabilizada via OCR.");
   }, [isLimitReached, user, access.simulationsCount]);
@@ -234,12 +231,10 @@ export default function Dashboard() {
 
   const getAISuggestion = async () => {
     if (isLimitReached) {
-      toast.error('Limite de simulações atingido!', {
-        description: 'Faça o upgrade para PRO para continuar usando a IA.'
-      });
+      toast.error('Limite atingido!');
       return;
     }
-    if (legs.length === 0) { toast.error('Adicione pelo menos uma perna.'); return; }
+    if (legs.length === 0) { toast.error('Adicione pernas primeiro.'); return; }
     setLoadingAI(true);
     try {
       const { data, error } = await supabase.functions.invoke('analyze-structure', {
@@ -252,22 +247,19 @@ export default function Dashboard() {
       if (error) throw error;
       setAiAnalysis(data);
       
-      // Contabiliza a simulação pelo uso da IA
       await incrementSimulations();
       toast.success('Análise de IA concluída!');
     } catch (err: any) {
-      toast.error('Erro ao obter sugestão: ' + (err.message || 'Tente novamente'));
+      toast.error('Erro na IA');
     } finally { setLoadingAI(false); }
   };
 
   const saveAnalysis = async () => {
     if (isLimitReached) {
-      toast.error('Limite de simulações atingido!', {
-        description: 'Usuários Free podem realizar até 3 simulações. Faça o upgrade para PRO para acesso ilimitado.'
-      });
+      toast.error('Limite atingido!');
       return;
     }
-    if (legs.length === 0) { toast.error('Adicione pelo menos uma perna.'); return; }
+    if (legs.length === 0) return;
     setSaving(true);
     try {
       const { data: analysis, error: aError } = await supabase
@@ -282,13 +274,12 @@ export default function Dashboard() {
         analysis_id: analysis.id, side: l.side, option_type: l.option_type,
         asset: l.asset, strike: l.strike, price: l.price, quantity: l.quantity,
       }));
-      const { error: lError } = await supabase.from('legs').insert(legsToInsert);
-      if (lError) throw lError;
+      await supabase.from('legs').insert(legsToInsert);
 
-      toast.success('Análise salva com sucesso!');
+      toast.success('Análise salva!');
       navigate(`/analysis/${analysis.id}`);
     } catch (err: any) {
-      toast.error('Erro ao salvar: ' + (err.message || 'Tente novamente'));
+      toast.error('Erro ao salvar');
     } finally { setSaving(false); }
   };
 
