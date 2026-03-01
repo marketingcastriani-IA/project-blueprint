@@ -188,13 +188,24 @@ export default function Dashboard() {
   const incrementSimulations = async () => {
     if (!user) return;
     
-    // Incrementa no banco de dados usando o valor mais atualizado
-    const { error } = await supabase
-      .from('user_access')
-      .update({ simulations_count: access.simulationsCount + 1 } as any)
-      .eq('user_id', user.id);
-    
-    if (error) {
+    try {
+      // Busca o valor mais atualizado do banco para evitar sobrescrever com valor antigo
+      const { data: currentData } = await supabase
+        .from('user_access')
+        .select('simulations_count')
+        .eq('user_id', user.id)
+        .single();
+
+      const currentCount = currentData?.simulations_count || 0;
+
+      // Incrementa no banco de dados
+      const { error } = await supabase
+        .from('user_access')
+        .update({ simulations_count: currentCount + 1 } as any)
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+    } catch (error) {
       console.error("Erro ao incrementar simulações:", error);
       toast.error("Erro ao contabilizar simulação.");
     }
@@ -220,7 +231,7 @@ export default function Dashboard() {
     
     await incrementSimulations();
     toast.info("Simulação contabilizada via OCR.");
-  }, [isLimitReached, user, access.simulationsCount]);
+  }, [isLimitReached, user]);
 
   if (authLoading || access.status === 'loading') return null;
   if (!user) return <Navigate to="/auth" replace />;
