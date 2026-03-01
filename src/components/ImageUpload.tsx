@@ -224,7 +224,7 @@ export default function ImageUpload({ onLegsExtracted, onImageChange, onClear }:
             <div className="text-center space-y-3">
               <h3 className="text-3xl font-black tracking-tighter">Arraste ou Cole a Imagem de sua Estrutura</h3>
               <p className="text-base text-muted-foreground font-medium max-w-md mx-auto">
-                Tire um print da sua corretora ou home broker e cole aqui. Nossa IA extrai ativos, strikes e preços instantaneamente.
+                Tire um print da sua corretora, home broker ou Profit, Flex Scan e outros sistemas de opções e cole aqui. Nossa IA extrai ativos, strikes e preços instantaneamente.
               </p>
             </div>
             <div className="flex items-center gap-4 pt-4">
