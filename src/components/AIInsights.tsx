@@ -103,15 +103,15 @@ export default function AIInsights({ analysis, loading = false }: AIInsightsProp
                   {analysis.score}<span className="text-xl text-muted-foreground">/10</span>
                 </span>
               </div>
-              <Progress value={analysis.score * 10} className="h-4 bg-primary/10" />
+              <Progress value={(analysis.score || 0) * 10} className="h-4 bg-primary/10" />
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <div className="rounded-xl bg-muted/30 p-3 border border-border/50">
                   <p className="text-[9px] font-black uppercase text-muted-foreground mb-1">Risco</p>
-                  <p className={cn("text-sm font-black", riskColors[analysis.risk_level])}>{analysis.risk_level}</p>
+                  <p className={cn("text-sm font-black", riskColors[analysis.risk_level])}>{analysis.risk_level || 'N/A'}</p>
                 </div>
                 <div className="rounded-xl bg-muted/30 p-3 border border-border/50">
                   <p className="text-[9px] font-black uppercase text-muted-foreground mb-1">Sucesso</p>
-                  <p className="text-sm font-black">{analysis.probability_success}</p>
+                  <p className="text-sm font-black">{analysis.probability_success || 'N/A'}</p>
                 </div>
               </div>
             </div>
@@ -121,69 +121,75 @@ export default function AIInsights({ analysis, loading = false }: AIInsightsProp
                 <Lightbulb className="absolute -top-3 -left-3 h-8 w-8 text-primary bg-card rounded-full p-1.5 border border-primary/20 shadow-sm" />
                 <h4 className="text-xs font-black uppercase tracking-widest text-primary mb-2">Resumo Executivo</h4>
                 <p className="text-base font-medium leading-relaxed text-foreground/90 italic">
-                  "{analysis.summary}"
+                  "{analysis.summary || 'Sem resumo disponível.'}"
                 </p>
               </div>
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-info/5 border border-info/20">
-                <BarChart3 className="h-5 w-5 text-info shrink-0" />
-                <p className="text-xs font-bold text-info uppercase tracking-tight">{analysis.cdi_comparison}</p>
-              </div>
+              {analysis.cdi_comparison && (
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-info/5 border border-info/20">
+                  <BarChart3 className="h-5 w-5 text-info shrink-0" />
+                  <p className="text-xs font-bold text-info uppercase tracking-tight">{analysis.cdi_comparison}</p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Strategy Explanation */}
-          <div className="space-y-3 pt-6 border-t border-border/50">
-            <h4 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-              <Zap className="h-4 w-4 text-primary" /> Como funciona a estratégia
-            </h4>
-            <p className="text-sm leading-relaxed text-muted-foreground font-medium bg-muted/20 p-4 rounded-xl border border-border/40">
-              {analysis.strategy_explanation}
-            </p>
-          </div>
+          {analysis.strategy_explanation && (
+            <div className="space-y-3 pt-6 border-t border-border/50">
+              <h4 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                <Zap className="h-4 w-4 text-primary" /> Como funciona a estratégia
+              </h4>
+              <p className="text-sm leading-relaxed text-muted-foreground font-medium bg-muted/20 p-4 rounded-xl border border-border/40">
+                {analysis.strategy_explanation}
+              </p>
+            </div>
+          )}
 
-          {/* Market Scenarios - The "Pro" Dash part */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-              <Target className="h-4 w-4 text-primary" /> Cenários de Mercado no Vencimento
-            </h4>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="group p-5 rounded-2xl border border-success/20 bg-gradient-to-br from-success/[0.05] to-transparent transition-all hover:shadow-lg hover:border-success/40">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="p-2 rounded-lg bg-success/10 text-success">
-                    <TrendingUp className="h-5 w-5" />
+          {/* Market Scenarios */}
+          {analysis.scenarios && (
+            <div className="space-y-4">
+              <h4 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                <Target className="h-4 w-4 text-primary" /> Cenários de Mercado no Vencimento
+              </h4>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="group p-5 rounded-2xl border border-success/20 bg-gradient-to-br from-success/[0.05] to-transparent transition-all hover:shadow-lg hover:border-success/40">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-2 rounded-lg bg-success/10 text-success">
+                      <TrendingUp className="h-5 w-5" />
+                    </div>
+                    <span className="text-xs font-black uppercase text-success">Se o Ativo Subir</span>
                   </div>
-                  <span className="text-xs font-black uppercase text-success">Se o Ativo Subir</span>
+                  <p className="text-xs font-medium leading-relaxed text-muted-foreground group-hover:text-foreground transition-colors">
+                    {analysis.scenarios.up || 'N/A'}
+                  </p>
                 </div>
-                <p className="text-xs font-medium leading-relaxed text-muted-foreground group-hover:text-foreground transition-colors">
-                  {analysis.scenarios.up}
-                </p>
-              </div>
 
-              <div className="group p-5 rounded-2xl border border-warning/20 bg-gradient-to-br from-warning/[0.05] to-transparent transition-all hover:shadow-lg hover:border-warning/40">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="p-2 rounded-lg bg-warning/10 text-warning">
-                    <Minus className="h-5 w-5" />
+                <div className="group p-5 rounded-2xl border border-warning/20 bg-gradient-to-br from-warning/[0.05] to-transparent transition-all hover:shadow-lg hover:border-warning/40">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-2 rounded-lg bg-warning/10 text-warning">
+                      <Minus className="h-5 w-5" />
+                    </div>
+                    <span className="text-xs font-black uppercase text-warning">Se ficar Lateral</span>
                   </div>
-                  <span className="text-xs font-black uppercase text-warning">Se ficar Lateral</span>
+                  <p className="text-xs font-medium leading-relaxed text-muted-foreground group-hover:text-foreground transition-colors">
+                    {analysis.scenarios.flat || 'N/A'}
+                  </p>
                 </div>
-                <p className="text-xs font-medium leading-relaxed text-muted-foreground group-hover:text-foreground transition-colors">
-                  {analysis.scenarios.flat}
-                </p>
-              </div>
 
-              <div className="group p-5 rounded-2xl border border-destructive/20 bg-gradient-to-br from-destructive/[0.05] to-transparent transition-all hover:shadow-lg hover:border-destructive/40">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="p-2 rounded-lg bg-destructive/10 text-destructive">
-                    <TrendingDown className="h-5 w-5" />
+                <div className="group p-5 rounded-2xl border border-destructive/20 bg-gradient-to-br from-destructive/[0.05] to-transparent transition-all hover:shadow-lg hover:border-destructive/40">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-2 rounded-lg bg-destructive/10 text-destructive">
+                      <TrendingDown className="h-5 w-5" />
+                    </div>
+                    <span className="text-xs font-black uppercase text-destructive">Se o Ativo Cair</span>
                   </div>
-                  <span className="text-xs font-black uppercase text-destructive">Se o Ativo Cair</span>
+                  <p className="text-xs font-medium leading-relaxed text-muted-foreground group-hover:text-foreground transition-colors">
+                    {analysis.scenarios.down || 'N/A'}
+                  </p>
                 </div>
-                <p className="text-xs font-medium leading-relaxed text-muted-foreground group-hover:text-foreground transition-colors">
-                  {analysis.scenarios.down}
-                </p>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Pros & Cons */}
           <div className="grid gap-6 md:grid-cols-2 pt-6 border-t border-border/50">
@@ -192,12 +198,12 @@ export default function AIInsights({ analysis, loading = false }: AIInsightsProp
                 <CheckCircle2 className="h-4 w-4" /> Pontos Fortes
               </h4>
               <div className="space-y-2">
-                {analysis.pros.map((pro, i) => (
+                {analysis.pros?.map((pro, i) => (
                   <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-success/5 border border-success/10 text-sm font-bold">
                     <ArrowUpRight className="h-4 w-4 text-success shrink-0" />
                     {pro}
                   </div>
-                ))}
+                )) || <p className="text-xs text-muted-foreground">Nenhum ponto forte listado.</p>}
               </div>
             </div>
             <div className="space-y-4">
@@ -205,12 +211,12 @@ export default function AIInsights({ analysis, loading = false }: AIInsightsProp
                 <AlertTriangle className="h-4 w-4" /> Riscos & Atenção
               </h4>
               <div className="space-y-2">
-                {analysis.cons.map((con, i) => (
+                {analysis.cons?.map((con, i) => (
                   <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-destructive/5 border border-destructive/10 text-sm font-bold">
                     <ArrowDownRight className="h-4 w-4 text-destructive shrink-0" />
                     {con}
                   </div>
-                ))}
+                )) || <p className="text-xs text-muted-foreground">Nenhum risco listado.</p>}
               </div>
             </div>
           </div>
