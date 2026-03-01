@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { 
   Loader2, TrendingUp, TrendingDown, Calendar, Edit2, 
-  RotateCcw, Trash2, Briefcase, Wallet, Target, DollarSign 
+  RotateCcw, Trash2, Briefcase, Wallet, Target, DollarSign, ArrowRightLeft 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
@@ -26,6 +26,7 @@ interface ClosedAnalysis {
 
 interface LegWithPnL {
   id: string;
+  analysis_id: string;
   side: string;
   price: number;
   current_price: number | null;
@@ -45,31 +46,41 @@ export default function Portfolio() {
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
-      const { data: closedAnalyses } = await supabase
-        .from('analyses')
-        .select('id, name, underlying_asset, created_at, closed_at, cdi_rate, days_to_expiry')
-        .eq('user_id', user.id)
-        .eq('status', 'closed')
-        .order('closed_at', { ascending: false });
+      setLoading(true);
+      try {
+        const { data: closedAnalyses, error: aError } = await supabase
+          .from('analyses')
+          .select('id, name, underlying_asset, created_at, closed_at, cdi_rate, days_to_expiry')
+          .eq('user_id', user.id)
+          .eq('status', 'closed')
+          .order('closed_at', { ascending: false });
 
-      const items = (closedAnalyses as unknown as ClosedAnalysis[]) || [];
-      setAnalyses(items);
+        if (aError) throw aError;
+        const items = (closedAnalyses as unknown as ClosedAnalysis[]) || [];
+        setAnalyses(items);
 
-      if (items.length > 0) {
-        const ids = items.map(a => a.id);
-        const { data: allLegs } = await supabase
-          .from('legs')
-          .select('id, analysis_id, side, price, current_price, quantity, option_type')
-          .in('analysis_id', ids);
+        if (items.length > 0) {
+          const ids = items.map(a => a.id);
+          const { data: allLegs, error: lError } = await supabase
+            .from('legs')
+            .select('id, analysis_id, side, price, current_price, quantity, option_type')
+            .in('analysis_id', ids);
 
-        const map: Record<string, LegWithPnL[]> = {};
-        (allLegs || []).forEach((l: any) => {
-          if (!map[l.analysis_id]) map[l.analysis_id] = [];
-          map[l.analysis_id].push(l);
-        });
-        setLegsMap(map);
+          if (lError) throw lError;
+          
+          const map: Record<string, LegWithPnL[]> = {};
+          (allLegs || []).forEach((l: any) => {
+            if (!map[l.analysis_id]) map[l.analysis_id] = [];
+            map[l.analysis_id].push(l as LegWithPnL);
+          });
+          setLegsMap(map);
+        }
+      } catch (err: any) {
+        console.error("[Portfolio] Erro ao buscar dados:", err);
+        toast.error("Erro ao carregar portfólio");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchData();
   }, [user]);
@@ -85,11 +96,21 @@ export default function Portfolio() {
 
   const getMontageCost = (analysisId: string): number => {
     const legs = legsMap[analysisId] || [];
-    const net = legs.reduce((acc, leg) => {
+    // Custo de montagem: Compra (-) e Venda (+)
+    return legs.reduce((acc, leg) => {
       const multiplier = leg.side === 'buy' ? -1 : 1;
       return acc + multiplier * leg.price * leg.quantity;
     }, 0);
-    return net;
+  };
+
+  const getExitValue = (analysisId: string): number => {
+    const legs = legsMap[analysisId] || [];
+    // Valor de saída: O que você recebe (+) ou paga (-) ao fechar as pernas
+    return legs.reduce((acc, leg) => {
+      if (leg.current_price == null) return acc;
+      const multiplier = leg.side === 'buy' ? 1 : -1; // Se comprou, vende pra fechar (+). Se vendeu, compra pra fechar (-).
+      return acc + multiplier * leg.current_price * leg.quantity;
+    }, 0);
   };
 
   const hasPnLData = (analysisId: string): boolean => {
@@ -251,6 +272,7 @@ export default function Portfolio() {
             {analyses.map(a => {
               const pnl = getPnL(a.id);
               const montage = getMontageCost(a.id);
+              const exitValue = getExitValue(a.id);
               const invested = montage < 0 ? Math.abs(montage) : 0;
               const roi = invested > 0 ? (pnl / invested) * 100 : (pnl > 0 ? 100 : 0);
               const hasPnl = hasPnLData(a.id);
@@ -291,15 +313,21 @@ export default function Portfolio() {
                     </div>
 
                     {/* Metrics Section */}
-                    <div className="grid grid-cols-3 gap-4 lg:gap-8 px-4 py-3 lg:py-0 rounded-xl bg-muted/30 lg:bg-transparent border border-border/50 lg:border-none">
+                    <div className="grid grid-cols-4 gap-4 lg:gap-8 px-4 py-3 lg:py-0 rounded-xl bg-muted/30 lg:bg-transparent border border-border/50 lg:border-none">
                       <div className="text-center lg:text-right">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Custo Montagem</p>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Investido</p>
                         <p className={cn("text-sm font-bold font-mono", montage >= 0 ? "text-info" : "text-foreground")}>
-                          {montage >= 0 ? 'Crédito: ' : ''}R$ {Math.abs(montage).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          R$ {Math.abs(montage).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </p>
                       </div>
                       <div className="text-center lg:text-right">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Resultado Final</p>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Saída</p>
+                        <p className="text-sm font-bold font-mono text-foreground">
+                          R$ {Math.abs(exitValue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                      <div className="text-center lg:text-right">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Resultado</p>
                         <p className={cn('text-sm font-bold font-mono', pnl >= 0 ? 'text-success' : 'text-destructive')}>
                           {pnl >= 0 ? '+' : ''}R$ {pnl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </p>
