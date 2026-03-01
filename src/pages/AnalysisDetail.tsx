@@ -211,6 +211,14 @@ export default function AnalysisDetail() {
   const metrics = useMemo(() => calculateMetrics(legs), [legs]);
   const payoffData = useMemo(() => generatePayoffCurve(legs), [legs]);
 
+  const currentSpotPrice = useMemo(() => {
+    const stockLeg = dbLegs.find(l => l.option_type === 'stock');
+    if (stockLeg && currentPrices[stockLeg.id]) {
+      return parseFloat(currentPrices[stockLeg.id]);
+    }
+    return null;
+  }, [dbLegs, currentPrices]);
+
   const investedCapital = useMemo(() => {
     if (metrics.montageTotal) return Math.abs(metrics.montageTotal);
     return Math.max(Math.abs(metrics.netCost || 0), 1);
@@ -745,6 +753,7 @@ export default function AnalysisDetail() {
               montageTotal={metrics.montageTotal}
               maxGain={metrics.maxGain}
               maxLoss={metrics.maxLoss}
+              currentSpotPrice={currentSpotPrice}
             />
           </CardContent>
         </Card>

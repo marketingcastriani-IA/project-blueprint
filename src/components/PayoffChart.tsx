@@ -5,7 +5,7 @@ import { Area, CartesianGrid, ReferenceLine, XAxis, YAxis, Line, ComposedChart, 
 import { calculateCDIReturn } from '@/lib/payoff';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Target, Percent, DollarSign } from 'lucide-react';
+import { TrendingUp, TrendingDown, Target, Percent, DollarSign, MapPin } from 'lucide-react';
 
 interface PayoffChartProps {
   data: PayoffPoint[];
@@ -16,6 +16,7 @@ interface PayoffChartProps {
   montageTotal?: number;
   maxGain?: number | 'Ilimitado';
   maxLoss?: number | 'Ilimitado';
+  currentSpotPrice?: number | null;
 }
 
 const chartConfig = {
@@ -24,7 +25,6 @@ const chartConfig = {
   cdiReturn: { label: 'CDI', color: 'hsl(45 95% 55%)' },
 };
 
-// Componente de Tooltip Customizado e Limpo
 const CustomTooltip = ({ active, payload, label, displayMode, investedCapital }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
@@ -91,7 +91,8 @@ export default function PayoffChart({
   netCost = 0, 
   montageTotal,
   maxGain,
-  maxLoss
+  maxLoss,
+  currentSpotPrice
 }: PayoffChartProps) {
   const [displayMode, setDisplayMode] = useState<'value' | 'percent'>('value');
 
@@ -257,6 +258,22 @@ export default function PayoffChart({
                   fontSize: 11,
                   fontWeight: 800,
                   offset: 10,
+                }}
+              />
+            )}
+
+            {currentSpotPrice && (
+              <ReferenceLine
+                x={currentSpotPrice}
+                stroke="hsl(var(--primary))"
+                strokeWidth={3}
+                label={{
+                  value: `ATUAL ${currentSpotPrice.toFixed(2)}`,
+                  position: 'top',
+                  fill: 'hsl(var(--primary))',
+                  fontSize: 12,
+                  fontWeight: 900,
+                  offset: 20,
                 }}
               />
             )}
