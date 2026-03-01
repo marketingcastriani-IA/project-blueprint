@@ -20,7 +20,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Sparkles, Loader2, ArrowRight, Camera, Keyboard } from 'lucide-react';
+import { Save, Sparkles, Loader2, Camera, Keyboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, SectionDivider } from '@/components/ProfessionalLayout';
 import AIInsights from '@/components/AIInsights';
@@ -41,7 +41,7 @@ export default function Dashboard() {
   const [inputMode, setInputMode] = useState<InputMode>(null);
 
   const metrics = useMemo(() => calculateMetrics(legs), [legs]);
-  const payoffData = useMemo(() => generatePayoffCurve(legs), [legs]);
+  const payoffData = useMemo(() => generatePayoffCurve(legs, daysToExpiry, cdiRate), [legs, daysToExpiry, cdiRate]);
 
   const inferredExpiry = useMemo(() => {
     const leg = legs.find(l => l.option_type !== 'stock');

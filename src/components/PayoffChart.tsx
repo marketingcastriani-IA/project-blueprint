@@ -1,6 +1,6 @@
 import { PayoffPoint } from '@/lib/types';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Area, AreaChart, CartesianGrid, ReferenceLine, XAxis, YAxis, Line, ComposedChart } from 'recharts';
+import { Area, CartesianGrid, ReferenceLine, XAxis, YAxis, Line, ComposedChart } from 'recharts';
 import { calculateCDIReturn } from '@/lib/payoff';
 
 interface PayoffChartProps {
@@ -14,6 +14,7 @@ interface PayoffChartProps {
 
 const chartConfig = {
   profitAtExpiry: { label: 'No Vencimento', color: 'hsl(var(--chart-profit))' },
+  profitToday: { label: 'Hoje (T+0)', color: 'hsl(var(--info))' },
   belowZero: { label: 'Prejuízo', color: 'hsl(var(--destructive))' },
   betweenZeroCdi: { label: 'Lucro < CDI', color: 'hsl(38 92% 50%)' },
   aboveCdi: { label: 'Lucro > CDI', color: 'hsl(var(--success))' },
@@ -30,7 +31,6 @@ export default function PayoffChart({ data, breakevens, cdiRate = 0, daysToExpir
 
   const sortedData = [...data].sort((a, b) => a.price - b.price);
 
-  // Build chart data with the actual payoff line + colored zones
   const chartData = sortedData.map((p) => {
     const profit = p.profitAtExpiry;
     const cdi = cdiValue ?? 0;
@@ -38,7 +38,7 @@ export default function PayoffChart({ data, breakevens, cdiRate = 0, daysToExpir
     return {
       price: p.price,
       profitAtExpiry: profit,
-      // Zones for area fills
+      profitToday: p.profitToday,
       belowZero: profit < 0 ? profit : 0,
       betweenZeroCdi: profit > 0 && cdi > 0
         ? Math.min(profit, cdi)
@@ -53,7 +53,8 @@ export default function PayoffChart({ data, breakevens, cdiRate = 0, daysToExpir
   const maxPrice = Math.max(...prices);
 
   const profits = sortedData.map((p) => p.profitAtExpiry);
-  const allValues = [...profits, cdiValue ?? 0];
+  const todayProfits = sortedData.map((p) => p.profitToday);
+  const allValues = [...profits, ...todayProfits, cdiValue ?? 0];
   const minProfit = Math.min(...allValues);
   const maxProfit = Math.max(...allValues);
   const range = maxProfit - minProfit || 1;
@@ -97,10 +98,8 @@ export default function PayoffChart({ data, breakevens, cdiRate = 0, daysToExpir
           width={50}
         />
         
-        {/* Zero line */}
         <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" strokeOpacity={0.5} />
         
-        {/* Breakeven markers */}
         {breakevens.map((be, i) => (
           <ReferenceLine
             key={i}
@@ -118,7 +117,6 @@ export default function PayoffChart({ data, breakevens, cdiRate = 0, daysToExpir
           />
         ))}
         
-        {/* CDI benchmark line */}
         {cdiValue !== null && (
           <ReferenceLine
             y={cdiValue}
@@ -137,7 +135,6 @@ export default function PayoffChart({ data, breakevens, cdiRate = 0, daysToExpir
         
         <ChartTooltip content={<ChartTooltipContent />} />
         
-        {/* Loss zone (red) */}
         <Area
           type="monotone"
           dataKey="belowZero"
@@ -147,7 +144,6 @@ export default function PayoffChart({ data, breakevens, cdiRate = 0, daysToExpir
           activeDot={false}
           isAnimationActive={false}
         />
-        {/* Profit below CDI zone (orange) */}
         <Area
           type="monotone"
           dataKey="betweenZeroCdi"
@@ -158,7 +154,6 @@ export default function PayoffChart({ data, breakevens, cdiRate = 0, daysToExpir
           activeDot={false}
           isAnimationActive={false}
         />
-        {/* Profit above CDI zone (green) */}
         <Area
           type="monotone"
           dataKey="aboveCdi"
@@ -170,7 +165,17 @@ export default function PayoffChart({ data, breakevens, cdiRate = 0, daysToExpir
           isAnimationActive={false}
         />
         
-        {/* Main payoff line */}
+        <Line
+          type="monotone"
+          dataKey="profitToday"
+          stroke="hsl(var(--info))"
+          strokeWidth={2}
+          strokeDasharray="5 5"
+          dot={false}
+          activeDot={{ r: 4, fill: 'hsl(var(--info))' }}
+          isAnimationActive={false}
+        />
+
         <Line
           type="monotone"
           dataKey="profitAtExpiry"
