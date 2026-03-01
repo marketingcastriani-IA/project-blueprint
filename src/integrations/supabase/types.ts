@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.4"
+  }
   public: {
     Tables: {
       analyses: {
@@ -56,37 +61,37 @@ export type Database = {
           analysis_id: string
           asset: string
           created_at: string
+          current_price: number | null
           id: string
           option_type: string
           price: number
           quantity: number
           side: string
           strike: number
-          current_price: number | null
         }
         Insert: {
           analysis_id: string
           asset?: string
           created_at?: string
+          current_price?: number | null
           id?: string
           option_type: string
           price?: number
           quantity?: number
           side: string
           strike?: number
-          current_price?: number | null
         }
         Update: {
           analysis_id?: string
           asset?: string
           created_at?: string
+          current_price?: number | null
           id?: string
           option_type?: string
           price?: number
           quantity?: number
           side?: string
           strike?: number
-          current_price?: number | null
         }
         Relationships: [
           {
@@ -133,6 +138,8 @@ export type Database = {
           created_at: string
           expires_at: string | null
           id: string
+          plan_type: string | null
+          simulations_count: number | null
           status: string
           trial_days: number | null
           updated_at: string
@@ -142,6 +149,8 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           id?: string
+          plan_type?: string | null
+          simulations_count?: number | null
           status?: string
           trial_days?: number | null
           updated_at?: string
@@ -151,6 +160,8 @@ export type Database = {
           created_at?: string
           expires_at?: string | null
           id?: string
+          plan_type?: string | null
+          simulations_count?: number | null
           status?: string
           trial_days?: number | null
           updated_at?: string

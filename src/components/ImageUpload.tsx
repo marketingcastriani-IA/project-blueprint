@@ -47,6 +47,11 @@ const compressImage = (file: File): Promise<string> => {
   });
 };
 
+interface ImageUploadProps {
+  onLegsExtracted: (legs: Leg[]) => void;
+  onImageChange?: (hasImage: boolean) => void;
+}
+
 export default function ImageUpload({ onLegsExtracted, onImageChange }: ImageUploadProps) {
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
@@ -90,7 +95,7 @@ export default function ImageUpload({ onLegsExtracted, onImageChange }: ImageUpl
     }
 
     processingRef.current = true;
-    onImageChange?.();
+    onImageChange?.(true);
 
     try {
       const objectUrl = URL.createObjectURL(file);
