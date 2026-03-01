@@ -18,7 +18,7 @@ interface PayoffChartProps {
   maxLoss?: number | 'Ilimitado';
   currentSpotPrice?: number | null;
   currentPnL?: number | null;
-  simulationData?: PayoffPoint[] | null; // Nova prop para overlay
+  simulationData?: PayoffPoint[] | null;
 }
 
 const chartConfig = {
@@ -28,9 +28,8 @@ const chartConfig = {
   simulated: { label: 'Simulação', color: 'hsl(var(--primary))' },
 };
 
-const CustomTooltip = ({ active, payload, label, displayMode, investedCapital }: any) => {
+const CustomTooltip = ({ active, payload, label, displayMode }: any) => {
   if (active && payload && payload.length) {
-    const data = payload[0].payload;
     const format = (val: number) => {
       if (displayMode === 'percent') return `${val.toFixed(2)}%`;
       return `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
@@ -43,17 +42,20 @@ const CustomTooltip = ({ active, payload, label, displayMode, investedCapital }:
           <p className="text-sm font-bold font-mono">R$ {label.toFixed(2)}</p>
         </div>
         <div className="space-y-1.5">
-          {payload.map((p: any, i: number) => (
-            <div key={i} className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
-                <span className="text-[11px] font-bold text-foreground/80">{p.name}</span>
+          {payload.map((p: any, i: number) => {
+            if (p.dataKey === 'belowZero' || p.dataKey === 'betweenZeroCdi' || p.dataKey === 'aboveCdi') return null;
+            return (
+              <div key={i} className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
+                  <span className="text-[11px] font-bold text-foreground/80">{p.name}</span>
+                </div>
+                <span className={cn("text-xs font-black font-mono", p.value >= 0 ? "text-success" : "text-destructive")}>
+                  {format(p.value)}
+                </span>
               </div>
-              <span className={cn("text-xs font-black font-mono", p.value >= 0 ? "text-success" : "text-destructive")}>
-                {format(p.value)}
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
@@ -88,17 +90,19 @@ export default function PayoffChart({
   const chartData = useMemo(() => {
     return data.map((p, i) => {
       const simPoint = simulationData?.[i];
+      const profit = p.profitAtExpiry;
+      const cdi = cdiValue ?? 0;
+
       return {
         price: p.price,
-        profitAtExpiry: p.profitAtExpiry * factor,
+        profitAtExpiry: profit * factor,
         profitToday: p.profitToday * factor,
         simulatedAtExpiry: simPoint ? simPoint.profitAtExpiry * factor : undefined,
-        belowZero: (p.profitAtExpiry < 0 ? p.profitAtExpiry : 0) * factor,
-        betweenZeroCdi: (p.profitAtExpiry > 0 && (cdiValue ?? 0) > 0
-          ? Math.min(p.profitAtExpiry, (cdiValue ?? 0))
-          : (p.profitAtExpiry > 0 ? p.profitAtExpiry : 0)) * factor,
-        aboveCdi: ((cdiValue ?? 0) > 0 && p.profitAtExpiry > (cdiValue ?? 0) ? p.profitAtExpiry - (cdiValue ?? 0) : 0) * factor,
-        cdiLine: cdiValue !== null ? (cdiValue * factor) : undefined,
+        // Lógica das 3 cores
+        belowZero: (profit < 0 ? profit : 0) * factor,
+        betweenZeroCdi: (profit > 0 ? Math.min(profit, cdi) : 0) * factor,
+        aboveCdi: (profit > cdi ? profit - cdi : 0) * factor,
+        cdiLine: cdi * factor,
       };
     });
   }, [data, simulationData, factor, cdiValue]);
@@ -140,7 +144,7 @@ export default function PayoffChart({
         </div>
       </div>
 
-      <ChartContainer config={chartConfig} className="h-[400px] w-full">
+      <ChartContainer config={chartConfig} className="h-[450px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={{ top: 25, right: 30, left: 10, bottom: 0 }}>
             <defs>
@@ -154,7 +158,6 @@ export default function PayoffChart({
             
             <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" strokeOpacity={0.5} />
             
-            {/* Linha de P&L Atual (Benchmark de Saída) */}
             {currentPnL !== null && currentPnL !== undefined && (
               <ReferenceLine 
                 y={currentPnL * factor} 
@@ -173,16 +176,18 @@ export default function PayoffChart({
               <ReferenceDot x={currentSpotPrice} y={currentPnL * factor} r={6} fill="hsl(var(--primary))" stroke="white" strokeWidth={2} className="animate-pulse" />
             )}
             
-            <ChartTooltip content={<CustomTooltip displayMode={displayMode} investedCapital={investedCapital} />} />
+            <ChartTooltip content={<CustomTooltip displayMode={displayMode} />} />
             
+            {/* Áreas de Payoff (3 Cores) */}
             <Area type="monotone" dataKey="belowZero" stroke="none" fill="url(#lossGradient)" isAnimationActive={false} />
             <Area type="monotone" dataKey="betweenZeroCdi" stackId="positive" stroke="none" fill="url(#orangeGradient)" isAnimationActive={false} />
             <Area type="monotone" dataKey="aboveCdi" stackId="positive" stroke="none" fill="url(#greenGradient)" isAnimationActive={false} />
             
+            {/* Linhas de Referência */}
+            <Line name="CDI" type="monotone" dataKey="cdiLine" stroke="hsl(45 95% 55%)" strokeWidth={2} strokeDasharray="3 3" dot={false} isAnimationActive={false} />
             <Line name="Hoje (T+0)" type="monotone" dataKey="profitToday" stroke="hsl(var(--info))" strokeWidth={2} strokeDasharray="5 5" dot={false} isAnimationActive={false} />
             <Line name="No Vencimento" type="monotone" dataKey="profitAtExpiry" stroke="hsl(var(--chart-profit))" strokeWidth={2.5} dot={false} isAnimationActive={false} />
             
-            {/* Linha de Simulação (Overlay) */}
             {simulationData && (
               <Line name="Simulação (Venc.)" type="monotone" dataKey="simulatedAtExpiry" stroke="hsl(var(--primary))" strokeWidth={3} strokeDasharray="10 5" dot={false} isAnimationActive={false} />
             )}
