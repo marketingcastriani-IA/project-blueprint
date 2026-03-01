@@ -8,6 +8,8 @@ interface AccessStatus {
   expiresAt: string | null;
   trialDays: number;
   daysRemaining: number | null;
+  planType: 'free' | 'pro';
+  simulationsCount: number;
 }
 
 export function useAccessControl() {
@@ -18,6 +20,8 @@ export function useAccessControl() {
     expiresAt: null,
     trialDays: 0,
     daysRemaining: null,
+    planType: 'free',
+    simulationsCount: 0,
   });
 
   useEffect(() => {
@@ -36,7 +40,15 @@ export function useAccessControl() {
       const isAdmin = roles?.some((r: any) => r.role === 'admin') ?? false;
 
       if (isAdmin) {
-        setAccess({ status: 'approved', isAdmin: true, expiresAt: null, trialDays: 9999, daysRemaining: null });
+        setAccess({ 
+          status: 'approved', 
+          isAdmin: true, 
+          expiresAt: null, 
+          trialDays: 9999, 
+          daysRemaining: null,
+          planType: 'pro',
+          simulationsCount: 0
+        });
         return;
       }
 
@@ -48,7 +60,15 @@ export function useAccessControl() {
         .single();
 
       if (!accessData) {
-        setAccess({ status: 'pending', isAdmin: false, expiresAt: null, trialDays: 0, daysRemaining: null });
+        setAccess({ 
+          status: 'pending', 
+          isAdmin: false, 
+          expiresAt: null, 
+          trialDays: 0, 
+          daysRemaining: null,
+          planType: 'free',
+          simulationsCount: 0
+        });
         return;
       }
 
@@ -73,6 +93,8 @@ export function useAccessControl() {
         expiresAt: ua.expires_at,
         trialDays: ua.trial_days ?? 0,
         daysRemaining,
+        planType: (ua.plan_type as 'free' | 'pro') || 'free',
+        simulationsCount: ua.simulations_count || 0,
       });
     };
 

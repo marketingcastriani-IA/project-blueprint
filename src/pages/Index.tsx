@@ -1,10 +1,15 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, BarChart3, Shield, Zap, ArrowRight, LineChart, Brain, CalendarDays, Target } from 'lucide-react';
+import { 
+  TrendingUp, BarChart3, Shield, Zap, ArrowRight, 
+  LineChart, Brain, CalendarDays, Target, CheckCircle2,
+  Lock, Smartphone, Sparkles, Trophy
+} from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Sun, Moon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function Index() {
   const { user, loading } = useAuth();
@@ -17,136 +22,162 @@ export default function Index() {
   const features = [
     {
       icon: Zap,
-      title: 'OCR Inteligente',
-      desc: 'Tire um print da sua corretora e a IA monta o gráfico de Payoff em segundos.',
-      badge: 'IA',
-    },
-    {
-      icon: BarChart3,
-      title: 'Payoff Profissional',
-      desc: 'Gráfico com 3 zonas: prejuízo (vermelho), lucro abaixo do CDI (laranja) e acima do CDI (verde).',
-      badge: null,
-    },
-    {
-      icon: Shield,
-      title: 'Detecção de Collar',
-      desc: 'Identifica automaticamente Collar, calcula custo real de montagem, breakeven e risco zero.',
-      badge: 'AUTO',
-    },
-    {
-      icon: Target,
-      title: 'Estrutura vs CDI',
-      desc: 'Compare seu retorno com a renda fixa. Se não vencer o CDI, a gente te avisa!',
-      badge: null,
-    },
-    {
-      icon: CalendarDays,
-      title: 'Calendário B3',
-      desc: 'Vencimentos automáticos ajustados por feriados. Nunca mais erre o dia de sair da operação.',
-      badge: 'NOVO',
+      title: 'OCR de Próxima Geração',
+      desc: 'A única ferramenta que lê o print da sua corretora e monta o payoff instantaneamente. Chega de digitar perna por perna.',
+      image: 'https://images.unsplash.com/photo-1611974717484-7da00ff12990?auto=format&fit=crop&q=80&w=800',
     },
     {
       icon: Brain,
-      title: 'Sugestão da IA',
-      desc: 'Receba uma análise objetiva da sua estrutura com veredito e comparativo CDI.',
-      badge: 'IA',
+      title: 'Inteligência Artificial B3',
+      desc: 'Nossa IA analisa sua estrutura e dá um veredito real: "Vence o CDI?" ou "Risco Desnecessário?".',
+      image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=800',
+    },
+    {
+      icon: Target,
+      title: 'Benchmark CDI Real-Time',
+      desc: 'Visualize se sua operação de opções é melhor que deixar o dinheiro no Tesouro Selic. Gráficos de 3 cores exclusivos.',
+      image: 'https://images.unsplash.com/photo-1551288049-bbdac8626ad1?auto=format&fit=crop&q=80&w=800',
     },
   ];
 
   return (
-    <div className="min-h-screen bg-background overflow-hidden">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Header */}
-      <header className="container flex items-center justify-between py-5">
-        <div className="flex items-center gap-2.5 font-bold text-lg">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-[0_0_20px_-4px_hsl(var(--primary)/0.5)]">
-            <TrendingUp className="h-5 w-5 text-primary-foreground" />
+      <header className="container flex items-center justify-between py-6 border-b border-border/40">
+        <div className="flex items-center gap-2.5 font-black text-2xl">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-[0_0_20px_-4px_hsl(var(--primary)/0.6)]">
+            <TrendingUp className="h-6 w-6 text-primary-foreground" />
           </div>
-          <span className="tracking-tight">OpçõesX</span>
-          <Badge variant="outline" className="text-[9px] border-primary/30 text-primary ml-1">PRO</Badge>
+          <span className="tracking-tighter">OpçõesX</span>
         </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon" onClick={toggleTheme}>
-            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full">
+            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
-          <Button variant="outline" onClick={() => navigate('/auth')}>Entrar</Button>
+          <Button variant="outline" onClick={() => navigate('/auth')} className="font-bold">Login</Button>
+          <Button onClick={() => navigate('/auth')} className="font-bold shadow-lg shadow-primary/20">Começar Agora</Button>
         </div>
       </header>
 
-      {/* Hero */}
-      <main className="container relative">
-        {/* Background glow */}
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
-
-        <section className="relative max-w-3xl mx-auto text-center pt-20 pb-16 space-y-8 animate-fade-in">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm text-primary">
-            <LineChart className="h-3.5 w-3.5" />
-            Plataforma profissional de análise de opções B3
-          </div>
-
-          <h1 className="text-4xl sm:text-6xl font-bold leading-[1.1] tracking-tight">
-            Suas opções rendem mais que o{' '}
-            <span className="relative">
-              <span className="text-primary">CDI</span>
-              <span className="absolute -bottom-1 left-0 right-0 h-1 bg-primary/30 rounded-full" />
-            </span>
-            ?
+      {/* Hero Section */}
+      <section className="relative pt-20 pb-32 overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-primary/10 rounded-full blur-[160px] -z-10" />
+        
+        <div className="container text-center space-y-8">
+          <Badge variant="outline" className="py-1.5 px-4 border-primary/30 text-primary bg-primary/5 animate-fade-in">
+            <Sparkles className="h-3.5 w-3.5 mr-2" /> A FERRAMENTA DEFINITIVA PARA DERIVATIVOS
+          </Badge>
+          
+          <h1 className="text-5xl sm:text-8xl font-black tracking-tighter leading-[0.9] animate-fade-in">
+            PARE DE OPERAR <br />
+            <span className="text-primary">NO ESCURO.</span>
           </h1>
-
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            Cole um print da sua corretora ou monte manualmente. <strong className="text-foreground">Payoff, breakeven, comparativo CDI</strong> e sugestão da IA em segundos.
+          
+          <p className="text-xl sm:text-2xl text-muted-foreground max-w-2xl mx-auto font-medium leading-relaxed">
+            A única plataforma que utiliza <span className="text-foreground font-bold">IA e OCR</span> para validar se sua estratégia de opções realmente vence o CDI.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button size="lg" className="text-base h-12 px-8 shadow-[0_0_30px_-8px_hsl(var(--primary)/0.4)]" onClick={() => navigate('/auth')}>
-              Começar gratuitamente <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-            <Button size="lg" variant="outline" className="text-base h-12 px-8" onClick={() => navigate('/auth')}>
-              Já tenho conta
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+            <Button size="lg" className="h-16 px-10 text-xl font-black shadow-[0_20px_50px_-12px_hsl(var(--primary)/0.5)] hover:scale-105 transition-transform" onClick={() => navigate('/auth')}>
+              LIBERAR ACESSO GRÁTIS <ArrowRight className="ml-2 h-6 w-6" />
             </Button>
           </div>
 
-          {/* Social proof */}
-          <div className="flex items-center justify-center gap-6 pt-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-1.5">
-              <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
-              Calendário B3 atualizado
-            </div>
-            <span className="text-border">|</span>
-            <div>OCR para Bolsa de Valores e Derivativos</div>
-            <span className="text-border hidden sm:inline">|</span>
-            <div className="hidden sm:block">100% gratuito</div>
+          <div className="flex items-center justify-center gap-8 pt-12 opacity-60 grayscale hover:grayscale-0 transition-all">
+            <div className="flex items-center gap-2 font-bold"><Trophy className="h-5 w-5 text-warning" /> #1 EM OCR B3</div>
+            <div className="flex items-center gap-2 font-bold"><Shield className="h-5 w-5 text-success" /> 100% SEGURO</div>
+            <div className="flex items-center gap-2 font-bold"><Brain className="h-5 w-5 text-info" /> IA EXCLUSIVA</div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Features grid */}
-        <section className="relative grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto pb-20">
+      {/* Features Carousel Section */}
+      <section className="container py-24 space-y-16">
+        <div className="text-center space-y-4">
+          <h2 className="text-4xl sm:text-6xl font-black tracking-tighter">TECNOLOGIA <span className="text-primary">EXCLUSIVA.</span></h2>
+          <p className="text-lg text-muted-foreground max-w-xl mx-auto">O que você só encontra no OpçõesX.</p>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-8">
           {features.map((f, i) => (
-            <div
-              key={f.title}
-              className="group relative rounded-2xl border border-border/40 bg-card/50 backdrop-blur-sm p-6 space-y-3 transition-all duration-300 hover:border-primary/30 hover:shadow-[0_0_30px_-10px_hsl(var(--primary)/0.15)] hover:-translate-y-0.5"
-              style={{ animationDelay: `${i * 80}ms` }}
-            >
-              {f.badge && (
-                <Badge variant="outline" className="absolute top-4 right-4 text-[9px] border-primary/30 text-primary">
-                  {f.badge}
-                </Badge>
-              )}
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
-                <f.icon className="h-5 w-5" />
+            <Card key={f.title} className="group relative overflow-hidden border-2 border-border/40 bg-card/50 backdrop-blur-sm p-8 space-y-6 transition-all duration-500 hover:border-primary/40 hover:shadow-[0_0_60px_-12px_hsl(var(--primary)/0.2)] hover:-translate-y-2">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative space-y-4">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_0_20px_-5px_hsl(var(--primary))] group-hover:scale-110 transition-transform duration-500">
+                  <f.icon className="h-7 w-7" />
+                </div>
+                <h3 className="text-2xl font-black tracking-tight">{f.title}</h3>
+                <p className="text-sm text-muted-foreground font-medium leading-relaxed">{f.desc}</p>
+                <div className="pt-4 overflow-hidden rounded-xl border border-border/40 shadow-2xl">
+                  <img src={f.image} alt={f.title} className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-700" />
+                </div>
               </div>
-              <h3 className="font-semibold text-lg">{f.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
-            </div>
+            </Card>
           ))}
-        </section>
-      </main>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section className="container py-24 space-y-16">
+        <div className="text-center space-y-4">
+          <h2 className="text-4xl sm:text-6xl font-black tracking-tighter">ESCOLHA SEU <span className="text-primary">PLANO.</span></h2>
+          <p className="text-lg text-muted-foreground max-w-xl mx-auto">Comece grátis e evolua para o PRO quando estiver pronto.</p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          {/* Free Plan */}
+          <Card className="p-10 border-2 border-border/40 bg-card/50 backdrop-blur-sm space-y-8">
+            <div className="space-y-2">
+              <h3 className="text-2xl font-black tracking-tight">FREE</h3>
+              <p className="text-4xl font-black tracking-tighter">R$ 0<span className="text-sm text-muted-foreground">/mês</span></p>
+            </div>
+            <ul className="space-y-4">
+              <li className="flex items-center gap-3 text-sm font-bold"><CheckCircle2 className="h-5 w-5 text-success" /> 3 Simulações por mês</li>
+              <li className="flex items-center gap-3 text-sm font-bold"><CheckCircle2 className="h-5 w-5 text-success" /> Gráfico de Payoff Básico</li>
+              <li className="flex items-center gap-3 text-sm font-bold text-muted-foreground"><Lock className="h-5 w-5" /> OCR de Imagem</li>
+              <li className="flex items-center gap-3 text-sm font-bold text-muted-foreground"><Lock className="h-5 w-5" /> Sugestão de IA</li>
+            </ul>
+            <Button variant="outline" className="w-full h-12 font-black" onClick={() => navigate('/auth')}>COMEÇAR GRÁTIS</Button>
+          </Card>
+
+          {/* PRO Plan */}
+          <Card className="p-10 border-2 border-primary bg-gradient-to-br from-primary/10 via-card to-card space-y-8 relative overflow-hidden">
+            <div className="absolute top-4 right-4">
+              <Badge className="bg-primary text-primary-foreground font-black">MAIS POPULAR</Badge>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-2xl font-black tracking-tight text-primary">PRO</h3>
+              <p className="text-4xl font-black tracking-tighter">R$ 49,90<span className="text-sm text-muted-foreground">/mês</span></p>
+            </div>
+            <ul className="space-y-4">
+              <li className="flex items-center gap-3 text-sm font-bold"><CheckCircle2 className="h-5 w-5 text-primary" /> Simulações ILIMITADAS</li>
+              <li className="flex items-center gap-3 text-sm font-bold"><CheckCircle2 className="h-5 w-5 text-primary" /> OCR de Imagem Ilimitado</li>
+              <li className="flex items-center gap-3 text-sm font-bold"><CheckCircle2 className="h-5 w-5 text-primary" /> Sugestão de IA Ilimitada</li>
+              <li className="flex items-center gap-3 text-sm font-bold"><CheckCircle2 className="h-5 w-5 text-primary" /> Portfólio de Operações</li>
+              <li className="flex items-center gap-3 text-sm font-bold"><CheckCircle2 className="h-5 w-5 text-primary" /> Suporte Prioritário</li>
+            </ul>
+            <Button className="w-full h-12 font-black shadow-lg shadow-primary/30" onClick={() => navigate('/auth')}>ASSINAR AGORA</Button>
+          </Card>
+        </div>
+      </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/40 bg-muted/20 py-6">
-        <div className="container text-center">
+      <footer className="border-t border-border/40 bg-muted/20 py-12">
+        <div className="container text-center space-y-6">
+          <div className="flex items-center justify-center gap-2.5 font-black text-xl">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+              <TrendingUp className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <span className="tracking-tighter">OpçõesX</span>
+          </div>
           <p className="text-[10px] text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            AVISO LEGAL: Este aplicativo é uma ferramenta de simulação algorítmica baseada nas regras de calendário e letras de vencimento da B3 (A-L para Calls, M-X para Puts). Os dados apresentados não constituem recomendação de investimento, compra ou venda de ativos. O cálculo de CDI é uma projeção. Verifique os dados com sua corretora antes de operar.
+            AVISO LEGAL: Este aplicativo é uma ferramenta de simulação algorítmica baseada nas regras de calendário e letras de vencimento da B3. Os dados apresentados não constituem recomendação de investimento, compra ou venda de ativos. O cálculo de CDI é uma projeção. Verifique os dados com sua corretora antes de operar.
           </p>
+          <div className="flex justify-center gap-6 text-xs font-bold text-muted-foreground">
+            <a href="#" className="hover:text-primary">Termos de Uso</a>
+            <a href="#" className="hover:text-primary">Privacidade</a>
+            <a href="#" className="hover:text-primary">Contato</a>
+          </div>
         </div>
       </footer>
     </div>

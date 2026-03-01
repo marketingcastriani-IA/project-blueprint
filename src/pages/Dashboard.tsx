@@ -22,7 +22,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown } from 'lucide-react';
+import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, SectionDivider } from '@/components/ProfessionalLayout';
 import AIInsights from '@/components/AIInsights';
@@ -77,7 +77,6 @@ function PortfolioSummary({ userId }: { userId: string }) {
           strategyNetCost += costMultiplier * l.price * l.quantity;
         });
         
-        // Capital investido é apenas o desembolso (custo negativo)
         if (strategyNetCost < 0) {
           totalInvested += Math.abs(strategyNetCost);
         }
@@ -178,6 +177,13 @@ export default function Dashboard() {
   const updateLeg = useCallback((index: number, leg: Leg) => { setLegs(prev => prev.map((item, i) => (i === index ? leg : item))); }, []);
   
   const handleLegsFromImage = useCallback((extractedLegs: any[]) => { 
+    if (access.planType === 'free') {
+      toast.error('OCR de Imagem é exclusivo para o plano PRO', {
+        description: 'Faça o upgrade para automatizar suas análises.'
+      });
+      return;
+    }
+
     const sanitizedLegs: Leg[] = extractedLegs.map(l => ({
       side: (l.side === 'buy' || l.side === 'sell') ? l.side : 'buy',
       option_type: (l.option_type === 'call' || l.option_type === 'put' || l.option_type === 'stock') ? l.option_type : 'call',
@@ -189,7 +195,7 @@ export default function Dashboard() {
 
     setLegs(prev => [...prev, ...sanitizedLegs]); 
     setInputMode('manual');
-  }, []);
+  }, [access.planType]);
 
   if (authLoading || access.status === 'loading') return null;
   if (!user) return <Navigate to="/auth" replace />;
@@ -198,7 +204,15 @@ export default function Dashboard() {
     return <AccessBlocked status={access.status} />;
   }
 
+  const isLimitReached = access.planType === 'free' && access.simulationsCount >= 3;
+
   const getAISuggestion = async () => {
+    if (access.planType === 'free') {
+      toast.error('Sugestão de IA é exclusiva para o plano PRO', {
+        description: 'Faça o upgrade para receber análises profissionais.'
+      });
+      return;
+    }
     if (legs.length === 0) { toast.error('Adicione pelo menos uma perna.'); return; }
     setLoadingAI(true);
     try {
@@ -218,6 +232,12 @@ export default function Dashboard() {
   };
 
   const saveAnalysis = async () => {
+    if (isLimitReached) {
+      toast.error('Limite de simulações atingido!', {
+        description: 'Usuários Free podem realizar até 3 simulações. Faça o upgrade para PRO para acesso ilimitado.'
+      });
+      return;
+    }
     if (legs.length === 0) { toast.error('Adicione pelo menos uma perna.'); return; }
     setSaving(true);
     try {
@@ -236,6 +256,12 @@ export default function Dashboard() {
       const { error: lError } = await supabase.from('legs').insert(legsToInsert);
       if (lError) throw lError;
 
+      // Increment simulation count
+      await supabase
+        .from('user_access')
+        .update({ simulations_count: access.simulationsCount + 1 } as any)
+        .eq('user_id', user.id);
+
       toast.success('Análise salva com sucesso!');
       navigate(`/analysis/${analysis.id}`);
     } catch (err: any) {
@@ -249,33 +275,46 @@ export default function Dashboard() {
       <main className="container py-6 space-y-6 animate-fade-in">
         <PortfolioSummary userId={user.id} />
 
-        <ProfessionalHeader
-          title="Nova Análise"
-          subtitle="Monte sua estrutura de opções e analise os riscos em tempo real"
-          badge={
-            <div className="flex gap-2">
-              {metrics.strategyLabel && (
-                <Badge className="bg-primary/20 text-primary border-primary/30 text-xs font-semibold">{metrics.strategyLabel}</Badge>
-              )}
-              {metrics.isRiskFree && (
-                <Badge className="bg-success/20 text-success border-success/30 text-xs font-semibold">RISCO ZERO</Badge>
-              )}
-            </div>
-          }
-        />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <ProfessionalHeader
+            title="Nova Análise"
+            subtitle="Monte sua estrutura de opções e analise os riscos em tempo real"
+            badge={
+              <div className="flex gap-2">
+                {access.planType === 'pro' ? (
+                  <Badge className="bg-primary text-primary-foreground font-black gap-1">
+                    <Crown className="h-3 w-3" /> PRO
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="border-primary/30 text-primary font-bold">
+                    FREE ({access.simulationsCount}/3)
+                  </Badge>
+                )}
+              </div>
+            }
+          />
+          {isLimitReached && (
+            <Button onClick={() => navigate('/settings')} className="bg-primary animate-pulse font-black">
+              UPGRADE PARA PRO
+            </Button>
+          )}
+        </div>
         
         <div className="flex gap-3 flex-wrap">
           <Button 
             onClick={getAISuggestion} 
             disabled={loadingAI || legs.length === 0} 
-            className="text-base h-11 px-6 shadow-[0_0_30px_-8px_hsl(var(--primary)/0.4)]"
+            className={cn(
+              "text-base h-11 px-6 shadow-[0_0_30px_-8px_hsl(var(--primary)/0.4)]",
+              access.planType === 'free' && "opacity-50"
+            )}
           >
             {loadingAI ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
-            Sugestão IA
+            Sugestão IA {access.planType === 'free' && <Lock className="ml-2 h-3 w-3" />}
           </Button>
           <Button 
             onClick={saveAnalysis} 
-            disabled={saving || legs.length === 0}
+            disabled={saving || legs.length === 0 || isLimitReached}
             variant="outline"
             className="text-base h-11 px-6"
           >
@@ -308,7 +347,10 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <button 
               onClick={() => setInputMode('image')} 
-              className="group relative overflow-hidden rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card p-8 text-left transition-all duration-500 hover:border-primary hover:shadow-[0_0_60px_-12px_hsl(var(--primary)/0.5)] hover:-translate-y-1.5"
+              className={cn(
+                "group relative overflow-hidden rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card p-8 text-left transition-all duration-500 hover:border-primary hover:shadow-[0_0_60px_-12px_hsl(var(--primary)/0.5)] hover:-translate-y-1.5",
+                access.planType === 'free' && "opacity-75"
+              )}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative space-y-4">
@@ -318,7 +360,9 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <Badge className="bg-primary text-primary-foreground text-[10px] font-black mb-1 px-2">IA POWERED</Badge>
-                    <h3 className="text-2xl font-black tracking-tight">Upload de Imagem</h3>
+                    <h3 className="text-2xl font-black tracking-tight flex items-center gap-2">
+                      Upload de Imagem {access.planType === 'free' && <Lock className="h-5 w-5" />}
+                    </h3>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground font-medium leading-relaxed">
