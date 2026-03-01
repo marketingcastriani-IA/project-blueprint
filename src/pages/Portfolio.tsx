@@ -7,7 +7,10 @@ import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, TrendingUp, TrendingDown, Calendar, Edit2, RotateCcw, Trash2, Briefcase, Wallet, ArrowRightLeft, DollarSign } from 'lucide-react';
+import { 
+  Loader2, TrendingUp, TrendingDown, Calendar, Edit2, 
+  RotateCcw, Trash2, Briefcase, Wallet, Target, DollarSign 
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
 
@@ -82,9 +85,6 @@ export default function Portfolio() {
 
   const getMontageCost = (analysisId: string): number => {
     const legs = legsMap[analysisId] || [];
-    // Custo de montagem: Compra (-) e Venda (+)
-    // Se o resultado for negativo, houve um desembolso (Débito)
-    // Se o resultado for positivo, houve um recebimento (Crédito)
     const net = legs.reduce((acc, leg) => {
       const multiplier = leg.side === 'buy' ? -1 : 1;
       return acc + multiplier * leg.price * leg.quantity;
@@ -102,7 +102,6 @@ export default function Portfolio() {
     const montageCosts = withPnL.map(a => getMontageCost(a.id));
     
     const totalPL = pnls.reduce((s, p) => s + p, 0);
-    // Capital alocado é a soma dos desembolsos (custos negativos)
     const totalInvested = montageCosts.reduce((s, c) => s + (c < 0 ? Math.abs(c) : 0), 0);
     
     const wins = pnls.filter(p => p > 0).length;
