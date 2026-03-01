@@ -63,11 +63,14 @@ export default function AdminPanel() {
       const profileMap: Record<string, any> = {};
       profiles?.forEach((p: any) => { profileMap[p.user_id] = p; });
 
-      const rows: UserRow[] = (accessData || []).map((a: any) => ({
-        ...a,
-        display_name: profileMap[a.user_id]?.display_name || 'Usuário sem nome',
-        email: profileMap[a.user_id]?.email || 'Email não disponível',
-      }));
+      const rows: UserRow[] = (accessData || []).map((a: any) => {
+        const profile = profileMap[a.user_id];
+        return {
+          ...a,
+          display_name: profile?.display_name || profile?.email || 'Usuário sem nome',
+          email: profile?.email || 'E-mail não disponível',
+        };
+      });
 
       setUsers(rows);
     } catch (err: any) {
