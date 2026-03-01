@@ -24,7 +24,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2, Info } from 'lucide-react';
+import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2, Info, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, SectionDivider } from '@/components/ProfessionalLayout';
 import AIInsights from '@/components/AIInsights';
@@ -185,6 +185,16 @@ export default function Dashboard() {
   
   const isLimitReached = access.planType === 'free' && access.simulationsCount >= 3;
 
+  const incrementSimulations = async () => {
+    if (!user) return;
+    const { error } = await supabase
+      .from('user_access')
+      .update({ simulations_count: access.simulationsCount + 1 } as any)
+      .eq('user_id', user.id);
+    
+    if (error) console.error("Erro ao incrementar simulações:", error);
+  };
+
   const handleLegsFromImage = useCallback(async (extractedLegs: any[]) => { 
     if (isLimitReached) {
       toast.error('Limite de simulações atingido!', {
@@ -204,15 +214,8 @@ export default function Dashboard() {
 
     setLegs(prev => [...prev, ...sanitizedLegs]); 
     setInputMode('manual');
-
-    // Contar como simulação consumida no upload
-    if (user) {
-      await supabase
-        .from('user_access')
-        .update({ simulations_count: access.simulationsCount + 1 } as any)
-        .eq('user_id', user.id);
-      toast.info("Simulação contabilizada via OCR.");
-    }
+    await incrementSimulations();
+    toast.info("Simulação contabilizada via OCR.");
   }, [isLimitReached, user, access.simulationsCount]);
 
   if (authLoading || access.status === 'loading') return null;
@@ -241,6 +244,7 @@ export default function Dashboard() {
       });
       if (error) throw error;
       setAiAnalysis(data);
+      await incrementSimulations();
       toast.success('Análise de IA concluída!');
     } catch (err: any) {
       toast.error('Erro ao obter sugestão: ' + (err.message || 'Tente novamente'));
@@ -272,12 +276,6 @@ export default function Dashboard() {
       const { error: lError } = await supabase.from('legs').insert(legsToInsert);
       if (lError) throw lError;
 
-      // Increment simulation count on manual save
-      await supabase
-        .from('user_access')
-        .update({ simulations_count: access.simulationsCount + 1 } as any)
-        .eq('user_id', user.id);
-
       toast.success('Análise salva com sucesso!');
       navigate(`/analysis/${analysis.id}`);
     } catch (err: any) {
@@ -293,23 +291,29 @@ export default function Dashboard() {
 
         {/* Simulation Counter Card for Free Users */}
         {access.planType === 'free' && (
-          <Card className="border-warning/30 bg-warning/5">
+          <Card className={cn("border-2 transition-all", isLimitReached ? "border-destructive bg-destructive/5" : "border-warning/30 bg-warning/5")}>
             <CardContent className="py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-warning/10 text-warning">
-                  <BarChart3 className="h-5 w-5" />
+                <div className={cn("p-2 rounded-lg", isLimitReached ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning")}>
+                  {isLimitReached ? <Lock className="h-5 w-5" /> : <BarChart3 className="h-5 w-5" />}
                 </div>
                 <div>
-                  <p className="text-sm font-black uppercase tracking-tight">Simulações Utilizadas</p>
-                  <p className="text-xs text-muted-foreground font-medium">Você tem direito a 3 simulações no plano gratuito.</p>
+                  <p className="text-sm font-black uppercase tracking-tight">
+                    {isLimitReached ? "Limite de Simulações Atingido" : "Simulações Utilizadas"}
+                  </p>
+                  <p className="text-xs text-muted-foreground font-medium">
+                    {isLimitReached 
+                      ? "Você atingiu o limite de 3 simulações do plano gratuito." 
+                      : "Você tem direito a 3 simulações no plano gratuito."}
+                  </p>
                 </div>
               </div>
               <div className="w-full sm:w-48 space-y-1.5">
                 <div className="flex justify-between text-[10px] font-black uppercase">
                   <span>{access.simulationsCount} de 3</span>
-                  <span>{Math.round((access.simulationsCount / 3) * 100)}%</span>
+                  <span>{Math.min(100, Math.round((access.simulationsCount / 3) * 100))}%</span>
                 </div>
-                <Progress value={(access.simulationsCount / 3) * 100} className="h-2 bg-warning/20" />
+                <Progress value={(access.simulationsCount / 3) * 100} className={cn("h-2", isLimitReached ? "bg-destructive/20" : "bg-warning/20")} />
               </div>
             </CardContent>
           </Card>
@@ -326,7 +330,7 @@ export default function Dashboard() {
                     <Crown className="h-3 w-3" /> PRO
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="border-primary/30 text-primary font-bold">
+                  <Badge variant="outline" className={cn("font-bold", isLimitReached ? "border-destructive text-destructive" : "border-primary/30 text-primary")}>
                     FREE ({access.simulationsCount}/3)
                   </Badge>
                 )}
@@ -334,168 +338,183 @@ export default function Dashboard() {
             }
           />
           {isLimitReached && (
-            <Button onClick={() => navigate('/settings')} className="bg-primary animate-pulse font-black shadow-lg shadow-primary/30">
-              <CreditCard className="mr-2 h-4 w-4" /> UPGRADE PARA PRO
+            <Button onClick={() => navigate('/settings')} className="bg-primary animate-pulse font-black shadow-lg shadow-primary/30 h-12 px-6">
+              <CreditCard className="mr-2 h-5 w-5" /> UPGRADE PARA PRO AGORA
             </Button>
           )}
         </div>
         
-        <div className="flex gap-3 flex-wrap items-center">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                onClick={getAISuggestion} 
-                disabled={loadingAI || legs.length === 0 || isLimitReached} 
-                className={cn(
-                  "transition-all duration-500",
-                  legs.length > 0 && !loadingAI && !isLimitReached
-                    ? "bg-success hover:bg-success/90 text-success-foreground scale-110 animate-pulse h-14 px-8 text-lg font-black shadow-[0_0_40px_-8px_hsl(var(--success)/0.6)]"
-                    : "text-base h-11 px-6 shadow-[0_0_30px_-8px_hsl(var(--primary)/0.4)]",
-                  isLimitReached && "opacity-50"
-                )}
-              >
-                {loadingAI ? (
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                ) : legs.length > 0 ? (
-                  <MousePointer2 className="mr-2 h-6 w-6" />
-                ) : (
-                  <Sparkles className="mr-2 h-5 w-5" />
-                )}
-                Sugestão IA
-                {isLimitReached && <Lock className="ml-2 h-3 w-3" />}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-xs p-4 bg-card border-2 border-primary/30 shadow-xl">
-              <div className="space-y-2">
-                <p className="text-sm font-black text-primary flex items-center gap-2">
-                  <Sparkles className="h-4 w-4" /> O QUE ESTE BOTÃO FAZ?
-                </p>
-                <p className="text-xs font-medium leading-relaxed">
-                  Nossa IA analisa sua estrutura, calcula a eficiência vs CDI e fornece um relatório detalhado de riscos, cenários de mercado e um veredito profissional.
-                </p>
-                <p className="text-[10px] font-black text-success uppercase tracking-widest">
-                  Aperte aqui e descubra os segredos da sua estrutura!
-                </p>
+        {isLimitReached ? (
+          <Card className="border-2 border-destructive/30 bg-destructive/5 p-8 text-center space-y-6">
+            <div className="flex justify-center">
+              <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center">
+                <AlertTriangle className="h-8 w-8 text-destructive" />
               </div>
-            </TooltipContent>
-          </Tooltip>
-
-          <Button 
-            onClick={saveAnalysis} 
-            disabled={saving || legs.length === 0 || isLimitReached}
-            variant="outline"
-            className="text-base h-11 px-6"
-          >
-            {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
-            Salvar Análise
-          </Button>
-        </div>
-
-        <div className="space-y-2">
-          <Label className="flex items-center gap-2">
-            Nome da análise
-            {legs.length > 0 && !hasManuallyNamed && (
-              <Badge variant="outline" className="text-[9px] border-primary/30 text-primary animate-pulse">
-                <Wand2 className="h-2 w-2 mr-1" /> Sugestão IA
-              </Badge>
-            )}
-          </Label>
-          <Input 
-            value={analysisName} 
-            onChange={e => {
-              setAnalysisName(e.target.value);
-              setHasManuallyNamed(true);
-            }} 
-            placeholder="Ex: Trava de alta PETR4" 
-            className="max-w-md font-bold" 
-          />
-        </div>
-
-        {inputMode === null ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <button 
-              onClick={() => setInputMode('image')} 
-              disabled={isLimitReached}
-              className={cn(
-                "group relative overflow-hidden rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card p-8 text-left transition-all duration-500 hover:border-primary hover:shadow-[0_0_60px_-12px_hsl(var(--primary)/0.5)] hover:-translate-y-1.5",
-                isLimitReached && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_0_25px_-5px_hsl(var(--primary))] group-hover:scale-110 transition-transform duration-500">
-                    <Camera className="h-8 w-8" />
-                  </div>
-                  <div className="space-y-1">
-                    <Badge className="bg-primary text-primary-foreground text-[10px] font-black px-2">IA POWERED</Badge>
-                    <h3 className="text-2xl font-black tracking-tight flex items-center gap-2">
-                      Upload de Imagem {isLimitReached && <Lock className="h-5 w-5" />}
-                    </h3>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                  Tire um print da sua corretora e nossa IA avançada extrairá automaticamente todas as pernas da operação em segundos.
-                </p>
-              </div>
-            </button>
-
-            <button 
-              onClick={() => setInputMode('manual')} 
-              className="group relative overflow-hidden rounded-2xl border-2 border-dashed border-muted-foreground/30 bg-card p-8 text-left transition-all duration-300 hover:border-muted-foreground/60 hover:bg-muted/30 hover:-translate-y-1"
-            >
-              <div className="relative space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground group-hover:bg-muted-foreground group-hover:text-background transition-colors">
-                    <Keyboard className="h-8 w-8" />
-                  </div>
-                  <div className="space-y-1">
-                    <Badge variant="outline" className="text-[10px] font-bold px-2">PRECISO</Badge>
-                    <h3 className="text-2xl font-black tracking-tight">Entrada Manual</h3>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                  Insira manualmente cada perna da sua operação para ter controle total sobre os strikes e prêmios.
-                </p>
-              </div>
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <button onClick={() => setInputMode('manual')} className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all', inputMode === 'manual' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}><Keyboard className="h-4 w-4" /> Manual</button>
-              <button onClick={() => setInputMode('image')} disabled={isLimitReached} className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all', inputMode === 'image' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50', isLimitReached && "opacity-50")}><Camera className="h-4 w-4" /> Upload OCR</button>
             </div>
-            {inputMode === 'manual' ? <Card className="border-border/40 bg-card/50 backdrop-blur-sm"><CardContent className="pt-6"><LegForm onAdd={addLeg} /></CardContent></Card> : <ImageUpload onLegsExtracted={handleLegsFromImage} onImageChange={() => setLegs([])} />}
-          </div>
-        )}
-
-        <LegsTable legs={legs} onRemove={removeLeg} onUpdate={updateLeg} />
-
-        {legs.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-2xl font-black tracking-tight">Acesso Limitado</h3>
+              <p className="text-muted-foreground max-w-md mx-auto font-medium">
+                Você já realizou as 3 simulações gratuitas permitidas. Para continuar analisando estruturas com IA e OCR, faça o upgrade para o plano PRO.
+              </p>
+            </div>
+            <Button onClick={() => navigate('/settings')} size="lg" className="font-black px-10">
+              Ver Planos e Preços
+            </Button>
+          </Card>
+        ) : (
           <>
-            <SectionDivider title="Análise de IA" />
-            <AIInsights analysis={aiAnalysis} loading={loadingAI} />
-            
-            <SectionDivider title="Métricas e Payoff" />
-            <MetricsCards metrics={metrics} cdiReturn={cdiReturn} daysToExpiry={daysToExpiry} investedCapital={investedCapital} />
-            <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
-              <CardHeader><CardTitle className="text-base">Gráfico de Payoff</CardTitle></CardHeader>
-              <CardContent>
-                <PayoffChart 
-                  data={payoffData} 
-                  breakevens={metrics.realBreakeven ? (Array.isArray(metrics.realBreakeven) ? metrics.realBreakeven : [metrics.realBreakeven]) : metrics.breakevens} 
-                  cdiRate={cdiRate} 
-                  daysToExpiry={daysToExpiry} 
-                  netCost={metrics.netCost} 
-                  montageTotal={metrics.montageTotal}
-                  maxGain={metrics.maxGain}
-                  maxLoss={metrics.maxLoss}
-                  entrySpotPrice={entrySpotPrice}
-                />
-              </CardContent>
-            </Card>
-            <CDIComparison metrics={metrics} cdiRate={cdiRate} setCdiRate={setCdiRate} daysToExpiry={daysToExpiry} setDaysToExpiry={setDaysToExpiry} />
+            <div className="flex gap-3 flex-wrap items-center">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    onClick={getAISuggestion} 
+                    disabled={loadingAI || legs.length === 0} 
+                    className={cn(
+                      "transition-all duration-500",
+                      legs.length > 0 && !loadingAI
+                        ? "bg-success hover:bg-success/90 text-success-foreground scale-110 animate-pulse h-14 px-8 text-lg font-black shadow-[0_0_40px_-8px_hsl(var(--success)/0.6)]"
+                        : "text-base h-11 px-6 shadow-[0_0_30px_-8px_hsl(var(--primary)/0.4)]"
+                    )}
+                  >
+                    {loadingAI ? (
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    ) : legs.length > 0 ? (
+                      <MousePointer2 className="mr-2 h-6 w-6" />
+                    ) : (
+                      <Sparkles className="mr-2 h-5 w-5" />
+                    )}
+                    Sugestão IA
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs p-4 bg-card border-2 border-primary/30 shadow-xl">
+                  <div className="space-y-2">
+                    <p className="text-sm font-black text-primary flex items-center gap-2">
+                      <Sparkles className="h-4 w-4" /> O QUE ESTE BOTÃO FAZ?
+                    </p>
+                    <p className="text-xs font-medium leading-relaxed">
+                      Nossa IA analisa sua estrutura, calcula a eficiência vs CDI e fornece um relatório detalhado de riscos, cenários de mercado e um veredito profissional.
+                    </p>
+                    <p className="text-[10px] font-black text-success uppercase tracking-widest">
+                      Aperte aqui e descubra os segredos da sua estrutura!
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+
+              <Button 
+                onClick={saveAnalysis} 
+                disabled={saving || legs.length === 0}
+                variant="outline"
+                className="text-base h-11 px-6"
+              >
+                {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
+                Salvar Análise
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                Nome da análise
+                {legs.length > 0 && !hasManuallyNamed && (
+                  <Badge variant="outline" className="text-[9px] border-primary/30 text-primary animate-pulse">
+                    <Wand2 className="h-2 w-2 mr-1" /> Sugestão IA
+                  </Badge>
+                )}
+              </Label>
+              <Input 
+                value={analysisName} 
+                onChange={e => {
+                  setAnalysisName(e.target.value);
+                  setHasManuallyNamed(true);
+                }} 
+                placeholder="Ex: Trava de alta PETR4" 
+                className="max-w-md font-bold" 
+              />
+            </div>
+
+            {inputMode === null ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <button 
+                  onClick={() => setInputMode('image')} 
+                  className="group relative overflow-hidden rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card p-8 text-left transition-all duration-500 hover:border-primary hover:shadow-[0_0_60px_-12px_hsl(var(--primary)/0.5)] hover:-translate-y-1.5"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_0_25px_-5px_hsl(var(--primary))] group-hover:scale-110 transition-transform duration-500">
+                        <Camera className="h-8 w-8" />
+                      </div>
+                      <div className="space-y-1">
+                        <Badge className="bg-primary text-primary-foreground text-[10px] font-black px-2">IA POWERED</Badge>
+                        <h3 className="text-2xl font-black tracking-tight flex items-center gap-2">
+                          Upload de Imagem
+                        </h3>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                      Tire um print da sua corretora e nossa IA avançada extrairá automaticamente todas as pernas da operação em segundos.
+                    </p>
+                  </div>
+                </button>
+
+                <button 
+                  onClick={() => setInputMode('manual')} 
+                  className="group relative overflow-hidden rounded-2xl border-2 border-dashed border-muted-foreground/30 bg-card p-8 text-left transition-all duration-300 hover:border-muted-foreground/60 hover:bg-muted/30 hover:-translate-y-1"
+                >
+                  <div className="relative space-y-4">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground group-hover:bg-muted-foreground group-hover:text-background transition-colors">
+                        <Keyboard className="h-8 w-8" />
+                      </div>
+                      <div className="space-y-1">
+                        <Badge variant="outline" className="text-[10px] font-bold px-2">PRECISO</Badge>
+                        <h3 className="text-2xl font-black tracking-tight">Entrada Manual</h3>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                      Insira manualmente cada perna da sua operação para ter controle total sobre os strikes e prêmios.
+                    </p>
+                  </div>
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setInputMode('manual')} className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all', inputMode === 'manual' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}><Keyboard className="h-4 w-4" /> Manual</button>
+                  <button onClick={() => setInputMode('image')} className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all', inputMode === 'image' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}><Camera className="h-4 w-4" /> Upload OCR</button>
+                </div>
+                {inputMode === 'manual' ? <Card className="border-border/40 bg-card/50 backdrop-blur-sm"><CardContent className="pt-6"><LegForm onAdd={addLeg} /></CardContent></Card> : <ImageUpload onLegsExtracted={handleLegsFromImage} onImageChange={() => setLegs([])} />}
+              </div>
+            )}
+
+            <LegsTable legs={legs} onRemove={removeLeg} onUpdate={updateLeg} />
+
+            {legs.length > 0 && (
+              <>
+                <SectionDivider title="Análise de IA" />
+                <AIInsights analysis={aiAnalysis} loading={loadingAI} />
+                
+                <SectionDivider title="Métricas e Payoff" />
+                <MetricsCards metrics={metrics} cdiReturn={cdiReturn} daysToExpiry={daysToExpiry} investedCapital={investedCapital} />
+                <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
+                  <CardHeader><CardTitle className="text-base">Gráfico de Payoff</CardTitle></CardHeader>
+                  <CardContent>
+                    <PayoffChart 
+                      data={payoffData} 
+                      breakevens={metrics.realBreakeven ? (Array.isArray(metrics.realBreakeven) ? metrics.realBreakeven : [metrics.realBreakeven]) : metrics.breakevens} 
+                      cdiRate={cdiRate} 
+                      daysToExpiry={daysToExpiry} 
+                      netCost={metrics.netCost} 
+                      montageTotal={metrics.montageTotal}
+                      maxGain={metrics.maxGain}
+                      maxLoss={metrics.maxLoss}
+                      entrySpotPrice={entrySpotPrice}
+                    />
+                  </CardContent>
+                </Card>
+                <CDIComparison metrics={metrics} cdiRate={cdiRate} setCdiRate={setCdiRate} daysToExpiry={daysToExpiry} setDaysToExpiry={setDaysToExpiry} />
+              </>
+            )}
           </>
         )}
       </main>
