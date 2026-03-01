@@ -30,7 +30,7 @@ serve(async (req) => {
       })
     }
 
-    console.log("[analyze-options-image] Enviando imagem para análise (Gemini 2.5 Flash)...")
+    console.log("[analyze-options-image] Enviando imagem para análise (gemini-3-flash)...")
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -39,7 +39,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3-flash-preview",
         messages: [
           { 
             role: "system", 
@@ -48,12 +48,11 @@ serve(async (req) => {
           {
             role: "user",
             content: [
-              { type: "text", text: "Extraia os dados desta imagem de corretora/home broker em formato JSON." },
+              { type: "text", text: "Extraia os dados desta imagem de corretora/home broker. Retorne somente JSON." },
               { type: "image_url", image_url: { url: imageDataUrl } },
             ],
           },
         ],
-        response_format: { type: "json_object" }
       }),
     })
 
