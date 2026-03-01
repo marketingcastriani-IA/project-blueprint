@@ -6,38 +6,47 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
-    --foreground: 220 20% 10%;
+    /* Oplab Light Theme Palette */
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 10%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 10%;
-    --primary: 152 80% 45%;
+    --popover-foreground: 222 47% 11%;
+    
+    /* Primary: Oplab Cyan */
+    --primary: 195 100% 45%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 92%;
-    --secondary-foreground: 220 20% 10%;
-    --muted: 220 14% 95%;
-    --muted-foreground: 220 10% 45%;
-    --accent: 270 80% 55%;
+    
+    --secondary: 210 20% 94%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 195 100% 45%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 72% 55%;
-    --destructive-foreground: 0 0% 100%;
-    --success: 152 80% 45%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    
+    /* Success: Oplab Chart Green */
+    --success: 160 84% 39%;
     --success-foreground: 0 0% 100%;
+    
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
-    --info: 210 100% 52%;
+    --info: 195 100% 45%;
     --info-foreground: 0 0% 100%;
     --highlight: 48 96% 53%;
     --highlight-foreground: 0 0% 10%;
-    --border: 220 13% 90%;
-    --input: 220 13% 90%;
-    --ring: 152 80% 45%;
-    --radius: 1rem;
+    
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 195 100% 45%;
+    --radius: 0.75rem;
     
     /* Chart Colors */
-    --chart-profit: 152 80% 45%;
-    --chart-loss: 0 72% 55%;
+    --chart-profit: 160 84% 39%;
+    --chart-loss: 0 84% 60%;
   }
 
   .dark {
@@ -47,25 +56,25 @@
     --card-foreground: 210 40% 98%;
     --popover: 222 47% 6%;
     --popover-foreground: 210 40% 98%;
-    --primary: 152 100% 50%;
+    --primary: 195 100% 50%;
     --primary-foreground: 222 47% 4%;
     --secondary: 217 32% 12%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217 32% 12%;
     --muted-foreground: 215 20% 65%;
-    --accent: 262 83% 58%;
+    --accent: 195 100% 50%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
-    --success: 152 100% 50%;
+    --success: 160 100% 45%;
     --success-foreground: 222 47% 4%;
     --warning: 45 100% 50%;
     --warning-foreground: 222 47% 4%;
-    --info: 210 100% 60%;
+    --info: 195 100% 60%;
     --info-foreground: 210 40% 98%;
     --border: 217 32% 15%;
     --input: 217 32% 15%;
-    --ring: 152 100% 50%;
+    --ring: 195 100% 50%;
   }
 }
 
@@ -92,7 +101,7 @@
   }
   
   .pro-card-hover {
-    @apply hover:shadow-[0_0_40px_-12px_rgba(0,0,0,0.3)] hover:-translate-y-1;
+    @apply hover:shadow-[0_0_40px_-12px_rgba(0,0,0,0.1)] hover:-translate-y-1;
   }
 
   .text-gradient-primary {
