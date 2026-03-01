@@ -45,6 +45,14 @@ export default function Dashboard() {
   const metrics = useMemo(() => calculateMetrics(legs), [legs]);
   const payoffData = useMemo(() => generatePayoffCurve(legs, daysToExpiry, cdiRate), [legs, daysToExpiry, cdiRate]);
 
+  // Sugestão automática de nome baseada na estratégia detectada
+  useEffect(() => {
+    if (metrics.strategyLabel && legs.length > 0 && !analysisName) {
+      const ticker = legs[0].asset;
+      setAnalysisName(`${metrics.strategyLabel} ${ticker}`);
+    }
+  }, [metrics.strategyLabel, legs, analysisName]);
+
   const inferredExpiry = useMemo(() => {
     const leg = legs.find(l => l.option_type !== 'stock');
     return leg ? getExpiryFromTicker(leg.asset) : null;
@@ -183,22 +191,22 @@ export default function Dashboard() {
 
         {inputMode === null ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button onClick={() => setInputMode('image')} className="group relative overflow-hidden rounded-2xl border-2 border-dashed border-primary/30 bg-gradient-to-br from-primary/5 via-card to-card p-8 text-left transition-all duration-300 hover:border-primary/60 hover:shadow-[0_0_50px_-12px_hsl(var(--primary)/0.3)] hover:-translate-y-1">
+            <button onClick={() => setInputMode('image')} className="group relative overflow-hidden rounded-2xl border-2 border-info/40 bg-gradient-to-br from-info/10 via-card to-card p-8 text-left transition-all duration-300 hover:border-info/60 hover:shadow-[0_0_50px_-12px_hsl(var(--info)/0.4)] hover:-translate-y-1">
               <div className="relative space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Camera className="h-7 w-7" /></div>
-                  <div><Badge variant="outline" className="text-[9px] border-primary/40 text-primary mb-1">IA + OCR</Badge><h3 className="text-xl font-bold">Upload de Imagem</h3></div>
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-info/20 text-info shadow-[0_0_20px_-5px_hsl(var(--info)/0.5)]"><Camera className="h-7 w-7" /></div>
+                  <div><Badge variant="outline" className="text-[9px] border-info/40 text-info mb-1">IA + OCR</Badge><h3 className="text-xl font-bold">Upload de Imagem</h3></div>
                 </div>
-                <p className="text-sm text-muted-foreground">Tire um print da sua corretora e a IA extrai as pernas.</p>
+                <p className="text-sm text-muted-foreground">Tire um print da sua corretora e a IA extrai as pernas automaticamente.</p>
               </div>
             </button>
-            <button onClick={() => setInputMode('manual')} className="group relative overflow-hidden rounded-2xl border-2 border-dashed border-accent/40 bg-gradient-to-br from-accent/[0.08] via-card to-card p-8 text-left transition-all duration-300 hover:border-accent/60 hover:shadow-[0_0_50px_-12px_hsl(var(--accent)/0.3)] hover:-translate-y-1">
+            <button onClick={() => setInputMode('manual')} className="group relative overflow-hidden rounded-2xl border-2 border-dashed border-muted-foreground/20 bg-card p-8 text-left transition-all duration-300 hover:border-primary/40 hover:shadow-[0_0_50px_-12px_hsl(var(--primary)/0.2)] hover:-translate-y-1">
               <div className="relative space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/20 text-accent"><Keyboard className="h-7 w-7" /></div>
-                  <div><Badge variant="outline" className="text-[9px] border-accent/40 text-accent mb-1">PRECISO</Badge><h3 className="text-xl font-bold">Entrada Manual</h3></div>
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-muted-foreground"><Keyboard className="h-7 w-7" /></div>
+                  <div><Badge variant="outline" className="text-[9px] border-muted-foreground/40 text-muted-foreground mb-1">PRECISO</Badge><h3 className="text-xl font-bold">Entrada Manual</h3></div>
                 </div>
-                <p className="text-sm text-muted-foreground">Insira manualmente cada perna da operação.</p>
+                <p className="text-sm text-muted-foreground">Insira manualmente cada perna da operação para maior controle.</p>
               </div>
             </button>
           </div>
@@ -206,7 +214,7 @@ export default function Dashboard() {
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <button onClick={() => setInputMode('manual')} className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all', inputMode === 'manual' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}><Keyboard className="h-4 w-4" /> Manual</button>
-              <button onClick={() => setInputMode('image')} className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all', inputMode === 'image' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}><Camera className="h-4 w-4" /> Upload OCR</button>
+              <button onClick={() => setInputMode('image')} className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all', inputMode === 'image' ? 'bg-info/10 text-info' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}><Camera className="h-4 w-4" /> Upload OCR</button>
             </div>
             {inputMode === 'manual' ? <Card className="border-border/40 bg-card/50 backdrop-blur-sm"><CardContent className="pt-6"><LegForm onAdd={addLeg} /></CardContent></Card> : <ImageUpload onLegsExtracted={handleLegsFromImage} onImageChange={() => setLegs([])} />}
           </div>

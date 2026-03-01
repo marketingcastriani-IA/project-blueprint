@@ -7,7 +7,7 @@ import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, TrendingUp, TrendingDown, Calendar, Edit2, RotateCcw, Trash2, Briefcase, Target, Percent } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, Calendar, Edit2, RotateCcw, Trash2, Briefcase, Target, Percent, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
 
@@ -80,6 +80,15 @@ export default function Portfolio() {
     }, 0);
   };
 
+  const getInvested = (analysisId: string): number => {
+    const legs = legsMap[analysisId] || [];
+    // Cálculo simplificado do capital investido (soma das pernas compradas)
+    return legs.reduce((total, leg) => {
+      if (leg.side === 'buy') return total + (leg.price * leg.quantity);
+      return total;
+    }, 0);
+  };
+
   const hasPnLData = (analysisId: string): boolean => {
     return (legsMap[analysisId] || []).some(l => l.current_price != null);
   };
@@ -88,10 +97,14 @@ export default function Portfolio() {
     const withPnL = analyses.filter(a => hasPnLData(a.id));
     const pnls = withPnL.map(a => getPnL(a.id));
     const totalPL = pnls.reduce((s, p) => s + p, 0);
+    const totalInvested = analyses.reduce((s, a) => s + getInvested(a.id), 0);
+    const totalROI = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
+    
     const wins = pnls.filter(p => p > 0).length;
     const losses = pnls.filter(p => p < 0).length;
     const winRate = pnls.length > 0 ? ((wins / pnls.length) * 100).toFixed(1) : '0';
-    return { totalPL, wins, losses, winRate, total: analyses.length };
+    
+    return { totalPL, totalInvested, totalROI, wins, losses, winRate, total: analyses.length };
   }, [analyses, legsMap]);
 
   const handleReopen = async (e: React.MouseEvent, id: string) => {
@@ -156,6 +169,36 @@ export default function Portfolio() {
           <ProfessionalCard>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Capital Investido</span>
+                <div className="p-2 rounded-lg bg-info/10 text-info">
+                  <DollarSign className="h-4 w-4" />
+                </div>
+              </div>
+              <p className="text-3xl font-black tracking-tighter text-foreground">
+                R$ {stats.totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </p>
+              <p className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-tight">Total desembolsado</p>
+            </CardContent>
+          </ProfessionalCard>
+
+          <ProfessionalCard highlight={stats.totalROI >= 0}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">ROI Total</span>
+                <div className={cn('p-2 rounded-lg', stats.totalROI >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive')}>
+                  <Percent className="h-4 w-4" />
+                </div>
+              </div>
+              <p className={cn('text-3xl font-black tracking-tighter', stats.totalROI >= 0 ? 'text-success' : 'text-destructive')}>
+                {stats.totalROI.toFixed(2)}%
+              </p>
+              <p className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-tight">Retorno sobre capital</p>
+            </CardContent>
+          </ProfessionalCard>
+
+          <ProfessionalCard>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
                 <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Taxa de Acerto</span>
                 <div className="p-2 rounded-lg bg-primary/10 text-primary">
                   <Target className="h-4 w-4" />
@@ -169,36 +212,6 @@ export default function Portfolio() {
                 <span className="text-muted-foreground">/</span>
                 <span className="text-[10px] font-bold text-destructive uppercase">{stats.losses} Perdas</span>
               </div>
-            </CardContent>
-          </ProfessionalCard>
-
-          <ProfessionalCard>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Ganhos</span>
-                <div className="p-2 rounded-lg bg-success/10 text-success">
-                  <TrendingUp className="h-4 w-4" />
-                </div>
-              </div>
-              <p className="text-3xl font-black tracking-tighter text-success">
-                {stats.wins}
-              </p>
-              <p className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-tight">Operações lucrativas</p>
-            </CardContent>
-          </ProfessionalCard>
-
-          <ProfessionalCard>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Perdas</span>
-                <div className="p-2 rounded-lg bg-destructive/10 text-destructive">
-                  <TrendingDown className="h-4 w-4" />
-                </div>
-              </div>
-              <p className="text-3xl font-black tracking-tighter text-destructive">
-                {stats.losses}
-              </p>
-              <p className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-tight">Operações com prejuízo</p>
             </CardContent>
           </ProfessionalCard>
         </div>
