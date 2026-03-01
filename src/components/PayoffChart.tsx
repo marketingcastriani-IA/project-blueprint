@@ -30,6 +30,7 @@ const CustomTooltip = ({ active, payload, label, displayMode, investedCapital }:
     const data = payload[0].payload;
     const profitAtExpiry = data.profitAtExpiry;
     const profitToday = data.profitToday;
+    const cdiValue = data.cdiLine;
 
     const format = (val: number) => {
       if (displayMode === 'percent') return `${val.toFixed(2)}%`;
@@ -61,11 +62,20 @@ const CustomTooltip = ({ active, payload, label, displayMode, investedCapital }:
               {format(profitToday)}
             </span>
           </div>
-          {displayMode === 'value' && (
-            <div className="mt-1 pt-1 border-t border-border/30">
-              <p className="text-[9px] font-bold text-muted-foreground uppercase">ROI: {data.roi}</p>
+          {cdiValue !== undefined && (
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-[hsl(45_95%_55%)]" />
+                <span className="text-[11px] font-bold text-foreground/80">CDI</span>
+              </div>
+              <span className="text-xs font-black font-mono text-warning">
+                {format(cdiValue)}
+              </span>
             </div>
           )}
+          <div className="mt-1 pt-1 border-t border-border/30">
+            <p className="text-[9px] font-bold text-muted-foreground uppercase">ROI: {data.roi}</p>
+          </div>
         </div>
       </div>
     );
