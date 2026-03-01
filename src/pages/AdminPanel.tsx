@@ -44,33 +44,47 @@ export default function AdminPanel() {
   const [searchTerm, setSearchTerm] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   
-  // Mercado Pago Config - Updated with user provided keys
+  // Mercado Pago Config
   const [mpPublicKey, setMpPublicKey] = useState('TEST-223bd091-629e-4853-a6df-c50a120fb48b');
   const [mpAccessToken, setMpAccessToken] = useState('TEST-8723062167465367-030112-b03bf6309f490dcda5d967d47b41851c-467698330');
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const { data: accessData } = await supabase
+      // 1. Busca dados de acesso
+      const { data: accessData, error: accessError } = await supabase
         .from('user_access')
         .select('*')
         .order('created_at', { ascending: false });
 
-      const { data: profiles } = await supabase
+      if (accessError) throw accessError;
+
+      // 2. Busca perfis (agora com a nova política de admin)
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('user_id, display_name, email');
 
-      const profileMap: Record<string, any> = {};
-      profiles?.forEach((p: any) => { profileMap[p.user_id] = p; });
+      if (profilesError) {
+        console.error("[AdminPanel] Erro ao buscar perfis:", profilesError);
+      }
 
-      const rows: UserRow[] = (accessData || []).map((a: any) => ({
-        ...a,
-        display_name: profileMap[a.user_id]?.display_name || 'Usuário sem nome',
-        email: profileMap[a.user_id]?.email || 'Email não disponível',
-      }));
+      const profileMap: Record<string, any> = {};
+      profiles?.forEach((p: any) => { 
+        profileMap[p.user_id] = p; 
+      });
+
+      const rows: UserRow[] = (accessData || []).map((a: any) => {
+        const profile = profileMap[a.user_id];
+        return {
+          ...a,
+          display_name: profile?.display_name || 'Usuário sem nome',
+          email: profile?.email || 'Email não disponível',
+        };
+      });
 
       setUsers(rows);
     } catch (err: any) {
+      console.error("[AdminPanel] Erro geral:", err);
       toast.error('Erro ao carregar usuários');
     } finally {
       setLoading(false);
