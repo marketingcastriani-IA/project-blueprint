@@ -17,6 +17,7 @@ interface PayoffChartProps {
   maxGain?: number | 'Ilimitado';
   maxLoss?: number | 'Ilimitado';
   currentSpotPrice?: number | null;
+  entrySpotPrice?: number | null;
   currentPnL?: number | null;
   simulationData?: PayoffPoint[] | null;
 }
@@ -73,6 +74,7 @@ export default function PayoffChart({
   maxGain,
   maxLoss,
   currentSpotPrice,
+  entrySpotPrice,
   currentPnL,
   simulationData
 }: PayoffChartProps) {
@@ -158,6 +160,16 @@ export default function PayoffChart({
             
             <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" strokeOpacity={0.5} />
             
+            {entrySpotPrice && (
+              <ReferenceLine 
+                x={entrySpotPrice} 
+                stroke="hsl(var(--muted-foreground))" 
+                strokeWidth={2} 
+                strokeDasharray="3 3"
+                label={{ value: `ENTRADA: ${entrySpotPrice.toFixed(2)}`, position: 'top', fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 700 }} 
+              />
+            )}
+
             {currentPnL !== null && currentPnL !== undefined && (
               <ReferenceLine 
                 y={currentPnL * factor} 

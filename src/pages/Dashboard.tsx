@@ -142,6 +142,11 @@ export default function Dashboard() {
   const metrics = useMemo(() => calculateMetrics(legs), [legs]);
   const payoffData = useMemo(() => generatePayoffCurve(legs, daysToExpiry, cdiRate), [legs, daysToExpiry, cdiRate]);
 
+  const entrySpotPrice = useMemo(() => {
+    const stockLeg = legs.find(l => l.option_type === 'stock');
+    return stockLeg ? stockLeg.price : null;
+  }, [legs]);
+
   useEffect(() => {
     if (!hasManuallyNamed && legs.length > 0) {
       const asset = legs[0].asset || '';
@@ -354,12 +359,12 @@ export default function Dashboard() {
             >
               <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_0_20px_-5px_hsl(var(--primary))] group-hover:scale-110 transition-transform duration-500">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_0_25px_-5px_hsl(var(--primary))] group-hover:scale-110 transition-transform duration-500">
                     <Camera className="h-8 w-8" />
                   </div>
-                  <div>
-                    <Badge className="bg-primary text-primary-foreground text-[10px] font-black mb-1 px-2">IA POWERED</Badge>
+                  <div className="space-y-1">
+                    <Badge className="bg-primary text-primary-foreground text-[10px] font-black px-2">IA POWERED</Badge>
                     <h3 className="text-2xl font-black tracking-tight flex items-center gap-2">
                       Upload de Imagem {access.planType === 'free' && <Lock className="h-5 w-5" />}
                     </h3>
@@ -376,12 +381,12 @@ export default function Dashboard() {
               className="group relative overflow-hidden rounded-2xl border-2 border-dashed border-muted-foreground/30 bg-card p-8 text-left transition-all duration-300 hover:border-muted-foreground/60 hover:bg-muted/30 hover:-translate-y-1"
             >
               <div className="relative space-y-4">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
                   <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground group-hover:bg-muted-foreground group-hover:text-background transition-colors">
                     <Keyboard className="h-8 w-8" />
                   </div>
-                  <div>
-                    <Badge variant="outline" className="text-[10px] font-bold mb-1">PRECISO</Badge>
+                  <div className="space-y-1">
+                    <Badge variant="outline" className="text-[10px] font-bold px-2">PRECISO</Badge>
                     <h3 className="text-2xl font-black tracking-tight">Entrada Manual</h3>
                   </div>
                 </div>
@@ -422,6 +427,7 @@ export default function Dashboard() {
                   montageTotal={metrics.montageTotal}
                   maxGain={metrics.maxGain}
                   maxLoss={metrics.maxLoss}
+                  entrySpotPrice={entrySpotPrice}
                 />
               </CardContent>
             </Card>

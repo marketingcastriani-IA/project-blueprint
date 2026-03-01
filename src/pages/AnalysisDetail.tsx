@@ -98,6 +98,11 @@ export default function AnalysisDetail() {
   const payoffData = useMemo(() => generatePayoffCurve(legs), [legs]);
   const simPayoffData = useMemo(() => isSimulating ? generatePayoffCurve(simLegs) : null, [isSimulating, simLegs]);
 
+  const entrySpotPrice = useMemo(() => {
+    const stockLeg = dbLegs.find(l => l.option_type === 'stock');
+    return stockLeg ? stockLeg.price : null;
+  }, [dbLegs]);
+
   const currentPnL = useMemo(() => {
     let total = 0;
     for (const leg of dbLegs) {
@@ -114,8 +119,6 @@ export default function AnalysisDetail() {
     try {
       for (const leg of dbLegs) {
         const cp = parseFloat(currentPrices[leg.id] || '');
-        // Se o preço atual estiver vazio, não atualizamos para null se já houver um valor, 
-        // ou usamos o preço de entrada como fallback se estivermos encerrando
         await supabase.from('legs').update({ current_price: isNaN(cp) ? null : cp } as any).eq('id', leg.id);
       }
       toast.success('Preços atualizados!');
@@ -128,7 +131,6 @@ export default function AnalysisDetail() {
     if (hasMissingPrices) {
       if (!confirm('Alguns preços atuais estão vazios. Deseja usar os preços de entrada como preços de saída para encerrar com lucro/prejuízo zero?')) return;
       
-      // Preencher preços vazios com o preço de entrada
       const updatedPrices = { ...currentPrices };
       dbLegs.forEach(l => {
         if (!updatedPrices[l.id] || isNaN(parseFloat(updatedPrices[l.id]))) {
@@ -142,7 +144,6 @@ export default function AnalysisDetail() {
 
     setClosing(true);
     try {
-      // Salvar preços (incluindo os fallbacks se necessário)
       for (const leg of dbLegs) {
         const cp = parseFloat(currentPrices[leg.id] || String(leg.price));
         await supabase.from('legs').update({ current_price: cp } as any).eq('id', leg.id);
@@ -257,6 +258,7 @@ export default function AnalysisDetail() {
               cdiRate={cdiRate} daysToExpiry={daysToExpiry} netCost={metrics.netCost} montageTotal={metrics.montageTotal}
               maxGain={metrics.maxGain} maxLoss={metrics.maxLoss}
               currentSpotPrice={parseFloat(currentPrices[dbLegs.find(l => l.option_type === 'stock')?.id || ''] || '0') || null}
+              entrySpotPrice={entrySpotPrice}
               currentPnL={currentPnL}
               simulationData={simPayoffData}
             />
