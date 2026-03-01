@@ -70,7 +70,6 @@ export default function Dashboard() {
   const updateLeg = useCallback((index: number, leg: Leg) => { setLegs(prev => prev.map((item, i) => (i === index ? leg : item))); }, []);
   
   const handleLegsFromImage = useCallback((extractedLegs: any[]) => { 
-    // Sanitização: garante que números sejam números e tipos sejam válidos
     const sanitizedLegs: Leg[] = extractedLegs.map(l => ({
       side: (l.side === 'buy' || l.side === 'sell') ? l.side : 'buy',
       option_type: (l.option_type === 'call' || l.option_type === 'put' || l.option_type === 'stock') ? l.option_type : 'call',
@@ -81,7 +80,6 @@ export default function Dashboard() {
     }));
 
     setLegs(prev => [...prev, ...sanitizedLegs]); 
-    // Muda para o modo manual para que o usuário veja a tabela e possa editar
     setInputMode('manual');
   }, []);
 
