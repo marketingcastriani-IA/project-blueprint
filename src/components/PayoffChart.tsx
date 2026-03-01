@@ -1,10 +1,9 @@
 import { useState, useMemo } from 'react';
 import { PayoffPoint } from '@/lib/types';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { Area, CartesianGrid, ReferenceLine, XAxis, YAxis, Line, ComposedChart, ResponsiveContainer } from 'recharts';
 import { calculateCDIReturn } from '@/lib/payoff';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { TrendingUp, TrendingDown, Target, Percent, DollarSign } from 'lucide-react';
 
@@ -22,10 +21,56 @@ interface PayoffChartProps {
 const chartConfig = {
   profitAtExpiry: { label: 'No Vencimento', color: 'hsl(var(--chart-profit))' },
   profitToday: { label: 'Hoje (T+0)', color: 'hsl(var(--info))' },
-  belowZero: { label: 'Prejuízo', color: 'hsl(var(--destructive))' },
-  betweenZeroCdi: { label: 'Lucro < CDI', color: 'hsl(38 92% 50%)' },
-  aboveCdi: { label: 'Lucro > CDI', color: 'hsl(var(--success))' },
   cdiReturn: { label: 'CDI', color: 'hsl(45 95% 55%)' },
+};
+
+// Componente de Tooltip Customizado e Limpo
+const CustomTooltip = ({ active, payload, label, displayMode, investedCapital }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    const profitAtExpiry = data.profitAtExpiry;
+    const profitToday = data.profitToday;
+
+    const format = (val: number) => {
+      if (displayMode === 'percent') return `${val.toFixed(2)}%`;
+      return `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+    };
+
+    return (
+      <div className="rounded-lg border border-border bg-card/95 p-3 shadow-xl backdrop-blur-sm">
+        <div className="mb-2 border-b border-border/50 pb-1">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Preço do Ativo</p>
+          <p className="text-sm font-bold font-mono">R$ {label.toFixed(2)}</p>
+        </div>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-[hsl(var(--chart-profit))]" />
+              <span className="text-[11px] font-bold text-foreground/80">No Vencimento</span>
+            </div>
+            <span className={cn("text-xs font-black font-mono", profitAtExpiry >= 0 ? "text-success" : "text-destructive")}>
+              {format(profitAtExpiry)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-[hsl(var(--info))]" />
+              <span className="text-[11px] font-bold text-foreground/80">Hoje (T+0)</span>
+            </div>
+            <span className={cn("text-xs font-black font-mono", profitToday >= 0 ? "text-info" : "text-destructive")}>
+              {format(profitToday)}
+            </span>
+          </div>
+          {displayMode === 'value' && (
+            <div className="mt-1 pt-1 border-t border-border/30">
+              <p className="text-[9px] font-bold text-muted-foreground uppercase">ROI: {data.roi}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+  return null;
 };
 
 export default function PayoffChart({ 
@@ -205,26 +250,7 @@ export default function PayoffChart({
             )}
             
             <ChartTooltip 
-              content={
-                <ChartTooltipContent 
-                  formatter={(value, name, props) => {
-                    const val = Number(value);
-                    if (name === 'profitAtExpiry') {
-                      return [
-                        displayMode === 'percent' ? `${val.toFixed(2)}%` : `R$ ${val.toFixed(2)} (${props.payload.roi})`,
-                        'Lucro Venc.'
-                      ];
-                    }
-                    if (name === 'profitToday') {
-                      return [
-                        displayMode === 'percent' ? `${val.toFixed(2)}%` : `R$ ${val.toFixed(2)}`,
-                        'Lucro Hoje'
-                      ];
-                    }
-                    return [value, name];
-                  }}
-                />
-              } 
+              content={<CustomTooltip displayMode={displayMode} investedCapital={investedCapital} />} 
             />
             
             <Area
