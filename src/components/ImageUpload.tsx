@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 interface ImageUploadProps {
   onLegsExtracted: (legs: Leg[]) => void;
   onImageChange?: () => void;
+  onClear?: () => void;
 }
 
 const compressImage = (file: File): Promise<string> => {
@@ -52,12 +53,20 @@ const compressImage = (file: File): Promise<string> => {
   });
 };
 
-export default function ImageUpload({ onLegsExtracted, onImageChange }: ImageUploadProps) {
+export default function ImageUpload({ onLegsExtracted, onImageChange, onClear }: ImageUploadProps) {
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const processingRef = useRef(false);
+
+  const clearImage = useCallback((e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setPreview(null);
+    setLoading(false);
+    processingRef.current = false;
+    if (onClear) onClear();
+  }, [onClear]);
 
   const processImage = useCallback(async (imageDataUrl: string): Promise<void> => {
     setLoading(true);
@@ -180,7 +189,7 @@ export default function ImageUpload({ onLegsExtracted, onImageChange }: ImageUpl
               <Loader2 className="h-16 w-16 animate-spin text-info relative" />
             </div>
             <div className="text-center space-y-2">
-              <p className="text-xl font-black text-info uppercase tracking-tighter">Analisando sua Nota...</p>
+              <p className="text-xl font-black text-info uppercase tracking-tighter">Analisando sua Estrutura...</p>
               <p className="text-sm text-muted-foreground font-medium">Nossa IA está extraindo os dados da B3</p>
             </div>
           </div>
@@ -188,6 +197,16 @@ export default function ImageUpload({ onLegsExtracted, onImageChange }: ImageUpl
           <div className="relative w-full flex flex-col items-center gap-6 animate-fade-in">
             <div className="relative group/preview">
               <img src={preview} alt="Preview" className="max-w-full max-h-[400px] rounded-2xl border-4 border-white/10 shadow-2xl transition-transform group-hover/preview:scale-[1.02]" />
+              
+              {/* Botão de Fechar/Remover */}
+              <button 
+                onClick={clearImage}
+                className="absolute -top-4 -right-4 h-10 w-10 rounded-full bg-destructive text-destructive-foreground shadow-lg flex items-center justify-center hover:scale-110 transition-transform z-10 border-2 border-background"
+                title="Remover imagem"
+              >
+                <X className="h-6 w-6" />
+              </button>
+
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/preview:opacity-100 transition-opacity flex items-center justify-center rounded-2xl">
                 <p className="text-white font-black text-sm uppercase tracking-widest">Trocar Imagem</p>
               </div>
@@ -203,7 +222,7 @@ export default function ImageUpload({ onLegsExtracted, onImageChange }: ImageUpl
               <ImageIcon className="h-12 w-12" />
             </div>
             <div className="text-center space-y-3">
-              <h3 className="text-3xl font-black tracking-tighter">Arraste ou Cole sua Nota</h3>
+              <h3 className="text-3xl font-black tracking-tighter">Arraste ou Cole a Imagem de sua Estrutura</h3>
               <p className="text-base text-muted-foreground font-medium max-w-md mx-auto">
                 Tire um print da sua corretora ou home broker e cole aqui. Nossa IA extrai ativos, strikes e preços instantaneamente.
               </p>
