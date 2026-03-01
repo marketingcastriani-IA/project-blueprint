@@ -7,8 +7,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, Clock, PlusCircle, Trash2, Eye, Edit2, XCircle, RotateCcw } from 'lucide-react';
+import { Loader2, Clock, PlusCircle, Trash2, Edit2, XCircle, RotateCcw, History as HistoryIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
 
 interface AnalysisSummary {
   id: string;
@@ -99,129 +100,140 @@ export default function History() {
   const closedAnalyses = analyses.filter(a => a.status === 'closed');
 
   const renderCard = (a: AnalysisSummary) => (
-    <Card
+    <ProfessionalCard
       key={a.id}
-      className="group relative overflow-hidden border transition-all hover:shadow-md cursor-pointer"
+      className="group cursor-pointer"
       onClick={() => navigate(`/analysis/${a.id}`)}
     >
-      <CardContent className="flex items-start justify-between py-4 px-5 gap-4">
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-base font-bold">{a.name}</p>
+      <CardContent className="flex items-start justify-between py-5 px-6 gap-4">
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex items-center gap-3 flex-wrap">
+            <p className="text-lg font-black tracking-tight">{a.name}</p>
             {a.underlying_asset && (
-              <Badge variant="outline" className="text-xs">{a.underlying_asset}</Badge>
+              <Badge variant="outline" className="text-[10px] border-primary/30 text-primary font-bold">
+                {a.underlying_asset}
+              </Badge>
             )}
             <Badge
               className={cn(
-                'text-[10px] font-semibold',
+                'text-[10px] font-black uppercase tracking-widest',
                 a.status === 'active'
-                  ? 'bg-success/15 text-success border-success/30'
+                  ? 'bg-success/20 text-success border-success/30'
                   : 'bg-muted text-muted-foreground'
               )}
             >
-              {a.status === 'active' ? '🟢 Ativa' : '⏹️ Encerrada'}
+              {a.status === 'active' ? 'Ativa' : 'Encerrada'}
             </Badge>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Criada: {new Date(a.created_at).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })}
-            {a.closed_at && ` · Encerrada: ${new Date(a.closed_at).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })}`}
-          </p>
-          {a.ai_suggestion && (
-            <p className="text-xs text-muted-foreground line-clamp-1 pt-1">
-              <span className="font-semibold">IA:</span> {a.ai_suggestion}
-            </p>
-          )}
+          <div className="flex items-center gap-4 text-[11px] text-muted-foreground font-medium">
+            <span className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {new Date(a.created_at).toLocaleDateString('pt-BR')}
+            </span>
+            {a.closed_at && (
+              <span className="flex items-center gap-1">
+                <XCircle className="h-3 w-3" />
+                Encerrada: {new Date(a.closed_at).toLocaleDateString('pt-BR')}
+              </span>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="h-8 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="h-9 px-3 hover:bg-primary/10 hover:text-primary transition-all"
             onClick={(e) => { e.stopPropagation(); navigate(`/analysis/${a.id}`); }}
           >
-            <Edit2 className="h-3.5 w-3.5 mr-1" /> Editar
+            <Edit2 className="h-4 w-4 mr-2" /> Editar
           </Button>
           {a.status === 'active' ? (
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="h-8 opacity-0 group-hover:opacity-100 transition-opacity text-warning border-warning/30 hover:bg-warning/10"
+              className="h-9 px-3 text-warning hover:bg-warning/10 transition-all"
               disabled={closingId === a.id}
               onClick={(e) => handleClose(e, a.id)}
             >
-              {closingId === a.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5 mr-1" />}
+              {closingId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4 mr-2" />}
               Encerrar
             </Button>
           ) : (
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="h-8 opacity-0 group-hover:opacity-100 transition-opacity text-info border-info/30 hover:bg-info/10"
+              className="h-9 px-3 text-info hover:bg-info/10 transition-all"
               onClick={(e) => handleReopen(e, a.id)}
             >
-              <RotateCcw className="h-3.5 w-3.5 mr-1" /> Reabrir
+              <RotateCcw className="h-4 w-4 mr-2" /> Reabrir
             </Button>
           )}
           <Button
             variant="ghost"
-            size="sm"
-            className="h-8 opacity-0 group-hover:opacity-100 transition-opacity"
+            size="icon"
+            className="h-9 w-9 text-destructive hover:bg-destructive/10 transition-all"
             disabled={deleting === a.id}
             onClick={(e) => handleDelete(e, a.id)}
           >
-            {deleting === a.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5 text-destructive" />}
+            {deleting === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
           </Button>
         </div>
       </CardContent>
-    </Card>
+    </ProfessionalCard>
   );
 
   return (
     <div className="min-h-screen bg-background pb-16">
       <Header />
-      <main className="container py-6 space-y-6 animate-fade-in">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div>
-            <h1 className="text-4xl sm:text-5xl font-black tracking-tight">Histórico</h1>
-            <p className="text-lg text-muted-foreground">Gerencie, edite e encerre suas operações</p>
-          </div>
-          <Button onClick={() => navigate('/dashboard')} className="text-base h-11 px-6">
+      <main className="container py-8 space-y-8 animate-fade-in">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <ProfessionalHeader 
+            title="Histórico" 
+            subtitle="Gerencie e acompanhe todas as suas análises salvas"
+          />
+          <Button onClick={() => navigate('/dashboard')} className="h-12 px-6 text-base font-bold shadow-[0_0_30px_-8px_hsl(var(--primary)/0.4)]">
             <PlusCircle className="mr-2 h-5 w-5" /> Nova Análise
           </Button>
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+          <div className="flex justify-center py-24"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
         ) : analyses.length === 0 ? (
-          <Card className="border-dashed border-2 border-muted-foreground/30">
-            <CardContent className="py-16 text-center space-y-4">
-              <Clock className="mx-auto h-12 w-12 text-muted-foreground/50" />
-              <div>
-                <p className="text-lg font-bold">Nenhuma análise salva</p>
-                <p className="text-sm text-muted-foreground">Crie sua primeira análise para começar</p>
+          <ProfessionalCard className="border-dashed border-2 border-muted-foreground/20">
+            <CardContent className="py-24 text-center space-y-6">
+              <div className="flex justify-center">
+                <div className="h-20 w-20 rounded-full bg-muted/50 flex items-center justify-center">
+                  <HistoryIcon className="h-10 w-10 text-muted-foreground/40" />
+                </div>
               </div>
-              <Button onClick={() => navigate('/dashboard')}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Criar Análise
+              <div className="space-y-2">
+                <p className="text-xl font-black tracking-tight">Nenhuma análise encontrada</p>
+                <p className="text-muted-foreground max-w-xs mx-auto">Comece criando uma nova análise para vê-la listada aqui.</p>
+              </div>
+              <Button onClick={() => navigate('/dashboard')} size="lg">
+                Criar Primeira Análise
               </Button>
             </CardContent>
-          </Card>
+          </ProfessionalCard>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-10">
             {activeAnalyses.length > 0 && (
-              <div className="space-y-3">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-success" /> Ativas ({activeAnalyses.length})
-                </h2>
-                <div className="grid gap-2">{activeAnalyses.map(renderCard)}</div>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
+                  <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Operações Ativas ({activeAnalyses.length})</h2>
+                </div>
+                <div className="grid gap-3">{activeAnalyses.map(renderCard)}</div>
               </div>
             )}
             {closedAnalyses.length > 0 && (
-              <div className="space-y-3">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-muted-foreground" /> Encerradas ({closedAnalyses.length})
-                </h2>
-                <div className="grid gap-2">{closedAnalyses.map(renderCard)}</div>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-2 w-2 rounded-full bg-muted-foreground" />
+                  <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Operações Encerradas ({closedAnalyses.length})</h2>
+                </div>
+                <div className="grid gap-3">{closedAnalyses.map(renderCard)}</div>
               </div>
             )}
           </div>

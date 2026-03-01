@@ -3,12 +3,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent } from '@/components/ui/card';
+import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, TrendingUp, TrendingDown, Calendar, Edit2, RotateCcw, Trash2, Briefcase } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, Calendar, Edit2, RotateCcw, Trash2, Briefcase, Target, Percent } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
 
 interface ClosedAnalysis {
   id: string;
@@ -129,86 +130,130 @@ export default function Portfolio() {
   return (
     <div className="min-h-screen bg-background pb-16">
       <Header />
-      <main className="container py-6 space-y-6 animate-fade-in">
-        <div>
-          <h1 className="text-4xl sm:text-5xl font-black tracking-tight">Portfólio</h1>
-          <p className="text-lg text-muted-foreground">Operações encerradas e resultados</p>
-        </div>
+      <main className="container py-8 space-y-8 animate-fade-in">
+        <ProfessionalHeader 
+          title="Portfólio" 
+          subtitle="Acompanhe o desempenho histórico das suas operações encerradas"
+        />
 
-        {/* Stats */}
-        <div className="grid gap-4 sm:grid-cols-4">
-          <Card className="border shadow-sm">
-            <CardContent className="p-5">
-              <p className="text-xs font-medium text-muted-foreground">Total P&L</p>
-              <p className={cn('text-2xl font-bold mt-1', stats.totalPL >= 0 ? 'text-success' : 'text-destructive')}>
-                R$ {stats.totalPL >= 0 ? '+' : ''}{stats.totalPL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+        {/* Stats Grid */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <ProfessionalCard highlight={stats.totalPL >= 0}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Total P&L</span>
+                <div className={cn('p-2 rounded-lg', stats.totalPL >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive')}>
+                  {stats.totalPL >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                </div>
+              </div>
+              <p className={cn('text-3xl font-black tracking-tighter', stats.totalPL >= 0 ? 'text-success' : 'text-destructive')}>
+                R$ {stats.totalPL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">{stats.total} operações</p>
+              <p className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-tight">{stats.total} operações encerradas</p>
             </CardContent>
-          </Card>
-          <Card className="border shadow-sm">
-            <CardContent className="p-5">
-              <p className="text-xs font-medium text-muted-foreground">Ganhos</p>
-              <p className="text-2xl font-bold text-success mt-1">{stats.wins}</p>
-              <p className="text-xs text-muted-foreground mt-1">operações lucrativas</p>
+          </ProfessionalCard>
+
+          <ProfessionalCard>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Taxa de Acerto</span>
+                <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                  <Target className="h-4 w-4" />
+                </div>
+              </div>
+              <p className="text-3xl font-black tracking-tighter text-foreground">
+                {stats.winRate}%
+              </p>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-[10px] font-bold text-success uppercase">{stats.wins} Ganhos</span>
+                <span className="text-muted-foreground">/</span>
+                <span className="text-[10px] font-bold text-destructive uppercase">{stats.losses} Perdas</span>
+              </div>
             </CardContent>
-          </Card>
-          <Card className="border shadow-sm">
-            <CardContent className="p-5">
-              <p className="text-xs font-medium text-muted-foreground">Perdas</p>
-              <p className="text-2xl font-bold text-destructive mt-1">{stats.losses}</p>
-              <p className="text-xs text-muted-foreground mt-1">operações com prejuízo</p>
+          </ProfessionalCard>
+
+          <ProfessionalCard>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Ganhos</span>
+                <div className="p-2 rounded-lg bg-success/10 text-success">
+                  <TrendingUp className="h-4 w-4" />
+                </div>
+              </div>
+              <p className="text-3xl font-black tracking-tighter text-success">
+                {stats.wins}
+              </p>
+              <p className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-tight">Operações lucrativas</p>
             </CardContent>
-          </Card>
-          <Card className="border shadow-sm">
-            <CardContent className="p-5">
-              <p className="text-xs font-medium text-muted-foreground">Taxa de Acerto</p>
-              <p className="text-2xl font-bold text-foreground mt-1">{stats.winRate}%</p>
-              <p className="text-xs text-muted-foreground mt-1">taxa de sucesso</p>
+          </ProfessionalCard>
+
+          <ProfessionalCard>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Perdas</span>
+                <div className="p-2 rounded-lg bg-destructive/10 text-destructive">
+                  <TrendingDown className="h-4 w-4" />
+                </div>
+              </div>
+              <p className="text-3xl font-black tracking-tighter text-destructive">
+                {stats.losses}
+              </p>
+              <p className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-tight">Operações com prejuízo</p>
             </CardContent>
-          </Card>
+          </ProfessionalCard>
         </div>
 
-        {/* Operations */}
+        {/* Operations List */}
         {loading ? (
-          <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+          <div className="flex justify-center py-24"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
         ) : analyses.length === 0 ? (
-          <Card className="border-dashed border-2 border-muted-foreground/30">
-            <CardContent className="p-12 text-center space-y-3">
-              <Briefcase className="mx-auto h-12 w-12 text-muted-foreground/50" />
-              <p className="text-muted-foreground font-medium">Nenhuma operação encerrada</p>
-              <p className="text-sm text-muted-foreground">
-                Encerre operações no <button className="text-primary underline" onClick={() => navigate('/history')}>Histórico</button> para vê-las aqui
-              </p>
+          <ProfessionalCard className="border-dashed border-2 border-muted-foreground/20">
+            <CardContent className="py-24 text-center space-y-6">
+              <div className="flex justify-center">
+                <div className="h-20 w-20 rounded-full bg-muted/50 flex items-center justify-center">
+                  <Briefcase className="h-10 w-10 text-muted-foreground/40" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <p className="text-xl font-black tracking-tight">Portfólio Vazio</p>
+                <p className="text-muted-foreground max-w-xs mx-auto">Encerre operações no Histórico para que elas apareçam aqui com seus resultados.</p>
+              </div>
+              <Button onClick={() => navigate('/history')} variant="outline">
+                Ir para Histórico
+              </Button>
             </CardContent>
-          </Card>
+          </ProfessionalCard>
         ) : (
           <div className="grid gap-3">
             {analyses.map(a => {
               const pnl = getPnL(a.id);
               const hasPnl = hasPnLData(a.id);
               return (
-                <Card
+                <ProfessionalCard
                   key={a.id}
-                  className="group relative overflow-hidden border transition-all hover:shadow-md cursor-pointer"
+                  className="group cursor-pointer"
                   onClick={() => navigate(`/analysis/${a.id}`)}
                 >
-                  <CardContent className="flex items-center justify-between py-4 px-5 gap-4">
-                    <div className="flex items-center gap-4 flex-1">
+                  <CardContent className="flex items-center justify-between py-5 px-6 gap-4">
+                    <div className="flex items-center gap-5 flex-1 min-w-0">
                       <div className={cn(
-                        'flex h-10 w-10 items-center justify-center rounded-lg shrink-0',
+                        'flex h-12 w-12 items-center justify-center rounded-xl shrink-0 shadow-inner',
                         hasPnl
-                          ? (pnl >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive')
-                          : 'bg-muted text-muted-foreground'
+                          ? (pnl >= 0 ? 'bg-success/10 text-success border border-success/20' : 'bg-destructive/10 text-destructive border border-destructive/20')
+                          : 'bg-muted text-muted-foreground border border-border/50'
                       )}>
-                        {hasPnl ? (pnl >= 0 ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />) : <Briefcase className="h-5 w-5" />}
+                        {hasPnl ? (pnl >= 0 ? <TrendingUp className="h-6 w-6" /> : <TrendingDown className="h-6 w-6" />) : <Briefcase className="h-6 w-6" />}
                       </div>
                       <div className="flex-1 min-w-0 space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-bold">{a.name}</p>
-                          {a.underlying_asset && <Badge variant="outline" className="text-xs">{a.underlying_asset}</Badge>}
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <p className="text-lg font-black tracking-tight truncate">{a.name}</p>
+                          {a.underlying_asset && (
+                            <Badge variant="outline" className="text-[10px] border-primary/30 text-primary font-bold">
+                              {a.underlying_asset}
+                            </Badge>
+                          )}
                         </div>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-4 text-[11px] text-muted-foreground font-medium">
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
                             {new Date(a.created_at).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}
@@ -218,46 +263,47 @@ export default function Portfolio() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-6">
                       {hasPnl && (
                         <div className="text-right">
-                          <p className={cn('text-lg font-bold', pnl >= 0 ? 'text-success' : 'text-destructive')}>
+                          <p className={cn('text-xl font-black tracking-tighter', pnl >= 0 ? 'text-success' : 'text-destructive')}>
                             {pnl >= 0 ? '+' : ''}R$ {pnl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </p>
+                          <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Resultado Final</p>
                         </div>
                       )}
                       <div className="flex gap-1">
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
-                          className="h-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="h-9 px-3 hover:bg-primary/10 hover:text-primary transition-all"
                           onClick={(e) => { e.stopPropagation(); navigate(`/analysis/${a.id}`); }}
                         >
-                          <Edit2 className="h-3.5 w-3.5 mr-1" /> Editar
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 opacity-0 group-hover:opacity-100 transition-opacity text-info border-info/30 hover:bg-info/10"
-                          disabled={reopeningId === a.id}
-                          onClick={(e) => handleReopen(e, a.id)}
-                        >
-                          {reopeningId === a.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5 mr-1" />}
-                          Reabrir
+                          <Edit2 className="h-4 w-4 mr-2" /> Detalhes
                         </Button>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="h-9 px-3 text-info hover:bg-info/10 transition-all"
+                          disabled={reopeningId === a.id}
+                          onClick={(e) => handleReopen(e, a.id)}
+                        >
+                          {reopeningId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4 mr-2" />}
+                          Reabrir
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 text-destructive hover:bg-destructive/10 transition-all"
                           disabled={deletingId === a.id}
                           onClick={(e) => handleDelete(e, a.id)}
                         >
-                          {deletingId === a.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5 text-destructive" />}
+                          {deletingId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                         </Button>
                       </div>
                     </div>
                   </CardContent>
-                </Card>
+                </ProfessionalCard>
               );
             })}
           </div>
