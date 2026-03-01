@@ -29,7 +29,7 @@ export default function Settings() {
         .from('site_settings')
         .select('*')
         .eq('id', 'pro_plan')
-        .single();
+        .maybeSingle();
       
       if (data) {
         setProPrice((data.value as any).price);
@@ -37,10 +37,11 @@ export default function Settings() {
     };
     fetchPrice();
 
-    // Verificar se voltou de um pagamento
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
       toast.success("Pagamento aprovado!", { description: "Seu plano PRO será liberado em instantes." });
+    } else if (params.get('payment') === 'failure') {
+      toast.error("Pagamento não concluído", { description: "Houve um problema com a transação." });
     }
   }, []);
 
@@ -48,12 +49,19 @@ export default function Settings() {
     setUpgrading(true);
     try {
       const { data, error } = await supabase.functions.invoke('mercado-pago-checkout');
+      
       if (error) throw error;
+      
       if (data?.url) {
         window.location.href = data.url;
+      } else if (data?.error) {
+        toast.error("Erro no servidor", { description: data.error });
+      } else {
+        toast.error("Erro inesperado", { description: "Não foi possível gerar o link de pagamento." });
       }
     } catch (err: any) {
-      toast.error("Erro ao iniciar checkout", { description: err.message });
+      console.error("[Settings] Erro no upgrade:", err);
+      toast.error("Erro ao iniciar checkout", { description: err.message || "Verifique sua conexão." });
     } finally {
       setUpgrading(false);
     }
@@ -95,7 +103,6 @@ export default function Settings() {
           <p className="text-lg text-muted-foreground">Gerencie sua conta e plano</p>
         </div>
 
-        {/* Plan Status & Upgrade */}
         <Card className={cn(
           "border-2 overflow-hidden",
           access.planType === 'pro' ? "border-primary bg-gradient-to-br from-primary/10 to-card" : "border-border/40 bg-card"
@@ -137,7 +144,6 @@ export default function Settings() {
           </CardContent>
         </Card>
 
-        {/* Account Info */}
         <Card className="border-2 border-border/40 bg-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -156,7 +162,6 @@ export default function Settings() {
           </CardContent>
         </Card>
 
-        {/* Change Password */}
         <Card className="border-2 border-border/40 bg-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
