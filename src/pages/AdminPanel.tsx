@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import {
   TrendingUp, Users, CheckCircle2, XCircle, Clock, Shield,
   Loader2, LogOut, Sun, Moon, RefreshCw, Search, Crown, Wallet,
-  ArrowLeft, LayoutDashboard, Ban, RotateCcw, Calendar, Settings, Key, Save
+  ArrowLeft, LayoutDashboard, Ban, RotateCcw, Calendar, Settings, Key, Save, User, Mail
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
@@ -65,8 +65,8 @@ export default function AdminPanel() {
 
       const rows: UserRow[] = (accessData || []).map((a: any) => ({
         ...a,
-        display_name: profileMap[a.user_id]?.display_name || a.user_id,
-        email: profileMap[a.user_id]?.email || '',
+        display_name: profileMap[a.user_id]?.display_name || 'Usuário sem nome',
+        email: profileMap[a.user_id]?.email || 'Email não disponível',
       }));
 
       setUsers(rows);
@@ -153,7 +153,11 @@ export default function AdminPanel() {
   const filtered = users.filter(u => {
     if (!searchTerm) return true;
     const s = searchTerm.toLowerCase();
-    return (u.display_name?.toLowerCase().includes(s)) || u.user_id.includes(s) || u.email?.toLowerCase().includes(s);
+    return (
+      (u.display_name?.toLowerCase().includes(s)) || 
+      (u.email?.toLowerCase().includes(s)) || 
+      u.user_id.includes(s)
+    );
   });
 
   return (
@@ -217,63 +221,73 @@ export default function AdminPanel() {
             <div className="flex gap-3">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar usuário..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9" />
+                <Input placeholder="Buscar por nome, email ou ID..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9" />
               </div>
               <Button variant="outline" onClick={fetchUsers}><RefreshCw className="h-4 w-4" /></Button>
             </div>
 
             <div className="space-y-3">
               {filtered.map(u => (
-                <Card key={u.user_id} className={cn("p-5 transition-all", u.status === 'rejected' && "opacity-60 bg-muted/20")}>
+                <Card key={u.user_id} className={cn("p-5 transition-all border-2", u.status === 'rejected' ? "opacity-60 bg-muted/20 border-destructive/20" : "border-border/40 hover:border-primary/20")}>
                   <div className="flex flex-col lg:flex-row justify-between gap-6">
-                    <div className="space-y-1 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-black">{u.display_name}</p>
-                        <Badge variant={u.plan_type === 'pro' ? 'default' : 'outline'} className={u.plan_type === 'pro' ? 'bg-primary' : ''}>
-                          {u.plan_type.toUpperCase()}
-                        </Badge>
-                        <Badge variant="secondary" className={cn(
-                          "text-[10px]",
-                          u.status === 'approved' ? "text-success" : u.status === 'rejected' ? "text-destructive" : "text-warning"
-                        )}>
-                          {u.status.toUpperCase()}
-                        </Badge>
+                    <div className="flex items-start gap-4 flex-1">
+                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
+                        <User className="h-6 w-6 text-primary" />
                       </div>
-                      <p className="text-xs text-muted-foreground">{u.email}</p>
-                      <p className="text-[10px] font-mono text-muted-foreground">{u.user_id}</p>
-                      <div className="flex gap-3 pt-2">
-                        <Badge variant="secondary" className="text-[10px]">{u.simulations_count} Simulações</Badge>
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-black text-lg tracking-tight">{u.display_name}</p>
+                          <Badge variant={u.plan_type === 'pro' ? 'default' : 'outline'} className={u.plan_type === 'pro' ? 'bg-primary' : ''}>
+                            {u.plan_type.toUpperCase()}
+                          </Badge>
+                          <Badge variant="secondary" className={cn(
+                            "text-[10px] font-black",
+                            u.status === 'approved' ? "text-success bg-success/10" : u.status === 'rejected' ? "text-destructive bg-destructive/10" : "text-warning bg-warning/10"
+                          )}>
+                            {u.status.toUpperCase()}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+                          <Mail className="h-3 w-3" />
+                          {u.email}
+                        </div>
+                        <p className="text-[10px] font-mono text-muted-foreground/60 truncate max-w-[200px]">ID: {u.user_id}</p>
+                        <div className="flex gap-3 pt-2">
+                          <Badge variant="secondary" className="text-[10px] font-bold">
+                            {u.simulations_count} Simulações Realizadas
+                          </Badge>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2">
-                      <div className="flex flex-col gap-1">
-                        <span className="text-[9px] font-black uppercase text-muted-foreground">Plano</span>
+                    <div className="flex flex-wrap items-center gap-4 lg:border-l lg:pl-6 border-border/40">
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Alterar Plano</span>
                         <Select value={u.plan_type} onValueChange={(v) => updatePlan(u.user_id, v)}>
-                          <SelectTrigger className="w-28 h-9 text-xs font-bold">
+                          <SelectTrigger className="w-32 h-10 text-xs font-bold">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="free">FREE</SelectItem>
-                            <SelectItem value="pro">PRO</SelectItem>
+                            <SelectItem value="free">PLANO FREE</SelectItem>
+                            <SelectItem value="pro">PLANO PRO</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       
-                      <div className="flex flex-col gap-1">
-                        <span className="text-[9px] font-black uppercase text-muted-foreground">Ações</span>
-                        <div className="flex gap-1">
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Ações de Acesso</span>
+                        <div className="flex gap-2">
                           {u.status === 'pending' || u.status === 'rejected' ? (
-                            <Button size="sm" variant="outline" onClick={() => updateStatus(u.user_id, 'approved')} className="h-9 text-xs font-bold text-success hover:bg-success/10">
-                              <CheckCircle2 className="h-4 w-4 mr-1" /> APROVAR
+                            <Button size="sm" variant="outline" onClick={() => updateStatus(u.user_id, 'approved')} className="h-10 px-4 text-xs font-bold text-success border-success/30 hover:bg-success/10">
+                              <CheckCircle2 className="h-4 w-4 mr-2" /> APROVAR
                             </Button>
                           ) : (
-                            <Button size="sm" variant="outline" onClick={() => updateStatus(u.user_id, 'rejected')} className="h-9 text-xs font-bold text-destructive hover:bg-destructive/10">
-                              <Ban className="h-4 w-4 mr-1" /> BLOQUEAR
+                            <Button size="sm" variant="outline" onClick={() => updateStatus(u.user_id, 'rejected')} className="h-10 px-4 text-xs font-bold text-destructive border-destructive/30 hover:bg-destructive/10">
+                              <Ban className="h-4 w-4 mr-2" /> BLOQUEAR
                             </Button>
                           )}
-                          <Button size="sm" variant="outline" onClick={() => resetSimulations(u.user_id)} className="h-9 text-xs font-bold">
-                            <RotateCcw className="h-4 w-4 mr-1" /> RESET SIMS
+                          <Button size="sm" variant="outline" onClick={() => resetSimulations(u.user_id)} className="h-10 px-4 text-xs font-bold hover:bg-primary/10">
+                            <RotateCcw className="h-4 w-4 mr-2" /> RESET SIMS
                           </Button>
                         </div>
                       </div>
@@ -285,7 +299,7 @@ export default function AdminPanel() {
           </TabsContent>
 
           <TabsContent value="api" className="space-y-6">
-            <Card className="border-primary/20">
+            <Card className="border-primary/20 bg-gradient-to-br from-primary/[0.03] to-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Key className="h-5 w-5 text-primary" />
@@ -294,16 +308,16 @@ export default function AdminPanel() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Public Key</Label>
-                  <Input value={mpPublicKey} onChange={e => setMpPublicKey(e.target.value)} placeholder="APP_USR-..." />
+                  <Label className="text-xs font-black uppercase tracking-widest">Public Key</Label>
+                  <Input value={mpPublicKey} onChange={e => setMpPublicKey(e.target.value)} placeholder="APP_USR-..." className="font-mono" />
                 </div>
                 <div className="space-y-2">
-                  <Label>Access Token</Label>
-                  <Input type="password" value={mpAccessToken} onChange={e => setMpAccessToken(e.target.value)} placeholder="APP_USR-..." />
+                  <Label className="text-xs font-black uppercase tracking-widest">Access Token</Label>
+                  <Input type="password" value={mpAccessToken} onChange={e => setMpAccessToken(e.target.value)} placeholder="APP_USR-..." className="font-mono" />
                 </div>
                 <div className="pt-4">
-                  <Button onClick={saveMPConfig} className="w-full font-bold">
-                    <Save className="mr-2 h-4 w-4" /> Salvar Configurações de API
+                  <Button onClick={saveMPConfig} className="w-full h-12 font-black shadow-lg shadow-primary/20">
+                    <Save className="mr-2 h-5 w-5" /> SALVAR CONFIGURAÇÕES DE API
                   </Button>
                 </div>
               </CardContent>
