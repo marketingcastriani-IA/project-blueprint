@@ -20,9 +20,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard } from 'lucide-react';
+import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, SectionDivider } from '@/components/ProfessionalLayout';
 import AIInsights from '@/components/AIInsights';
@@ -203,12 +204,13 @@ export default function Dashboard() {
     setLegs(prev => [...prev, ...sanitizedLegs]); 
     setInputMode('manual');
 
-    // Contar como simulação consumida
+    // Contar como simulação consumida no upload
     if (user) {
       await supabase
         .from('user_access')
         .update({ simulations_count: access.simulationsCount + 1 } as any)
         .eq('user_id', user.id);
+      toast.info("Simulação contabilizada via OCR.");
     }
   }, [isLimitReached, user, access.simulationsCount]);
 
@@ -269,6 +271,12 @@ export default function Dashboard() {
       const { error: lError } = await supabase.from('legs').insert(legsToInsert);
       if (lError) throw lError;
 
+      // Increment simulation count on manual save
+      await supabase
+        .from('user_access')
+        .update({ simulations_count: access.simulationsCount + 1 } as any)
+        .eq('user_id', user.id);
+
       toast.success('Análise salva com sucesso!');
       navigate(`/analysis/${analysis.id}`);
     } catch (err: any) {
@@ -281,6 +289,30 @@ export default function Dashboard() {
       <Header />
       <main className="container py-6 space-y-6 animate-fade-in">
         <PortfolioSummary userId={user.id} />
+
+        {/* Simulation Counter Card for Free Users */}
+        {access.planType === 'free' && (
+          <Card className="border-warning/30 bg-warning/5">
+            <CardContent className="py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-warning/10 text-warning">
+                  <BarChart3 className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-black uppercase tracking-tight">Simulações Utilizadas</p>
+                  <p className="text-xs text-muted-foreground font-medium">Você tem direito a 3 simulações no plano gratuito.</p>
+                </div>
+              </div>
+              <div className="w-full sm:w-48 space-y-1.5">
+                <div className="flex justify-between text-[10px] font-black uppercase">
+                  <span>{access.simulationsCount} de 3</span>
+                  <span>{Math.round((access.simulationsCount / 3) * 100)}%</span>
+                </div>
+                <Progress value={(access.simulationsCount / 3) * 100} className="h-2 bg-warning/20" />
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <ProfessionalHeader
