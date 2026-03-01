@@ -88,7 +88,7 @@ export default function Portfolio() {
   const getPnL = (analysisId: string): number => {
     const legs = legsMap[analysisId] || [];
     return legs.reduce((total, leg) => {
-      // Se current_price for null, usamos o price de entrada (lucro zero)
+      // Se current_price for null, usamos o price de entrada (lucro zero) para não zerar o card
       const exitPrice = leg.current_price != null ? leg.current_price : leg.price;
       const mult = leg.side === 'buy' ? 1 : -1;
       return total + mult * (exitPrice - leg.price) * leg.quantity;
@@ -118,6 +118,7 @@ export default function Portfolio() {
     const montageCosts = analyses.map(a => getMontageCost(a.id));
     
     const totalPL = pnls.reduce((s, p) => s + p, 0);
+    // Capital investido é a soma dos custos negativos (desembolsos)
     const totalInvested = montageCosts.reduce((s, c) => s + (c < 0 ? Math.abs(c) : 0), 0);
     
     const wins = pnls.filter(p => p > 0).length;
