@@ -34,11 +34,13 @@ export default function PayoffChart({ data, breakevens, cdiRate = 0, daysToExpir
   const chartData = sortedData.map((p) => {
     const profit = p.profitAtExpiry;
     const cdi = cdiValue ?? 0;
+    const roi = (profit / investedCapital) * 100;
 
     return {
       price: p.price,
       profitAtExpiry: profit,
       profitToday: p.profitToday,
+      roi: roi.toFixed(1) + '%',
       belowZero: profit < 0 ? profit : 0,
       betweenZeroCdi: profit > 0 && cdi > 0
         ? Math.min(profit, cdi)
@@ -133,7 +135,21 @@ export default function PayoffChart({ data, breakevens, cdiRate = 0, daysToExpir
           />
         )}
         
-        <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartTooltip 
+          content={
+            <ChartTooltipContent 
+              formatter={(value, name, props) => {
+                if (name === 'profitAtExpiry') {
+                  return [
+                    `R$ ${Number(value).toFixed(2)} (${props.payload.roi})`,
+                    'Lucro Venc.'
+                  ];
+                }
+                return [value, name];
+              }}
+            />
+          } 
+        />
         
         <Area
           type="monotone"
