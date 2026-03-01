@@ -23,7 +23,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3 } from 'lucide-react';
+import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, SectionDivider } from '@/components/ProfessionalLayout';
 import AIInsights from '@/components/AIInsights';
@@ -339,17 +339,29 @@ export default function Dashboard() {
           )}
         </div>
         
-        <div className="flex gap-3 flex-wrap">
+        <div className="flex gap-3 flex-wrap items-center">
           <Button 
             onClick={getAISuggestion} 
             disabled={loadingAI || legs.length === 0 || isLimitReached} 
             className={cn(
-              "text-base h-11 px-6 shadow-[0_0_30px_-8px_hsl(var(--primary)/0.4)]",
+              "transition-all duration-500",
+              legs.length > 0 && !loadingAI && !isLimitReached
+                ? "bg-success hover:bg-success/90 text-success-foreground scale-110 animate-pulse h-14 px-8 text-lg font-black shadow-[0_0_40px_-8px_hsl(var(--success)/0.6)]"
+                : "text-base h-11 px-6 shadow-[0_0_30px_-8px_hsl(var(--primary)/0.4)]",
               isLimitReached && "opacity-50"
             )}
           >
-            {loadingAI ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
-            Sugestão IA {isLimitReached && <Lock className="ml-2 h-3 w-3" />}
+            {loadingAI ? (
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            ) : legs.length > 0 ? (
+              <MousePointer2 className="mr-2 h-6 w-6" />
+            ) : (
+              <Sparkles className="mr-2 h-5 w-5" />
+            )}
+            {legs.length > 0 && !loadingAI && !isLimitReached 
+              ? "APERTE AQUI E DESCUBRA OS SEGREDOS DA SUA ESTRUTURA" 
+              : "Sugestão IA"}
+            {isLimitReached && <Lock className="ml-2 h-3 w-3" />}
           </Button>
           <Button 
             onClick={saveAnalysis} 
