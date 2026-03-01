@@ -6,7 +6,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -15,7 +14,7 @@ serve(async (req) => {
     const { imageDataUrl } = await req.json()
     
     if (!imageDataUrl) {
-      console.error("[analyze-options-image] Nenhuma imagem fornecida")
+      console.log("[analyze-options-image] Nenhuma imagem fornecida");
       return new Response(JSON.stringify({ error: "Nenhuma imagem fornecida" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -24,7 +23,7 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")
     if (!LOVABLE_API_KEY) {
-      console.error("[analyze-options-image] LOVABLE_API_KEY não configurada")
+      console.error("[analyze-options-image] LOVABLE_API_KEY não configurada");
       return new Response(JSON.stringify({ error: "Configuração do servidor incompleta" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -68,7 +67,7 @@ serve(async (req) => {
     }
 
     const result = await response.json()
-    const content = result.choices?.[0]?.message?.content
+    let content = result.choices?.[0]?.message?.content
 
     if (!content) {
       console.error("[analyze-options-image] Resposta da IA vazia")
@@ -78,10 +77,23 @@ serve(async (req) => {
       })
     }
 
-    console.log("[analyze-options-image] Sucesso ao processar imagem")
-    return new Response(content, {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    })
+    // Limpeza de Markdown caso a IA ignore o response_format
+    content = content.replace(/```json\n?/, '').replace(/\n?```/, '').trim();
+
+    try {
+      // Valida se é um JSON válido antes de retornar
+      const parsed = JSON.parse(content);
+      console.log("[analyze-options-image] Sucesso ao processar imagem");
+      return new Response(JSON.stringify(parsed), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    } catch (parseError) {
+      console.error("[analyze-options-image] Erro ao parsear JSON da IA:", content);
+      return new Response(JSON.stringify({ error: "Resposta da IA em formato inválido" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
   } catch (e: any) {
     console.error("[analyze-options-image] Erro inesperado:", e.message)

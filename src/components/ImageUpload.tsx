@@ -6,11 +6,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
-interface ImageUploadProps {
-  onLegsExtracted: (legs: Leg[]) => void;
-  onImageChange?: () => void;
-}
-
 // Função auxiliar para comprimir imagem
 const compressImage = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -21,7 +16,7 @@ const compressImage = (file: File): Promise<string> => {
       img.src = event.target?.result as string;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 1024; // Reduz resolução para economizar payload
+        const MAX_WIDTH = 1024;
         const MAX_HEIGHT = 1024;
         let width = img.width;
         let height = img.height;
@@ -43,7 +38,6 @@ const compressImage = (file: File): Promise<string> => {
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
         
-        // Converte para JPEG com qualidade 0.7 (reduz muito o tamanho mantendo legibilidade)
         const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
         resolve(dataUrl);
       };
@@ -68,33 +62,21 @@ export default function ImageUpload({ onLegsExtracted, onImageChange }: ImageUpl
       });
       
       if (error) {
-        console.error('[ImageUpload] Supabase function error:', error);
-        throw new Error(error.message || 'Erro ao chamar a função de análise');
+        console.error('[ImageUpload] Erro na Edge Function:', error);
+        throw error;
       }
       
       if (data?.legs && data.legs.length > 0) {
         onLegsExtracted(data.legs);
-        toast.success(`✓ ${data.legs.length} perna(s) extraída(s) com sucesso!`, {
-          description: 'Estrutura reconhecida e carregada automaticamente.',
-        });
+        toast.success(`✓ ${data.legs.length} perna(s) extraída(s) com sucesso!`);
       } else {
-        toast.error('Nenhuma perna detectada', {
-          description: 'A imagem pode estar ilegível ou não conter uma tabela de opções clara.',
-        });
+        toast.error('Nenhuma perna detectada na imagem.');
       }
     } catch (err: any) {
-      console.error('[ImageUpload] OCR error details:', err);
-      const message = err.message || 'Tente novamente';
-      
-      if (message.includes('Failed to send a request') || message.includes('payload')) {
-        toast.error('Erro de envio', {
-          description: 'A imagem pode ser muito complexa. Tente cortar apenas a parte da tabela.',
-        });
-      } else {
-        toast.error('Erro ao processar imagem', {
-          description: message,
-        });
-      }
+      console.error('[ImageUpload] Erro completo:', err);
+      toast.error('Erro ao processar imagem', {
+        description: err.message || 'Verifique os logs do console para mais detalhes.',
+      });
     } finally {
       setLoading(false);
     }
@@ -102,9 +84,8 @@ export default function ImageUpload({ onLegsExtracted, onImageChange }: ImageUpl
 
   const handleFile = useCallback(async (file: File) => {
     if (processingRef.current) return;
-    
     if (!file.type.startsWith('image/')) {
-      toast.error('Formato inválido', { description: 'Por favor, envie uma imagem (PNG, JPG).' });
+      toast.error('Formato inválido');
       return;
     }
 
@@ -112,16 +93,12 @@ export default function ImageUpload({ onLegsExtracted, onImageChange }: ImageUpl
     onImageChange?.();
 
     try {
-      // Exibe preview rápido
       const objectUrl = URL.createObjectURL(file);
       setPreview(objectUrl);
-
-      // Comprime antes de enviar
       const compressedDataUrl = await compressImage(file);
       await processImage(compressedDataUrl);
     } catch (error) {
-      console.error("[ImageUpload] Erro na compressão:", error);
-      toast.error("Erro ao preparar imagem");
+      console.error("[ImageUpload] Erro no fluxo de arquivo:", error);
     } finally {
       processingRef.current = false;
     }
@@ -148,14 +125,10 @@ export default function ImageUpload({ onLegsExtracted, onImageChange }: ImageUpl
 
   useEffect(() => {
     const onWindowPaste = (e: ClipboardEvent) => {
-      // Só captura o paste global se não estivermos focados em um input de texto
-      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
-        return;
-      }
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
       const found = handleClipboardItems(e.clipboardData?.items);
       if (found) e.preventDefault();
     };
-
     window.addEventListener('paste', onWindowPaste);
     return () => window.removeEventListener('paste', onWindowPaste);
   }, [handleClipboardItems]);
@@ -190,7 +163,6 @@ export default function ImageUpload({ onLegsExtracted, onImageChange }: ImageUpl
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onClick={() => !loading && fileInputRef.current?.click()}
-      tabIndex={0}
     >
       <CardContent className="flex flex-col items-center justify-center py-12 gap-4">
         <input
@@ -203,57 +175,20 @@ export default function ImageUpload({ onLegsExtracted, onImageChange }: ImageUpl
 
         {loading ? (
           <div className="flex flex-col items-center animate-pulse gap-3">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl animate-spin-slow" />
-              <Loader2 className="h-10 w-10 animate-spin text-primary relative" />
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-bold text-primary">Processando Inteligente...</p>
-              <p className="text-xs text-muted-foreground">Otimizando e extraindo dados</p>
-            </div>
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p className="text-sm font-bold text-primary">Analisando imagem...</p>
           </div>
         ) : preview ? (
           <div className="relative w-full flex flex-col items-center gap-3">
-            <div className="relative group/img w-full max-w-[300px]">
-              <img 
-                src={preview} 
-                alt="Preview" 
-                className="w-full rounded-lg object-contain border border-border shadow-md" 
-              />
-              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
-                <p className="text-white text-xs font-bold">Clique para trocar</p>
-              </div>
-              <button
-                type="button"
-                className="absolute -top-2 -right-2 rounded-full bg-destructive p-1.5 text-destructive-foreground shadow-lg hover:bg-destructive/90 transition-all z-10"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setPreview(null);
-                  onImageChange?.();
-                  if (fileInputRef.current) fileInputRef.current.value = '';
-                }}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-            <p className="text-xs text-success font-medium flex items-center gap-1">
-              <CheckCircle2 className="h-3 w-3" /> Imagem carregada
-            </p>
+            <img src={preview} alt="Preview" className="max-w-[200px] rounded-lg border shadow-md" />
+            <p className="text-xs text-muted-foreground">Clique para trocar</p>
           </div>
         ) : (
           <>
-            <div className="h-14 w-14 rounded-2xl bg-info/10 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform duration-300">
-              <ImageIcon className="h-7 w-7 text-info" />
-            </div>
-            <div className="text-center space-y-1">
-              <p className="text-base font-bold text-foreground">Arraste ou Cole sua Nota</p>
-              <p className="text-xs text-muted-foreground">
-                Suportamos prints de Profit, Tryd e Home Brokers
-              </p>
-              <div className="flex items-center justify-center gap-2 mt-2">
-                <span className="px-2 py-0.5 rounded-full bg-muted border text-[10px] text-muted-foreground font-mono">CTRL+V</span>
-                <span className="px-2 py-0.5 rounded-full bg-muted border text-[10px] text-muted-foreground font-mono">JPG/PNG</span>
-              </div>
+            <ImageIcon className="h-10 w-10 text-info" />
+            <div className="text-center">
+              <p className="text-base font-bold">Arraste ou Cole sua Nota</p>
+              <p className="text-xs text-muted-foreground">Extração automática via IA</p>
             </div>
           </>
         )}
