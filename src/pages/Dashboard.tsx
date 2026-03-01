@@ -68,7 +68,22 @@ export default function Dashboard() {
   const addLeg = useCallback((leg: Leg) => { setLegs(prev => [...prev, leg]); }, []);
   const removeLeg = useCallback((index: number) => { setLegs(prev => prev.filter((_, i) => i !== index)); }, []);
   const updateLeg = useCallback((index: number, leg: Leg) => { setLegs(prev => prev.map((item, i) => (i === index ? leg : item))); }, []);
-  const handleLegsFromImage = useCallback((extractedLegs: Leg[]) => { setLegs(prev => [...prev, ...extractedLegs]); }, []);
+  
+  const handleLegsFromImage = useCallback((extractedLegs: any[]) => { 
+    // Sanitização: garante que números sejam números e tipos sejam válidos
+    const sanitizedLegs: Leg[] = extractedLegs.map(l => ({
+      side: (l.side === 'buy' || l.side === 'sell') ? l.side : 'buy',
+      option_type: (l.option_type === 'call' || l.option_type === 'put' || l.option_type === 'stock') ? l.option_type : 'call',
+      asset: String(l.asset || '').toUpperCase(),
+      strike: Number(l.strike) || 0,
+      price: Number(l.price) || 0,
+      quantity: Math.max(1, Number(l.quantity) || 1),
+    }));
+
+    setLegs(prev => [...prev, ...sanitizedLegs]); 
+    // Muda para o modo manual para que o usuário veja a tabela e possa editar
+    setInputMode('manual');
+  }, []);
 
   if (authLoading || access.status === 'loading') return null;
   if (!user) return <Navigate to="/auth" replace />;
