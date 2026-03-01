@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { PayoffPoint } from '@/lib/types';
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
-import { Area, CartesianGrid, ReferenceLine, XAxis, YAxis, Line, ComposedChart, ResponsiveContainer, Scatter } from 'recharts';
+import { Area, CartesianGrid, ReferenceLine, XAxis, YAxis, Line, ComposedChart, ResponsiveContainer } from 'recharts';
 import { calculateCDIReturn } from '@/lib/payoff';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -17,7 +17,6 @@ interface PayoffChartProps {
   maxGain?: number | 'Ilimitado';
   maxLoss?: number | 'Ilimitado';
   currentSpotPrice?: number | null;
-  currentPnL?: number | null;
 }
 
 const chartConfig = {
@@ -93,8 +92,7 @@ export default function PayoffChart({
   montageTotal,
   maxGain,
   maxLoss,
-  currentSpotPrice,
-  currentPnL
+  currentSpotPrice
 }: PayoffChartProps) {
   const [displayMode, setDisplayMode] = useState<'value' | 'percent'>('value');
 
@@ -129,16 +127,6 @@ export default function PayoffChart({
     };
   }), [sortedData, displayMode, investedCapital, cdiValue]);
 
-  // Ponto da posição atual (X = Preço Spot, Y = P&L Real)
-  const currentPositionData = useMemo(() => {
-    if (currentSpotPrice == null || currentPnL == null) return [];
-    const factor = displayMode === 'percent' ? (100 / investedCapital) : 1;
-    return [{
-      x: currentSpotPrice,
-      y: currentPnL * factor
-    }];
-  }, [currentSpotPrice, currentPnL, displayMode, investedCapital]);
-
   const formatVal = (val: number | 'Ilimitado' | undefined) => {
     if (val === 'Ilimitado') return 'Ilimitado';
     if (val === undefined) return 'N/A';
@@ -153,11 +141,6 @@ export default function PayoffChart({
   const maxPrice = Math.max(...prices);
 
   const allYValues = chartData.flatMap(d => [d.profitAtExpiry, d.profitToday, d.cdiLine ?? 0]);
-  if (currentPnL != null) {
-    const factor = displayMode === 'percent' ? (100 / investedCapital) : 1;
-    allYValues.push(currentPnL * factor);
-  }
-  
   const minY = Math.min(...allYValues);
   const maxY = Math.max(...allYValues);
   const rangeY = maxY - minY || 1;
@@ -348,21 +331,6 @@ export default function PayoffChart({
               dot={false}
               activeDot={{ r: 4, fill: 'hsl(var(--chart-profit))' }}
               isAnimationActive={false}
-            />
-
-            {/* Ponto da Posição Atual Real */}
-            <Scatter
-              data={currentPositionData}
-              fill="hsl(var(--primary))"
-              shape={(props: any) => {
-                const { cx, cy } = props;
-                return (
-                  <g>
-                    <circle cx={cx} cy={cy} r={8} fill="hsl(var(--primary))" fillOpacity={0.3} />
-                    <circle cx={cx} cy={cy} r={4} fill="hsl(var(--primary))" stroke="white" strokeWidth={2} />
-                  </g>
-                );
-              }}
             />
           </ComposedChart>
         </ResponsiveContainer>

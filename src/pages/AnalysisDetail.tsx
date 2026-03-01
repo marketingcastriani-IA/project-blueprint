@@ -754,7 +754,6 @@ export default function AnalysisDetail() {
               maxGain={metrics.maxGain}
               maxLoss={metrics.maxLoss}
               currentSpotPrice={currentSpotPrice}
-              currentPnL={currentPnL}
             />
           </CardContent>
         </Card>
