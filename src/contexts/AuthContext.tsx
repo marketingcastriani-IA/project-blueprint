@@ -53,13 +53,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin,
-      },
-    });
-    return { error: error as Error | null };
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+          skipBrowserRedirect: true,
+        },
+      });
+
+      if (error) return { error: error as Error | null };
+
+      if (data?.url) {
+        const popup = window.open(data.url, 'google-oauth', 'width=500,height=600');
+        if (!popup) {
+          return { error: new Error('Popups bloqueados. Permita popups para este site e tente novamente.') };
+        }
+
+        // Poll for session changes after popup auth
+        const pollInterval = setInterval(async () => {
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData?.session) {
+            clearInterval(pollInterval);
+            popup.close();
+            setSession(sessionData.session);
+            setUser(sessionData.session.user);
+          }
+        }, 1000);
+
+        // Cleanup after 2 minutes
+        setTimeout(() => {
+          clearInterval(pollInterval);
+          if (!popup.closed) popup.close();
+        }, 120000);
+      }
+
+      return { error: null };
+    } catch (err) {
+      return { error: err as Error };
+    }
   };
 
   const signOut = async () => {
