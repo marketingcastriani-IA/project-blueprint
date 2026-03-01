@@ -183,7 +183,7 @@ export default function Dashboard() {
   
   const isLimitReached = access.planType === 'free' && access.simulationsCount >= 3;
 
-  const handleLegsFromImage = useCallback((extractedLegs: any[]) => { 
+  const handleLegsFromImage = useCallback(async (extractedLegs: any[]) => { 
     if (isLimitReached) {
       toast.error('Limite de simulações atingido!', {
         description: 'Faça o upgrade para PRO para continuar usando o OCR.'
@@ -202,7 +202,15 @@ export default function Dashboard() {
 
     setLegs(prev => [...prev, ...sanitizedLegs]); 
     setInputMode('manual');
-  }, [isLimitReached]);
+
+    // Contar como simulação consumida
+    if (user) {
+      await supabase
+        .from('user_access')
+        .update({ simulations_count: access.simulationsCount + 1 } as any)
+        .eq('user_id', user.id);
+    }
+  }, [isLimitReached, user, access.simulationsCount]);
 
   if (authLoading || access.status === 'loading') return null;
   if (!user) return <Navigate to="/auth" replace />;
@@ -260,12 +268,6 @@ export default function Dashboard() {
       }));
       const { error: lError } = await supabase.from('legs').insert(legsToInsert);
       if (lError) throw lError;
-
-      // Increment simulation count
-      await supabase
-        .from('user_access')
-        .update({ simulations_count: access.simulationsCount + 1 } as any)
-        .eq('user_id', user.id);
 
       toast.success('Análise salva com sucesso!');
       navigate(`/analysis/${analysis.id}`);

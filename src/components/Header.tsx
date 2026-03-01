@@ -32,7 +32,9 @@ export default function Header() {
             <TrendingUp className="h-4 w-4 text-primary-foreground" />
           </div>
           <span className="hidden sm:inline tracking-tight">OpçõesX</span>
-          <Badge variant="outline" className="text-[8px] border-primary/30 text-primary hidden sm:inline-flex">PRO</Badge>
+          <Badge variant="outline" className="text-[8px] border-primary/30 text-primary hidden sm:inline-flex">
+            {access.planType === 'pro' ? 'PRO' : 'FREE'}
+          </Badge>
         </button>
 
         <nav className="hidden md:flex items-center gap-1">
@@ -55,11 +57,6 @@ export default function Header() {
         </nav>
 
         <div className="flex items-center gap-1">
-          {access.daysRemaining !== null && !access.isAdmin && (
-            <Badge variant="outline" className="text-[9px] border-warning/40 text-warning mr-2 hidden sm:inline-flex">
-              {access.daysRemaining}d restantes
-            </Badge>
-          )}
           <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-9 w-9">
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>

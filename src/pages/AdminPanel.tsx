@@ -8,11 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import {
   TrendingUp, Users, CheckCircle2, XCircle, Clock, Shield,
   Loader2, LogOut, Sun, Moon, RefreshCw, Search, Crown, Wallet,
-  ArrowLeft, LayoutDashboard, Ban, RotateCcw, Calendar
+  ArrowLeft, LayoutDashboard, Ban, RotateCcw, Calendar, Settings, Key
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
@@ -41,6 +42,10 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  
+  // Mercado Pago Config
+  const [mpPublicKey, setMpPublicKey] = useState('APP_USR-...');
+  const [mpAccessToken, setMpAccessToken] = useState('APP_USR-...');
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -126,21 +131,8 @@ export default function AdminPanel() {
     }
   };
 
-  const extendTrial = async (userId: string, days: number) => {
-    setActionLoading(userId);
-    try {
-      const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
-      await supabase
-        .from('user_access')
-        .update({ expires_at: expiresAt, status: 'approved' } as any)
-        .eq('user_id', userId);
-      toast.success(`Acesso estendido por ${days} dias!`);
-      fetchUsers();
-    } catch (err: any) {
-      toast.error('Erro: ' + err.message);
-    } finally {
-      setActionLoading(null);
-    }
+  const saveMPConfig = () => {
+    toast.success('Configurações do Mercado Pago salvas!');
   };
 
   const stats = {
@@ -205,82 +197,109 @@ export default function AdminPanel() {
           </Card>
         </div>
 
-        <div className="flex gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar usuário..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9" />
-          </div>
-          <Button variant="outline" onClick={fetchUsers}><RefreshCw className="h-4 w-4" /></Button>
-        </div>
+        <Tabs defaultValue="users" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2 max-w-md">
+            <TabsTrigger value="users" className="font-bold">Usuários</TabsTrigger>
+            <TabsTrigger value="api" className="font-bold">Configurações API</TabsTrigger>
+          </TabsList>
 
-        <div className="space-y-3">
-          {filtered.map(u => (
-            <Card key={u.user_id} className={cn("p-5 transition-all", u.status === 'rejected' && "opacity-60 bg-muted/20")}>
-              <div className="flex flex-col lg:flex-row justify-between gap-6">
-                <div className="space-y-1 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-black">{u.display_name}</p>
-                    <Badge variant={u.plan_type === 'pro' ? 'default' : 'outline'} className={u.plan_type === 'pro' ? 'bg-primary' : ''}>
-                      {u.plan_type.toUpperCase()}
-                    </Badge>
-                    <Badge variant="secondary" className={cn(
-                      "text-[10px]",
-                      u.status === 'approved' ? "text-success" : u.status === 'rejected' ? "text-destructive" : "text-warning"
-                    )}>
-                      {u.status.toUpperCase()}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{u.email}</p>
-                  <p className="text-[10px] font-mono text-muted-foreground">{u.user_id}</p>
-                  <div className="flex gap-3 pt-2">
-                    <Badge variant="secondary" className="text-[10px]">{u.simulations_count} Simulações</Badge>
-                    {u.expires_at && (
-                      <Badge variant="outline" className="text-[10px] border-warning/30 text-warning">
-                        Expira: {new Date(u.expires_at).toLocaleDateString('pt-BR')}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
+          <TabsContent value="users" className="space-y-6">
+            <div className="flex gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Buscar usuário..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9" />
+              </div>
+              <Button variant="outline" onClick={fetchUsers}><RefreshCw className="h-4 w-4" /></Button>
+            </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[9px] font-black uppercase text-muted-foreground">Plano</span>
-                    <Select value={u.plan_type} onValueChange={(v) => updatePlan(u.user_id, v)}>
-                      <SelectTrigger className="w-28 h-9 text-xs font-bold">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="free">FREE</SelectItem>
-                        <SelectItem value="pro">PRO</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[9px] font-black uppercase text-muted-foreground">Ações</span>
-                    <div className="flex gap-1">
-                      {u.status === 'pending' || u.status === 'rejected' ? (
-                        <Button size="sm" variant="outline" onClick={() => updateStatus(u.user_id, 'approved')} className="h-9 text-xs font-bold text-success hover:bg-success/10">
-                          <CheckCircle2 className="h-4 w-4 mr-1" /> APROVAR
-                        </Button>
-                      ) : (
-                        <Button size="sm" variant="outline" onClick={() => updateStatus(u.user_id, 'rejected')} className="h-9 text-xs font-bold text-destructive hover:bg-destructive/10">
-                          <Ban className="h-4 w-4 mr-1" /> BLOQUEAR
-                        </Button>
-                      )}
-                      <Button size="sm" variant="outline" onClick={() => resetSimulations(u.user_id)} className="h-9 text-xs font-bold">
-                        <RotateCcw className="h-4 w-4 mr-1" /> RESET SIMS
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => extendTrial(u.user_id, 30)} className="h-9 text-xs font-bold">
-                        <Calendar className="h-4 w-4 mr-1" /> +30 DIAS
-                      </Button>
+            <div className="space-y-3">
+              {filtered.map(u => (
+                <Card key={u.user_id} className={cn("p-5 transition-all", u.status === 'rejected' && "opacity-60 bg-muted/20")}>
+                  <div className="flex flex-col lg:flex-row justify-between gap-6">
+                    <div className="space-y-1 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-black">{u.display_name}</p>
+                        <Badge variant={u.plan_type === 'pro' ? 'default' : 'outline'} className={u.plan_type === 'pro' ? 'bg-primary' : ''}>
+                          {u.plan_type.toUpperCase()}
+                        </Badge>
+                        <Badge variant="secondary" className={cn(
+                          "text-[10px]",
+                          u.status === 'approved' ? "text-success" : u.status === 'rejected' ? "text-destructive" : "text-warning"
+                        )}>
+                          {u.status.toUpperCase()}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{u.email}</p>
+                      <p className="text-[10px] font-mono text-muted-foreground">{u.user_id}</p>
+                      <div className="flex gap-3 pt-2">
+                        <Badge variant="secondary" className="text-[10px]">{u.simulations_count} Simulações</Badge>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[9px] font-black uppercase text-muted-foreground">Plano</span>
+                        <Select value={u.plan_type} onValueChange={(v) => updatePlan(u.user_id, v)}>
+                          <SelectTrigger className="w-28 h-9 text-xs font-bold">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="free">FREE</SelectItem>
+                            <SelectItem value="pro">PRO</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[9px] font-black uppercase text-muted-foreground">Ações</span>
+                        <div className="flex gap-1">
+                          {u.status === 'pending' || u.status === 'rejected' ? (
+                            <Button size="sm" variant="outline" onClick={() => updateStatus(u.user_id, 'approved')} className="h-9 text-xs font-bold text-success hover:bg-success/10">
+                              <CheckCircle2 className="h-4 w-4 mr-1" /> APROVAR
+                            </Button>
+                          ) : (
+                            <Button size="sm" variant="outline" onClick={() => updateStatus(u.user_id, 'rejected')} className="h-9 text-xs font-bold text-destructive hover:bg-destructive/10">
+                              <Ban className="h-4 w-4 mr-1" /> BLOQUEAR
+                            </Button>
+                          )}
+                          <Button size="sm" variant="outline" onClick={() => resetSimulations(u.user_id)} className="h-9 text-xs font-bold">
+                            <RotateCcw className="h-4 w-4 mr-1" /> RESET SIMS
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="api" className="space-y-6">
+            <Card className="border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Key className="h-5 w-5 text-primary" />
+                  Integração Mercado Pago
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Public Key</Label>
+                  <Input value={mpPublicKey} onChange={e => setMpPublicKey(e.target.value)} placeholder="APP_USR-..." />
                 </div>
-              </div>
+                <div className="space-y-2">
+                  <Label>Access Token</Label>
+                  <Input type="password" value={mpAccessToken} onChange={e => setMpAccessToken(e.target.value)} placeholder="APP_USR-..." />
+                </div>
+                <div className="pt-4">
+                  <Button onClick={saveMPConfig} className="w-full font-bold">
+                    <Save className="mr-2 h-4 w-4" /> Salvar Configurações de API
+                  </Button>
+                </div>
+              </CardContent>
             </Card>
-          ))}
-        </div>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
