@@ -179,17 +179,12 @@ export default function Dashboard() {
     return calculateCDIOpportunityCost(investedCapital, cdiRate, daysToExpiry);
   }, [investedCapital, cdiRate, daysToExpiry]);
 
-  const addLeg = useCallback((leg: Leg) => { setLegs(prev => [...prev, leg]); }, []);
-  const removeLeg = useCallback((index: number) => { setLegs(prev => prev.filter((_, i) => i !== index)); }, []);
-  const updateLeg = useCallback((index: number, leg: Leg) => { setLegs(prev => prev.map((item, i) => (i === index ? leg : item))); }, []);
-  
   const isLimitReached = access.planType === 'free' && access.simulationsCount >= 3;
 
   const incrementSimulations = async () => {
     if (!user) return;
     
     try {
-      // Busca o valor mais atualizado do banco para evitar sobrescrever com valor antigo
       const { data: currentData } = await supabase
         .from('user_access')
         .select('simulations_count')
@@ -198,7 +193,6 @@ export default function Dashboard() {
 
       const currentCount = currentData?.simulations_count || 0;
 
-      // Incrementa no banco de dados
       const { error } = await supabase
         .from('user_access')
         .update({ simulations_count: currentCount + 1 } as any)
@@ -211,9 +205,22 @@ export default function Dashboard() {
     }
   };
 
+  const addLeg = useCallback(async (leg: Leg) => { 
+    if (isLimitReached) {
+      toast.error('Limite de simulações atingido!');
+      return;
+    }
+    setLegs(prev => [...prev, leg]); 
+    await incrementSimulations();
+    toast.info("Simulação contabilizada (entrada manual).");
+  }, [isLimitReached, user]);
+
+  const removeLeg = useCallback((index: number) => { setLegs(prev => prev.filter((_, i) => i !== index)); }, []);
+  const updateLeg = useCallback((index: number, leg: Leg) => { setLegs(prev => prev.map((item, i) => (i === index ? leg : item))); }, []);
+  
   const handleLegsFromImage = useCallback(async (extractedLegs: any[]) => { 
     if (isLimitReached) {
-      toast.error('Limite atingido!');
+      toast.error('Limite de simulações atingido!');
       return;
     }
 
@@ -230,7 +237,7 @@ export default function Dashboard() {
     setInputMode('manual');
     
     await incrementSimulations();
-    toast.info("Simulação contabilizada via OCR.");
+    toast.info("Simulação contabilizada (OCR de imagem).");
   }, [isLimitReached, user]);
 
   if (authLoading || access.status === 'loading') return null;
@@ -242,7 +249,7 @@ export default function Dashboard() {
 
   const getAISuggestion = async () => {
     if (isLimitReached) {
-      toast.error('Limite atingido!');
+      toast.error('Limite de simulações atingido!');
       return;
     }
     if (legs.length === 0) { toast.error('Adicione pernas primeiro.'); return; }
@@ -266,10 +273,6 @@ export default function Dashboard() {
   };
 
   const saveAnalysis = async () => {
-    if (isLimitReached) {
-      toast.error('Limite atingido!');
-      return;
-    }
     if (legs.length === 0) return;
     setSaving(true);
     try {
@@ -300,7 +303,6 @@ export default function Dashboard() {
       <main className="container py-6 space-y-6 animate-fade-in">
         <PortfolioSummary userId={user.id} />
 
-        {/* Simulation Counter Card for Free Users */}
         {access.planType === 'free' && (
           <Card className={cn("border-2 transition-all", isLimitReached ? "border-destructive bg-destructive/5" : "border-warning/30 bg-warning/5")}>
             <CardContent className="py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
