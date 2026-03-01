@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
@@ -222,7 +224,16 @@ export default function Dashboard() {
             <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
               <CardHeader><CardTitle className="text-base">Gráfico de Payoff</CardTitle></CardHeader>
               <CardContent>
-                <PayoffChart data={payoffData} breakevens={metrics.realBreakeven ? (Array.isArray(metrics.realBreakeven) ? metrics.realBreakeven : [metrics.realBreakeven]) : metrics.breakevens} cdiRate={cdiRate} daysToExpiry={daysToExpiry} netCost={metrics.netCost} montageTotal={metrics.montageTotal} />
+                <PayoffChart 
+                  data={payoffData} 
+                  breakevens={metrics.realBreakeven ? (Array.isArray(metrics.realBreakeven) ? metrics.realBreakeven : [metrics.realBreakeven]) : metrics.breakevens} 
+                  cdiRate={cdiRate} 
+                  daysToExpiry={daysToExpiry} 
+                  netCost={metrics.netCost} 
+                  montageTotal={metrics.montageTotal}
+                  maxGain={metrics.maxGain}
+                  maxLoss={metrics.maxLoss}
+                />
               </CardContent>
             </Card>
             <CDIComparison metrics={metrics} cdiRate={cdiRate} setCdiRate={setCdiRate} daysToExpiry={daysToExpiry} setDaysToExpiry={setDaysToExpiry} />

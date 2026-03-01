@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -358,7 +360,6 @@ export default function AnalysisDetail() {
       if (error) throw error;
       setAiAnalysis(data);
       
-      // Salvar a sugestão no banco
       await supabase.from('analyses').update({ ai_suggestion: JSON.stringify(data) }).eq('id', id!);
       
       toast.success('Análise de IA concluída!');
@@ -397,7 +398,6 @@ export default function AnalysisDetail() {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container py-6 space-y-6 animate-fade-in pb-20">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={() => navigate('/history')}>
@@ -454,7 +454,6 @@ export default function AnalysisDetail() {
           </div>
         </div>
 
-        {/* Legs with editable current prices */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Pernas da Estratégia — Preços Atuais</CardTitle>
@@ -464,7 +463,6 @@ export default function AnalysisDetail() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Add Leg Form */}
             {showAddLegForm && (
               <div className="border-2 border-primary/30 rounded-lg p-4 space-y-4 bg-primary/5">
                 <h3 className="font-semibold">Adicionar Nova Perna</h3>
@@ -539,7 +537,6 @@ export default function AnalysisDetail() {
               </div>
             )}
 
-            {/* Legs Table */}
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -709,7 +706,6 @@ export default function AnalysisDetail() {
           </CardContent>
         </Card>
 
-        {/* Exit Advisor */}
         {hasCurrentPrices && (
           <ExitAdvisorCard
             currentPnL={currentPnL}
@@ -719,11 +715,9 @@ export default function AnalysisDetail() {
           />
         )}
 
-        {/* AI Insights */}
         <SectionDivider title="Análise de IA" />
         <AIInsights analysis={aiAnalysis} loading={loadingAI} />
 
-        {/* Metrics + Chart + CDI */}
         <SectionDivider title="Métricas e Payoff" />
         <MetricsCards metrics={metrics} cdiReturn={cdiReturn} daysToExpiry={daysToExpiry} />
 
@@ -737,6 +731,8 @@ export default function AnalysisDetail() {
               daysToExpiry={daysToExpiry}
               netCost={metrics.netCost}
               montageTotal={metrics.montageTotal}
+              maxGain={metrics.maxGain}
+              maxLoss={metrics.maxLoss}
             />
           </CardContent>
         </Card>

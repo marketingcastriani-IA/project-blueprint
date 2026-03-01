@@ -15,6 +15,8 @@ interface PayoffChartProps {
   daysToExpiry?: number;
   netCost?: number;
   montageTotal?: number;
+  maxGain?: number | 'Ilimitado';
+  maxLoss?: number | 'Ilimitado';
 }
 
 const chartConfig = {
@@ -26,7 +28,16 @@ const chartConfig = {
   cdiReturn: { label: 'CDI', color: 'hsl(45 95% 55%)' },
 };
 
-export default function PayoffChart({ data, breakevens, cdiRate = 0, daysToExpiry = 0, netCost = 0, montageTotal }: PayoffChartProps) {
+export default function PayoffChart({ 
+  data, 
+  breakevens, 
+  cdiRate = 0, 
+  daysToExpiry = 0, 
+  netCost = 0, 
+  montageTotal,
+  maxGain,
+  maxLoss
+}: PayoffChartProps) {
   const [displayMode, setDisplayMode] = useState<'value' | 'percent'>('value');
 
   const investedCapital = useMemo(() => Math.max(Math.abs(montageTotal ?? netCost ?? 0), 1), [montageTotal, netCost]);
@@ -44,7 +55,6 @@ export default function PayoffChart({ data, breakevens, cdiRate = 0, daysToExpir
     const profitToday = p.profitToday;
     const cdi = cdiValue ?? 0;
     
-    // Converter para % se necessário
     const factor = displayMode === 'percent' ? (100 / investedCapital) : 1;
 
     return {
@@ -61,11 +71,9 @@ export default function PayoffChart({ data, breakevens, cdiRate = 0, daysToExpir
     };
   }), [sortedData, displayMode, investedCapital, cdiValue]);
 
-  // Métricas para o mini-dashboard
-  const maxProfit = useMemo(() => Math.max(...sortedData.map(p => p.profitAtExpiry)), [sortedData]);
-  const maxLoss = useMemo(() => Math.min(...sortedData.map(p => p.profitAtExpiry)), [sortedData]);
-
-  const formatVal = (val: number) => {
+  const formatVal = (val: number | 'Ilimitado' | undefined) => {
+    if (val === 'Ilimitado') return 'Ilimitado';
+    if (val === undefined) return 'N/A';
     if (displayMode === 'percent') return `${((val / investedCapital) * 100).toFixed(1)}%`;
     return `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
   };
@@ -84,13 +92,12 @@ export default function PayoffChart({ data, breakevens, cdiRate = 0, daysToExpir
 
   return (
     <div className="space-y-6">
-      {/* Mini Dashboard Header */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="p-3 rounded-xl bg-muted/30 border border-border/50">
           <p className="text-[10px] font-black uppercase text-muted-foreground mb-1 flex items-center gap-1">
             <TrendingUp className="h-3 w-3 text-success" /> Lucro Máx.
           </p>
-          <p className="text-sm font-bold text-success">{formatVal(maxProfit)}</p>
+          <p className="text-sm font-bold text-success">{formatVal(maxGain)}</p>
         </div>
         <div className="p-3 rounded-xl bg-muted/30 border border-border/50">
           <p className="text-[10px] font-black uppercase text-muted-foreground mb-1 flex items-center gap-1">
