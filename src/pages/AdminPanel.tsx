@@ -9,11 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import {
   TrendingUp, Users, CheckCircle2, XCircle, Clock, Shield,
   Loader2, LogOut, Sun, Moon, RefreshCw, Search, Crown, Wallet,
-  ArrowLeft, LayoutDashboard, Ban, RotateCcw, Calendar, Settings, Key
+  ArrowLeft, LayoutDashboard, Ban, RotateCcw, Calendar, Settings, Key, Save
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
@@ -80,7 +81,14 @@ export default function AdminPanel() {
     if (access.isAdmin) fetchUsers();
   }, [access.isAdmin]);
 
-  if (authLoading || access.status === 'loading') return null;
+  if (authLoading || access.status === 'loading') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   if (!user || !access.isAdmin) return <Navigate to="/admin-login" replace />;
 
   const updatePlan = async (userId: string, planType: string) => {
@@ -167,7 +175,9 @@ export default function AdminPanel() {
             >
               <LayoutDashboard className="mr-2 h-4 w-4" /> Voltar para o App
             </Button>
-            <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-9 w-9"><Sun className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-9 w-9">
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
             <Button variant="ghost" size="icon" onClick={signOut} className="h-9 w-9"><LogOut className="h-4 w-4" /></Button>
           </div>
         </div>
