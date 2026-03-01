@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import {
   TrendingUp, Users, CheckCircle2, XCircle, Clock, Shield,
   Loader2, LogOut, Sun, Moon, RefreshCw, Search, Crown, Wallet,
-  ArrowLeft, LayoutDashboard, Ban, RotateCcw, Calendar, Settings, Key, Save, User, Mail
+  ArrowLeft, LayoutDashboard, Ban, RotateCcw, Calendar, Settings, Key, Save, User, Mail, DollarSign
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
@@ -44,9 +44,10 @@ export default function AdminPanel() {
   const [searchTerm, setSearchTerm] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   
-  // Mercado Pago Config - Updated with user provided keys
+  // Mercado Pago Config
   const [mpPublicKey, setMpPublicKey] = useState('TEST-223bd091-629e-4853-a6df-c50a120fb48b');
   const [mpAccessToken, setMpAccessToken] = useState('TEST-8723062167465367-030112-b03bf6309f490dcda5d967d47b41851c-467698330');
+  const [proPrice, setProPrice] = useState('19.90');
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -73,8 +74,19 @@ export default function AdminPanel() {
       });
 
       setUsers(rows);
+
+      // Fetch current price from settings
+      const { data: settings } = await supabase
+        .from('site_settings')
+        .select('*')
+        .eq('id', 'pro_plan')
+        .single();
+      
+      if (settings) {
+        setProPrice(String((settings.value as any).price));
+      }
     } catch (err: any) {
-      toast.error('Erro ao carregar usuários');
+      toast.error('Erro ao carregar dados');
     } finally {
       setLoading(false);
     }
@@ -142,8 +154,20 @@ export default function AdminPanel() {
     }
   };
 
-  const saveMPConfig = () => {
-    toast.success('Configurações do Mercado Pago salvas!');
+  const saveSettings = async () => {
+    try {
+      const { error } = await supabase
+        .from('site_settings')
+        .upsert({ 
+          id: 'pro_plan', 
+          value: { price: parseFloat(proPrice) } 
+        } as any);
+      
+      if (error) throw error;
+      toast.success('Configurações salvas com sucesso!');
+    } catch (err: any) {
+      toast.error('Erro ao salvar: ' + err.message);
+    }
   };
 
   const stats = {
@@ -302,29 +326,47 @@ export default function AdminPanel() {
           </TabsContent>
 
           <TabsContent value="api" className="space-y-6">
-            <Card className="border-primary/20 bg-gradient-to-br from-primary/[0.03] to-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Key className="h-5 w-5 text-primary" />
-                  Integração Mercado Pago
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-xs font-black uppercase tracking-widest">Public Key</Label>
-                  <Input value={mpPublicKey} onChange={e => setMpPublicKey(e.target.value)} placeholder="APP_USR-..." className="font-mono" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-black uppercase tracking-widest">Access Token</Label>
-                  <Input type="password" value={mpAccessToken} onChange={e => setMpAccessToken(e.target.value)} placeholder="APP_USR-..." className="font-mono" />
-                </div>
-                <div className="pt-4">
-                  <Button onClick={saveMPConfig} className="w-full h-12 font-black shadow-lg shadow-primary/20">
-                    <Save className="mr-2 h-5 w-5" /> SALVAR CONFIGURAÇÕES DE API
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card className="border-primary/20 bg-gradient-to-br from-primary/[0.03] to-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Key className="h-5 w-5 text-primary" />
+                    Integração Mercado Pago
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-black uppercase tracking-widest">Public Key</Label>
+                    <Input value={mpPublicKey} onChange={e => setMpPublicKey(e.target.value)} placeholder="APP_USR-..." className="font-mono" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-black uppercase tracking-widest">Access Token</Label>
+                    <Input type="password" value={mpAccessToken} onChange={e => setMpAccessToken(e.target.value)} placeholder="APP_USR-..." className="font-mono" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-success/20 bg-gradient-to-br from-success/[0.03] to-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-success" />
+                    Preço do Plano PRO
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-black uppercase tracking-widest">Valor Mensal (R$)</Label>
+                    <Input type="number" step="0.01" value={proPrice} onChange={e => setProPrice(e.target.value)} placeholder="19.90" className="font-mono text-lg font-bold" />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Este valor será exibido na Landing Page e na página de Upgrade.</p>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="pt-4">
+              <Button onClick={saveSettings} className="w-full h-12 font-black shadow-lg shadow-primary/30">
+                <Save className="mr-2 h-5 w-5" /> SALVAR TODAS AS CONFIGURAÇÕES
+              </Button>
+            </div>
           </TabsContent>
         </Tabs>
       </main>

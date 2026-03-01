@@ -20,10 +20,26 @@ export default function Settings() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [proPrice, setProPrice] = useState(19.90);
+
+  useEffect(() => {
+    const fetchPrice = async () => {
+      const { data } = await supabase
+        .from('site_settings')
+        .select('*')
+        .eq('id', 'pro_plan')
+        .single();
+      
+      if (data) {
+        setProPrice((data.value as any).price);
+      }
+    };
+    fetchPrice();
+  }, []);
 
   const handleUpgrade = () => {
     toast.info("Redirecionando para o Mercado Pago...", {
-      description: "Você será levado para o checkout seguro."
+      description: `Valor da assinatura: R$ ${proPrice.toFixed(2)}`
     });
     // Link de checkout do Mercado Pago (exemplo)
     window.open('https://www.mercadopago.com.br', '_blank');
@@ -96,7 +112,7 @@ export default function Settings() {
                   <h3 className="text-lg font-black">Upgrade para PRO</h3>
                 </div>
                 <p className="text-sm text-muted-foreground font-medium">
-                  Libere simulações ilimitadas, OCR de imagem, sugestões de IA e suporte prioritário por apenas <strong>R$ 49,90/mês</strong>.
+                  Libere simulações ilimitadas, OCR de imagem, sugestões de IA e suporte prioritário por apenas <strong>R$ {proPrice.toFixed(2)}/mês</strong>.
                 </p>
                 <Button onClick={handleUpgrade} className="w-full h-12 font-black shadow-lg shadow-primary/20">
                   <CreditCard className="mr-2 h-5 w-5" /> ASSINAR VIA MERCADO PAGO

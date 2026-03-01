@@ -12,11 +12,29 @@ import { Sun, Moon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Index() {
   const { user, loading } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  const [proPrice, setProPrice] = useState(19.90);
+
+  useEffect(() => {
+    const fetchPrice = async () => {
+      const { data } = await supabase
+        .from('site_settings')
+        .select('*')
+        .eq('id', 'pro_plan')
+        .single();
+      
+      if (data) {
+        setProPrice((data.value as any).price);
+      }
+    };
+    fetchPrice();
+  }, []);
 
   if (loading) return null;
   if (user) return <Navigate to="/dashboard" replace />;
@@ -201,7 +219,7 @@ export default function Index() {
             </div>
             <div className="space-y-2">
               <h3 className="text-2xl font-black tracking-tight text-primary">PRO</h3>
-              <p className="text-4xl font-black tracking-tighter">R$ 49,90<span className="text-sm text-muted-foreground">/mês</span></p>
+              <p className="text-4xl font-black tracking-tighter">R$ {proPrice.toFixed(2)}<span className="text-sm text-muted-foreground">/mês</span></p>
             </div>
             <ul className="space-y-4">
               <li className="flex items-center gap-3 text-sm font-bold"><CheckCircle2 className="h-5 w-5 text-primary" /> Simulações ILIMITADAS</li>
