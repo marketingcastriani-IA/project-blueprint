@@ -44,9 +44,9 @@ export default function AdminPanel() {
   const [searchTerm, setSearchTerm] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   
-  // Mercado Pago Config
-  const [mpPublicKey, setMpPublicKey] = useState('APP_USR-...');
-  const [mpAccessToken, setMpAccessToken] = useState('APP_USR-...');
+  // Mercado Pago Config - Updated with user provided keys
+  const [mpPublicKey, setMpPublicKey] = useState('TEST-223bd091-629e-4853-a6df-c50a120fb48b');
+  const [mpAccessToken, setMpAccessToken] = useState('TEST-8723062167465367-030112-b03bf6309f490dcda5d967d47b41851c-467698330');
 
   const fetchUsers = async () => {
     setLoading(true);
