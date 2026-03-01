@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import {
   TrendingUp, Users, CheckCircle2, XCircle, Clock, Shield,
-  Loader2, LogOut, Sun, Moon, RefreshCw, Search, Crown, Wallet
+  Loader2, LogOut, Sun, Moon, RefreshCw, Search, Crown, Wallet,
+  ArrowLeft, LayoutDashboard
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -139,11 +140,19 @@ export default function AdminPanel() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <TrendingUp className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span>OpçõesX Admin</span>
+            <span className="hidden sm:inline">OpçõesX Admin</span>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={toggleTheme}><Sun className="h-4 w-4" /></Button>
-            <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="h-4 w-4" /></Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => navigate('/dashboard')} 
+              className="h-9 font-bold border-primary/30 text-primary hover:bg-primary/10"
+            >
+              <LayoutDashboard className="mr-2 h-4 w-4" /> Voltar para o App
+            </Button>
+            <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-9 w-9"><Sun className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" onClick={signOut} className="h-9 w-9"><LogOut className="h-4 w-4" /></Button>
           </div>
         </div>
       </header>
