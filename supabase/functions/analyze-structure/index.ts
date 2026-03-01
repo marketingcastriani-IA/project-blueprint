@@ -19,7 +19,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured")
     }
 
-    console.log("[analyze-structure] Iniciando análise da estrutura (Gemini 2.5 Flash)...")
+    console.log("[analyze-structure] Iniciando análise profunda da estrutura...")
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -32,22 +32,31 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `Você é um analista sênior de derivativos da B3. Analise a estrutura de opções e retorne APENAS um JSON válido.
-            Estrutura do JSON:
+            content: `Você é um analista sênior de derivativos e estrategista quantitativo da B3. 
+            Sua tarefa é analisar a estrutura de opções enviada e retornar um JSON detalhado para um investidor profissional.
+            
+            Estrutura do JSON esperada:
             {
               "verdict": "Compra Forte" | "Atrativo" | "Neutro" | "Evitar" | "Perigoso",
               "score": number (0-10),
               "risk_level": "Baixo" | "Moderado" | "Alto" | "Crítico",
-              "cdi_comparison": "string curta",
+              "cdi_comparison": "Explicação curta da eficiência vs CDI",
+              "strategy_explanation": "Explicação técnica de como as pernas interagem entre si",
+              "scenarios": {
+                "up": "O que acontece se o ativo subir (lucro máximo, delta, etc)",
+                "flat": "O que acontece se o ativo ficar parado (theta decay, breakeven)",
+                "down": "O que acontece se o ativo cair (proteção, prejuízo máximo)"
+              },
               "pros": ["string"],
               "cons": ["string"],
-              "summary": "string",
+              "summary": "Resumo executivo da operação",
               "probability_success": "Alta" | "Média" | "Baixa"
             }`
           },
           { 
             role: "user", 
-            content: `Analise: ${JSON.stringify({ legs, metrics, cdiRate, daysToExpiry })}` 
+            content: `Analise esta estrutura financeira: ${JSON.stringify({ legs, metrics, cdiRate, daysToExpiry })}. 
+            Seja técnico, preciso e use terminologia de mercado (B3).` 
           },
         ],
         response_format: { type: "json_object" }
@@ -56,23 +65,17 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error(`[analyze-structure] Erro no Gateway de IA: ${response.status}`, errorText)
       throw new Error(`AI Gateway error: ${response.status}`)
     }
 
     const result = await response.json()
     let content = result.choices[0].message.content
-    
     content = content.replace(/```json\n?/, '').replace(/\n?```/, '').trim()
     
-    const analysis = JSON.parse(content)
-    console.log("[analyze-structure] Análise concluída com sucesso")
-
-    return new Response(JSON.stringify(analysis), {
+    return new Response(content, {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     })
   } catch (e: any) {
-    console.error("[analyze-structure] Erro crítico:", e.message)
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
