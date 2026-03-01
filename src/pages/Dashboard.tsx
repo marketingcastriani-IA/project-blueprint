@@ -22,12 +22,99 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2 } from 'lucide-react';
+import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, SectionDivider } from '@/components/ProfessionalLayout';
 import AIInsights from '@/components/AIInsights';
 
 type InputMode = null | 'manual' | 'image';
+
+function PortfolioSummary({ userId }: { userId: string }) {
+  const [stats, setStats] = useState<{ totalPL: number; roi: number } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const { data: analyses } = await supabase
+        .from('analyses')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('status', 'closed');
+
+      if (!analyses || analyses.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      const ids = analyses.map(a => a.id);
+      const { data: legs } = await supabase
+        .from('legs')
+        .select('side, price, current_price, quantity')
+        .in('analysis_id', ids);
+
+      if (!legs) {
+        setLoading(false);
+        return;
+      }
+
+      let totalPL = 0;
+      let totalInvested = 0;
+
+      legs.forEach(l => {
+        const multiplier = l.side === 'buy' ? 1 : -1;
+        const entryCost = l.price * l.quantity;
+        
+        // @ts-ignore
+        if (l.current_price != null) {
+          // @ts-ignore
+          totalPL += multiplier * (l.current_price - l.price) * l.quantity;
+        }
+        
+        if (l.side === 'buy') totalInvested += entryCost;
+      });
+
+      setStats({
+        totalPL,
+        roi: totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0
+      });
+      setLoading(false);
+    };
+
+    fetchStats();
+  }, [userId]);
+
+  if (loading || !stats || stats.totalPL === 0) return null;
+
+  return (
+    <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent mb-6">
+      <CardContent className="py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className={cn(
+            "p-2 rounded-lg",
+            stats.totalPL >= 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+          )}>
+            {stats.totalPL >= 0 ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
+          </div>
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Resultado Portfólio</p>
+            <p className={cn("text-lg font-black tracking-tighter", stats.totalPL >= 0 ? "text-success" : "text-destructive")}>
+              R$ {stats.totalPL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">ROI Consolidado</p>
+          <Badge variant="outline" className={cn(
+            "font-black",
+            stats.roi >= 0 ? "border-success/30 text-success" : "border-destructive/30 text-destructive"
+          )}>
+            {stats.roi >= 0 ? '+' : ''}{stats.roi.toFixed(2)}%
+          </Badge>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -151,6 +238,8 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background pb-16">
       <Header />
       <main className="container py-6 space-y-6 animate-fade-in">
+        <PortfolioSummary userId={user.id} />
+
         <ProfessionalHeader
           title="Nova Análise"
           subtitle="Monte sua estrutura de opções e analise os riscos em tempo real"

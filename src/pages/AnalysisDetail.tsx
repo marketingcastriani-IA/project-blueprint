@@ -188,7 +188,10 @@ export default function AnalysisDetail() {
         const legs = lRes.data as unknown as DbLeg[];
         setDbLegs(legs);
         const prices: Record<string, string> = {};
-        legs.forEach(l => { prices[l.id] = ''; });
+        legs.forEach(l => { 
+          // @ts-ignore - current_price exists in DB
+          prices[l.id] = l.current_price != null ? String(l.current_price) : ''; 
+        });
         setCurrentPrices(prices);
       }
       setLoading(false);
@@ -312,9 +315,18 @@ export default function AnalysisDetail() {
   };
 
   const closeOperation = async () => {
-    if (!confirm('Encerrar esta operação e enviar para o portfólio?')) return;
+    if (!confirm('Encerrar esta operação e enviar para o portfólio? Os preços atuais serão salvos como preços de saída.')) return;
     setClosing(true);
     try {
+      // Primeiro salva os preços atuais
+      for (const leg of dbLegs) {
+        const cp = parseFloat(currentPrices[leg.id] || '');
+        if (!isNaN(cp)) {
+          await supabase.from('legs').update({ current_price: cp } as any).eq('id', leg.id);
+        }
+      }
+      
+      // Depois encerra a análise
       await supabase.from('analyses').update({ status: 'closed', closed_at: new Date().toISOString() } as any).eq('id', id!);
       setAnalysis(prev => prev ? { ...prev, status: 'closed' } : prev);
       toast.success('Operação encerrada e enviada para o portfólio!');
