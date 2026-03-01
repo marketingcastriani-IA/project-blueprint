@@ -17,15 +17,6 @@ export default function Auth() {
   const [name, setName] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Handle OAuth callback in popup
-  useEffect(() => {
-    if (window.opener && (window.location.hash || window.location.search)) {
-      // We're in a popup after OAuth redirect - notify parent and close
-      window.opener.postMessage({ type: 'supabase-auth-callback' }, '*');
-      setTimeout(() => window.close(), 500);
-      return;
-    }
-  }, []);
 
   if (loading) return null;
   if (user) return <Navigate to="/dashboard" replace />;

@@ -54,62 +54,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin + '/auth',
-          skipBrowserRedirect: true,
+          redirectTo: window.location.origin + '/dashboard',
         },
       });
-
-      if (error) return { error: error as Error | null };
-
-      if (data?.url) {
-        const popup = window.open(data.url, 'google-oauth', 'width=500,height=600');
-        if (!popup) {
-          return { error: new Error('Popups bloqueados. Permita popups para este site e tente novamente.') };
-        }
-
-        return new Promise<{ error: Error | null }>((resolve) => {
-          const messageHandler = async (event: MessageEvent) => {
-            if (event.data?.type === 'supabase-auth-callback') {
-              window.removeEventListener('message', messageHandler);
-              clearTimeout(timeout);
-              // Refresh session from server
-              const { data: sessionData } = await supabase.auth.getSession();
-              if (sessionData?.session) {
-                setSession(sessionData.session);
-                setUser(sessionData.session.user);
-              }
-              resolve({ error: null });
-            }
-          };
-          window.addEventListener('message', messageHandler);
-
-          const timeout = setTimeout(() => {
-            window.removeEventListener('message', messageHandler);
-            if (popup && !popup.closed) popup.close();
-            resolve({ error: new Error('Timeout na autenticação. Tente novamente.') });
-          }, 120000);
-
-          // Also poll as fallback
-          const pollInterval = setInterval(async () => {
-            if (popup?.closed) {
-              clearInterval(pollInterval);
-              const { data: sessionData } = await supabase.auth.getSession();
-              if (sessionData?.session) {
-                window.removeEventListener('message', messageHandler);
-                clearTimeout(timeout);
-                setSession(sessionData.session);
-                setUser(sessionData.session.user);
-                resolve({ error: null });
-              }
-            }
-          }, 1000);
-        });
-      }
-
-      return { error: null };
+      return { error: error as Error | null };
     } catch (err) {
       return { error: err as Error };
     }
