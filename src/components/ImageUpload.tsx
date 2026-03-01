@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 
 interface ImageUploadProps {
   onLegsExtracted: (legs: Leg[]) => void;
-  onImageChange?: () => void;
+  onImageChange?: (hasImage: boolean) => void;
   onClear?: () => void;
 }
 
@@ -66,7 +66,8 @@ export default function ImageUpload({ onLegsExtracted, onImageChange, onClear }:
     setLoading(false);
     processingRef.current = false;
     if (onClear) onClear();
-  }, [onClear]);
+    onImageChange?.(false);
+  }, [onClear, onImageChange]);
 
   const processImage = useCallback(async (imageDataUrl: string): Promise<void> => {
     setLoading(true);
@@ -99,7 +100,7 @@ export default function ImageUpload({ onLegsExtracted, onImageChange, onClear }:
     }
 
     processingRef.current = true;
-    onImageChange?.();
+    onImageChange?.(true);
 
     try {
       const objectUrl = URL.createObjectURL(file);

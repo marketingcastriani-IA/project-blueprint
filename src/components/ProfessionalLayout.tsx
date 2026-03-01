@@ -25,13 +25,16 @@ export const ProfessionalCard = ({
   className,
   glow = false,
   highlight = false,
+  onClick,
 }: { 
   children: ReactNode; 
   className?: string;
   glow?: boolean;
   highlight?: boolean;
+  onClick?: () => void;
 }) => (
   <div
+    onClick={onClick}
     className={cn(
       'relative rounded-2xl border backdrop-blur-xl transition-all duration-300',
       'bg-gradient-to-br from-card/80 to-card/40',
