@@ -20,6 +20,7 @@ export default function Settings() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);
   const [proPrice, setProPrice] = useState(19.90);
 
   useEffect(() => {
@@ -35,14 +36,27 @@ export default function Settings() {
       }
     };
     fetchPrice();
+
+    // Verificar se voltou de um pagamento
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success') {
+      toast.success("Pagamento aprovado!", { description: "Seu plano PRO será liberado em instantes." });
+    }
   }, []);
 
-  const handleUpgrade = () => {
-    toast.info("Redirecionando para o Mercado Pago...", {
-      description: `Valor da assinatura: R$ ${proPrice.toFixed(2)}`
-    });
-    // Link de checkout do Mercado Pago (exemplo)
-    window.open('https://www.mercadopago.com.br', '_blank');
+  const handleUpgrade = async () => {
+    setUpgrading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('mercado-pago-checkout');
+      if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (err: any) {
+      toast.error("Erro ao iniciar checkout", { description: err.message });
+    } finally {
+      setUpgrading(false);
+    }
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -114,8 +128,9 @@ export default function Settings() {
                 <p className="text-sm text-muted-foreground font-medium">
                   Libere simulações ilimitadas, OCR de imagem, sugestões de IA e suporte prioritário por apenas <strong>R$ {proPrice.toFixed(2)}/mês</strong>.
                 </p>
-                <Button onClick={handleUpgrade} className="w-full h-12 font-black shadow-lg shadow-primary/20">
-                  <CreditCard className="mr-2 h-5 w-5" /> ASSINAR VIA MERCADO PAGO
+                <Button onClick={handleUpgrade} disabled={upgrading} className="w-full h-12 font-black shadow-lg shadow-primary/20">
+                  {upgrading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CreditCard className="mr-2 h-5 w-5" />}
+                  ASSINAR VIA MERCADO PAGO
                 </Button>
               </div>
             )}
