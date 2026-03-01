@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin,
+          redirectTo: window.location.origin + '/auth',
           skipBrowserRedirect: true,
         },
       });
@@ -70,22 +70,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { error: new Error('Popups bloqueados. Permita popups para este site e tente novamente.') };
         }
 
-        // Poll for session changes after popup auth
-        const pollInterval = setInterval(async () => {
-          const { data: sessionData } = await supabase.auth.getSession();
-          if (sessionData?.session) {
-            clearInterval(pollInterval);
-            popup.close();
-            setSession(sessionData.session);
-            setUser(sessionData.session.user);
-          }
-        }, 1000);
+        return new Promise<{ error: Error | null }>((resolve) => {
+          const messageHandler = async (event: MessageEvent) => {
+            if (event.data?.type === 'supabase-auth-callback') {
+              window.removeEventListener('message', messageHandler);
+              clearTimeout(timeout);
+              // Refresh session from server
+              const { data: sessionData } = await supabase.auth.getSession();
+              if (sessionData?.session) {
+                setSession(sessionData.session);
+                setUser(sessionData.session.user);
+              }
+              resolve({ error: null });
+            }
+          };
+          window.addEventListener('message', messageHandler);
 
-        // Cleanup after 2 minutes
-        setTimeout(() => {
-          clearInterval(pollInterval);
-          if (!popup.closed) popup.close();
-        }, 120000);
+          const timeout = setTimeout(() => {
+            window.removeEventListener('message', messageHandler);
+            if (popup && !popup.closed) popup.close();
+            resolve({ error: new Error('Timeout na autenticação. Tente novamente.') });
+          }, 120000);
+
+          // Also poll as fallback
+          const pollInterval = setInterval(async () => {
+            if (popup?.closed) {
+              clearInterval(pollInterval);
+              const { data: sessionData } = await supabase.auth.getSession();
+              if (sessionData?.session) {
+                window.removeEventListener('message', messageHandler);
+                clearTimeout(timeout);
+                setSession(sessionData.session);
+                setUser(sessionData.session.user);
+                resolve({ error: null });
+              }
+            }
+          }, 1000);
+        });
       }
 
       return { error: null };
