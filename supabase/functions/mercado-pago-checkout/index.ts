@@ -7,10 +7,13 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
+  // Handle CORS
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
 
   try {
-    console.log("[mercado-pago-checkout] Iniciando processo de checkout...");
+    console.log("[mercado-pago-checkout] Iniciando...");
     
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -18,33 +21,35 @@ serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
 
+    // Get user
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
-    if (userError || !user) {
-      console.error("[mercado-pago-checkout] Usuário não autenticado");
-      throw new Error("Não autorizado");
+    if (userError || !user) throw new Error("Usuário não autenticado")
+
+    // Get price (with fallback if table doesn't exist)
+    let price = 19.90
+    try {
+      const { data: settings } = await supabaseClient
+        .from('site_settings')
+        .select('value')
+        .eq('id', 'pro_plan')
+        .maybeSingle()
+      
+      if (settings?.value?.price) {
+        price = settings.value.price
+      }
+    } catch (e) {
+      console.log("[mercado-pago-checkout] Usando preço padrão (tabela site_settings não encontrada)");
     }
 
-    // Buscar preço configurado
-    const { data: settings } = await supabaseClient
-      .from('site_settings')
-      .select('value')
-      .eq('id', 'pro_plan')
-      .maybeSingle()
-    
-    const price = settings?.value?.price || 19.90
     const MP_ACCESS_TOKEN = Deno.env.get("MP_ACCESS_TOKEN")
-
     if (!MP_ACCESS_TOKEN) {
-      console.error("[mercado-pago-checkout] ERRO: MP_ACCESS_TOKEN não configurado nos Secrets do Supabase");
-      return new Response(JSON.stringify({ error: "Configuração do Mercado Pago ausente no servidor." }), {
-        status: 500,
+      return new Response(JSON.stringify({ error: "Token do Mercado Pago não configurado no servidor." }), {
+        status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
     }
 
-    console.log(`[mercado-pago-checkout] Criando preferência para ${user.email} no valor de R$ ${price}`)
-
-    // Criar Preferência no Mercado Pago
+    // Create Preference
     const mpResponse = await fetch("https://api.mercadopago.com/checkout/preferences", {
       method: "POST",
       headers: {
@@ -54,15 +59,13 @@ serve(async (req) => {
       body: JSON.stringify({
         items: [
           {
-            title: "OpçõesX - Plano PRO (Mensal)",
-            unit_price: price,
+            title: "OpçõesX - Plano PRO",
+            unit_price: Number(price),
             quantity: 1,
             currency_id: "BRL"
           }
         ],
-        payer: {
-          email: user.email
-        },
+        payer: { email: user.email },
         external_reference: user.id,
         back_urls: {
           success: `${req.headers.get('origin')}/settings?payment=success`,
@@ -73,21 +76,22 @@ serve(async (req) => {
       })
     })
 
+    const result = await mpResponse.json()
+
     if (!mpResponse.ok) {
-      const errorData = await mpResponse.text();
-      console.error("[mercado-pago-checkout] Erro na API do Mercado Pago:", errorData);
-      throw new Error("Erro ao gerar link de pagamento no Mercado Pago");
+      console.error("[mercado-pago-checkout] Erro MP:", result);
+      return new Response(JSON.stringify({ error: result.message || "Erro na API do Mercado Pago" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      })
     }
 
-    const preference = await mpResponse.json()
-    console.log("[mercado-pago-checkout] Preferência criada com sucesso:", preference.id);
-    
-    return new Response(JSON.stringify({ url: preference.init_point }), {
+    return new Response(JSON.stringify({ url: result.init_point }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     })
 
   } catch (e: any) {
-    console.error("[mercado-pago-checkout] Erro inesperado:", e.message)
+    console.error("[mercado-pago-checkout] Erro fatal:", e.message)
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

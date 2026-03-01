@@ -25,14 +25,18 @@ export default function Settings() {
 
   useEffect(() => {
     const fetchPrice = async () => {
-      const { data } = await supabase
-        .from('site_settings')
-        .select('*')
-        .eq('id', 'pro_plan')
-        .maybeSingle();
-      
-      if (data) {
-        setProPrice((data.value as any).price);
+      try {
+        const { data } = await supabase
+          .from('site_settings')
+          .select('*')
+          .eq('id', 'pro_plan')
+          .maybeSingle();
+        
+        if (data) {
+          setProPrice((data.value as any).price);
+        }
+      } catch (e) {
+        console.log("Preço padrão mantido");
       }
     };
     fetchPrice();
@@ -50,18 +54,24 @@ export default function Settings() {
     try {
       const { data, error } = await supabase.functions.invoke('mercado-pago-checkout');
       
-      if (error) throw error;
+      if (error) {
+        // Tenta extrair a mensagem de erro do corpo da resposta se disponível
+        const errorMsg = error instanceof Error ? error.message : "Erro na comunicação com o servidor";
+        throw new Error(errorMsg);
+      }
       
       if (data?.url) {
         window.location.href = data.url;
       } else if (data?.error) {
-        toast.error("Erro no servidor", { description: data.error });
+        toast.error("Erro no Checkout", { description: data.error });
       } else {
         toast.error("Erro inesperado", { description: "Não foi possível gerar o link de pagamento." });
       }
     } catch (err: any) {
       console.error("[Settings] Erro no upgrade:", err);
-      toast.error("Erro ao iniciar checkout", { description: err.message || "Verifique sua conexão." });
+      toast.error("Falha ao iniciar checkout", { 
+        description: "Verifique se o Token do Mercado Pago foi configurado corretamente nos Secrets do Supabase." 
+      });
     } finally {
       setUpgrading(false);
     }
@@ -135,7 +145,7 @@ export default function Settings() {
                 <p className="text-sm text-muted-foreground font-medium">
                   Libere simulações ilimitadas, OCR de imagem, sugestões de IA e suporte prioritário por apenas <strong>R$ {proPrice.toFixed(2)}/mês</strong>.
                 </p>
-                <Button onClick={handleUpgrade} disabled={upgrading} className="w-full h-12 font-black shadow-lg shadow-primary/20">
+                <Button onClick={handleUpgrade} disabled={upgrading} className="w-full h-12 font-black shadow-lg shadow-primary/30">
                   {upgrading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CreditCard className="mr-2 h-5 w-5" />}
                   ASSINAR VIA MERCADO PAGO
                 </Button>
