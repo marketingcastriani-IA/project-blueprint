@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button';
 import { 
   TrendingUp, BarChart3, Shield, Zap, ArrowRight, 
   LineChart, Brain, CalendarDays, Target, CheckCircle2,
-  Lock, Smartphone, Sparkles, Trophy
+  Lock, Smartphone, Sparkles, Trophy, XCircle, AlertTriangle,
+  MousePointer2, Rocket, Star
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Sun, Moon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 export default function Index() {
   const { user, loading } = useAuth();
@@ -87,6 +89,58 @@ export default function Index() {
             <div className="flex items-center gap-2 font-bold"><Trophy className="h-5 w-5 text-warning" /> #1 EM OCR B3</div>
             <div className="flex items-center gap-2 font-bold"><Shield className="h-5 w-5 text-success" /> 100% SEGURO</div>
             <div className="flex items-center gap-2 font-bold"><Brain className="h-5 w-5 text-info" /> IA EXCLUSIVA</div>
+          </div>
+        </div>
+      </section>
+
+      {/* Comparison Section - AGGRESSIVE */}
+      <section className="container py-24">
+        <div className="rounded-3xl border-2 border-primary/20 bg-gradient-to-b from-primary/[0.03] to-transparent p-8 sm:p-16 space-y-12">
+          <div className="text-center space-y-4">
+            <h2 className="text-3xl sm:text-5xl font-black tracking-tighter">POR QUE O <span className="text-primary">OPÇÕESX?</span></h2>
+            <p className="text-muted-foreground font-medium">Compare e veja por que as planilhas ficaram no passado.</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            <Card className="p-8 border-destructive/20 bg-destructive/[0.02] space-y-6">
+              <h3 className="text-xl font-black text-destructive flex items-center gap-2">
+                <XCircle className="h-5 w-5" /> O JEITO ANTIGO
+              </h3>
+              <ul className="space-y-4">
+                <li className="flex items-start gap-3 text-sm font-medium text-muted-foreground">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" /> Digitação manual de cada perna (lento e sujeito a erro)
+                </li>
+                <li className="flex items-start gap-3 text-sm font-medium text-muted-foreground">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" /> Cálculos complexos de Black-Scholes no Excel
+                </li>
+                <li className="flex items-start gap-3 text-sm font-medium text-muted-foreground">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" /> Sem comparação real com o custo de oportunidade (CDI)
+                </li>
+                <li className="flex items-start gap-3 text-sm font-medium text-muted-foreground">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" /> Decisões baseadas em "feeling", não em dados
+                </li>
+              </ul>
+            </Card>
+
+            <Card className="p-8 border-primary/40 bg-primary/[0.05] space-y-6 shadow-[0_0_40px_-12px_hsl(var(--primary)/0.3)]">
+              <h3 className="text-xl font-black text-primary flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5" /> COM OPÇÕESX
+              </h3>
+              <ul className="space-y-4">
+                <li className="flex items-start gap-3 text-sm font-bold">
+                  <Rocket className="h-4 w-4 mt-0.5 text-primary shrink-0" /> OCR Inteligente: Print da corretora vira Payoff em 2s
+                </li>
+                <li className="flex items-start gap-3 text-sm font-bold">
+                  <Brain className="h-4 w-4 mt-0.5 text-primary shrink-0" /> IA Analista: Veredito profissional sobre sua estrutura
+                </li>
+                <li className="flex items-start gap-3 text-sm font-bold">
+                  <Target className="h-4 w-4 mt-0.5 text-primary shrink-0" /> Benchmark CDI: Saiba se vale a pena o risco
+                </li>
+                <li className="flex items-start gap-3 text-sm font-bold">
+                  <Star className="h-4 w-4 mt-0.5 text-primary shrink-0" /> Portfólio: Histórico real de P&L consolidado
+                </li>
+              </ul>
+            </Card>
           </div>
         </div>
       </section>
