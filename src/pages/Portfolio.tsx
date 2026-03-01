@@ -7,7 +7,7 @@ import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, TrendingUp, TrendingDown, Calendar, Edit2, RotateCcw, Trash2, Briefcase, Target, Wallet } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, Calendar, Edit2, RotateCcw, Trash2, Briefcase, Target, Percent, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
 
@@ -82,22 +82,12 @@ export default function Portfolio() {
 
   const getInvestedCapital = (analysisId: string): number => {
     const legs = legsMap[analysisId] || [];
-    
-    // Tenta calcular pelo custo líquido (débito)
+    // Capital investido é o custo líquido absoluto da montagem
     const netCost = legs.reduce((acc, leg) => {
       const multiplier = leg.side === 'buy' ? -1 : 1;
       return acc + multiplier * leg.price * leg.quantity;
     }, 0);
-
-    const absNetCost = Math.abs(netCost);
-    
-    // Se o custo líquido for zero (ex: Collar financiado), usa o valor do ativo como base de capital
-    if (absNetCost < 0.01) {
-      const stockLeg = legs.find(l => l.option_type === 'stock');
-      if (stockLeg) return stockLeg.price * stockLeg.quantity;
-    }
-
-    return absNetCost || 1;
+    return Math.abs(netCost) || 1;
   };
 
   const hasPnLData = (analysisId: string): boolean => {
@@ -112,8 +102,8 @@ export default function Portfolio() {
     const totalPL = pnls.reduce((s, p) => s + p, 0);
     const totalInvested = investedCapitals.reduce((s, c) => s + c, 0);
     
-    const wins = pnls.filter(p => p > 0.01).length;
-    const losses = pnls.filter(p => p < -0.01).length;
+    const wins = pnls.filter(p => p > 0).length;
+    const losses = pnls.filter(p => p < 0).length;
     const winRate = pnls.length > 0 ? ((wins / pnls.length) * 100).toFixed(1) : '0';
     
     const totalReturnPct = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
@@ -165,7 +155,7 @@ export default function Portfolio() {
 
         {/* Stats Grid */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <ProfessionalCard highlight={stats.totalPL > 0}>
+          <ProfessionalCard highlight={stats.totalPL >= 0}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Resultado Total (P&L)</span>
@@ -267,15 +257,15 @@ export default function Portfolio() {
                   className="group cursor-pointer"
                   onClick={() => navigate(`/analysis/${a.id}`)}
                 >
-                  <CardContent className="flex flex-col md:flex-row items-start md:items-center justify-between py-5 px-6 gap-4">
+                  <CardContent className="flex items-center justify-between py-5 px-6 gap-4">
                     <div className="flex items-center gap-5 flex-1 min-w-0">
                       <div className={cn(
                         'flex h-12 w-12 items-center justify-center rounded-xl shrink-0 shadow-inner',
                         hasPnl
-                          ? (pnl >= 0.01 ? 'bg-success/10 text-success border border-success/20' : 'bg-destructive/10 text-destructive border border-destructive/20')
+                          ? (pnl >= 0 ? 'bg-success/10 text-success border border-success/20' : 'bg-destructive/10 text-destructive border border-destructive/20')
                           : 'bg-muted text-muted-foreground border border-border/50'
                       )}>
-                        {hasPnl ? (pnl >= 0.01 ? <TrendingUp className="h-6 w-6" /> : <TrendingDown className="h-6 w-6" />) : <Briefcase className="h-6 w-6" />}
+                        {hasPnl ? (pnl >= 0 ? <TrendingUp className="h-6 w-6" /> : <TrendingDown className="h-6 w-6" />) : <Briefcase className="h-6 w-6" />}
                       </div>
                       <div className="flex-1 min-w-0 space-y-1">
                         <div className="flex items-center gap-3 flex-wrap">
@@ -292,60 +282,54 @@ export default function Portfolio() {
                             {new Date(a.created_at).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}
                             {a.closed_at && ` → ${new Date(a.closed_at).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}`}
                           </span>
+                          <span className="flex items-center gap-1">
+                            <Wallet className="h-3 w-3" />
+                            Investido: R$ {invested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Métricas Detalhadas Lado a Lado */}
-                    <div className="flex flex-wrap items-center gap-6 md:gap-10 bg-muted/20 p-3 rounded-xl border border-border/40">
-                      <div className="space-y-0.5">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Investido</p>
-                        <p className="text-sm font-bold font-mono">R$ {invested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                    <div className="flex items-center gap-6">
+                      {hasPnl && (
+                        <div className="text-right">
+                          <p className={cn('text-xl font-black tracking-tighter', pnl >= 0 ? 'text-success' : 'text-destructive')}>
+                            {pnl >= 0 ? '+' : ''}R$ {pnl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </p>
+                          <p className={cn('text-[10px] font-black uppercase tracking-widest', pnl >= 0 ? 'text-success/80' : 'text-destructive/80')}>
+                            {roi >= 0 ? '+' : ''}{roi.toFixed(2)}% ROI
+                          </p>
+                        </div>
+                      )}
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-9 px-3 hover:bg-primary/10 hover:text-primary transition-all"
+                          onClick={(e) => { e.stopPropagation(); navigate(`/analysis/${a.id}`); }}
+                        >
+                          <Edit2 className="h-4 w-4 mr-2" /> Detalhes
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-9 px-3 text-info hover:bg-info/10 transition-all"
+                          disabled={reopeningId === a.id}
+                          onClick={(e) => handleReopen(e, a.id)}
+                        >
+                          {reopeningId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4 mr-2" />}
+                          Reabrir
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 text-destructive hover:bg-destructive/10 transition-all"
+                          disabled={deletingId === a.id}
+                          onClick={(e) => handleDelete(e, a.id)}
+                        >
+                          {deletingId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                        </Button>
                       </div>
-                      
-                      <div className="space-y-0.5">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Resultado</p>
-                        <p className={cn('text-sm font-black font-mono', pnl >= 0.01 ? 'text-success' : 'text-destructive')}>
-                          {pnl >= 0.01 ? '+' : ''}R$ {pnl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </p>
-                      </div>
-
-                      <div className="space-y-0.5">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">ROI</p>
-                        <Badge className={cn('text-[10px] font-black', pnl >= 0.01 ? 'bg-success/20 text-success border-success/30' : 'bg-destructive/20 text-destructive border-destructive/30')}>
-                          {roi >= 0.01 ? '+' : ''}{roi.toFixed(2)}%
-                        </Badge>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-9 px-3 hover:bg-primary/10 hover:text-primary transition-all"
-                        onClick={(e) => { e.stopPropagation(); navigate(`/analysis/${a.id}`); }}
-                      >
-                        <Edit2 className="h-4 w-4 mr-2" /> Detalhes
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-9 px-3 text-info hover:bg-info/10 transition-all"
-                        disabled={reopeningId === a.id}
-                        onClick={(e) => handleReopen(e, a.id)}
-                      >
-                        {reopeningId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4 mr-2" />}
-                        Reabrir
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9 text-destructive hover:bg-destructive/10 transition-all"
-                        disabled={deletingId === a.id}
-                        onClick={(e) => handleDelete(e, a.id)}
-                      >
-                        {deletingId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                      </Button>
                     </div>
                   </CardContent>
                 </ProfessionalCard>
