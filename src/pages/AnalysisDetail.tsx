@@ -1,26 +1,23 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import PayoffChart from '@/components/PayoffChart';
 import MetricsCards from '@/components/MetricsCards';
 import CDIComparison from '@/components/CDIComparison';
-import AIInsights from '@/components/AIInsights';
 import { supabase } from '@/integrations/supabase/client';
-import { Leg, AnalysisMetrics } from '@/lib/types';
+import { Leg } from '@/lib/types';
 import { generatePayoffCurve, calculateMetrics, calculateCDIOpportunityCost } from '@/lib/payoff';
-import { getExpiryFromTicker, countBusinessDays } from '@/lib/b3-calendar';
+import { countBusinessDays } from '@/lib/b3-calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import {
-  Loader2, ArrowLeft, Save, XCircle, Sparkles, Plus, Trash2,
-  TrendingUp, TrendingDown, AlertTriangle, Clock, CheckCircle2, ShieldAlert, Edit2, RotateCcw, Layers
+  Loader2, ArrowLeft, Save, XCircle, Layers
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SectionDivider } from '@/components/ProfessionalLayout';
@@ -33,6 +30,7 @@ interface DbLeg {
   strike: number;
   price: number;
   quantity: number;
+  current_price?: number | null;
 }
 
 interface DbAnalysis {
@@ -57,41 +55,38 @@ export default function AnalysisDetail() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [closing, setClosing] = useState(false);
-  const [loadingAI, setLoadingAI] = useState(false);
-  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const [cdiRate, setCdiRate] = useState(14.90);
   const [daysToExpiry, setDaysToExpiry] = useState(0);
-  const [editingLegId, setEditingLegId] = useState<string | null>(null);
   
-  // Estados para Simulação/Remontagem
   const [isSimulating, setIsSimulating] = useState(false);
   const [simLegs, setSimLegs] = useState<Leg[]>([]);
 
   useEffect(() => {
     if (!user || !id) return;
-    Promise.all([
-      supabase.from('analyses').select('*').eq('id', id).single(),
-      supabase.from('legs').select('*').eq('analysis_id', id),
-    ]).then(([aRes, lRes]) => {
+    const fetchData = async () => {
+      const [aRes, lRes] = await Promise.all([
+        supabase.from('analyses').select('*').eq('id', id).single(),
+        supabase.from('legs').select('*').eq('analysis_id', id),
+      ]);
+
       if (aRes.data) {
         const a = aRes.data as unknown as DbAnalysis;
         setAnalysis(a);
         setCdiRate(a.cdi_rate ?? 14.90);
         setDaysToExpiry(a.days_to_expiry ?? 0);
-        if (a.ai_suggestion) setAiAnalysis(JSON.parse(a.ai_suggestion));
       }
       if (lRes.data) {
         const legs = lRes.data as unknown as DbLeg[];
         setDbLegs(legs);
         const prices: Record<string, string> = {};
         legs.forEach(l => { 
-          // @ts-ignore
           prices[l.id] = l.current_price != null ? String(l.current_price) : ''; 
         });
         setCurrentPrices(prices);
       }
       setLoading(false);
-    });
+    };
+    fetchData();
   }, [user, id]);
 
   const legs: Leg[] = useMemo(() => dbLegs.map(l => ({
@@ -101,7 +96,6 @@ export default function AnalysisDetail() {
 
   const metrics = useMemo(() => calculateMetrics(legs), [legs]);
   const payoffData = useMemo(() => generatePayoffCurve(legs), [legs]);
-  
   const simPayoffData = useMemo(() => isSimulating ? generatePayoffCurve(simLegs) : null, [isSimulating, simLegs]);
 
   const currentPnL = useMemo(() => {
@@ -115,6 +109,52 @@ export default function AnalysisDetail() {
     return total;
   }, [dbLegs, currentPrices]);
 
+  const saveCurrentPrices = async () => {
+    setSaving(true);
+    try {
+      for (const leg of dbLegs) {
+        const cp = parseFloat(currentPrices[leg.id] || '');
+        // Se o preço atual estiver vazio, não atualizamos para null se já houver um valor, 
+        // ou usamos o preço de entrada como fallback se estivermos encerrando
+        await supabase.from('legs').update({ current_price: isNaN(cp) ? null : cp } as any).eq('id', leg.id);
+      }
+      toast.success('Preços atualizados!');
+    } catch (err: any) { toast.error('Erro: ' + err.message); } finally { setSaving(false); }
+  };
+
+  const closeOperation = async () => {
+    const hasMissingPrices = dbLegs.some(l => !currentPrices[l.id] || isNaN(parseFloat(currentPrices[l.id])));
+    
+    if (hasMissingPrices) {
+      if (!confirm('Alguns preços atuais estão vazios. Deseja usar os preços de entrada como preços de saída para encerrar com lucro/prejuízo zero?')) return;
+      
+      // Preencher preços vazios com o preço de entrada
+      const updatedPrices = { ...currentPrices };
+      dbLegs.forEach(l => {
+        if (!updatedPrices[l.id] || isNaN(parseFloat(updatedPrices[l.id]))) {
+          updatedPrices[l.id] = String(l.price);
+        }
+      });
+      setCurrentPrices(updatedPrices);
+    } else {
+      if (!confirm('Encerrar esta operação? Os preços atuais serão salvos como preços de saída.')) return;
+    }
+
+    setClosing(true);
+    try {
+      // Salvar preços (incluindo os fallbacks se necessário)
+      for (const leg of dbLegs) {
+        const cp = parseFloat(currentPrices[leg.id] || String(leg.price));
+        await supabase.from('legs').update({ current_price: cp } as any).eq('id', leg.id);
+      }
+      
+      await supabase.from('analyses').update({ status: 'closed', closed_at: new Date().toISOString() } as any).eq('id', id!);
+      setAnalysis(prev => prev ? { ...prev, status: 'closed' } : prev);
+      toast.success('Operação encerrada e enviada para o portfólio!');
+      navigate('/portfolio');
+    } catch (err: any) { toast.error('Erro: ' + err.message); } finally { setClosing(false); }
+  };
+
   const startSimulation = () => {
     setSimLegs(JSON.parse(JSON.stringify(legs)));
     setIsSimulating(true);
@@ -123,28 +163,6 @@ export default function AnalysisDetail() {
 
   const updateSimLeg = (index: number, field: keyof Leg, value: any) => {
     setSimLegs(prev => prev.map((l, i) => i === index ? { ...l, [field]: value } : l));
-  };
-
-  const saveCurrentPrices = async () => {
-    setSaving(true);
-    try {
-      for (const leg of dbLegs) {
-        const cp = parseFloat(currentPrices[leg.id] || '');
-        await supabase.from('legs').update({ current_price: isNaN(cp) ? null : cp } as any).eq('id', leg.id);
-      }
-      toast.success('Preços atualizados!');
-    } catch (err: any) { toast.error('Erro: ' + err.message); } finally { setSaving(false); }
-  };
-
-  const closeOperation = async () => {
-    if (!confirm('Encerrar esta operação? Os preços atuais serão salvos como preços de saída.')) return;
-    setClosing(true);
-    try {
-      await saveCurrentPrices();
-      await supabase.from('analyses').update({ status: 'closed', closed_at: new Date().toISOString() } as any).eq('id', id!);
-      setAnalysis(prev => prev ? { ...prev, status: 'closed' } : prev);
-      toast.success('Operação encerrada!');
-    } catch (err: any) { toast.error('Erro: ' + err.message); } finally { setClosing(false); }
   };
 
   if (authLoading) return null;
@@ -222,7 +240,7 @@ export default function AnalysisDetail() {
                 </tbody>
               </table>
             </div>
-            {!isSimulating && (
+            {!isSimulating && analysis?.status === 'active' && (
               <div className="flex justify-end mt-4">
                 <Button size="sm" onClick={saveCurrentPrices} disabled={saving}>{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Salvar Preços Atuais</Button>
               </div>

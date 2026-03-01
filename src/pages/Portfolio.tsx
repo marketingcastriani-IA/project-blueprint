@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { 
   Loader2, TrendingUp, TrendingDown, Calendar, Edit2, 
-  RotateCcw, Trash2, Briefcase, Wallet, Target, DollarSign, ArrowRightLeft 
+  RotateCcw, Trash2, Briefcase, Wallet, Target, DollarSign 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
@@ -88,9 +88,10 @@ export default function Portfolio() {
   const getPnL = (analysisId: string): number => {
     const legs = legsMap[analysisId] || [];
     return legs.reduce((total, leg) => {
-      if (leg.current_price == null) return total;
+      // Se current_price for null, usamos o price de entrada (lucro zero)
+      const exitPrice = leg.current_price != null ? leg.current_price : leg.price;
       const mult = leg.side === 'buy' ? 1 : -1;
-      return total + mult * (leg.current_price - leg.price) * leg.quantity;
+      return total + mult * (exitPrice - leg.price) * leg.quantity;
     }, 0);
   };
 
@@ -105,22 +106,16 @@ export default function Portfolio() {
 
   const getExitValue = (analysisId: string): number => {
     const legs = legsMap[analysisId] || [];
-    // Valor de saída: O que você recebe (+) ou paga (-) ao fechar as pernas
     return legs.reduce((acc, leg) => {
-      if (leg.current_price == null) return acc;
-      const multiplier = leg.side === 'buy' ? 1 : -1; // Se comprou, vende pra fechar (+). Se vendeu, compra pra fechar (-).
-      return acc + multiplier * leg.current_price * leg.quantity;
+      const exitPrice = leg.current_price != null ? leg.current_price : leg.price;
+      const multiplier = leg.side === 'buy' ? 1 : -1;
+      return acc + multiplier * exitPrice * leg.quantity;
     }, 0);
   };
 
-  const hasPnLData = (analysisId: string): boolean => {
-    return (legsMap[analysisId] || []).some(l => l.current_price != null);
-  };
-
   const stats = useMemo(() => {
-    const withPnL = analyses.filter(a => hasPnLData(a.id));
-    const pnls = withPnL.map(a => getPnL(a.id));
-    const montageCosts = withPnL.map(a => getMontageCost(a.id));
+    const pnls = analyses.map(a => getPnL(a.id));
+    const montageCosts = analyses.map(a => getMontageCost(a.id));
     
     const totalPL = pnls.reduce((s, p) => s + p, 0);
     const totalInvested = montageCosts.reduce((s, c) => s + (c < 0 ? Math.abs(c) : 0), 0);
@@ -275,7 +270,6 @@ export default function Portfolio() {
               const exitValue = getExitValue(a.id);
               const invested = montage < 0 ? Math.abs(montage) : 0;
               const roi = invested > 0 ? (pnl / invested) * 100 : (pnl > 0 ? 100 : 0);
-              const hasPnl = hasPnLData(a.id);
               
               return (
                 <ProfessionalCard
@@ -287,11 +281,9 @@ export default function Portfolio() {
                     <div className="flex items-center gap-5 flex-1 min-w-0">
                       <div className={cn(
                         'flex h-12 w-12 items-center justify-center rounded-xl shrink-0 shadow-inner',
-                        hasPnl
-                          ? (pnl >= 0 ? 'bg-success/10 text-success border border-success/20' : 'bg-destructive/10 text-destructive border border-destructive/20')
-                          : 'bg-muted text-muted-foreground border border-border/50'
+                        pnl >= 0 ? 'bg-success/10 text-success border border-success/20' : 'bg-destructive/10 text-destructive border border-destructive/20'
                       )}>
-                        {hasPnl ? (pnl >= 0 ? <TrendingUp className="h-6 w-6" /> : <TrendingDown className="h-6 w-6" />) : <Briefcase className="h-6 w-6" />}
+                        {pnl >= 0 ? <TrendingUp className="h-6 w-6" /> : <TrendingDown className="h-6 w-6" />}
                       </div>
                       <div className="flex-1 min-w-0 space-y-1">
                         <div className="flex items-center gap-3 flex-wrap">
