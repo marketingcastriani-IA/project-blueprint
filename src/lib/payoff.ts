@@ -75,7 +75,6 @@ export function calculatePayoffToday(legs: Leg[], spotPrice: number, daysToExpir
         r,
         v
       );
-      // Lucro hoje = (Valor atual da opção - Preço pago/recebido) * Qtd
       total += multiplier * (currentOptionValue - leg.price) * leg.quantity;
     }
   }
@@ -103,8 +102,9 @@ export function generatePayoffCurve(legs: Leg[], daysToExpiry = 0, cdiRate = 14.
   const maxRef = Math.max(...referencePoints);
   const range = maxRef - minRef || maxRef * 0.2;
 
-  const padding = Math.max(range * 0.6, maxRef * 0.2);
-  const start = Math.max(0.01, minRef - padding);
+  // Aumentamos o padding para detectar tendências de lucro ilimitado
+  const padding = Math.max(range * 1.5, maxRef * 0.5);
+  const start = Math.max(0, minRef - padding);
   const end = maxRef + padding;
   const step = (end - start) / numPoints;
 
@@ -126,7 +126,8 @@ export function generatePayoffCurve(legs: Leg[], daysToExpiry = 0, cdiRate = 14.
 export function calculateMetrics(legs: Leg[]): AnalysisMetrics {
   if (legs.length === 0) return { maxGain: 0, maxLoss: 0, breakevens: [], netCost: 0 };
 
-  const curve = generatePayoffCurve(legs, 0, 14.90, 2000);
+  // Geramos uma curva ampla para análise de limites
+  const curve = generatePayoffCurve(legs, 0, 14.90, 1000);
   const profits = curve.map(p => p.profitAtExpiry);
   const maxProfit = Math.max(...profits);
   const minProfit = Math.min(...profits);
@@ -138,10 +139,7 @@ export function calculateMetrics(legs: Leg[]): AnalysisMetrics {
     if ((prev < 0 && curr >= 0) || (prev >= 0 && curr < 0)) {
       const ratio = Math.abs(prev) / (Math.abs(prev) + Math.abs(curr));
       const be = curve[i - 1].price + ratio * (curve[i].price - curve[i - 1].price);
-      const isDuplicate = breakevens.some(b => Math.abs(b - be) < 0.05);
-      if (!isDuplicate) {
-        breakevens.push(Math.round(be * 100) / 100);
-      }
+      breakevens.push(Math.round(be * 100) / 100);
     }
   }
 
@@ -151,20 +149,26 @@ export function calculateMetrics(legs: Leg[]): AnalysisMetrics {
     netCost += multiplier * leg.price * leg.quantity;
   }
 
+  // Detecção de lucro/prejuízo ilimitado baseada na inclinação das extremidades
   const lastProfit = profits[profits.length - 1];
   const secondLastProfit = profits[profits.length - 2];
+  const firstProfit = profits[0];
+  const secondProfit = profits[1];
 
-  // Ganho ilimitado apenas se a curva continuar subindo no lado direito (preço alto)
-  const isGainUnlimited = lastProfit > secondLastProfit && lastProfit > 0 && maxProfit === lastProfit;
+  // Se a curva termina subindo, o lucro é ilimitado (ex: compra de ativo ou call)
+  const isGainUnlimited = lastProfit > secondLastProfit + 0.01;
   
-  // Perda ilimitada apenas se a curva continuar caindo no lado direito (ex: venda a seco de call)
-  // No lado esquerdo (preço -> 0), a perda é sempre limitada pelo valor do ativo/opção
-  const isLossUnlimited = lastProfit < secondLastProfit && lastProfit < 0 && minProfit === lastProfit;
+  // Se a curva termina caindo no lado direito, o prejuízo é ilimitado (ex: venda de call a seco)
+  const isLossUnlimited = lastProfit < secondLastProfit - 0.01;
+
+  // Cálculo da perda máxima real (considerando o pior cenário: ativo a zero ou extremidade da curva)
+  const lossAtZero = calculatePayoffAtExpiry(legs, 0);
+  const absoluteMinProfit = Math.min(minProfit, lossAtZero);
 
   const result: AnalysisMetrics = {
     maxGain: isGainUnlimited ? 'Ilimitado' : Math.round(maxProfit * 100) / 100,
-    maxLoss: isLossUnlimited ? 'Ilimitado' : Math.round(minProfit * 100) / 100,
-    breakevens,
+    maxLoss: isLossUnlimited ? 'Ilimitado' : Math.round(absoluteMinProfit * 100) / 100,
+    breakevens: Array.from(new Set(breakevens)).sort((a, b) => a - b),
     netCost: Math.round(netCost * 100) / 100,
   };
 
@@ -175,9 +179,10 @@ export function calculateMetrics(legs: Leg[]): AnalysisMetrics {
     result.montageTotal = strategy.montageTotal;
     result.realBreakeven = strategy.breakeven;
     result.isRiskFree = strategy.isRiskFree;
-    result.maxGain = strategy.maxProfit;
-    // Se a estratégia detectada tem perda finita, usamos ela
-    result.maxLoss = strategy.isRiskFree ? strategy.maxLoss : (typeof strategy.maxLoss === 'number' ? -Math.abs(strategy.maxLoss) : strategy.maxLoss);
+    
+    // Só sobrescrevemos se a estratégia detectada for mais precisa que a análise numérica
+    if (strategy.maxProfit !== 'Ilimitado') result.maxGain = strategy.maxProfit;
+    if (!isLossUnlimited) result.maxLoss = strategy.isRiskFree ? strategy.maxLoss : Math.min(result.maxLoss as number, -Math.abs(strategy.maxLoss as number));
   }
 
   return result;
