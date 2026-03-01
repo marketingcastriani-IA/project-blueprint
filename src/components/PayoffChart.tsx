@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { PayoffPoint } from '@/lib/types';
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
-import { Area, CartesianGrid, ReferenceLine, XAxis, YAxis, Line, ComposedChart, ResponsiveContainer } from 'recharts';
+import { Area, CartesianGrid, ReferenceLine, XAxis, YAxis, Line, ComposedChart, ResponsiveContainer, ReferenceDot } from 'recharts';
 import { calculateCDIReturn } from '@/lib/payoff';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -17,6 +17,7 @@ interface PayoffChartProps {
   maxGain?: number | 'Ilimitado';
   maxLoss?: number | 'Ilimitado';
   currentSpotPrice?: number | null;
+  currentPnL?: number | null;
 }
 
 const chartConfig = {
@@ -65,7 +66,7 @@ const CustomTooltip = ({ active, payload, label, displayMode, investedCapital }:
           {cdiValue !== undefined && (
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-[hsl(45_95%_55%)]" />
+                <div className="h-2 w-2 rounded-full bg-warning" />
                 <span className="text-[11px] font-bold text-foreground/80">CDI</span>
               </div>
               <span className="text-xs font-black font-mono text-warning">
@@ -92,7 +93,8 @@ export default function PayoffChart({
   montageTotal,
   maxGain,
   maxLoss,
-  currentSpotPrice
+  currentSpotPrice,
+  currentPnL
 }: PayoffChartProps) {
   const [displayMode, setDisplayMode] = useState<'value' | 'percent'>('value');
 
@@ -141,10 +143,23 @@ export default function PayoffChart({
   const maxPrice = Math.max(...prices);
 
   const allYValues = chartData.flatMap(d => [d.profitAtExpiry, d.profitToday, d.cdiLine ?? 0]);
+  
+  // Incluir o P&L atual no cálculo do domínio do eixo Y para garantir que o ponto apareça
+  if (currentPnL !== null && currentPnL !== undefined) {
+    const factor = displayMode === 'percent' ? (100 / investedCapital) : 1;
+    allYValues.push(currentPnL * factor);
+  }
+
   const minY = Math.min(...allYValues);
   const maxY = Math.max(...allYValues);
   const rangeY = maxY - minY || 1;
   const paddingY = rangeY * 0.15;
+
+  const currentPnLAdjusted = useMemo(() => {
+    if (currentPnL === null || currentPnL === undefined) return null;
+    const factor = displayMode === 'percent' ? (100 / investedCapital) : 1;
+    return currentPnL * factor;
+  }, [currentPnL, displayMode, investedCapital]);
 
   return (
     <div className="space-y-6">
@@ -275,6 +290,18 @@ export default function PayoffChart({
                   fontWeight: 900,
                   offset: 20,
                 }}
+              />
+            )}
+
+            {currentSpotPrice && currentPnLAdjusted !== null && (
+              <ReferenceDot
+                x={currentSpotPrice}
+                y={currentPnLAdjusted}
+                r={6}
+                fill="hsl(var(--primary))"
+                stroke="white"
+                strokeWidth={2}
+                className="animate-pulse"
               />
             )}
             
