@@ -31,7 +31,7 @@ serve(async (req) => {
       })
     }
 
-    console.log("[analyze-options-image] Enviando imagem para análise de visão...")
+    console.log("[analyze-options-image] Enviando imagem para análise (gemini-3-flash)...")
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -49,12 +49,11 @@ serve(async (req) => {
           {
             role: "user",
             content: [
-              { type: "text", text: "Extraia os dados desta imagem de corretora/home broker." },
+              { type: "text", text: "Extraia os dados desta imagem de corretora/home broker. Retorne somente JSON." },
               { type: "image_url", image_url: { url: imageDataUrl } },
             ],
           },
         ],
-        response_format: { type: "json_object" }
       }),
     })
 
