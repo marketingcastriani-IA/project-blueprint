@@ -63,9 +63,15 @@ export function detectStrategy(legs: Leg[]): StrategyInfo | null {
     const qty = stockBuy.quantity;
     const montageTotal = (stockBuy.price * qty) + (putBuy.price * qty) - (callSell.price * qty);
     const breakeven = montageTotal / qty;
-    const maxProfit = (callSell.strike - breakeven) * qty;
-    const maxLoss = (breakeven - putBuy.strike) * qty;
-    const isRiskFree = putBuy.strike >= breakeven;
+    
+    // Cálculo robusto para Collar (funciona com strikes invertidos)
+    // No vencimento, o lucro estabiliza nos strikes.
+    const profitAtCallStrike = (callSell.strike - breakeven) * qty;
+    const profitAtPutStrike = (putBuy.strike - breakeven) * qty;
+    
+    const maxProfit = Math.max(profitAtCallStrike, profitAtPutStrike);
+    const minProfit = Math.min(profitAtCallStrike, profitAtPutStrike);
+    const isRiskFree = minProfit >= 0;
 
     return {
       type: 'Collar',
@@ -73,7 +79,7 @@ export function detectStrategy(legs: Leg[]): StrategyInfo | null {
       montageTotal: Math.round(montageTotal * 100) / 100,
       breakeven: Math.round(breakeven * 100) / 100,
       maxProfit: Math.round(maxProfit * 100) / 100,
-      maxLoss: isRiskFree ? 0 : Math.round(maxLoss * 100) / 100,
+      maxLoss: isRiskFree ? Math.round(minProfit * 100) / 100 : Math.round(minProfit * 100) / 100,
       isRiskFree,
     };
   }

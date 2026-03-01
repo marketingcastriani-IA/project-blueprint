@@ -179,7 +179,8 @@ export function calculateMetrics(legs: Leg[]): AnalysisMetrics {
     result.realBreakeven = strategy.breakeven;
     result.isRiskFree = strategy.isRiskFree;
     result.maxGain = strategy.maxProfit;
-    result.maxLoss = strategy.isRiskFree ? 0 : (typeof strategy.maxLoss === 'number' ? -Math.abs(strategy.maxLoss) : strategy.maxLoss);
+    // Se for risco zero, o maxLoss é na verdade o lucro mínimo garantido
+    result.maxLoss = strategy.isRiskFree ? strategy.maxLoss : (typeof strategy.maxLoss === 'number' ? -Math.abs(strategy.maxLoss) : strategy.maxLoss);
   }
 
   return result;
