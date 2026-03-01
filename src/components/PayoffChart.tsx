@@ -178,7 +178,7 @@ export default function PayoffChart({
 
       <ChartContainer config={chartConfig} className="h-[380px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 0 }}>
+          <ComposedChart data={chartData} margin={{ top: 25, right: 30, left: 10, bottom: 0 }}>
             <defs>
               <linearGradient id="lossGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.4} />
@@ -227,8 +227,9 @@ export default function PayoffChart({
                   value: `BE ${be.toFixed(2)}`,
                   position: 'top',
                   fill: 'hsl(var(--warning))',
-                  fontSize: 10,
-                  fontWeight: 600,
+                  fontSize: 11,
+                  fontWeight: 800,
+                  offset: 12,
                 }}
               />
             ))}
@@ -244,7 +245,8 @@ export default function PayoffChart({
                   position: 'right',
                   fill: 'hsl(45 95% 55%)',
                   fontSize: 11,
-                  fontWeight: 600,
+                  fontWeight: 800,
+                  offset: 10,
                 }}
               />
             )}
