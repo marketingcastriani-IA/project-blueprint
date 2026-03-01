@@ -8,6 +8,8 @@ interface AccessStatus {
   expiresAt: string | null;
   trialDays: number;
   daysRemaining: number | null;
+  planType: 'free' | 'pro';
+  simulationCount: number;
 }
 
 export function useAccessControl() {
@@ -18,6 +20,8 @@ export function useAccessControl() {
     expiresAt: null,
     trialDays: 0,
     daysRemaining: null,
+    planType: 'free',
+    simulationCount: 0,
   });
 
   useEffect(() => {
@@ -27,7 +31,7 @@ export function useAccessControl() {
     }
 
     const fetchAccess = async () => {
-      // Check admin role
+      // 1. Check admin role
       const { data: roles } = await supabase
         .from('user_roles')
         .select('role')
@@ -35,12 +39,26 @@ export function useAccessControl() {
 
       const isAdmin = roles?.some((r: any) => r.role === 'admin') ?? false;
 
+      // 2. Count simulations (analyses)
+      const { count } = await supabase
+        .from('analyses')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
       if (isAdmin) {
-        setAccess({ status: 'approved', isAdmin: true, expiresAt: null, trialDays: 9999, daysRemaining: null });
+        setAccess({ 
+          status: 'approved', 
+          isAdmin: true, 
+          expiresAt: null, 
+          trialDays: 9999, 
+          daysRemaining: null,
+          planType: 'pro',
+          simulationCount: count || 0
+        });
         return;
       }
 
-      // Check user_access
+      // 3. Check user_access
       const { data: accessData } = await supabase
         .from('user_access')
         .select('*')
@@ -48,7 +66,15 @@ export function useAccessControl() {
         .single();
 
       if (!accessData) {
-        setAccess({ status: 'pending', isAdmin: false, expiresAt: null, trialDays: 0, daysRemaining: null });
+        setAccess({ 
+          status: 'pending', 
+          isAdmin: false, 
+          expiresAt: null, 
+          trialDays: 0, 
+          daysRemaining: null,
+          planType: 'free',
+          simulationCount: count || 0
+        });
         return;
       }
 
@@ -73,6 +99,8 @@ export function useAccessControl() {
         expiresAt: ua.expires_at,
         trialDays: ua.trial_days ?? 0,
         daysRemaining,
+        planType: ua.plan_type || 'free',
+        simulationCount: count || 0
       });
     };
 
