@@ -12,9 +12,10 @@ import { toast } from 'sonner';
 import {
   TrendingUp, Users, CheckCircle2, XCircle, Clock, Shield,
   Loader2, LogOut, Sun, Moon, RefreshCw, Search, Crown, Wallet,
-  ArrowLeft, LayoutDashboard
+  ArrowLeft, LayoutDashboard, Ban, RotateCcw, Calendar
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { cn } from '@/lib/utils';
 
 interface UserRow {
   user_id: string;
@@ -93,24 +94,47 @@ export default function AdminPanel() {
     }
   };
 
-  const approveUser = async (userId: string, trialDays: number) => {
+  const updateStatus = async (userId: string, status: string) => {
     setActionLoading(userId);
     try {
-      const expiresAt = trialDays > 0
-        ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString()
-        : null;
-
       await supabase
         .from('user_access')
-        .update({
-          status: 'approved',
-          trial_days: trialDays,
-          approved_at: new Date().toISOString(),
-          expires_at: expiresAt,
-        } as any)
+        .update({ status } as any)
         .eq('user_id', userId);
+      toast.success(`Status atualizado para ${status.toUpperCase()}`);
+      fetchUsers();
+    } catch (err: any) {
+      toast.error('Erro: ' + err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
-      toast.success('Usuário aprovado!');
+  const resetSimulations = async (userId: string) => {
+    setActionLoading(userId);
+    try {
+      await supabase
+        .from('user_access')
+        .update({ simulations_count: 0 } as any)
+        .eq('user_id', userId);
+      toast.success('Simulações resetadas!');
+      fetchUsers();
+    } catch (err: any) {
+      toast.error('Erro: ' + err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const extendTrial = async (userId: string, days: number) => {
+    setActionLoading(userId);
+    try {
+      const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+      await supabase
+        .from('user_access')
+        .update({ expires_at: expiresAt, status: 'approved' } as any)
+        .eq('user_id', userId);
+      toast.success(`Acesso estendido por ${days} dias!`);
       fetchUsers();
     } catch (err: any) {
       toast.error('Erro: ' + err.message);
@@ -191,39 +215,67 @@ export default function AdminPanel() {
 
         <div className="space-y-3">
           {filtered.map(u => (
-            <Card key={u.user_id} className="p-5">
-              <div className="flex flex-col sm:flex-row justify-between gap-4">
-                <div className="space-y-1">
+            <Card key={u.user_id} className={cn("p-5 transition-all", u.status === 'rejected' && "opacity-60 bg-muted/20")}>
+              <div className="flex flex-col lg:flex-row justify-between gap-6">
+                <div className="space-y-1 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="font-black">{u.display_name}</p>
                     <Badge variant={u.plan_type === 'pro' ? 'default' : 'outline'} className={u.plan_type === 'pro' ? 'bg-primary' : ''}>
                       {u.plan_type.toUpperCase()}
+                    </Badge>
+                    <Badge variant="secondary" className={cn(
+                      "text-[10px]",
+                      u.status === 'approved' ? "text-success" : u.status === 'rejected' ? "text-destructive" : "text-warning"
+                    )}>
+                      {u.status.toUpperCase()}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground">{u.email}</p>
                   <p className="text-[10px] font-mono text-muted-foreground">{u.user_id}</p>
                   <div className="flex gap-3 pt-2">
                     <Badge variant="secondary" className="text-[10px]">{u.simulations_count} Simulações</Badge>
-                    <Badge variant="secondary" className="text-[10px]">{u.status.toUpperCase()}</Badge>
+                    {u.expires_at && (
+                      <Badge variant="outline" className="text-[10px] border-warning/30 text-warning">
+                        Expira: {new Date(u.expires_at).toLocaleDateString('pt-BR')}
+                      </Badge>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Select value={u.plan_type} onValueChange={(v) => updatePlan(u.user_id, v)}>
-                    <SelectTrigger className="w-28 h-9 text-xs font-bold">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="free">FREE</SelectItem>
-                      <SelectItem value="pro">PRO</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[9px] font-black uppercase text-muted-foreground">Plano</span>
+                    <Select value={u.plan_type} onValueChange={(v) => updatePlan(u.user_id, v)}>
+                      <SelectTrigger className="w-28 h-9 text-xs font-bold">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="free">FREE</SelectItem>
+                        <SelectItem value="pro">PRO</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   
-                  {u.status === 'pending' && (
-                    <Button size="sm" onClick={() => approveUser(u.user_id, 7)} className="h-9 text-xs font-bold">
-                      APROVAR
-                    </Button>
-                  )}
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[9px] font-black uppercase text-muted-foreground">Ações</span>
+                    <div className="flex gap-1">
+                      {u.status === 'pending' || u.status === 'rejected' ? (
+                        <Button size="sm" variant="outline" onClick={() => updateStatus(u.user_id, 'approved')} className="h-9 text-xs font-bold text-success hover:bg-success/10">
+                          <CheckCircle2 className="h-4 w-4 mr-1" /> APROVAR
+                        </Button>
+                      ) : (
+                        <Button size="sm" variant="outline" onClick={() => updateStatus(u.user_id, 'rejected')} className="h-9 text-xs font-bold text-destructive hover:bg-destructive/10">
+                          <Ban className="h-4 w-4 mr-1" /> BLOQUEAR
+                        </Button>
+                      )}
+                      <Button size="sm" variant="outline" onClick={() => resetSimulations(u.user_id)} className="h-9 text-xs font-bold">
+                        <RotateCcw className="h-4 w-4 mr-1" /> RESET SIMS
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => extendTrial(u.user_id, 30)} className="h-9 text-xs font-bold">
+                        <Calendar className="h-4 w-4 mr-1" /> +30 DIAS
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </Card>

@@ -22,7 +22,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown } from 'lucide-react';
+import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, SectionDivider } from '@/components/ProfessionalLayout';
 import AIInsights from '@/components/AIInsights';
@@ -181,10 +181,12 @@ export default function Dashboard() {
   const removeLeg = useCallback((index: number) => { setLegs(prev => prev.filter((_, i) => i !== index)); }, []);
   const updateLeg = useCallback((index: number, leg: Leg) => { setLegs(prev => prev.map((item, i) => (i === index ? leg : item))); }, []);
   
+  const isLimitReached = access.planType === 'free' && access.simulationsCount >= 3;
+
   const handleLegsFromImage = useCallback((extractedLegs: any[]) => { 
-    if (access.planType === 'free') {
-      toast.error('OCR de Imagem é exclusivo para o plano PRO', {
-        description: 'Faça o upgrade para automatizar suas análises.'
+    if (isLimitReached) {
+      toast.error('Limite de simulações atingido!', {
+        description: 'Faça o upgrade para PRO para continuar usando o OCR.'
       });
       return;
     }
@@ -200,7 +202,7 @@ export default function Dashboard() {
 
     setLegs(prev => [...prev, ...sanitizedLegs]); 
     setInputMode('manual');
-  }, [access.planType]);
+  }, [isLimitReached]);
 
   if (authLoading || access.status === 'loading') return null;
   if (!user) return <Navigate to="/auth" replace />;
@@ -209,12 +211,10 @@ export default function Dashboard() {
     return <AccessBlocked status={access.status} />;
   }
 
-  const isLimitReached = access.planType === 'free' && access.simulationsCount >= 3;
-
   const getAISuggestion = async () => {
-    if (access.planType === 'free') {
-      toast.error('Sugestão de IA é exclusiva para o plano PRO', {
-        description: 'Faça o upgrade para receber análises profissionais.'
+    if (isLimitReached) {
+      toast.error('Limite de simulações atingido!', {
+        description: 'Faça o upgrade para PRO para continuar usando a IA.'
       });
       return;
     }
@@ -299,8 +299,8 @@ export default function Dashboard() {
             }
           />
           {isLimitReached && (
-            <Button onClick={() => navigate('/settings')} className="bg-primary animate-pulse font-black">
-              UPGRADE PARA PRO
+            <Button onClick={() => navigate('/settings')} className="bg-primary animate-pulse font-black shadow-lg shadow-primary/30">
+              <CreditCard className="mr-2 h-4 w-4" /> UPGRADE PARA PRO
             </Button>
           )}
         </div>
@@ -308,14 +308,14 @@ export default function Dashboard() {
         <div className="flex gap-3 flex-wrap">
           <Button 
             onClick={getAISuggestion} 
-            disabled={loadingAI || legs.length === 0} 
+            disabled={loadingAI || legs.length === 0 || isLimitReached} 
             className={cn(
               "text-base h-11 px-6 shadow-[0_0_30px_-8px_hsl(var(--primary)/0.4)]",
-              access.planType === 'free' && "opacity-50"
+              isLimitReached && "opacity-50"
             )}
           >
             {loadingAI ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
-            Sugestão IA {access.planType === 'free' && <Lock className="ml-2 h-3 w-3" />}
+            Sugestão IA {isLimitReached && <Lock className="ml-2 h-3 w-3" />}
           </Button>
           <Button 
             onClick={saveAnalysis} 
@@ -352,9 +352,10 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <button 
               onClick={() => setInputMode('image')} 
+              disabled={isLimitReached}
               className={cn(
                 "group relative overflow-hidden rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card p-8 text-left transition-all duration-500 hover:border-primary hover:shadow-[0_0_60px_-12px_hsl(var(--primary)/0.5)] hover:-translate-y-1.5",
-                access.planType === 'free' && "opacity-75"
+                isLimitReached && "opacity-50 cursor-not-allowed"
               )}
             >
               <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -366,7 +367,7 @@ export default function Dashboard() {
                   <div className="space-y-1">
                     <Badge className="bg-primary text-primary-foreground text-[10px] font-black px-2">IA POWERED</Badge>
                     <h3 className="text-2xl font-black tracking-tight flex items-center gap-2">
-                      Upload de Imagem {access.planType === 'free' && <Lock className="h-5 w-5" />}
+                      Upload de Imagem {isLimitReached && <Lock className="h-5 w-5" />}
                     </h3>
                   </div>
                 </div>
@@ -400,7 +401,7 @@ export default function Dashboard() {
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <button onClick={() => setInputMode('manual')} className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all', inputMode === 'manual' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}><Keyboard className="h-4 w-4" /> Manual</button>
-              <button onClick={() => setInputMode('image')} className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all', inputMode === 'image' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}><Camera className="h-4 w-4" /> Upload OCR</button>
+              <button onClick={() => setInputMode('image')} disabled={isLimitReached} className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all', inputMode === 'image' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50', isLimitReached && "opacity-50")}><Camera className="h-4 w-4" /> Upload OCR</button>
             </div>
             {inputMode === 'manual' ? <Card className="border-border/40 bg-card/50 backdrop-blur-sm"><CardContent className="pt-6"><LegForm onAdd={addLeg} /></CardContent></Card> : <ImageUpload onLegsExtracted={handleLegsFromImage} onImageChange={() => setLegs([])} />}
           </div>

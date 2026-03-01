@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Lock, Mail, LogOut, Shield, Database, CheckCircle2, XCircle, Crown, CreditCard, Sparkles } from 'lucide-react';
 import { useAccessControl } from '@/hooks/useAccessControl';
+import { cn } from '@/lib/utils';
 
 export default function Settings() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -19,26 +20,12 @@ export default function Settings() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [dbStatus, setDbStatus] = useState<'idle' | 'testing' | 'connected' | 'error'>('idle');
-
-  const testConnection = async () => {
-    setDbStatus('testing');
-    try {
-      const { error } = await supabase.from('profiles').select('id').limit(1);
-      if (error) throw error;
-      setDbStatus('connected');
-      toast.success('Conexão com Supabase estabelecida com sucesso!');
-    } catch (err: any) {
-      setDbStatus('error');
-      toast.error('Erro ao conectar com o banco de dados', { description: err.message });
-    }
-  };
 
   const handleUpgrade = () => {
     toast.info("Redirecionando para o Mercado Pago...", {
       description: "Você será levado para o checkout seguro."
     });
-    // Aqui entraria o link real do Mercado Pago
+    // Link de checkout do Mercado Pago (exemplo)
     window.open('https://www.mercadopago.com.br', '_blank');
   };
 
@@ -93,11 +80,11 @@ export default function Settings() {
           <CardContent className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
-                <p className="text-xs font-black uppercase text-muted-foreground mb-1">Simulações Realizadas</p>
+                <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Simulações Realizadas</p>
                 <p className="text-2xl font-black">{access.simulationsCount}{access.planType === 'free' && '/3'}</p>
               </div>
               <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
-                <p className="text-xs font-black uppercase text-muted-foreground mb-1">Status da Assinatura</p>
+                <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Status da Assinatura</p>
                 <p className="text-2xl font-black">{access.planType === 'pro' ? 'Ilimitado' : 'Limitado'}</p>
               </div>
             </div>
