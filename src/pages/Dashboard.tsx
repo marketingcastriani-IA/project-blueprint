@@ -22,12 +22,109 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown } from 'lucide-react';
+import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, SectionDivider } from '@/components/ProfessionalLayout';
 import AIInsights from '@/components/AIInsights';
 
 type InputMode = null | 'manual' | 'image';
+
+function PortfolioSummary({ userId }: { userId: string }) {
+  const [stats, setStats] = useState<{ totalPL: number; roi: number } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const { data: analyses } = await supabase
+        .from('analyses')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('status', 'closed');
+
+      if (!analyses || analyses.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      const ids = analyses.map(a => a.id);
+      const { data: legs } = await supabase
+        .from('legs')
+        .select('analysis_id, side, price, current_price, quantity')
+        .in('analysis_id', ids);
+
+      if (!legs) {
+        setLoading(false);
+        return;
+      }
+
+      let totalPL = 0;
+      let totalInvested = 0;
+
+      const analysisMap: Record<string, any[]> = {};
+      legs.forEach(l => {
+        if (!analysisMap[l.analysis_id]) analysisMap[l.analysis_id] = [];
+        analysisMap[l.analysis_id].push(l);
+      });
+
+      Object.values(analysisMap).forEach(strategyLegs => {
+        let strategyNetCost = 0;
+        strategyLegs.forEach(l => {
+          const multiplier = l.side === 'buy' ? 1 : -1;
+          if (l.current_price != null) {
+            totalPL += multiplier * (l.current_price - l.price) * l.quantity;
+          }
+          const costMultiplier = l.side === 'buy' ? -1 : 1;
+          strategyNetCost += costMultiplier * l.price * l.quantity;
+        });
+        
+        // Capital investido é apenas o desembolso (custo negativo)
+        if (strategyNetCost < 0) {
+          totalInvested += Math.abs(strategyNetCost);
+        }
+      });
+
+      setStats({
+        totalPL,
+        roi: totalInvested > 0 ? (totalPL / totalInvested) * 100 : (totalPL > 0 ? 100 : 0)
+      });
+      setLoading(false);
+    };
+
+    fetchStats();
+  }, [userId]);
+
+  if (loading || !stats || stats.totalPL === 0) return null;
+
+  return (
+    <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent mb-6">
+      <CardContent className="py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className={cn(
+            "p-2 rounded-lg",
+            stats.totalPL >= 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"
+          )}>
+            {stats.totalPL >= 0 ? <TrendingUp className="h-5 w-5" /> : <TrendingDown className="h-5 w-5" />}
+          </div>
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Resultado Portfólio</p>
+            <p className={cn("text-lg font-black tracking-tighter", stats.totalPL >= 0 ? "text-success" : "text-destructive")}>
+              R$ {stats.totalPL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">ROI Consolidado</p>
+          <Badge variant="outline" className={cn(
+            "font-black",
+            stats.roi >= 0 ? "border-success/30 text-success" : "border-destructive/30 text-destructive"
+          )}>
+            {stats.roi >= 0 ? '+' : ''}{stats.roi.toFixed(2)}%
+          </Badge>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -42,8 +139,6 @@ export default function Dashboard() {
   const [loadingAI, setLoadingAI] = useState(false);
   const [saving, setSaving] = useState(false);
   const [inputMode, setInputMode] = useState<InputMode>(null);
-
-  const isFreeLimitReached = access.planType === 'free' && access.simulationCount >= 3;
 
   const metrics = useMemo(() => calculateMetrics(legs), [legs]);
   const payoffData = useMemo(() => generatePayoffCurve(legs, daysToExpiry, cdiRate), [legs, daysToExpiry, cdiRate]);
@@ -83,10 +178,6 @@ export default function Dashboard() {
   const updateLeg = useCallback((index: number, leg: Leg) => { setLegs(prev => prev.map((item, i) => (i === index ? leg : item))); }, []);
   
   const handleLegsFromImage = useCallback((extractedLegs: any[]) => { 
-    if (access.planType === 'free') {
-      toast.error('OCR de Imagem é exclusivo para o plano PRO.');
-      return;
-    }
     const sanitizedLegs: Leg[] = extractedLegs.map(l => ({
       side: (l.side === 'buy' || l.side === 'sell') ? l.side : 'buy',
       option_type: (l.option_type === 'call' || l.option_type === 'put' || l.option_type === 'stock') ? l.option_type : 'call',
@@ -98,7 +189,7 @@ export default function Dashboard() {
 
     setLegs(prev => [...prev, ...sanitizedLegs]); 
     setInputMode('manual');
-  }, [access.planType]);
+  }, []);
 
   if (authLoading || access.status === 'loading') return null;
   if (!user) return <Navigate to="/auth" replace />;
@@ -108,10 +199,6 @@ export default function Dashboard() {
   }
 
   const getAISuggestion = async () => {
-    if (access.planType === 'free') {
-      toast.error('Análise de IA é exclusiva para o plano PRO.');
-      return;
-    }
     if (legs.length === 0) { toast.error('Adicione pelo menos uma perna.'); return; }
     setLoadingAI(true);
     try {
@@ -131,10 +218,6 @@ export default function Dashboard() {
   };
 
   const saveAnalysis = async () => {
-    if (isFreeLimitReached) {
-      toast.error('Limite de 3 simulações atingido no plano Free.');
-      return;
-    }
     if (legs.length === 0) { toast.error('Adicione pelo menos uma perna.'); return; }
     setSaving(true);
     try {
@@ -164,33 +247,18 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background pb-16">
       <Header />
       <main className="container py-6 space-y-6 animate-fade-in">
-        
-        {/* Upgrade Banner for Free Users */}
-        {access.planType === 'free' && (
-          <Card className="border-primary/40 bg-primary/5 overflow-hidden">
-            <CardContent className="py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-                  <Crown className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold">Você está no Plano Free ({access.simulationCount}/3 simulações)</p>
-                  <p className="text-xs text-muted-foreground">Assine o PRO para simulações ilimitadas, IA e OCR.</p>
-                </div>
-              </div>
-              <Button size="sm" className="font-bold" onClick={() => navigate('/settings')}>FAZER UPGRADE</Button>
-            </CardContent>
-          </Card>
-        )}
+        <PortfolioSummary userId={user.id} />
 
         <ProfessionalHeader
           title="Nova Análise"
           subtitle="Monte sua estrutura de opções e analise os riscos em tempo real"
           badge={
             <div className="flex gap-2">
-              {access.planType === 'pro' && <Badge className="bg-primary text-primary-foreground font-black">PRO</Badge>}
               {metrics.strategyLabel && (
                 <Badge className="bg-primary/20 text-primary border-primary/30 text-xs font-semibold">{metrics.strategyLabel}</Badge>
+              )}
+              {metrics.isRiskFree && (
+                <Badge className="bg-success/20 text-success border-success/30 text-xs font-semibold">RISCO ZERO</Badge>
               )}
             </div>
           }
@@ -199,126 +267,121 @@ export default function Dashboard() {
         <div className="flex gap-3 flex-wrap">
           <Button 
             onClick={getAISuggestion} 
-            disabled={loadingAI || legs.length === 0 || access.planType === 'free'} 
+            disabled={loadingAI || legs.length === 0} 
             className="text-base h-11 px-6 shadow-[0_0_30px_-8px_hsl(var(--primary)/0.4)]"
           >
             {loadingAI ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
-            Sugestão IA {access.planType === 'free' && <Lock className="ml-2 h-3 w-3" />}
+            Sugestão IA
           </Button>
           <Button 
             onClick={saveAnalysis} 
-            disabled={saving || legs.length === 0 || isFreeLimitReached}
+            disabled={saving || legs.length === 0}
             variant="outline"
             className="text-base h-11 px-6"
           >
             {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
-            Salvar Análise {isFreeLimitReached && <Lock className="ml-2 h-3 w-3" />}
+            Salvar Análise
           </Button>
         </div>
 
-        {isFreeLimitReached && (
-          <div className="p-6 rounded-2xl border-2 border-dashed border-primary/40 bg-primary/5 text-center space-y-3">
-            <Lock className="h-8 w-8 mx-auto text-primary" />
-            <h3 className="text-lg font-bold">Limite de Simulações Atingido</h3>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto">Você já utilizou suas 3 simulações gratuitas. Assine o plano PRO para continuar analisando estruturas ilimitadas.</p>
-            <Button onClick={() => navigate('/settings')}>Ver Planos PRO</Button>
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2">
+            Nome da análise
+            {legs.length > 0 && !hasManuallyNamed && (
+              <Badge variant="outline" className="text-[9px] border-primary/30 text-primary animate-pulse">
+                <Wand2 className="h-2 w-2 mr-1" /> Sugestão IA
+              </Badge>
+            )}
+          </Label>
+          <Input 
+            value={analysisName} 
+            onChange={e => {
+              setAnalysisName(e.target.value);
+              setHasManuallyNamed(true);
+            }} 
+            placeholder="Ex: Trava de alta PETR4" 
+            className="max-w-md font-bold" 
+          />
+        </div>
+
+        {inputMode === null ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <button 
+              onClick={() => setInputMode('image')} 
+              className="group relative overflow-hidden rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card p-8 text-left transition-all duration-500 hover:border-primary hover:shadow-[0_0_60px_-12px_hsl(var(--primary)/0.5)] hover:-translate-y-1.5"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_0_20px_-5px_hsl(var(--primary))] group-hover:scale-110 transition-transform duration-500">
+                    <Camera className="h-8 w-8" />
+                  </div>
+                  <div>
+                    <Badge className="bg-primary text-primary-foreground text-[10px] font-black mb-1 px-2">IA POWERED</Badge>
+                    <h3 className="text-2xl font-black tracking-tight">Upload de Imagem</h3>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                  Tire um print da sua corretora e nossa IA avançada extrairá automaticamente todas as pernas da operação em segundos.
+                </p>
+              </div>
+            </button>
+
+            <button 
+              onClick={() => setInputMode('manual')} 
+              className="group relative overflow-hidden rounded-2xl border-2 border-dashed border-muted-foreground/30 bg-card p-8 text-left transition-all duration-300 hover:border-muted-foreground/60 hover:bg-muted/30 hover:-translate-y-1"
+            >
+              <div className="relative space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground group-hover:bg-muted-foreground group-hover:text-background transition-colors">
+                    <Keyboard className="h-8 w-8" />
+                  </div>
+                  <div>
+                    <Badge variant="outline" className="text-[10px] font-bold mb-1">PRECISO</Badge>
+                    <h3 className="text-2xl font-black tracking-tight">Entrada Manual</h3>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                  Insira manualmente cada perna da sua operação para ter controle total sobre os strikes e prêmios.
+                </p>
+              </div>
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <button onClick={() => setInputMode('manual')} className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all', inputMode === 'manual' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}><Keyboard className="h-4 w-4" /> Manual</button>
+              <button onClick={() => setInputMode('image')} className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all', inputMode === 'image' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}><Camera className="h-4 w-4" /> Upload OCR</button>
+            </div>
+            {inputMode === 'manual' ? <Card className="border-border/40 bg-card/50 backdrop-blur-sm"><CardContent className="pt-6"><LegForm onAdd={addLeg} /></CardContent></Card> : <ImageUpload onLegsExtracted={handleLegsFromImage} onImageChange={() => setLegs([])} />}
           </div>
         )}
 
-        {!isFreeLimitReached && (
+        <LegsTable legs={legs} onRemove={removeLeg} onUpdate={updateLeg} />
+
+        {legs.length > 0 && (
           <>
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">Nome da análise</Label>
-              <Input 
-                value={analysisName} 
-                onChange={e => {
-                  setAnalysisName(e.target.value);
-                  setHasManuallyNamed(true);
-                }} 
-                placeholder="Ex: Trava de alta PETR4" 
-                className="max-w-md font-bold" 
-              />
-            </div>
-
-            {inputMode === null ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <button 
-                  onClick={() => setInputMode('image')} 
-                  className="group relative overflow-hidden rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card p-8 text-left transition-all duration-500 hover:border-primary hover:shadow-[0_0_60px_-12px_hsl(var(--primary)/0.5)] hover:-translate-y-1.5"
-                >
-                  <div className="relative space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_0_20px_-5px_hsl(var(--primary))]">
-                        <Camera className="h-8 w-8" />
-                      </div>
-                      <div>
-                        <Badge className="bg-primary text-primary-foreground text-[10px] font-black mb-1 px-2">PRO FEATURE</Badge>
-                        <h3 className="text-2xl font-black tracking-tight">Upload de Imagem</h3>
-                      </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                      Tire um print da sua corretora e nossa IA avançada extrairá automaticamente todas as pernas.
-                    </p>
-                  </div>
-                </button>
-
-                <button 
-                  onClick={() => setInputMode('manual')} 
-                  className="group relative overflow-hidden rounded-2xl border-2 border-dashed border-muted-foreground/30 bg-card p-8 text-left transition-all duration-300 hover:border-muted-foreground/60 hover:bg-muted/30 hover:-translate-y-1"
-                >
-                  <div className="relative space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-                        <Keyboard className="h-8 w-8" />
-                      </div>
-                      <div>
-                        <Badge variant="outline" className="text-[10px] font-bold mb-1">PRECISO</Badge>
-                        <h3 className="text-2xl font-black tracking-tight">Entrada Manual</h3>
-                      </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground font-medium leading-relaxed">
-                      Insira manualmente cada perna da sua operação para ter controle total.
-                    </p>
-                  </div>
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setInputMode('manual')} className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all', inputMode === 'manual' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}><Keyboard className="h-4 w-4" /> Manual</button>
-                  <button onClick={() => setInputMode('image')} className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all', inputMode === 'image' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}><Camera className="h-4 w-4" /> Upload OCR</button>
-                </div>
-                {inputMode === 'manual' ? <Card className="border-border/40 bg-card/50 backdrop-blur-sm"><CardContent className="pt-6"><LegForm onAdd={addLeg} /></CardContent></Card> : <ImageUpload onLegsExtracted={handleLegsFromImage} onImageChange={() => setLegs([])} />}
-              </div>
-            )}
-
-            <LegsTable legs={legs} onRemove={removeLeg} onUpdate={updateLeg} />
-
-            {legs.length > 0 && (
-              <>
-                <SectionDivider title="Análise de IA" />
-                <AIInsights analysis={aiAnalysis} loading={loadingAI} />
-                
-                <SectionDivider title="Métricas e Payoff" />
-                <MetricsCards metrics={metrics} cdiReturn={cdiReturn} daysToExpiry={daysToExpiry} investedCapital={investedCapital} />
-                <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
-                  <CardHeader><CardTitle className="text-base">Gráfico de Payoff</CardTitle></CardHeader>
-                  <CardContent>
-                    <PayoffChart 
-                      data={payoffData} 
-                      breakevens={metrics.realBreakeven ? (Array.isArray(metrics.realBreakeven) ? metrics.realBreakeven : [metrics.realBreakeven]) : metrics.breakevens} 
-                      cdiRate={cdiRate} 
-                      daysToExpiry={daysToExpiry} 
-                      netCost={metrics.netCost} 
-                      montageTotal={metrics.montageTotal}
-                      maxGain={metrics.maxGain}
-                      maxLoss={metrics.maxLoss}
-                    />
-                  </CardContent>
-                </Card>
-                <CDIComparison metrics={metrics} cdiRate={cdiRate} setCdiRate={setCdiRate} daysToExpiry={daysToExpiry} setDaysToExpiry={setDaysToExpiry} />
-              </>
-            )}
+            <SectionDivider title="Análise de IA" />
+            <AIInsights analysis={aiAnalysis} loading={loadingAI} />
+            
+            <SectionDivider title="Métricas e Payoff" />
+            <MetricsCards metrics={metrics} cdiReturn={cdiReturn} daysToExpiry={daysToExpiry} investedCapital={investedCapital} />
+            <Card className="border-border/40 bg-card/50 backdrop-blur-sm">
+              <CardHeader><CardTitle className="text-base">Gráfico de Payoff</CardTitle></CardHeader>
+              <CardContent>
+                <PayoffChart 
+                  data={payoffData} 
+                  breakevens={metrics.realBreakeven ? (Array.isArray(metrics.realBreakeven) ? metrics.realBreakeven : [metrics.realBreakeven]) : metrics.breakevens} 
+                  cdiRate={cdiRate} 
+                  daysToExpiry={daysToExpiry} 
+                  netCost={metrics.netCost} 
+                  montageTotal={metrics.montageTotal}
+                  maxGain={metrics.maxGain}
+                  maxLoss={metrics.maxLoss}
+                />
+              </CardContent>
+            </Card>
+            <CDIComparison metrics={metrics} cdiRate={cdiRate} setCdiRate={setCdiRate} daysToExpiry={daysToExpiry} setDaysToExpiry={setDaysToExpiry} />
           </>
         )}
       </main>
