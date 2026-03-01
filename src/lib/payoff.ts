@@ -152,17 +152,14 @@ export function calculateMetrics(legs: Leg[]): AnalysisMetrics {
   }
 
   const lastProfit = profits[profits.length - 1];
-  const firstProfit = profits[0];
   const secondLastProfit = profits[profits.length - 2];
-  const secondProfit = profits[1];
 
-  const isGainUnlimitedRight = lastProfit > secondLastProfit && lastProfit > 0 && maxProfit === lastProfit;
-  const isGainUnlimitedLeft = firstProfit > secondProfit && firstProfit > 0 && maxProfit === firstProfit;
-  const isGainUnlimited = isGainUnlimitedRight || isGainUnlimitedLeft;
-
-  const isLossUnlimitedRight = lastProfit < secondLastProfit && lastProfit < 0 && minProfit === lastProfit;
-  const isLossUnlimitedLeft = firstProfit < secondProfit && firstProfit < 0 && minProfit === firstProfit;
-  const isLossUnlimited = isLossUnlimitedRight || isLossUnlimitedLeft;
+  // Ganho ilimitado apenas se a curva continuar subindo no lado direito (preço alto)
+  const isGainUnlimited = lastProfit > secondLastProfit && lastProfit > 0 && maxProfit === lastProfit;
+  
+  // Perda ilimitada apenas se a curva continuar caindo no lado direito (ex: venda a seco de call)
+  // No lado esquerdo (preço -> 0), a perda é sempre limitada pelo valor do ativo/opção
+  const isLossUnlimited = lastProfit < secondLastProfit && lastProfit < 0 && minProfit === lastProfit;
 
   const result: AnalysisMetrics = {
     maxGain: isGainUnlimited ? 'Ilimitado' : Math.round(maxProfit * 100) / 100,
@@ -179,7 +176,7 @@ export function calculateMetrics(legs: Leg[]): AnalysisMetrics {
     result.realBreakeven = strategy.breakeven;
     result.isRiskFree = strategy.isRiskFree;
     result.maxGain = strategy.maxProfit;
-    // Se for risco zero, o maxLoss é na verdade o lucro mínimo garantido
+    // Se a estratégia detectada tem perda finita, usamos ela
     result.maxLoss = strategy.isRiskFree ? strategy.maxLoss : (typeof strategy.maxLoss === 'number' ? -Math.abs(strategy.maxLoss) : strategy.maxLoss);
   }
 
