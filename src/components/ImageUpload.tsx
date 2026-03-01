@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Upload, Loader2, X, Zap, Image as ImageIcon } from 'lucide-react';
+import { Upload, Loader2, X, Zap, Image as ImageIcon, CheckCircle2 } from 'lucide-react';
 import { Leg } from '@/lib/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -68,7 +68,7 @@ export default function ImageUpload({ onLegsExtracted, onImageChange }: ImageUpl
       });
       
       if (error) {
-        console.error('Supabase function error:', error);
+        console.error('[ImageUpload] Supabase function error:', error);
         throw new Error(error.message || 'Erro ao chamar a função de análise');
       }
       
@@ -83,7 +83,7 @@ export default function ImageUpload({ onLegsExtracted, onImageChange }: ImageUpl
         });
       }
     } catch (err: any) {
-      console.error('OCR error:', err);
+      console.error('[ImageUpload] OCR error details:', err);
       const message = err.message || 'Tente novamente';
       
       if (message.includes('Failed to send a request') || message.includes('payload')) {
@@ -92,7 +92,7 @@ export default function ImageUpload({ onLegsExtracted, onImageChange }: ImageUpl
         });
       } else {
         toast.error('Erro ao processar imagem', {
-          description: 'Verifique se a imagem é legível e tente novamente.',
+          description: message,
         });
       }
     } finally {
@@ -120,7 +120,7 @@ export default function ImageUpload({ onLegsExtracted, onImageChange }: ImageUpl
       const compressedDataUrl = await compressImage(file);
       await processImage(compressedDataUrl);
     } catch (error) {
-      console.error("Erro na compressão:", error);
+      console.error("[ImageUpload] Erro na compressão:", error);
       toast.error("Erro ao preparar imagem");
     } finally {
       processingRef.current = false;
