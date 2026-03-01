@@ -12,7 +12,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Lock, Mail, LogOut, Shield, Database, CheckCircle2, XCircle, Crown, CreditCard, Sparkles } from 'lucide-react';
 import { useAccessControl } from '@/hooks/useAccessControl';
-import { cn } from '@/lib/utils';
 
 export default function Settings() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -56,7 +55,6 @@ export default function Settings() {
       const { data, error } = await supabase.functions.invoke('mercado-pago-checkout');
       
       if (error) {
-        // Tenta extrair a mensagem de erro do corpo da resposta se disponível
         const errorMsg = error instanceof Error ? error.message : "Erro na comunicação com o servidor";
         throw new Error(errorMsg);
       }
