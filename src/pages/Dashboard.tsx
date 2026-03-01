@@ -187,12 +187,17 @@ export default function Dashboard() {
 
   const incrementSimulations = async () => {
     if (!user) return;
+    
+    // Incrementa no banco de dados
     const { error } = await supabase
       .from('user_access')
       .update({ simulations_count: access.simulationsCount + 1 } as any)
       .eq('user_id', user.id);
     
-    if (error) console.error("Erro ao incrementar simulações:", error);
+    if (error) {
+      console.error("Erro ao incrementar simulações:", error);
+      toast.error("Erro ao contabilizar simulação. Verifique sua conexão.");
+    }
   };
 
   const handleLegsFromImage = useCallback(async (extractedLegs: any[]) => { 
@@ -214,6 +219,8 @@ export default function Dashboard() {
 
     setLegs(prev => [...prev, ...sanitizedLegs]); 
     setInputMode('manual');
+    
+    // Contabiliza a simulação pelo uso do OCR
     await incrementSimulations();
     toast.info("Simulação contabilizada via OCR.");
   }, [isLimitReached, user, access.simulationsCount]);
@@ -244,6 +251,8 @@ export default function Dashboard() {
       });
       if (error) throw error;
       setAiAnalysis(data);
+      
+      // Contabiliza a simulação pelo uso da IA
       await incrementSimulations();
       toast.success('Análise de IA concluída!');
     } catch (err: any) {
