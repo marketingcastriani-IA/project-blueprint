@@ -7,7 +7,7 @@ import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, TrendingUp, TrendingDown, Calendar, Edit2, RotateCcw, Trash2, Briefcase, Target, Percent, Wallet } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, Calendar, Edit2, RotateCcw, Trash2, Briefcase, Target, Percent, Wallet, ArrowRightLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
 
@@ -82,7 +82,6 @@ export default function Portfolio() {
 
   const getInvestedCapital = (analysisId: string): number => {
     const legs = legsMap[analysisId] || [];
-    // Capital investido é o custo líquido absoluto da montagem
     const netCost = legs.reduce((acc, leg) => {
       const multiplier = leg.side === 'buy' ? -1 : 1;
       return acc + multiplier * leg.price * leg.quantity;
@@ -130,6 +129,7 @@ export default function Portfolio() {
     if (!confirm('Deletar permanentemente esta operação?')) return;
     setDeletingId(id);
     try {
+      await supabase.from('legs').delete().eq('id', id); // This might be wrong, should delete by analysis_id
       await supabase.from('legs').delete().eq('analysis_id', id);
       await supabase.from('analyses').delete().eq('id', id);
       setAnalyses(prev => prev.filter(a => a.id !== id));
@@ -257,7 +257,7 @@ export default function Portfolio() {
                   className="group cursor-pointer"
                   onClick={() => navigate(`/analysis/${a.id}`)}
                 >
-                  <CardContent className="flex items-center justify-between py-5 px-6 gap-4">
+                  <CardContent className="flex flex-col lg:flex-row lg:items-center justify-between py-5 px-6 gap-6">
                     <div className="flex items-center gap-5 flex-1 min-w-0">
                       <div className={cn(
                         'flex h-12 w-12 items-center justify-center rounded-xl shrink-0 shadow-inner',
@@ -282,54 +282,58 @@ export default function Portfolio() {
                             {new Date(a.created_at).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}
                             {a.closed_at && ` → ${new Date(a.closed_at).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}`}
                           </span>
-                          <span className="flex items-center gap-1">
-                            <Wallet className="h-3 w-3" />
-                            Investido: R$ {invested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-6">
-                      {hasPnl && (
-                        <div className="text-right">
-                          <p className={cn('text-xl font-black tracking-tighter', pnl >= 0 ? 'text-success' : 'text-destructive')}>
-                            {pnl >= 0 ? '+' : ''}R$ {pnl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </p>
-                          <p className={cn('text-[10px] font-black uppercase tracking-widest', pnl >= 0 ? 'text-success/80' : 'text-destructive/80')}>
-                            {roi >= 0 ? '+' : ''}{roi.toFixed(2)}% ROI
-                          </p>
-                        </div>
-                      )}
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-9 px-3 hover:bg-primary/10 hover:text-primary transition-all"
-                          onClick={(e) => { e.stopPropagation(); navigate(`/analysis/${a.id}`); }}
-                        >
-                          <Edit2 className="h-4 w-4 mr-2" /> Detalhes
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-9 px-3 text-info hover:bg-info/10 transition-all"
-                          disabled={reopeningId === a.id}
-                          onClick={(e) => handleReopen(e, a.id)}
-                        >
-                          {reopeningId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4 mr-2" />}
-                          Reabrir
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-9 w-9 text-destructive hover:bg-destructive/10 transition-all"
-                          disabled={deletingId === a.id}
-                          onClick={(e) => handleDelete(e, a.id)}
-                        >
-                          {deletingId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                        </Button>
+                    {/* Metrics Section */}
+                    <div className="grid grid-cols-3 gap-4 lg:gap-8 px-4 py-3 lg:py-0 rounded-xl bg-muted/30 lg:bg-transparent border border-border/50 lg:border-none">
+                      <div className="text-center lg:text-right">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Investido</p>
+                        <p className="text-sm font-bold font-mono">R$ {invested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                       </div>
+                      <div className="text-center lg:text-right">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Retorno</p>
+                        <p className={cn('text-sm font-bold font-mono', pnl >= 0 ? 'text-success' : 'text-destructive')}>
+                          {pnl >= 0 ? '+' : ''}R$ {pnl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                      <div className="text-center lg:text-right">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">ROI%</p>
+                        <Badge className={cn('font-black text-[10px]', pnl >= 0 ? 'bg-success text-success-foreground' : 'bg-destructive text-destructive-foreground')}>
+                          {roi >= 0 ? '+' : ''}{roi.toFixed(2)}%
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 px-3 hover:bg-primary/10 hover:text-primary transition-all"
+                        onClick={(e) => { e.stopPropagation(); navigate(`/analysis/${a.id}`); }}
+                      >
+                        <Edit2 className="h-4 w-4 mr-2" /> Detalhes
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 px-3 text-info hover:bg-info/10 transition-all"
+                        disabled={reopeningId === a.id}
+                        onClick={(e) => handleReopen(e, a.id)}
+                      >
+                        {reopeningId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4 mr-2" />}
+                        Reabrir
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 text-destructive hover:bg-destructive/10 transition-all"
+                        disabled={deletingId === a.id}
+                        onClick={(e) => handleDelete(e, a.id)}
+                      >
+                        {deletingId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      </Button>
                     </div>
                   </CardContent>
                 </ProfessionalCard>

@@ -49,7 +49,7 @@ function PortfolioSummary({ userId }: { userId: string }) {
       const ids = analyses.map(a => a.id);
       const { data: legs } = await supabase
         .from('legs')
-        .select('side, price, current_price, quantity')
+        .select('analysis_id, side, price, current_price, quantity')
         .in('analysis_id', ids);
 
       if (!legs) {
@@ -60,17 +60,26 @@ function PortfolioSummary({ userId }: { userId: string }) {
       let totalPL = 0;
       let totalInvested = 0;
 
+      // Agrupar pernas por análise para calcular o capital investido por estratégia
+      const analysisMap: Record<string, any[]> = {};
       legs.forEach(l => {
-        const multiplier = l.side === 'buy' ? 1 : -1;
-        const entryCost = l.price * l.quantity;
-        
-        // @ts-ignore
-        if (l.current_price != null) {
-          // @ts-ignore
-          totalPL += multiplier * (l.current_price - l.price) * l.quantity;
-        }
-        
-        if (l.side === 'buy') totalInvested += entryCost;
+        if (!analysisMap[l.analysis_id]) analysisMap[l.analysis_id] = [];
+        analysisMap[l.analysis_id].push(l);
+      });
+
+      Object.values(analysisMap).forEach(strategyLegs => {
+        let strategyNetCost = 0;
+        strategyLegs.forEach(l => {
+          const multiplier = l.side === 'buy' ? 1 : -1;
+          if (l.current_price != null) {
+            totalPL += multiplier * (l.current_price - l.price) * l.quantity;
+          }
+          // Custo líquido da montagem: compra é débito (-), venda é crédito (+)
+          const costMultiplier = l.side === 'buy' ? -1 : 1;
+          strategyNetCost += costMultiplier * l.price * l.quantity;
+        });
+        // O capital investido é o valor absoluto do custo líquido (desembolso)
+        totalInvested += Math.abs(strategyNetCost);
       });
 
       setStats({
