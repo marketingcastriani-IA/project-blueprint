@@ -60,7 +60,6 @@ function PortfolioSummary({ userId }: { userId: string }) {
       let totalPL = 0;
       let totalInvested = 0;
 
-      // Agrupar pernas por análise para calcular o capital investido por estratégia
       const analysisMap: Record<string, any[]> = {};
       legs.forEach(l => {
         if (!analysisMap[l.analysis_id]) analysisMap[l.analysis_id] = [];
@@ -74,17 +73,19 @@ function PortfolioSummary({ userId }: { userId: string }) {
           if (l.current_price != null) {
             totalPL += multiplier * (l.current_price - l.price) * l.quantity;
           }
-          // Custo líquido da montagem: compra é débito (-), venda é crédito (+)
           const costMultiplier = l.side === 'buy' ? -1 : 1;
           strategyNetCost += costMultiplier * l.price * l.quantity;
         });
-        // O capital investido é o valor absoluto do custo líquido (desembolso)
-        totalInvested += Math.abs(strategyNetCost);
+        
+        // Capital investido é apenas o desembolso (custo negativo)
+        if (strategyNetCost < 0) {
+          totalInvested += Math.abs(strategyNetCost);
+        }
       });
 
       setStats({
         totalPL,
-        roi: totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0
+        roi: totalInvested > 0 ? (totalPL / totalInvested) * 100 : (totalPL > 0 ? 100 : 0)
       });
       setLoading(false);
     };
@@ -142,7 +143,6 @@ export default function Dashboard() {
   const metrics = useMemo(() => calculateMetrics(legs), [legs]);
   const payoffData = useMemo(() => generatePayoffCurve(legs, daysToExpiry, cdiRate), [legs, daysToExpiry, cdiRate]);
 
-  // Sugestão automática de nome
   useEffect(() => {
     if (!hasManuallyNamed && legs.length > 0) {
       const asset = legs[0].asset || '';

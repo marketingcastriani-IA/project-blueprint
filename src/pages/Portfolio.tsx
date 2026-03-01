@@ -7,7 +7,7 @@ import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, TrendingUp, TrendingDown, Calendar, Edit2, RotateCcw, Trash2, Briefcase, Target, Percent, Wallet, ArrowRightLeft } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, Calendar, Edit2, RotateCcw, Trash2, Briefcase, Wallet, ArrowRightLeft, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
 
@@ -80,13 +80,16 @@ export default function Portfolio() {
     }, 0);
   };
 
-  const getInvestedCapital = (analysisId: string): number => {
+  const getMontageCost = (analysisId: string): number => {
     const legs = legsMap[analysisId] || [];
-    const netCost = legs.reduce((acc, leg) => {
+    // Custo de montagem: Compra (-) e Venda (+)
+    // Se o resultado for negativo, houve um desembolso (Débito)
+    // Se o resultado for positivo, houve um recebimento (Crédito)
+    const net = legs.reduce((acc, leg) => {
       const multiplier = leg.side === 'buy' ? -1 : 1;
       return acc + multiplier * leg.price * leg.quantity;
     }, 0);
-    return Math.abs(netCost) || 1;
+    return net;
   };
 
   const hasPnLData = (analysisId: string): boolean => {
@@ -96,10 +99,11 @@ export default function Portfolio() {
   const stats = useMemo(() => {
     const withPnL = analyses.filter(a => hasPnLData(a.id));
     const pnls = withPnL.map(a => getPnL(a.id));
-    const investedCapitals = withPnL.map(a => getInvestedCapital(a.id));
+    const montageCosts = withPnL.map(a => getMontageCost(a.id));
     
     const totalPL = pnls.reduce((s, p) => s + p, 0);
-    const totalInvested = investedCapitals.reduce((s, c) => s + c, 0);
+    // Capital alocado é a soma dos desembolsos (custos negativos)
+    const totalInvested = montageCosts.reduce((s, c) => s + (c < 0 ? Math.abs(c) : 0), 0);
     
     const wins = pnls.filter(p => p > 0).length;
     const losses = pnls.filter(p => p < 0).length;
@@ -129,7 +133,6 @@ export default function Portfolio() {
     if (!confirm('Deletar permanentemente esta operação?')) return;
     setDeletingId(id);
     try {
-      await supabase.from('legs').delete().eq('id', id); // This might be wrong, should delete by analysis_id
       await supabase.from('legs').delete().eq('analysis_id', id);
       await supabase.from('analyses').delete().eq('id', id);
       setAnalyses(prev => prev.filter(a => a.id !== id));
@@ -185,7 +188,7 @@ export default function Portfolio() {
               <p className="text-3xl font-black tracking-tighter text-foreground">
                 R$ {stats.totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
-              <p className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-tight">Volume total movimentado</p>
+              <p className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-tight">Total desembolsado em montagens</p>
             </CardContent>
           </ProfessionalCard>
 
@@ -248,9 +251,11 @@ export default function Portfolio() {
           <div className="grid gap-3">
             {analyses.map(a => {
               const pnl = getPnL(a.id);
-              const invested = getInvestedCapital(a.id);
-              const roi = (pnl / invested) * 100;
+              const montage = getMontageCost(a.id);
+              const invested = montage < 0 ? Math.abs(montage) : 0;
+              const roi = invested > 0 ? (pnl / invested) * 100 : (pnl > 0 ? 100 : 0);
               const hasPnl = hasPnLData(a.id);
+              
               return (
                 <ProfessionalCard
                   key={a.id}
@@ -289,11 +294,13 @@ export default function Portfolio() {
                     {/* Metrics Section */}
                     <div className="grid grid-cols-3 gap-4 lg:gap-8 px-4 py-3 lg:py-0 rounded-xl bg-muted/30 lg:bg-transparent border border-border/50 lg:border-none">
                       <div className="text-center lg:text-right">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Investido</p>
-                        <p className="text-sm font-bold font-mono">R$ {invested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Custo Montagem</p>
+                        <p className={cn("text-sm font-bold font-mono", montage >= 0 ? "text-info" : "text-foreground")}>
+                          {montage >= 0 ? 'Crédito: ' : ''}R$ {Math.abs(montage).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </p>
                       </div>
                       <div className="text-center lg:text-right">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Retorno</p>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Resultado Final</p>
                         <p className={cn('text-sm font-bold font-mono', pnl >= 0 ? 'text-success' : 'text-destructive')}>
                           {pnl >= 0 ? '+' : ''}R$ {pnl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </p>
