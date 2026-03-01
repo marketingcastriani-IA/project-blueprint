@@ -22,7 +22,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Sparkles, Loader2, Camera, Keyboard } from 'lucide-react';
+import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, SectionDivider } from '@/components/ProfessionalLayout';
 import AIInsights from '@/components/AIInsights';
@@ -35,6 +35,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [legs, setLegs] = useState<Leg[]>([]);
   const [analysisName, setAnalysisName] = useState('');
+  const [hasManuallyNamed, setHasManuallyNamed] = useState(false);
   const [cdiRate, setCdiRate] = useState(14.90);
   const [daysToExpiry, setDaysToExpiry] = useState(0);
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
@@ -44,6 +45,15 @@ export default function Dashboard() {
 
   const metrics = useMemo(() => calculateMetrics(legs), [legs]);
   const payoffData = useMemo(() => generatePayoffCurve(legs, daysToExpiry, cdiRate), [legs, daysToExpiry, cdiRate]);
+
+  // Sugestão automática de nome
+  useEffect(() => {
+    if (!hasManuallyNamed && legs.length > 0) {
+      const asset = legs[0].asset || '';
+      const strategy = metrics.strategyLabel || 'Nova Estrutura';
+      setAnalysisName(`${strategy} ${asset}`.trim());
+    }
+  }, [legs, metrics.strategyLabel, hasManuallyNamed]);
 
   const inferredExpiry = useMemo(() => {
     const leg = legs.find(l => l.option_type !== 'stock');
@@ -177,28 +187,65 @@ export default function Dashboard() {
         </div>
 
         <div className="space-y-2">
-          <Label>Nome da análise</Label>
-          <Input value={analysisName} onChange={e => setAnalysisName(e.target.value)} placeholder="Ex: Trava de alta PETR4" className="max-w-md" />
+          <Label className="flex items-center gap-2">
+            Nome da análise
+            {legs.length > 0 && !hasManuallyNamed && (
+              <Badge variant="outline" className="text-[9px] border-primary/30 text-primary animate-pulse">
+                <Wand2 className="h-2 w-2 mr-1" /> Sugestão IA
+              </Badge>
+            )}
+          </Label>
+          <Input 
+            value={analysisName} 
+            onChange={e => {
+              setAnalysisName(e.target.value);
+              setHasManuallyNamed(true);
+            }} 
+            placeholder="Ex: Trava de alta PETR4" 
+            className="max-w-md font-bold" 
+          />
         </div>
 
         {inputMode === null ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button onClick={() => setInputMode('image')} className="group relative overflow-hidden rounded-2xl border-2 border-dashed border-primary/30 bg-gradient-to-br from-primary/5 via-card to-card p-8 text-left transition-all duration-300 hover:border-primary/60 hover:shadow-[0_0_50px_-12px_hsl(var(--primary)/0.3)] hover:-translate-y-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <button 
+              onClick={() => setInputMode('image')} 
+              className="group relative overflow-hidden rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card p-8 text-left transition-all duration-500 hover:border-primary hover:shadow-[0_0_60px_-12px_hsl(var(--primary)/0.5)] hover:-translate-y-1.5"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Camera className="h-7 w-7" /></div>
-                  <div><Badge variant="outline" className="text-[9px] border-primary/40 text-primary mb-1">IA + OCR</Badge><h3 className="text-xl font-bold">Upload de Imagem</h3></div>
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_0_20px_-5px_hsl(var(--primary))] group-hover:scale-110 transition-transform duration-500">
+                    <Camera className="h-8 w-8" />
+                  </div>
+                  <div>
+                    <Badge className="bg-primary text-primary-foreground text-[10px] font-black mb-1 px-2">IA POWERED</Badge>
+                    <h3 className="text-2xl font-black tracking-tight">Upload de Imagem</h3>
+                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground">Tire um print da sua corretora e a IA extrai as pernas.</p>
+                <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                  Tire um print da sua corretora e nossa IA avançada extrairá automaticamente todas as pernas da operação em segundos.
+                </p>
               </div>
             </button>
-            <button onClick={() => setInputMode('manual')} className="group relative overflow-hidden rounded-2xl border-2 border-dashed border-accent/40 bg-gradient-to-br from-accent/[0.08] via-card to-card p-8 text-left transition-all duration-300 hover:border-accent/60 hover:shadow-[0_0_50px_-12px_hsl(var(--accent)/0.3)] hover:-translate-y-1">
+
+            <button 
+              onClick={() => setInputMode('manual')} 
+              className="group relative overflow-hidden rounded-2xl border-2 border-dashed border-muted-foreground/30 bg-card p-8 text-left transition-all duration-300 hover:border-muted-foreground/60 hover:bg-muted/30 hover:-translate-y-1"
+            >
               <div className="relative space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/20 text-accent"><Keyboard className="h-7 w-7" /></div>
-                  <div><Badge variant="outline" className="text-[9px] border-accent/40 text-accent mb-1">PRECISO</Badge><h3 className="text-xl font-bold">Entrada Manual</h3></div>
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground group-hover:bg-muted-foreground group-hover:text-background transition-colors">
+                    <Keyboard className="h-8 w-8" />
+                  </div>
+                  <div>
+                    <Badge variant="outline" className="text-[10px] font-bold mb-1">PRECISO</Badge>
+                    <h3 className="text-2xl font-black tracking-tight">Entrada Manual</h3>
+                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground">Insira manualmente cada perna da operação.</p>
+                <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                  Insira manualmente cada perna da sua operação para ter controle total sobre os strikes e prêmios.
+                </p>
               </div>
             </button>
           </div>

@@ -7,7 +7,7 @@ import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Loader2, TrendingUp, TrendingDown, Calendar, Edit2, RotateCcw, Trash2, Briefcase, Target, Percent } from 'lucide-react';
+import { Loader2, TrendingUp, TrendingDown, Calendar, Edit2, RotateCcw, Trash2, Briefcase, Target, Percent, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
 
@@ -80,6 +80,16 @@ export default function Portfolio() {
     }, 0);
   };
 
+  const getInvestedCapital = (analysisId: string): number => {
+    const legs = legsMap[analysisId] || [];
+    // Capital investido é o custo líquido absoluto da montagem
+    const netCost = legs.reduce((acc, leg) => {
+      const multiplier = leg.side === 'buy' ? -1 : 1;
+      return acc + multiplier * leg.price * leg.quantity;
+    }, 0);
+    return Math.abs(netCost) || 1;
+  };
+
   const hasPnLData = (analysisId: string): boolean => {
     return (legsMap[analysisId] || []).some(l => l.current_price != null);
   };
@@ -87,11 +97,18 @@ export default function Portfolio() {
   const stats = useMemo(() => {
     const withPnL = analyses.filter(a => hasPnLData(a.id));
     const pnls = withPnL.map(a => getPnL(a.id));
+    const investedCapitals = withPnL.map(a => getInvestedCapital(a.id));
+    
     const totalPL = pnls.reduce((s, p) => s + p, 0);
+    const totalInvested = investedCapitals.reduce((s, c) => s + c, 0);
+    
     const wins = pnls.filter(p => p > 0).length;
     const losses = pnls.filter(p => p < 0).length;
     const winRate = pnls.length > 0 ? ((wins / pnls.length) * 100).toFixed(1) : '0';
-    return { totalPL, wins, losses, winRate, total: analyses.length };
+    
+    const totalReturnPct = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
+
+    return { totalPL, totalInvested, totalReturnPct, wins, losses, winRate, total: analyses.length };
   }, [analyses, legsMap]);
 
   const handleReopen = async (e: React.MouseEvent, id: string) => {
@@ -141,7 +158,7 @@ export default function Portfolio() {
           <ProfessionalCard highlight={stats.totalPL >= 0}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Total P&L</span>
+                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Resultado Total (P&L)</span>
                 <div className={cn('p-2 rounded-lg', stats.totalPL >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive')}>
                   {stats.totalPL >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                 </div>
@@ -149,7 +166,26 @@ export default function Portfolio() {
               <p className={cn('text-3xl font-black tracking-tighter', stats.totalPL >= 0 ? 'text-success' : 'text-destructive')}>
                 R$ {stats.totalPL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
-              <p className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-tight">{stats.total} operações encerradas</p>
+              <div className="flex items-center gap-2 mt-2">
+                <Badge variant="outline" className={cn('text-[10px] font-black', stats.totalReturnPct >= 0 ? 'border-success/30 text-success' : 'border-destructive/30 text-destructive')}>
+                  {stats.totalReturnPct >= 0 ? '+' : ''}{stats.totalReturnPct.toFixed(2)}% ROI Total
+                </Badge>
+              </div>
+            </CardContent>
+          </ProfessionalCard>
+
+          <ProfessionalCard>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Capital Alocado</span>
+                <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                  <Wallet className="h-4 w-4" />
+                </div>
+              </div>
+              <p className="text-3xl font-black tracking-tighter text-foreground">
+                R$ {stats.totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </p>
+              <p className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-tight">Volume total movimentado</p>
             </CardContent>
           </ProfessionalCard>
 
@@ -175,30 +211,15 @@ export default function Portfolio() {
           <ProfessionalCard>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Ganhos</span>
-                <div className="p-2 rounded-lg bg-success/10 text-success">
-                  <TrendingUp className="h-4 w-4" />
+                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Operações</span>
+                <div className="p-2 rounded-lg bg-muted text-muted-foreground">
+                  <Briefcase className="h-4 w-4" />
                 </div>
               </div>
-              <p className="text-3xl font-black tracking-tighter text-success">
-                {stats.wins}
+              <p className="text-3xl font-black tracking-tighter text-foreground">
+                {stats.total}
               </p>
-              <p className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-tight">Operações lucrativas</p>
-            </CardContent>
-          </ProfessionalCard>
-
-          <ProfessionalCard>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Perdas</span>
-                <div className="p-2 rounded-lg bg-destructive/10 text-destructive">
-                  <TrendingDown className="h-4 w-4" />
-                </div>
-              </div>
-              <p className="text-3xl font-black tracking-tighter text-destructive">
-                {stats.losses}
-              </p>
-              <p className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-tight">Operações com prejuízo</p>
+              <p className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-tight">Total de estratégias encerradas</p>
             </CardContent>
           </ProfessionalCard>
         </div>
@@ -227,6 +248,8 @@ export default function Portfolio() {
           <div className="grid gap-3">
             {analyses.map(a => {
               const pnl = getPnL(a.id);
+              const invested = getInvestedCapital(a.id);
+              const roi = (pnl / invested) * 100;
               const hasPnl = hasPnLData(a.id);
               return (
                 <ProfessionalCard
@@ -259,6 +282,10 @@ export default function Portfolio() {
                             {new Date(a.created_at).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}
                             {a.closed_at && ` → ${new Date(a.closed_at).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}`}
                           </span>
+                          <span className="flex items-center gap-1">
+                            <Wallet className="h-3 w-3" />
+                            Investido: R$ {invested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -269,7 +296,9 @@ export default function Portfolio() {
                           <p className={cn('text-xl font-black tracking-tighter', pnl >= 0 ? 'text-success' : 'text-destructive')}>
                             {pnl >= 0 ? '+' : ''}R$ {pnl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </p>
-                          <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest">Resultado Final</p>
+                          <p className={cn('text-[10px] font-black uppercase tracking-widest', pnl >= 0 ? 'text-success/80' : 'text-destructive/80')}>
+                            {roi >= 0 ? '+' : ''}{roi.toFixed(2)}% ROI
+                          </p>
                         </div>
                       )}
                       <div className="flex gap-1">
