@@ -21,9 +21,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2 } from 'lucide-react';
+import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, SectionDivider } from '@/components/ProfessionalLayout';
 import AIInsights from '@/components/AIInsights';
@@ -340,29 +341,45 @@ export default function Dashboard() {
         </div>
         
         <div className="flex gap-3 flex-wrap items-center">
-          <Button 
-            onClick={getAISuggestion} 
-            disabled={loadingAI || legs.length === 0 || isLimitReached} 
-            className={cn(
-              "transition-all duration-500",
-              legs.length > 0 && !loadingAI && !isLimitReached
-                ? "bg-success hover:bg-success/90 text-success-foreground scale-110 animate-pulse h-14 px-8 text-lg font-black shadow-[0_0_40px_-8px_hsl(var(--success)/0.6)]"
-                : "text-base h-11 px-6 shadow-[0_0_30px_-8px_hsl(var(--primary)/0.4)]",
-              isLimitReached && "opacity-50"
-            )}
-          >
-            {loadingAI ? (
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            ) : legs.length > 0 ? (
-              <MousePointer2 className="mr-2 h-6 w-6" />
-            ) : (
-              <Sparkles className="mr-2 h-5 w-5" />
-            )}
-            {legs.length > 0 && !loadingAI && !isLimitReached 
-              ? "APERTE AQUI E DESCUBRA OS SEGREDOS DA SUA ESTRUTURA" 
-              : "Sugestão IA"}
-            {isLimitReached && <Lock className="ml-2 h-3 w-3" />}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                onClick={getAISuggestion} 
+                disabled={loadingAI || legs.length === 0 || isLimitReached} 
+                className={cn(
+                  "transition-all duration-500",
+                  legs.length > 0 && !loadingAI && !isLimitReached
+                    ? "bg-success hover:bg-success/90 text-success-foreground scale-110 animate-pulse h-14 px-8 text-lg font-black shadow-[0_0_40px_-8px_hsl(var(--success)/0.6)]"
+                    : "text-base h-11 px-6 shadow-[0_0_30px_-8px_hsl(var(--primary)/0.4)]",
+                  isLimitReached && "opacity-50"
+                )}
+              >
+                {loadingAI ? (
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                ) : legs.length > 0 ? (
+                  <MousePointer2 className="mr-2 h-6 w-6" />
+                ) : (
+                  <Sparkles className="mr-2 h-5 w-5" />
+                )}
+                Sugestão IA
+                {isLimitReached && <Lock className="ml-2 h-3 w-3" />}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs p-4 bg-card border-2 border-primary/30 shadow-xl">
+              <div className="space-y-2">
+                <p className="text-sm font-black text-primary flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" /> O QUE ESTE BOTÃO FAZ?
+                </p>
+                <p className="text-xs font-medium leading-relaxed">
+                  Nossa IA analisa sua estrutura, calcula a eficiência vs CDI e fornece um relatório detalhado de riscos, cenários de mercado e um veredito profissional.
+                </p>
+                <p className="text-[10px] font-black text-success uppercase tracking-widest">
+                  Aperte aqui e descubra os segredos da sua estrutura!
+                </p>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+
           <Button 
             onClick={saveAnalysis} 
             disabled={saving || legs.length === 0 || isLimitReached}
