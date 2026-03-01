@@ -24,14 +24,14 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")
     if (!LOVABLE_API_KEY) {
-      console.error("[analyze-options-image] LOVABLE_API_KEY não configurada nos segredos do Supabase")
-      return new Response(JSON.stringify({ error: "Configuração do servidor incompleta (API Key)" }), {
+      console.error("[analyze-options-image] LOVABLE_API_KEY não configurada")
+      return new Response(JSON.stringify({ error: "Configuração do servidor incompleta" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
     }
 
-    console.log("[analyze-options-image] Enviando imagem para análise de visão...")
+    console.log("[analyze-options-image] Enviando imagem para análise (Gemini 2.0 Flash)...")
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -40,16 +40,16 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "google/gemini-2.0-flash",
         messages: [
           { 
             role: "system", 
-            content: "Você é um assistente especializado em extrair dados de operações financeiras da B3. Extraia as pernas da operação (ativos e opções). Retorne APENAS um JSON com a chave 'legs'. Cada item deve ter: side ('buy' ou 'sell'), option_type ('call', 'put' ou 'stock'), asset (ticker), strike (número), price (número), quantity (número)." 
+            content: "Você é um assistente especializado em extrair dados de operações financeiras da B3. Extraia as pernas da operação. Retorne APENAS um JSON com a chave 'legs'. Cada item deve ter: side ('buy' ou 'sell'), option_type ('call', 'put' ou 'stock'), asset (ticker), strike (número), price (número), quantity (número)." 
           },
           {
             role: "user",
             content: [
-              { type: "text", text: "Extraia os dados desta imagem de corretora/home broker." },
+              { type: "text", text: "Extraia os dados desta imagem de corretora/home broker em formato JSON." },
               { type: "image_url", image_url: { url: imageDataUrl } },
             ],
           },

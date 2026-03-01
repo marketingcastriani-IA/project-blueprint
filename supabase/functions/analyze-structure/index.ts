@@ -19,7 +19,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured")
     }
 
-    console.log("[analyze-structure] Iniciando análise da estrutura...", { legsCount: legs.length })
+    console.log("[analyze-structure] Iniciando análise da estrutura (Gemini 2.0 Flash)...")
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -28,7 +28,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "google/gemini-2.0-flash",
         messages: [
           {
             role: "system",
