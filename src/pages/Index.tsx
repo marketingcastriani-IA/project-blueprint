@@ -5,7 +5,8 @@ import {
   TrendingUp, ArrowRight, Brain, Target, CheckCircle2,
   Lock, Sparkles, Trophy, XCircle, AlertTriangle,
   Rocket, Star, Shield, Zap, Users, BarChart3,
-  Clock, Eye, MousePointer2, ChevronRight, LayoutDashboard, Briefcase
+  Clock, Eye, MousePointer2, ChevronRight, LayoutDashboard, Briefcase,
+  Camera
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Sun, Moon } from 'lucide-react';
