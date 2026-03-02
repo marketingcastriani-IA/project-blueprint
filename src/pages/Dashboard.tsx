@@ -451,14 +451,14 @@ export default function Dashboard() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-primary" /> Data de Entrada
+                <Label className="flex items-center gap-2 font-black uppercase tracking-widest text-[10px] text-muted-foreground">
+                  <Calendar className="h-3 w-3 text-primary" /> Data de Entrada
                 </Label>
                 <Input 
                   type="date"
                   value={entryDate}
                   onChange={e => setEntryDate(e.target.value)}
-                  className="font-bold"
+                  className="font-bold h-11 border-primary/40 bg-primary/5 hover:border-primary transition-all cursor-pointer"
                 />
               </div>
             </div>
