@@ -76,14 +76,14 @@ export default function AdminPanel() {
       setUsers(rows);
 
       // Fetch current price from settings
-      const { data: settings } = await supabase
-        .from('site_settings')
+      const { data: settings } = await (supabase
+        .from('site_settings' as any)
         .select('*')
         .eq('id', 'pro_plan')
-        .single();
+        .single() as any);
       
       if (settings) {
-        setProPrice(String((settings.value as any).price));
+        setProPrice(String((settings as any).value?.price));
       }
     } catch (err: any) {
       toast.error('Erro ao carregar dados');
@@ -156,12 +156,12 @@ export default function AdminPanel() {
 
   const saveSettings = async () => {
     try {
-      const { error } = await supabase
-        .from('site_settings')
+      const { error } = await (supabase
+        .from('site_settings' as any)
         .upsert({ 
           id: 'pro_plan', 
           value: { price: parseFloat(proPrice) } 
-        } as any);
+        }) as any);
       
       if (error) throw error;
       toast.success('Configurações salvas com sucesso!');
