@@ -18,7 +18,7 @@ export default function Index() {
   const { user, loading } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const [proPrice, setProPrice] = useState(49.90);
+  const [proPrice, setProPrice] = useState(19.90);
 
   useEffect(() => {
     const fetchPrice = async () => {
@@ -287,7 +287,7 @@ export default function Index() {
               <p className="text-sm text-muted-foreground">Para quem está começando</p>
             </div>
             <ul className="space-y-3">
-              <PricingItem included label="3 Simulações por mês" />
+              <PricingItem included label="3 Simulações para teste" />
               <PricingItem included label="Gráfico de Payoff completo" />
               <PricingItem included label="Comparativo vs CDI" />
               <PricingItem included label="Entrada manual de pernas" />
