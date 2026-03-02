@@ -142,7 +142,7 @@ export default function Settings() {
                   <h3 className="text-lg font-black">Upgrade para PRO</h3>
                 </div>
                 <p className="text-sm text-muted-foreground font-medium">
-                  Libere simulações ilimitadas, OCR de imagem, sugestões de IA e suporte prioritário por apenas <strong>R$ {proPrice.toFixed(2)}/mês</strong>.
+                  Libere simulações **ilimitadas**, uso ilimitado de OCR e IA, portfólio completo e suporte prioritário por apenas <strong>R$ {proPrice.toFixed(2)}/mês</strong>.
                 </p>
                 <Button onClick={handleUpgrade} disabled={upgrading} className="w-full h-12 font-black shadow-lg shadow-primary/30">
                   {upgrading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CreditCard className="mr-2 h-5 w-5" />}

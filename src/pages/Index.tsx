@@ -187,7 +187,7 @@ export default function Index() {
             <div className="grid gap-4">
               <div className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border/40">
                 <Camera className="h-6 w-6 text-primary" />
-                <p className="font-bold text-sm">Upload de Imagem IA Powered</p>
+                <p className="font-bold text-sm">Upload de Imagem IA POWERED</p>
               </div>
               <div className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border/40">
                 <Zap className="h-6 w-6 text-primary" />
@@ -280,10 +280,10 @@ export default function Index() {
               <p className="text-4xl font-black tracking-tighter">R$ 0<span className="text-sm text-muted-foreground font-medium">/mês</span></p>
             </div>
             <ul className="space-y-4">
-              <li className="flex items-center gap-3 text-sm font-bold"><CheckCircle2 className="h-5 w-5 text-green-500" /> 3 Simulações por mês</li>
+              <li className="flex items-center gap-3 text-sm font-bold"><CheckCircle2 className="h-5 w-5 text-green-500" /> 3 Simulações de Teste</li>
               <li className="flex items-center gap-3 text-sm font-bold"><CheckCircle2 className="h-5 w-5 text-green-500" /> Gráfico de Payoff Completo</li>
-              <li className="flex items-center gap-3 text-sm font-bold text-muted-foreground"><Lock className="h-5 w-5" /> OCR de Imagem</li>
-              <li className="flex items-center gap-3 text-sm font-bold text-muted-foreground"><Lock className="h-5 w-5" /> Análise com IA</li>
+              <li className="flex items-center gap-3 text-sm font-bold"><CheckCircle2 className="h-5 w-5 text-green-500" /> OCR de Imagem (Limitado)</li>
+              <li className="flex items-center gap-3 text-sm font-bold"><CheckCircle2 className="h-5 w-5 text-green-500" /> Análise com IA (Limitado)</li>
             </ul>
             <Button variant="outline" className="w-full h-12 font-black" onClick={() => navigate('/auth')}>
               COMEÇAR GRÁTIS
