@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
-  Loader2, ArrowLeft, Save, XCircle, Layers, Brain, TrendingUp, Clock, Target, Zap, AlertTriangle
+  Loader2, ArrowLeft, Save, XCircle, Layers, Brain, TrendingUp, Clock, Target, Zap, AlertTriangle, Percent
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SectionDivider } from '@/components/ProfessionalLayout';
@@ -128,8 +128,10 @@ export default function AnalysisDetail() {
     const cdiReturnSinceEntry = calculateCDIReturn(investedCapital, cdiRate, daysSinceEntry, false);
     
     const efficiency = cdiReturnSinceEntry > 0 ? (currentPnL / cdiReturnSinceEntry) * 100 : 0;
+    const pnlRoi = (currentPnL / investedCapital) * 100;
+    const cdiRoi = (cdiReturnSinceEntry / investedCapital) * 100;
     
-    return { daysSinceEntry, cdiReturnSinceEntry, efficiency, entryDate };
+    return { daysSinceEntry, cdiReturnSinceEntry, efficiency, entryDate, pnlRoi, cdiRoi };
   }, [analysis, metrics, cdiRate, currentPnL]);
 
   const getExitAIAnalysis = async () => {
@@ -253,42 +255,58 @@ export default function AnalysisDetail() {
         {/* Painel de Performance vs CDI do Período */}
         {periodMetrics && analysis?.status === 'active' && (
           <div className="grid gap-4 md:grid-cols-3">
-            <Card className="border-primary/20 bg-gradient-to-br from-primary/[0.03] to-card">
+            <Card className="border-primary/20 bg-gradient-to-br from-primary/[0.03] to-card shadow-sm">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Lucro Atual (PnL)</span>
-                  <TrendingUp className={cn("h-4 w-4", currentPnL >= 0 ? "text-success" : "text-destructive")} />
+                  <div className={cn("p-1.5 rounded-lg", currentPnL >= 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive")}>
+                    <TrendingUp className="h-4 w-4" />
+                  </div>
                 </div>
-                <p className={cn("text-2xl font-black tracking-tighter", currentPnL >= 0 ? "text-success" : "text-destructive")}>
-                  R$ {currentPnL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </p>
+                <div className="flex items-baseline gap-2">
+                  <p className={cn("text-3xl font-black tracking-tighter", currentPnL >= 0 ? "text-success" : "text-destructive")}>
+                    R$ {currentPnL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                  <Badge variant="outline" className={cn("font-black text-[10px]", currentPnL >= 0 ? "border-success/30 text-success" : "border-destructive/30 text-destructive")}>
+                    {currentPnL >= 0 ? '+' : ''}{periodMetrics.pnlRoi.toFixed(2)}% ROI
+                  </Badge>
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="border-warning/20 bg-gradient-to-br from-warning/[0.03] to-card">
+            <Card className="border-warning/20 bg-gradient-to-br from-warning/[0.03] to-card shadow-sm">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Custo Oportunidade (CDI)</span>
-                  <Clock className="h-4 w-4 text-warning" />
+                  <div className="p-1.5 rounded-lg bg-warning/10 text-warning">
+                    <Clock className="h-4 w-4" />
+                  </div>
                 </div>
-                <p className="text-2xl font-black tracking-tighter text-warning">
-                  R$ {periodMetrics.cdiReturnSinceEntry.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </p>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">Rendimento no período da operação</p>
+                <div className="flex items-baseline gap-2">
+                  <p className="text-3xl font-black tracking-tighter text-warning">
+                    R$ {periodMetrics.cdiReturnSinceEntry.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                  <Badge variant="outline" className="border-warning/30 text-warning font-black text-[10px]">
+                    {periodMetrics.cdiRoi.toFixed(2)}% ROI
+                  </Badge>
+                </div>
+                <p className="text-[9px] font-bold text-muted-foreground uppercase mt-1">Rendimento no período da operação</p>
               </CardContent>
             </Card>
 
-            <Card className={cn("border-2", periodMetrics.efficiency >= 100 ? "border-success/30 bg-success/5" : "border-destructive/30 bg-destructive/5")}>
+            <Card className={cn("border-2 shadow-md transition-all", periodMetrics.efficiency >= 100 ? "border-success/30 bg-success/5" : "border-destructive/30 bg-destructive/5")}>
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Eficiência vs CDI</span>
-                  <Target className={cn("h-4 w-4", periodMetrics.efficiency >= 100 ? "text-success" : "text-destructive")} />
+                  <div className={cn("p-1.5 rounded-lg", periodMetrics.efficiency >= 100 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive")}>
+                    <Target className="h-4 w-4" />
+                  </div>
                 </div>
-                <p className={cn("text-2xl font-black tracking-tighter", periodMetrics.efficiency >= 100 ? "text-success" : "text-destructive")}>
-                  {periodMetrics.efficiency.toFixed(0)}% do CDI
+                <p className={cn("text-3xl font-black tracking-tighter", periodMetrics.efficiency >= 100 ? "text-success" : "text-destructive")}>
+                  {periodMetrics.efficiency.toFixed(0)}% <span className="text-sm font-bold">do CDI</span>
                 </p>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase mt-1">
-                  {periodMetrics.efficiency >= 100 ? "✓ Superando o CDI" : "✗ Abaixo do CDI"}
+                <p className="text-[9px] font-black text-muted-foreground uppercase mt-1 flex items-center gap-1">
+                  {periodMetrics.efficiency >= 100 ? <><Zap className="h-3 w-3 text-success" /> ✓ Superando o CDI</> : <><AlertTriangle className="h-3 w-3 text-destructive" /> ✗ Abaixo do CDI</>}
                 </p>
               </CardContent>
             </Card>
@@ -297,7 +315,12 @@ export default function AnalysisDetail() {
 
         {/* Análise de IA para Saída */}
         {analysis?.status === 'active' && (
-          <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/[0.05] to-card overflow-hidden">
+          <Card className={cn(
+            "border-2 transition-all duration-500 overflow-hidden",
+            exitAnalysis?.verdict === 'ENCERRAR' 
+              ? "border-success bg-success/10 shadow-[0_0_40px_-12px_hsl(var(--success)/0.4)] animate-pulse" 
+              : "border-primary/30 bg-gradient-to-br from-primary/[0.05] to-card"
+          )}>
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="space-y-2 text-center md:text-left">
@@ -312,37 +335,57 @@ export default function AnalysisDetail() {
                   onClick={getExitAIAnalysis} 
                   disabled={loadingExitAI} 
                   size="lg"
-                  className="font-black h-14 px-8 shadow-lg shadow-primary/30 animate-pulse"
+                  className={cn(
+                    "font-black h-14 px-8 shadow-lg transition-all",
+                    !exitAnalysis ? "shadow-primary/30 animate-bounce" : "shadow-success/30"
+                  )}
                 >
                   {loadingExitAI ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Zap className="mr-2 h-5 w-5" />}
-                  ANALISAR MOMENTO DE SAÍDA
+                  {exitAnalysis ? "REANALISAR SAÍDA" : "ANALISAR MOMENTO DE SAÍDA"}
                 </Button>
               </div>
 
               {exitAnalysis && (
-                <div className="mt-6 p-5 rounded-2xl bg-card border-2 border-primary/20 animate-fade-in space-y-4">
-                  <div className="flex items-center justify-between border-b border-border/50 pb-4">
+                <div className={cn(
+                  "mt-6 p-6 rounded-2xl border-2 animate-fade-in space-y-4",
+                  exitAnalysis.verdict === 'ENCERRAR' ? "bg-card border-success shadow-xl" : "bg-card border-primary/20"
+                )}>
+                  <div className="flex flex-col sm:flex-row items-center justify-between border-b border-border/50 pb-4 gap-4">
                     <div className="flex items-center gap-3">
                       <Badge className={cn(
-                        "text-sm px-4 py-1 font-black uppercase",
-                        exitAnalysis.verdict === 'ENCERRAR' ? "bg-success text-success-foreground" : 
+                        "text-base px-6 py-2 font-black uppercase tracking-tighter rounded-full shadow-lg",
+                        exitAnalysis.verdict === 'ENCERRAR' ? "bg-success text-success-foreground animate-pulse" : 
                         exitAnalysis.verdict === 'MANTER' ? "bg-primary text-primary-foreground" : "bg-warning text-warning-foreground"
                       )}>
                         {exitAnalysis.verdict}
                       </Badge>
-                      <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">Score de Eficiência: {exitAnalysis.efficiency_score}/100</span>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Score de Eficiência</span>
+                        <span className="text-lg font-black text-primary">{exitAnalysis.efficiency_score}/100</span>
+                      </div>
                     </div>
+                    {exitAnalysis.verdict === 'ENCERRAR' && (
+                      <Button onClick={closeOperation} className="bg-success hover:bg-success/90 font-black h-11 px-6">
+                        ENCERRAR AGORA <ArrowLeft className="ml-2 h-4 w-4 rotate-180" />
+                      </Button>
+                    )}
                   </div>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black uppercase text-primary">Justificativa Técnica</p>
-                      <p className="text-sm font-medium leading-relaxed">{exitAnalysis.reasoning}</p>
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-black uppercase text-primary flex items-center gap-1">
+                        <Target className="h-3 w-3" /> Justificativa Técnica
+                      </p>
+                      <p className="text-sm font-bold leading-relaxed text-foreground/90 italic">
+                        "{exitAnalysis.reasoning}"
+                      </p>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       <p className="text-[10px] font-black uppercase text-destructive flex items-center gap-1">
                         <AlertTriangle className="h-3 w-3" /> Risco Residual
                       </p>
-                      <p className="text-sm font-medium leading-relaxed">{exitAnalysis.risk_comment}</p>
+                      <p className="text-sm font-medium leading-relaxed text-muted-foreground">
+                        {exitAnalysis.risk_comment}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -454,7 +497,6 @@ export default function AnalysisDetail() {
               entrySpotPrice={entrySpotPrice}
               currentPnL={currentPnL}
               simulationData={simPayoffData}
-              // Passando o CDI do período para o gráfico
               simulationCdiReturn={periodMetrics?.cdiReturnSinceEntry}
             />
           </CardContent>
