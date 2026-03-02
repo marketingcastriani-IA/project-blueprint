@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
-  Loader2, ArrowLeft, Save, XCircle, Layers
+  Loader2, ArrowLeft, Save, XCircle, Layers, ArrowRightLeft, ShoppingCart, Tag
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SectionDivider } from '@/components/ProfessionalLayout';
@@ -196,7 +196,7 @@ export default function AnalysisDetail() {
 
         <Card className={cn(isSimulating && "border-primary ring-2 ring-primary/20")}>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">{isSimulating ? "SIMULANDO NOVA ESTRUTURA" : "Pernas da Estratégia — Preços Atuais"}</CardTitle>
+            <CardTitle className="text-base">{isSimulating ? "SIMULANDO NOVA ESTRUTURA" : "Pernas da Estratégia — Simulação de Saída"}</CardTitle>
             {isSimulating && <Badge className="bg-primary animate-pulse">MODO SIMULAÇÃO</Badge>}
           </CardHeader>
           <CardContent>
@@ -206,6 +206,7 @@ export default function AnalysisDetail() {
                   <tr className="border-b border-border/50 text-muted-foreground text-xs">
                     <th className="text-left py-2">Ativo</th>
                     <th className="text-left py-2">Tipo</th>
+                    <th className="text-left py-2">Ação de Saída</th>
                     <th className="text-right py-2">Strike</th>
                     <th className="text-right py-2">Preço Entrada</th>
                     <th className="text-right py-2">Qtd</th>
@@ -217,23 +218,51 @@ export default function AnalysisDetail() {
                   {(isSimulating ? simLegs : legs).map((leg, i) => {
                     const cp = isSimulating ? leg.price : parseFloat(currentPrices[leg.id!] || '');
                     const pnl = !isNaN(cp) ? (leg.side === 'buy' ? 1 : -1) * (cp - (isSimulating ? legs[i].price : leg.price)) * leg.quantity : null;
+                    
+                    // Lógica da Ação de Saída
+                    const exitAction = leg.side === 'buy' ? 'Venda' : 'Recompra';
+                    const exitColor = leg.side === 'buy' ? 'bg-success/10 text-success border-success/20' : 'bg-info/10 text-info border-info/20';
+
                     return (
-                      <tr key={i} className="border-b border-border/30">
-                        <td className="py-2 font-medium">{leg.asset}</td>
-                        <td className="py-2"><Badge variant="outline" className="text-[10px]">{leg.option_type.toUpperCase()}</Badge></td>
-                        <td className="py-2 text-right">{leg.strike.toFixed(2)}</td>
-                        <td className="py-2 text-right">{isSimulating ? legs[i].price.toFixed(2) : leg.price.toFixed(2)}</td>
-                        <td className="py-2 text-right">{leg.quantity}</td>
-                        <td className="py-2 text-right">
-                          <Input 
-                            type="number" step="0.01" 
-                            value={isSimulating ? leg.price : (currentPrices[leg.id!] || '')} 
-                            onChange={e => isSimulating ? updateSimLeg(i, 'price', parseFloat(e.target.value) || 0) : setCurrentPrices(p => ({...p, [leg.id!]: e.target.value}))}
-                            className={cn("w-24 h-8 text-right text-sm ml-auto", isSimulating && "border-primary bg-primary/5")}
-                          />
+                      <tr key={i} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
+                        <td className="py-3 font-bold">{leg.asset}</td>
+                        <td className="py-3">
+                          <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider">
+                            {leg.option_type === 'stock' ? '🏢 ATIVO' : leg.option_type.toUpperCase()}
+                          </Badge>
                         </td>
-                        <td className="py-2 text-right font-medium">
-                          {pnl !== null && <span className={pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}>{pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}</span>}
+                        <td className="py-3">
+                          <Badge className={cn("text-[10px] font-black uppercase tracking-widest border", exitColor)}>
+                            {exitAction}
+                          </Badge>
+                        </td>
+                        <td className="py-3 text-right font-mono">{leg.strike > 0 ? leg.strike.toFixed(2) : '-'}</td>
+                        <td className="py-3 text-right font-mono">{isSimulating ? legs[i].price.toFixed(2) : leg.price.toFixed(2)}</td>
+                        <td className="py-3 text-right font-bold">{leg.quantity}</td>
+                        <td className="py-3 text-right">
+                          <div className="relative flex justify-end">
+                            <Input 
+                              type="number" step="0.01" 
+                              value={isSimulating ? leg.price : (currentPrices[leg.id!] || '')} 
+                              onChange={e => isSimulating ? updateSimLeg(i, 'price', parseFloat(e.target.value) || 0) : setCurrentPrices(p => ({...p, [leg.id!]: e.target.value}))}
+                              className={cn(
+                                "w-28 h-9 text-right text-sm font-bold", 
+                                isSimulating ? "border-primary bg-primary/5" : "border-primary/30 focus:border-primary"
+                              )}
+                            />
+                          </div>
+                        </td>
+                        <td className="py-3 text-right">
+                          {pnl !== null ? (
+                            <div className={cn(
+                              "font-black text-base font-mono",
+                              pnl >= 0 ? 'text-success' : 'text-destructive'
+                            )}>
+                              {pnl >= 0 ? '+' : ''}{pnl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">Aguardando preço</span>
+                          )}
                         </td>
                       </tr>
                     );
@@ -242,8 +271,16 @@ export default function AnalysisDetail() {
               </table>
             </div>
             {!isSimulating && analysis?.status === 'active' && (
-              <div className="flex justify-end mt-4">
-                <Button size="sm" onClick={saveCurrentPrices} disabled={saving}>{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Salvar Preços Atuais</Button>
+              <div className="flex justify-end mt-6">
+                <Button 
+                  size="lg" 
+                  onClick={saveCurrentPrices} 
+                  disabled={saving}
+                  className="font-black shadow-lg shadow-primary/20"
+                >
+                  {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />} 
+                  Salvar Preços Atuais
+                </Button>
               </div>
             )}
           </CardContent>
