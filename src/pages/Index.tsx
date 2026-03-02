@@ -16,10 +16,11 @@ import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-// Importando as imagens que representam as capturas reais do app
-import screenshotPayoff from '@/assets/screenshot-payoff.jpg';
-import screenshotAI from '@/assets/screenshot-ai-analysis.jpg';
-import screenshotOCR from '@/assets/screenshot-ocr.jpg';
+// Mapeamento das imagens reais enviadas
+const imgPayoff = "https://daiyrwxcsqvbbntzjdzy.supabase.co/storage/v1/object/public/assets/pasted-image-2026-03-02T00-00-14-760Z.png";
+const imgAI = "https://daiyrwxcsqvbbntzjdzy.supabase.co/storage/v1/object/public/assets/pasted-image-2026-03-02T00-01-38-076Z.png";
+const imgOCR = "https://daiyrwxcsqvbbntzjdzy.supabase.co/storage/v1/object/public/assets/pasted-image-2026-03-02T00-01-51-790Z.png";
+const imgPortfolio = "https://daiyrwxcsqvbbntzjdzy.supabase.co/storage/v1/object/public/assets/pasted-image-2026-03-02T00-02-14-938Z.png";
 
 export default function Index() {
   const { user, loading } = useAuth();
@@ -68,7 +69,7 @@ export default function Index() {
         </div>
       </header>
 
-      {/* HERO - Ultra Aggressive */}
+      {/* HERO */}
       <section className="relative pt-16 pb-24 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[800px] bg-primary/10 rounded-full blur-[200px] -z-10" />
         
@@ -106,7 +107,7 @@ export default function Index() {
         </div>
         <div className="relative rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_40px_100px_-20px_hsl(var(--primary)/0.3)] bg-card">
           <img 
-            src={screenshotPayoff} 
+            src={imgPayoff} 
             alt="Gráfico de Payoff Real do App" 
             className="w-full h-auto"
             loading="lazy"
@@ -115,7 +116,7 @@ export default function Index() {
         </div>
       </section>
 
-      {/* FEATURES GRID */}
+      {/* FEATURES GRID - OCR */}
       <section className="container py-20 bg-muted/30 rounded-[3rem]">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           <div className="space-y-8">
@@ -149,7 +150,7 @@ export default function Index() {
             </div>
           </div>
           <div className="rounded-2xl overflow-hidden border-2 border-border/40 shadow-2xl">
-            <img src={screenshotOCR} alt="Interface de Upload OCR" className="w-full h-auto" />
+            <img src={imgOCR} alt="Interface de Upload OCR" className="w-full h-auto" />
           </div>
         </div>
       </section>
@@ -165,7 +166,7 @@ export default function Index() {
         </div>
 
         <div className="relative rounded-3xl overflow-hidden border-2 border-primary/30 shadow-2xl bg-card mb-12">
-          <img src={screenshotAI} alt="Relatório de IA Real" className="w-full h-auto" />
+          <img src={imgAI} alt="Relatório de IA Real" className="w-full h-auto" />
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
@@ -191,7 +192,7 @@ export default function Index() {
       <section className="container py-20 bg-primary/5 rounded-[3rem] border border-primary/10">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div className="order-2 lg:order-1 rounded-2xl overflow-hidden border-2 border-primary/20 shadow-2xl">
-            <img src={supabase.storage.from('assets').getPublicUrl('screenshot-portfolio.jpg').data.publicUrl || "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/fe122440-c6c3-46e2-ab08-de3a8b930cdb/portfolio-preview.png"} alt="Gestão de Portfólio" className="w-full h-auto" />
+            <img src={imgPortfolio} alt="Gestão de Portfólio" className="w-full h-auto" />
           </div>
           <div className="order-1 lg:order-2 space-y-6">
             <Badge variant="outline" className="border-primary/30 text-primary font-bold">GESTÃO PROFISSIONAL</Badge>
