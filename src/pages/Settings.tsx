@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Lock, Mail, LogOut, Shield, CheckCircle2, Crown, CreditCard, Sparkles, Zap, Camera, Bot, History, Briefcase } from 'lucide-react';
+import { Loader2, Lock, Mail, LogOut, Shield, CheckCircle2, Crown, CreditCard, Sparkles, Zap, Camera, Bot, History, Briefcase, MessageSquare, ExternalLink } from 'lucide-react';
 import { useAccessControl } from '@/hooks/useAccessControl';
 
 export default function Settings() {
@@ -195,6 +195,39 @@ export default function Settings() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Seção de Suporte e Contato */}
+        <Card className="border-2 border-info/30 bg-info/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-info">
+              <MessageSquare className="h-5 w-5" />
+              Suporte e Ajuda
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium">
+                Dúvidas sobre o sistema, problemas com pagamento ou sugestões? Nossa equipe está pronta para ajudar.
+              </p>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-2">
+                <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border border-info/20 flex-1 w-full">
+                  <Mail className="h-4 w-4 text-info" />
+                  <span className="text-sm font-bold font-mono">falecomopcoesprox@gmail.com</span>
+                </div>
+                <Button 
+                  variant="outline" 
+                  className="border-info/40 text-info hover:bg-info/10 font-bold w-full sm:w-auto"
+                  onClick={() => window.location.href = 'mailto:falecomopcoesprox@gmail.com?subject=Suporte OpçõesX'}
+                >
+                  ABRIR CHAMADO <ExternalLink className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+              Tempo médio de resposta: 24 horas úteis.
+            </p>
+          </CardContent>
+        </Card>
 
         <Card className="border-2 border-border/40 bg-card">
           <CardHeader>

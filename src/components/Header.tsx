@@ -2,7 +2,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, Briefcase, Settings } from 'lucide-react';
+import { TrendingUp, Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, Briefcase, Settings, Crown, Zap } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
@@ -24,6 +24,8 @@ export default function Header() {
     ...(access.isAdmin ? [{ label: 'Admin', path: '/admin', icon: Shield }] : []),
   ];
 
+  const isFree = access.planType === 'free';
+
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-card/80 backdrop-blur-md">
       <div className="container flex h-14 items-center justify-between">
@@ -32,7 +34,10 @@ export default function Header() {
             <TrendingUp className="h-4 w-4 text-primary-foreground" />
           </div>
           <span className="hidden sm:inline tracking-tight">OpçõesX</span>
-          <Badge variant="outline" className="text-[8px] border-primary/30 text-primary hidden sm:inline-flex">
+          <Badge variant="outline" className={cn(
+            "text-[8px] hidden sm:inline-flex",
+            isFree ? "border-warning/50 text-warning" : "border-primary/30 text-primary"
+          )}>
             {access.planType === 'pro' ? 'PRO' : 'FREE'}
           </Badge>
         </button>
@@ -56,7 +61,16 @@ export default function Header() {
           })}
         </nav>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
+          {isFree && (
+            <Button 
+              onClick={() => navigate('/settings')}
+              className="hidden sm:flex h-9 px-4 bg-warning hover:bg-warning/90 text-warning-foreground font-black text-[10px] uppercase tracking-widest animate-pulse shadow-[0_0_15px_-3px_hsl(var(--warning)/0.6)] border-b-2 border-black/20"
+            >
+              <Zap className="h-3 w-3 mr-1.5 fill-current" /> ASSINE PRO
+            </Button>
+          )}
+          
           <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-9 w-9">
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
@@ -74,6 +88,14 @@ export default function Header() {
       {mobileOpen && (
         <div className="md:hidden border-t border-border/40 bg-card/95 backdrop-blur-md animate-fade-in">
           <nav className="container py-2 space-y-1">
+            {isFree && (
+              <button
+                onClick={() => { navigate('/settings'); setMobileOpen(false); }}
+                className="flex items-center justify-center gap-2 w-full px-4 py-3 mb-2 rounded-lg bg-warning text-warning-foreground font-black text-xs animate-pulse"
+              >
+                <Zap className="h-4 w-4 fill-current" /> ASSINE PRO AGORA
+              </button>
+            )}
             {navItems.map(item => {
               const isActive = location.pathname === item.path;
               return (
