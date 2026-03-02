@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log("[mercado-pago-checkout] Iniciando assinatura recorrente...");
+    console.log("[mercado-pago-checkout] Iniciando processo de checkout...");
     
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -21,12 +21,15 @@ serve(async (req) => {
     )
 
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
-    if (userError || !user) throw new Error("Usuário não autenticado")
+    if (userError || !user) {
+      console.error("[mercado-pago-checkout] Erro de autenticação:", userError);
+      throw new Error("Usuário não autenticado");
+    }
 
-    // Determinar a URL base do site para o redirecionamento
     const origin = req.headers.get('origin') || 'https://opcoesx.com.br';
     const backUrl = `${origin}/settings?payment=success`;
 
+    // Busca preço atualizado ou usa padrão
     let price = 19.90
     try {
       const { data: settings } = await supabaseClient
@@ -36,19 +39,24 @@ serve(async (req) => {
         .maybeSingle()
       
       if (settings?.value?.price) {
-        price = settings.value.price
+        price = Number(settings.value.price);
       }
     } catch (e) {
-      console.log("[mercado-pago-checkout] Usando preço padrão");
+      console.log("[mercado-pago-checkout] Usando preço padrão de R$ 19.90");
     }
 
     const MP_ACCESS_TOKEN = Deno.env.get("MP_ACCESS_TOKEN")
     if (!MP_ACCESS_TOKEN) {
-      return new Response(JSON.stringify({ error: "Token do Mercado Pago não configurado nos Secrets do Supabase." }), {
-        status: 400,
+      console.error("[mercado-pago-checkout] ERRO: MP_ACCESS_TOKEN não configurado nos Secrets do Supabase.");
+      return new Response(JSON.stringify({ 
+        error: "Configuração incompleta: O administrador precisa configurar o MP_ACCESS_TOKEN no painel do Supabase." 
+      }), {
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
     }
+
+    console.log(`[mercado-pago-checkout] Criando assinatura para ${user.email} no valor de R$ ${price}`);
 
     // Criando Assinatura Recorrente (Preapproval)
     const mpResponse = await fetch("https://api.mercadopago.com/preapproval", {
@@ -62,7 +70,7 @@ serve(async (req) => {
         auto_recurring: {
           frequency: 1,
           frequency_type: "months",
-          transaction_amount: Number(price),
+          transaction_amount: price,
           currency_id: "BRL"
         },
         payer_email: user.email,
@@ -75,19 +83,23 @@ serve(async (req) => {
     const result = await mpResponse.json()
 
     if (!mpResponse.ok) {
-      console.error("[mercado-pago-checkout] Erro MP:", result);
-      return new Response(JSON.stringify({ error: result.message || "Erro ao criar assinatura no Mercado Pago" }), {
+      console.error("[mercado-pago-checkout] Erro retornado pelo Mercado Pago:", result);
+      return new Response(JSON.stringify({ 
+        error: `Erro no Mercado Pago: ${result.message || "Verifique se o Access Token é válido e tem permissões de assinatura."}`,
+        details: result
+      }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
     }
 
+    console.log("[mercado-pago-checkout] Checkout gerado com sucesso:", result.init_point);
     return new Response(JSON.stringify({ url: result.init_point }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     })
 
   } catch (e: any) {
-    console.error("[mercado-pago-checkout] Erro fatal:", e.message)
+    console.error("[mercado-pago-checkout] Erro inesperado:", e.message)
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
