@@ -26,14 +26,14 @@ export default function Settings() {
   useEffect(() => {
     const fetchPrice = async () => {
       try {
-        const { data } = await supabase
-          .from('site_settings')
+        const { data } = await (supabase
+          .from('site_settings' as any)
           .select('*')
           .eq('id', 'pro_plan')
-          .maybeSingle();
+          .maybeSingle() as any);
         
         if (data) {
-          setProPrice((data.value as any).price);
+          setProPrice((data as any).value?.price);
         }
       } catch (e) {
         console.log("Preço padrão mantido");

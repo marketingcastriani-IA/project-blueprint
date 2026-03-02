@@ -2,16 +2,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { 
-  TrendingUp, ArrowRight, Brain, Target, CheckCircle2,
-  Lock, Sparkles, XCircle, AlertTriangle,
-  Shield, Zap, BarChart3, MousePointer2, Camera,
-  Layers, FileSpreadsheet, Cpu, Smartphone
+  TrendingUp, ArrowRight, Brain, CheckCircle2,
+  Lock, Sparkles, XCircle,
+  Zap, Camera, FileSpreadsheet, Cpu, Star,
+  BarChart3, PieChart, Image as ImageIcon, Bot
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Sun, Moon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { Card } from '@/components/ui/card';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -19,18 +18,18 @@ export default function Index() {
   const { user, loading } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const [proPrice, setProPrice] = useState(19.90);
+  const [proPrice, setProPrice] = useState(49.90);
 
   useEffect(() => {
     const fetchPrice = async () => {
-      const { data } = await supabase
-        .from('site_settings')
+      const { data } = await (supabase
+        .from('site_settings' as any)
         .select('*')
         .eq('id', 'pro_plan')
-        .single();
+        .single() as any);
       
       if (data) {
-        setProPrice((data.value as any).price);
+        setProPrice((data as any).value?.price ?? 49.90);
       }
     };
     fetchPrice();
@@ -95,52 +94,128 @@ export default function Index() {
       {/* MAIN PREVIEW */}
       <section className="container -mt-8 mb-20">
         <div className="relative rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_40px_100px_-20px_hsl(var(--primary)/0.3)] bg-card">
-          <img 
-            src="/assets/dashboard.png" 
-            alt="Dashboard OpçõesX" 
-            className="w-full h-auto"
-          />
+          <img src="/assets/screenshot-dashboard.png" alt="Dashboard OpçõesX" className="w-full h-auto" loading="lazy" />
         </div>
       </section>
 
-      {/* COMPARISON SECTION: APP VS SPREADSHEETS */}
+      {/* FEATURES SHOWCASE */}
+      <section className="container py-24">
+        <div className="text-center mb-16 space-y-4">
+          <Badge variant="outline" className="border-primary/30 text-primary font-bold">FUNCIONALIDADES</Badge>
+          <h2 className="text-4xl sm:text-6xl font-black tracking-tighter">Tudo que Você Precisa</h2>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Do upload de imagem ao relatório de IA, tudo em uma plataforma.</p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-10">
+          {/* OCR */}
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><Camera className="h-5 w-5 text-primary" /></div>
+                <h3 className="text-2xl font-black tracking-tight">OCR Inteligente</h3>
+                <Badge className="bg-primary/20 text-primary border-0 text-[10px] font-black">PRO</Badge>
+              </div>
+              <p className="text-muted-foreground">Tire um print da corretora e a IA lê strikes, prêmios e quantidades em 2 segundos.</p>
+            </div>
+            <div className="rounded-2xl overflow-hidden border border-primary/20 shadow-xl">
+              <img src="/assets/screenshot-ocr.png" alt="OCR Upload" className="w-full h-auto" loading="lazy" />
+            </div>
+          </div>
+
+          {/* Análise IA */}
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><Bot className="h-5 w-5 text-primary" /></div>
+                <h3 className="text-2xl font-black tracking-tight">Análise com IA</h3>
+                <Badge className="bg-primary/20 text-primary border-0 text-[10px] font-black">PRO</Badge>
+              </div>
+              <p className="text-muted-foreground">Relatório quantitativo com nota de atratividade, risco, cenários e sugestões da IA.</p>
+            </div>
+            <div className="rounded-2xl overflow-hidden border border-primary/20 shadow-xl">
+              <img src="/assets/screenshot-ai-report.png" alt="Relatório de IA" className="w-full h-auto" loading="lazy" />
+            </div>
+          </div>
+
+          {/* Payoff */}
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><BarChart3 className="h-5 w-5 text-primary" /></div>
+                <h3 className="text-2xl font-black tracking-tight">Gráfico de Payoff</h3>
+                <Badge className="bg-muted text-muted-foreground border-0 text-[10px] font-black">FREE</Badge>
+              </div>
+              <p className="text-muted-foreground">Visualize lucro máximo, risco máximo, breakeven e métricas em tempo real.</p>
+            </div>
+            <div className="rounded-2xl overflow-hidden border border-primary/20 shadow-xl">
+              <img src="/assets/screenshot-payoff.png" alt="Gráfico de Payoff" className="w-full h-auto" loading="lazy" />
+            </div>
+          </div>
+
+          {/* CDI */}
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><PieChart className="h-5 w-5 text-primary" /></div>
+                <h3 className="text-2xl font-black tracking-tight">Comparativo CDI</h3>
+                <Badge className="bg-muted text-muted-foreground border-0 text-[10px] font-black">FREE</Badge>
+              </div>
+              <p className="text-muted-foreground">Compare sua estratégia contra o CDI e saiba se o risco vale a pena.</p>
+            </div>
+            <div className="rounded-2xl overflow-hidden border border-primary/20 shadow-xl">
+              <img src="/assets/screenshot-cdi.png" alt="Comparativo CDI" className="w-full h-auto" loading="lazy" />
+            </div>
+          </div>
+        </div>
+
+        {/* Portfólio row */}
+        <div className="grid md:grid-cols-2 gap-10 mt-10">
+
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><TrendingUp className="h-5 w-5 text-primary" /></div>
+                <h3 className="text-2xl font-black tracking-tight">Portfólio P&L</h3>
+                <Badge className="bg-primary/20 text-primary border-0 text-[10px] font-black">PRO</Badge>
+              </div>
+              <p className="text-muted-foreground">Acompanhe P&L consolidado, ROI total e taxa de acerto das suas operações.</p>
+            </div>
+            <div className="rounded-2xl overflow-hidden border border-primary/20 shadow-xl">
+              <img src="/assets/screenshot-portfolio.png" alt="Portfólio" className="w-full h-auto" loading="lazy" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* COMPARISON: PLANILHAS VS APP */}
       <section className="container py-24">
         <div className="text-center mb-16 space-y-4">
           <Badge variant="outline" className="border-primary/30 text-primary font-bold">O FIM DA ERA MANUAL</Badge>
           <h2 className="text-4xl sm:text-6xl font-black tracking-tighter">OpçõesX vs. Planilhas</h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Por que os melhores traders estão abandonando o Excel?</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
-          {/* Planilhas */}
           <Card className="p-8 border-destructive/20 bg-destructive/5 space-y-6 opacity-80">
             <div className="flex items-center gap-4">
               <div className="h-12 w-12 rounded-xl bg-destructive/10 flex items-center justify-center text-destructive">
                 <FileSpreadsheet className="h-6 w-6" />
               </div>
-              <h3 className="text-2xl font-black">Planilhas Comuns</h3>
+              <h3 className="text-2xl font-black">Planilhas</h3>
             </div>
             <ul className="space-y-4">
-              <li className="flex items-start gap-3 text-sm font-medium text-muted-foreground">
-                <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-                Entrada manual lenta e sujeita a erros de digitação.
-              </li>
-              <li className="flex items-start gap-3 text-sm font-medium text-muted-foreground">
-                <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-                Fórmulas complexas que quebram e exigem manutenção.
-              </li>
-              <li className="flex items-start gap-3 text-sm font-medium text-muted-foreground">
-                <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-                Sem comparativo real com o CDI ou custo de oportunidade.
-              </li>
-              <li className="flex items-start gap-3 text-sm font-medium text-muted-foreground">
-                <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-                Impossível de usar no celular durante o pregão.
-              </li>
+              {[
+                'Entrada manual lenta e sujeita a erros.',
+                'Fórmulas que quebram e exigem manutenção.',
+                'Sem comparativo real com o CDI.',
+                'Impossível de usar no celular durante o pregão.',
+              ].map((t, i) => (
+                <li key={i} className="flex items-start gap-3 text-sm font-medium text-muted-foreground">
+                  <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />{t}
+                </li>
+              ))}
             </ul>
           </Card>
 
-          {/* OpçõesX */}
           <Card className="p-8 border-primary/30 bg-primary/5 space-y-6 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4">
               <Badge className="bg-primary text-primary-foreground font-black">VENCEDOR</Badge>
@@ -152,22 +227,16 @@ export default function Index() {
               <h3 className="text-2xl font-black">OpçõesX (IA)</h3>
             </div>
             <ul className="space-y-4">
-              <li className="flex items-start gap-3 text-sm font-bold">
-                <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                OCR: Tire um print e a IA lê as pernas instantaneamente.
-              </li>
-              <li className="flex items-start gap-3 text-sm font-bold">
-                <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                Análise Quantitativa: IA interpreta o risco e sugere ajustes.
-              </li>
-              <li className="flex items-start gap-3 text-sm font-bold">
-                <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                Eficiência vs CDI: Saiba se sua operação vale o risco.
-              </li>
-              <li className="flex items-start gap-3 text-sm font-bold">
-                <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                Mobile-First: Analise e acompanhe de qualquer lugar.
-              </li>
+              {[
+                'OCR: Print → pernas instantaneamente.',
+                'IA interpreta risco e sugere ajustes.',
+                'Eficiência vs CDI: saiba se o risco vale.',
+                'Mobile-First: analise de qualquer lugar.',
+              ].map((t, i) => (
+                <li key={i} className="flex items-start gap-3 text-sm font-bold">
+                  <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />{t}
+                </li>
+              ))}
             </ul>
           </Card>
         </div>
@@ -201,108 +270,60 @@ export default function Index() {
         </div>
       </section>
 
-      {/* AI ANALYSIS */}
+      {/* PRICING — FREE vs PRO */}
       <section className="container py-24">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          <div className="order-2 lg:order-1 rounded-2xl overflow-hidden border-2 border-primary/20 shadow-2xl">
-            <img src="/assets/ai_report.png" alt="Relatório de IA" className="w-full h-auto" />
-          </div>
-          <div className="order-1 lg:order-2 space-y-8">
-            <div className="space-y-4">
-              <Badge variant="outline" className="border-primary/30 text-primary font-bold">INTELIGÊNCIA ARTIFICIAL</Badge>
-              <h2 className="text-4xl font-black tracking-tighter">Um Analista Sênior no seu Bolso.</h2>
-              <p className="text-lg text-muted-foreground">
-                Nossa IA analisa a atratividade, o risco e a probabilidade de sucesso da sua estrutura, fornecendo um resumo executivo técnico.
-              </p>
-            </div>
-            <div className="space-y-4">
-              <img src="/assets/strategy_scenarios.png" alt="Cenários de Mercado" className="rounded-xl border border-border/40 shadow-lg" />
-              <p className="text-sm font-bold text-center text-muted-foreground italic">Simulação completa de cenários: Alta, Lateral ou Baixa.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* PAYOFF & CDI */}
-      <section className="container py-20 bg-primary/5 rounded-[3rem] border border-primary/10">
-        <div className="text-center mb-12 space-y-4">
-          <h2 className="text-4xl font-black tracking-tighter">Métricas que Realmente Importam</h2>
-          <p className="text-lg text-muted-foreground">Compare sua estratégia com o benchmark mais importante do Brasil: o CDI.</p>
-        </div>
-        <div className="grid lg:grid-cols-2 gap-8">
-          <div className="rounded-2xl overflow-hidden border-2 border-primary/20 shadow-xl bg-card">
-            <img src="/assets/payoff_chart.png" alt="Gráfico de Payoff" className="w-full h-auto" />
-          </div>
-          <div className="rounded-2xl overflow-hidden border-2 border-primary/20 shadow-xl bg-card">
-            <img src="/assets/cdi_comparison.png" alt="Comparativo CDI" className="w-full h-auto" />
-          </div>
-        </div>
-      </section>
-
-      {/* PORTFOLIO */}
-      <section className="container py-24">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          <div className="space-y-8">
-            <div className="space-y-4">
-              <Badge variant="outline" className="border-primary/30 text-primary font-bold">GESTÃO DE RISCO</Badge>
-              <h2 className="text-4xl font-black tracking-tighter">Seu Portfólio, Profissionalizado.</h2>
-              <p className="text-lg text-muted-foreground">
-                Acompanhe seu P&L consolidado, taxa de acerto e ROI total. Saiba exatamente quanto você está ganhando (ou perdendo) em cada estrutura.
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <Card className="p-4 text-center border-success/20 bg-success/5">
-                <p className="text-2xl font-black text-success">100%</p>
-                <p className="text-[10px] font-bold uppercase">Taxa de Acerto</p>
-              </Card>
-              <Card className="p-4 text-center border-primary/20 bg-primary/5">
-                <p className="text-2xl font-black text-primary">+24.16%</p>
-                <p className="text-[10px] font-bold uppercase">ROI Consolidado</p>
-              </Card>
-            </div>
-          </div>
-          <div className="rounded-2xl overflow-hidden border-2 border-primary/20 shadow-2xl">
-            <img src="/assets/portfolio.png" alt="Portfólio" className="w-full h-auto" />
-          </div>
-        </div>
-      </section>
-
-      {/* PRICING */}
-      <section className="container py-24">
-        <div className="text-center mb-16">
-          <h2 className="text-5xl font-black tracking-tighter">Invista em Inteligência.</h2>
+        <div className="text-center mb-16 space-y-4">
+          <Badge variant="outline" className="border-primary/30 text-primary font-bold">PLANOS</Badge>
+          <h2 className="text-5xl font-black tracking-tighter">FREE vs. PRO</h2>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Comece grátis e evolua quando quiser. Sem surpresas.</p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          {/* FREE */}
           <Card className="p-10 border-2 border-border/40 bg-card/50 space-y-8">
             <div className="space-y-2">
               <h3 className="text-2xl font-black tracking-tight">FREE</h3>
               <p className="text-4xl font-black tracking-tighter">R$ 0<span className="text-sm text-muted-foreground font-medium">/mês</span></p>
+              <p className="text-sm text-muted-foreground">Para quem está começando</p>
             </div>
-            <ul className="space-y-4">
-              <li className="flex items-center gap-3 text-sm font-bold"><CheckCircle2 className="h-5 w-5 text-green-500" /> 3 Simulações de Teste</li>
-              <li className="flex items-center gap-3 text-sm font-bold"><CheckCircle2 className="h-5 w-5 text-green-500" /> Gráfico de Payoff Completo</li>
-              <li className="flex items-center gap-3 text-sm font-bold"><CheckCircle2 className="h-5 w-5 text-green-500" /> OCR de Imagem (Limitado)</li>
-              <li className="flex items-center gap-3 text-sm font-bold"><CheckCircle2 className="h-5 w-5 text-green-500" /> Análise com IA (Limitado)</li>
+            <ul className="space-y-3">
+              <PricingItem included label="3 Simulações por mês" />
+              <PricingItem included label="Gráfico de Payoff completo" />
+              <PricingItem included label="Comparativo vs CDI" />
+              <PricingItem included label="Entrada manual de pernas" />
+              <PricingItem included label="Métricas (lucro, risco, breakeven)" />
+              <PricingItem locked label="OCR de Imagem (IA)" />
+              <PricingItem locked label="Análise com Inteligência Artificial" />
+              <PricingItem locked label="Portfólio e P&L consolidado" />
+              <PricingItem locked label="Simulações ILIMITADAS" />
             </ul>
             <Button variant="outline" className="w-full h-12 font-black" onClick={() => navigate('/auth')}>
               COMEÇAR GRÁTIS
             </Button>
           </Card>
 
+          {/* PRO */}
           <Card className="p-10 border-2 border-primary bg-gradient-to-br from-primary/10 via-card to-card space-y-8 relative overflow-hidden shadow-2xl">
             <div className="absolute -top-1 -right-1">
-              <div className="bg-primary text-primary-foreground font-black text-xs py-2 px-6 rounded-bl-xl">MAIS VENDIDO</div>
+              <div className="bg-primary text-primary-foreground font-black text-xs py-2 px-6 rounded-bl-xl flex items-center gap-1">
+                <Star className="h-3 w-3" /> MAIS VENDIDO
+              </div>
             </div>
             <div className="space-y-2">
               <h3 className="text-2xl font-black tracking-tight text-primary">PRO</h3>
               <p className="text-4xl font-black tracking-tighter">R$ {proPrice.toFixed(2)}<span className="text-sm text-muted-foreground font-medium">/mês</span></p>
+              <p className="text-sm text-muted-foreground">Para quem opera de verdade</p>
             </div>
-            <ul className="space-y-4">
-              <li className="flex items-center gap-3 text-sm font-bold"><CheckCircle2 className="h-5 w-5 text-primary" /> Simulações ILIMITADAS</li>
-              <li className="flex items-center gap-3 text-sm font-bold"><CheckCircle2 className="h-5 w-5 text-primary" /> OCR de Imagem ILIMITADO</li>
-              <li className="flex items-center gap-3 text-sm font-bold"><CheckCircle2 className="h-5 w-5 text-primary" /> Análise com IA ILIMITADA</li>
-              <li className="flex items-center gap-3 text-sm font-bold"><CheckCircle2 className="h-5 w-5 text-primary" /> Portfólio e P&L Consolidado</li>
+            <ul className="space-y-3">
+              <PricingItem included pro label="Simulações ILIMITADAS" />
+              <PricingItem included pro label="Gráfico de Payoff completo" />
+              <PricingItem included pro label="Comparativo vs CDI" />
+              <PricingItem included pro label="Entrada manual de pernas" />
+              <PricingItem included pro label="Métricas (lucro, risco, breakeven)" />
+              <PricingItem included pro label="OCR de Imagem (IA)" highlight />
+              <PricingItem included pro label="Análise com Inteligência Artificial" highlight />
+              <PricingItem included pro label="Portfólio e P&L consolidado" highlight />
+              <PricingItem included pro label="Histórico de análises" highlight />
             </ul>
             <Button className="w-full h-14 text-lg font-black shadow-lg shadow-primary/30" onClick={() => navigate('/auth')}>
               ASSINAR PRO AGORA <ArrowRight className="ml-2 h-5 w-5" />
@@ -326,5 +347,20 @@ export default function Index() {
         </div>
       </footer>
     </div>
+  );
+}
+
+function PricingItem({ included, locked, label, pro, highlight }: { included?: boolean; locked?: boolean; label: string; pro?: boolean; highlight?: boolean }) {
+  if (locked) {
+    return (
+      <li className="flex items-center gap-3 text-sm font-bold text-muted-foreground/50">
+        <Lock className="h-4 w-4 shrink-0" /> {label}
+      </li>
+    );
+  }
+  return (
+    <li className={`flex items-center gap-3 text-sm font-bold ${highlight ? 'text-primary' : ''}`}>
+      <CheckCircle2 className={`h-4 w-4 shrink-0 ${pro ? 'text-primary' : 'text-green-500'}`} /> {label}
+    </li>
   );
 }
