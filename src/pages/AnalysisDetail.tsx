@@ -155,15 +155,27 @@ export default function AnalysisDetail() {
     }
   };
 
-  const saveCurrentPrices = async () => {
+  const saveAnalysisSettings = async () => {
     setSaving(true);
     try {
+      // Salvar preços atuais das pernas
       for (const leg of dbLegs) {
         const cp = parseFloat(currentPrices[leg.id] || '');
         await supabase.from('legs').update({ current_price: isNaN(cp) ? null : cp } as any).eq('id', leg.id);
       }
-      toast.success('Preços atualizados!');
-    } catch (err: any) { toast.error('Erro: ' + err.message); } finally { setSaving(false); }
+      
+      // Salvar taxa CDI e dias para vencimento na análise
+      await supabase.from('analyses').update({ 
+        cdi_rate: cdiRate,
+        days_to_expiry: daysToExpiry
+      } as any).eq('id', id!);
+
+      toast.success('Configurações e preços salvos!');
+    } catch (err: any) { 
+      toast.error('Erro ao salvar: ' + err.message); 
+    } finally { 
+      setSaving(false); 
+    }
   };
 
   const closeOperation = async () => {
@@ -414,16 +426,16 @@ export default function AnalysisDetail() {
                 </tbody>
               </table>
             </div>
-            {!isSimulating && analysis?.status === 'active' && (
+            {analysis?.status === 'active' && (
               <div className="flex justify-end mt-6">
                 <Button 
                   size="lg" 
-                  onClick={saveCurrentPrices} 
+                  onClick={saveAnalysisSettings} 
                   disabled={saving}
                   className="font-black shadow-lg shadow-primary/20"
                 >
                   {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />} 
-                  Salvar Preços Atuais
+                  Salvar Configurações e Preços
                 </Button>
               </div>
             )}
