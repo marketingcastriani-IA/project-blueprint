@@ -19,6 +19,9 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    let userId = null;
+    let isApproved = false;
+
     // Caso 1: Pagamento avulso (Preference)
     if (body.type === 'payment') {
       const paymentId = body.data?.id
@@ -28,15 +31,8 @@ serve(async (req) => {
       const payment = await response.json()
 
       if (payment.status === 'approved') {
-        const userId = payment.external_reference
-        await supabaseAdmin
-          .from('user_access')
-          .update({ 
-            plan_type: 'pro', 
-            status: 'approved',
-            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-          } as any)
-          .eq('user_id', userId)
+        userId = payment.external_reference
+        isApproved = true
       }
     }
 
@@ -49,17 +45,47 @@ serve(async (req) => {
       const subscription = await response.json()
 
       if (subscription.status === 'authorized') {
-        const userId = subscription.external_reference
-        console.log(`[mercado-pago-webhook] Assinatura autorizada para: ${userId}`)
+        userId = subscription.external_reference
+        isApproved = true
+      }
+    }
 
-        await supabaseAdmin
-          .from('user_access')
-          .update({ 
-            plan_type: 'pro', 
-            status: 'approved',
-            expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString()
-          } as any)
-          .eq('user_id', userId)
+    if (isApproved && userId) {
+      console.log(`[mercado-pago-webhook] Liberando acesso PRO para: ${userId}`)
+
+      // 1. Atualizar acesso no banco
+      await supabaseAdmin
+        .from('user_access')
+        .update({ 
+          plan_type: 'pro', 
+          status: 'approved',
+          expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString()
+        } as any)
+        .eq('user_id', userId)
+
+      // 2. Buscar dados do perfil para o e-mail
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('email, display_name')
+        .eq('user_id', userId)
+        .single()
+
+      if (profile?.email) {
+        console.log(`[mercado-pago-webhook] ENVIANDO E-MAIL DE BOAS-VINDAS PARA: ${profile.email}`);
+        
+        /* 
+           LOGICA DE ENVIO DE E-MAIL (Exemplo com Resend ou similar):
+           await fetch('https://api.resend.com/emails', {
+             method: 'POST',
+             headers: { 'Authorization': 'Bearer YOUR_API_KEY', 'Content-Type': 'application/json' },
+             body: JSON.stringify({
+               from: 'OpçõesX <contato@opcoesx.com.br>',
+               to: profile.email,
+               subject: 'Bem-vindo ao OPÇÕES PRO X!',
+               html: `<h1>Olá ${profile.display_name || 'Investidor'}!</h1><p>Seu acesso PRO foi liberado...</p>`
+             })
+           })
+        */
       }
     }
 

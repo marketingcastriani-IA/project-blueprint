@@ -8,13 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Lock, Mail, LogOut, Shield, Database, CheckCircle2, XCircle, Crown, CreditCard, Sparkles } from 'lucide-react';
+import { Loader2, Lock, Mail, LogOut, Shield, CheckCircle2, Crown, CreditCard, Sparkles, Zap, Camera, Bot, History, Briefcase } from 'lucide-react';
 import { useAccessControl } from '@/hooks/useAccessControl';
 
 export default function Settings() {
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const access = useAccessControl();
   const navigate = useNavigate();
   const [newPassword, setNewPassword] = useState('');
@@ -22,6 +23,7 @@ export default function Settings() {
   const [loading, setLoading] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
   const [proPrice, setProPrice] = useState(19.90);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     const fetchPrice = async () => {
@@ -103,6 +105,15 @@ export default function Settings() {
   if (authLoading) return null;
   if (!user) return <Navigate to="/auth" replace />;
 
+  const proFeatures = [
+    { icon: Zap, title: "Simulações ILIMITADAS", desc: "Analise quantas estruturas quiser sem restrições." },
+    { icon: Camera, title: "OCR de Imagem (IA)", desc: "Transforme prints da corretora em payoff instantâneo." },
+    { icon: Bot, title: "Análise Profunda com IA", desc: "Relatórios quantitativos e vereditos profissionais." },
+    { icon: Briefcase, title: "Portfólio e P&L", desc: "Acompanhe o lucro real de todas as suas operações." },
+    { icon: History, title: "Histórico Completo", desc: "Salve e revise suas estratégias a qualquer momento." },
+    { icon: Shield, title: "Suporte Prioritário", desc: "Atendimento exclusivo para assinantes PRO." },
+  ];
+
   return (
     <div className="min-h-screen bg-background pb-16">
       <Header />
@@ -142,16 +153,64 @@ export default function Settings() {
                   <h3 className="text-lg font-black">Upgrade para PRO</h3>
                 </div>
                 <p className="text-sm text-muted-foreground font-medium">
-                  Libere simulações **ilimitadas**, uso ilimitado de OCR e IA, portfólio completo e suporte prioritário por apenas <strong>R$ {proPrice.toFixed(2)}/mês</strong>.
+                  Libere o poder total da plataforma e opere como um profissional por apenas <strong>R$ {proPrice.toFixed(2)}/mês</strong>.
                 </p>
-                <Button onClick={handleUpgrade} disabled={upgrading} className="w-full h-12 font-black shadow-lg shadow-primary/30">
-                  {upgrading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CreditCard className="mr-2 h-5 w-5" />}
-                  ASSINAR VIA MERCADO PAGO
+                <Button onClick={() => setShowUpgradeModal(true)} className="w-full h-12 font-black shadow-lg shadow-primary/30">
+                  <Zap className="mr-2 h-5 w-5" /> VER BENEFÍCIOS E ASSINAR
                 </Button>
               </div>
             )}
           </CardContent>
         </Card>
+
+        {/* Modal de Upgrade */}
+        <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
+          <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-2 border-primary/30">
+            <div className="bg-primary p-8 text-primary-foreground relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-20"><Crown className="h-24 w-24" /></div>
+              <DialogTitle className="text-3xl font-black tracking-tighter mb-2">TORNE-SE PRO X</DialogTitle>
+              <DialogDescription className="text-primary-foreground/90 font-bold text-base">
+                A ferramenta definitiva para quem opera opções na B3.
+              </DialogDescription>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="grid gap-4">
+                {proFeatures.map((f, i) => (
+                  <div key={i} className="flex items-start gap-4">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                      <f.icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-black text-sm uppercase tracking-tight">{f.title}</p>
+                      <p className="text-xs text-muted-foreground font-medium">{f.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="pt-4 border-t border-border/50">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <p className="text-[10px] font-black uppercase text-muted-foreground">Investimento Mensal</p>
+                    <p className="text-3xl font-black text-primary tracking-tighter">R$ {proPrice.toFixed(2)}<span className="text-sm text-muted-foreground font-medium">/mês</span></p>
+                  </div>
+                  <Badge className="bg-success text-success-foreground font-black px-4 py-1">MELHOR VALOR</Badge>
+                </div>
+                <Button 
+                  onClick={handleUpgrade} 
+                  disabled={upgrading} 
+                  className="w-full h-14 text-lg font-black shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.6)]"
+                >
+                  {upgrading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <CreditCard className="mr-2 h-6 w-6" />}
+                  ASSINAR AGORA VIA MERCADO PAGO
+                </Button>
+                <p className="text-[10px] text-center text-muted-foreground mt-4 font-medium">
+                  Pagamento seguro processado pelo Mercado Pago. Cancele quando quiser.
+                </p>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <Card className="border-2 border-border/40 bg-card">
           <CardHeader>
