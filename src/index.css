@@ -89,6 +89,12 @@
   .font-mono {
     font-family: 'JetBrains Mono', monospace;
   }
+
+  /* Fix para o ícone de calendário no input type="date" no tema dark */
+  .dark input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    cursor: pointer;
+  }
 }
 
 @layer components {
