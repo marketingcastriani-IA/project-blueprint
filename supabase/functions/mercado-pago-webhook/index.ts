@@ -13,12 +13,15 @@ serve(async (req) => {
     const body = await req.json()
     console.log("[mercado-pago-webhook] Notificação recebida:", body)
 
-    // O Mercado Pago envia notificações de diferentes tipos. Focamos em 'payment'
-    if (body.type === 'payment' || body.action === 'payment.created' || body.action === 'payment.updated') {
-      const paymentId = body.data?.id || body.resource?.split('/').pop()
-      const MP_ACCESS_TOKEN = Deno.env.get("MP_ACCESS_TOKEN")
+    const MP_ACCESS_TOKEN = Deno.env.get("MP_ACCESS_TOKEN")
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
 
-      // Consultar detalhes do pagamento
+    // Caso 1: Pagamento avulso (Preference)
+    if (body.type === 'payment') {
+      const paymentId = body.data?.id
       const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
         headers: { "Authorization": `Bearer ${MP_ACCESS_TOKEN}` }
       })
@@ -26,25 +29,37 @@ serve(async (req) => {
 
       if (payment.status === 'approved') {
         const userId = payment.external_reference
-        console.log(`[mercado-pago-webhook] Pagamento aprovado para usuário: ${userId}`)
-
-        const supabaseAdmin = createClient(
-          Deno.env.get('SUPABASE_URL') ?? '',
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '' // Usar service role para bypass RLS
-        )
-
-        // Atualizar acesso do usuário
-        const { error } = await supabaseAdmin
+        await supabaseAdmin
           .from('user_access')
           .update({ 
             plan_type: 'pro', 
             status: 'approved',
-            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // +30 dias
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
           } as any)
           .eq('user_id', userId)
+      }
+    }
 
-        if (error) throw error
-        console.log(`[mercado-pago-webhook] Plano PRO liberado com sucesso!`)
+    // Caso 2: Assinatura Recorrente (Preapproval)
+    if (body.type === 'subscription_preapproval' || body.action?.includes('preapproval')) {
+      const preapprovalId = body.data?.id || body.id
+      const response = await fetch(`https://api.mercadopago.com/preapproval/${preapprovalId}`, {
+        headers: { "Authorization": `Bearer ${MP_ACCESS_TOKEN}` }
+      })
+      const subscription = await response.json()
+
+      if (subscription.status === 'authorized') {
+        const userId = subscription.external_reference
+        console.log(`[mercado-pago-webhook] Assinatura autorizada para: ${userId}`)
+
+        await supabaseAdmin
+          .from('user_access')
+          .update({ 
+            plan_type: 'pro', 
+            status: 'approved',
+            expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString()
+          } as any)
+          .eq('user_id', userId)
       }
     }
 
