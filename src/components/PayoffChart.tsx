@@ -20,6 +20,7 @@ interface PayoffChartProps {
   entrySpotPrice?: number | null;
   currentPnL?: number | null;
   simulationData?: PayoffPoint[] | null;
+  simulationCdiReturn?: number | null;
 }
 
 const chartConfig = {
@@ -76,7 +77,8 @@ export default function PayoffChart({
   currentSpotPrice,
   entrySpotPrice,
   currentPnL,
-  simulationData
+  simulationData,
+  simulationCdiReturn
 }: PayoffChartProps) {
   const [displayMode, setDisplayMode] = useState<'value' | 'percent'>('value');
 
@@ -94,6 +96,7 @@ export default function PayoffChart({
       const simPoint = simulationData?.[i];
       const profit = p.profitAtExpiry;
       const cdi = cdiValue ?? 0;
+      const simCdi = simulationCdiReturn ?? 0;
 
       return {
         price: p.price,
@@ -105,9 +108,11 @@ export default function PayoffChart({
         betweenZeroCdi: (profit > 0 ? Math.min(profit, cdi) : 0) * factor,
         aboveCdi: (profit > cdi ? profit - cdi : 0) * factor,
         cdiLine: cdi * factor,
+        // Linha do CDI do período para simulação
+        periodCdiLine: simCdi * factor,
       };
     });
-  }, [data, simulationData, factor, cdiValue]);
+  }, [data, simulationData, factor, cdiValue, simulationCdiReturn]);
 
   const formatVal = (val: number | 'Ilimitado' | undefined) => {
     if (val === 'Ilimitado') return 'Ilimitado';
@@ -201,7 +206,10 @@ export default function PayoffChart({
             <Line name="No Vencimento" type="monotone" dataKey="profitAtExpiry" stroke="hsl(var(--chart-profit))" strokeWidth={2.5} dot={false} isAnimationActive={false} />
             
             {simulationData && (
-              <Line name="Simulação (Venc.)" type="monotone" dataKey="simulatedAtExpiry" stroke="hsl(var(--primary))" strokeWidth={3} strokeDasharray="10 5" dot={false} isAnimationActive={false} />
+              <>
+                <Line name="Simulação (Venc.)" type="monotone" dataKey="simulatedAtExpiry" stroke="hsl(var(--primary))" strokeWidth={3} strokeDasharray="10 5" dot={false} isAnimationActive={false} />
+                <Line name="CDI do Período" type="monotone" dataKey="periodCdiLine" stroke="hsl(38 92% 50%)" strokeWidth={2} strokeDasharray="2 2" dot={false} isAnimationActive={false} />
+              </>
             )}
           </ComposedChart>
         </ResponsiveContainer>

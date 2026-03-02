@@ -24,7 +24,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2, Info, AlertTriangle, Calendar } from 'lucide-react';
+import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2, Info, AlertTriangle, Calendar, Percent } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, SectionDivider } from '@/components/ProfessionalLayout';
 import AIInsights from '@/components/AIInsights';
@@ -135,7 +135,7 @@ export default function Dashboard() {
   const [analysisName, setAnalysisName] = useState('');
   const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
   const [hasManuallyNamed, setHasManuallyNamed] = useState(false);
-  const [cdiRate, setCdiRate] = useState(14.90);
+  const [cdiRate, setCdiRate] = useState(15.00);
   const [daysToExpiry, setDaysToExpiry] = useState(0);
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const [loadingAI, setLoadingAI] = useState(false);
@@ -430,7 +430,7 @@ export default function Dashboard() {
               </Button>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 max-w-2xl">
+            <div className="grid gap-4 sm:grid-cols-3 max-w-3xl">
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   Nome da análise
@@ -459,6 +459,18 @@ export default function Dashboard() {
                   value={entryDate}
                   onChange={e => setEntryDate(e.target.value)}
                   className="font-bold h-11 border-primary/40 bg-primary/5 hover:border-primary transition-all cursor-pointer"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2 font-black uppercase tracking-widest text-[10px] text-muted-foreground">
+                  <Percent className="h-3 w-3 text-primary" /> Taxa CDI (% a.a.)
+                </Label>
+                <Input 
+                  type="number"
+                  step="0.01"
+                  value={cdiRate}
+                  onChange={e => setCdiRate(parseFloat(e.target.value) || 0)}
+                  className="font-bold h-11 border-primary/40 bg-primary/5 hover:border-primary transition-all"
                 />
               </div>
             </div>

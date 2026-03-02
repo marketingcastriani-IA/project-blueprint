@@ -454,6 +454,8 @@ export default function AnalysisDetail() {
               entrySpotPrice={entrySpotPrice}
               currentPnL={currentPnL}
               simulationData={simPayoffData}
+              // Passando o CDI do período para o gráfico
+              simulationCdiReturn={periodMetrics?.cdiReturnSinceEntry}
             />
           </CardContent>
         </Card>
