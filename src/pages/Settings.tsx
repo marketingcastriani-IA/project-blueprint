@@ -55,14 +55,28 @@ export default function Settings() {
     setUpgrading(true);
     try {
       const { data, error } = await supabase.functions.invoke('mercado-pago-checkout');
-      if (error) throw error;
+      
+      if (error) {
+        // Tenta extrair a mensagem de erro do corpo da resposta se disponível
+        let errorMsg = "Erro ao processar pagamento";
+        try {
+          const errorData = await error.context?.json();
+          errorMsg = errorData?.error || error.message || errorMsg;
+        } catch (e) {
+          errorMsg = error.message || errorMsg;
+        }
+        toast.error("Falha no Checkout", { description: errorMsg });
+        return;
+      }
+
       if (data?.url) {
         window.location.href = data.url;
       } else {
-        toast.error("Erro ao gerar link de pagamento");
+        toast.error("Erro ao gerar link de pagamento", { description: "A resposta do servidor foi inválida." });
       }
     } catch (err: any) {
-      toast.error("Falha ao iniciar checkout");
+      console.error("[Settings] Erro no upgrade:", err);
+      toast.error("Erro de Conexão", { description: "Não foi possível iniciar o checkout. Verifique sua internet." });
     } finally {
       setUpgrading(false);
     }
