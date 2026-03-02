@@ -23,6 +23,10 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
     if (userError || !user) throw new Error("Usuário não autenticado")
 
+    // Determinar a URL base do site para o redirecionamento
+    const origin = req.headers.get('origin') || 'https://opcoesx.com.br';
+    const backUrl = `${origin}/settings?payment=success`;
+
     let price = 19.90
     try {
       const { data: settings } = await supabaseClient
@@ -40,7 +44,7 @@ serve(async (req) => {
 
     const MP_ACCESS_TOKEN = Deno.env.get("MP_ACCESS_TOKEN")
     if (!MP_ACCESS_TOKEN) {
-      return new Response(JSON.stringify({ error: "Token do Mercado Pago não configurado." }), {
+      return new Response(JSON.stringify({ error: "Token do Mercado Pago não configurado nos Secrets do Supabase." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
@@ -63,7 +67,7 @@ serve(async (req) => {
         },
         payer_email: user.email,
         external_reference: user.id,
-        back_url: `${req.headers.get('origin')}/settings?payment=success`,
+        back_url: backUrl,
         status: "pending"
       })
     })
@@ -72,13 +76,12 @@ serve(async (req) => {
 
     if (!mpResponse.ok) {
       console.error("[mercado-pago-checkout] Erro MP:", result);
-      return new Response(JSON.stringify({ error: result.message || "Erro ao criar assinatura" }), {
+      return new Response(JSON.stringify({ error: result.message || "Erro ao criar assinatura no Mercado Pago" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
     }
 
-    // O init_point é o link para o checkout da assinatura
     return new Response(JSON.stringify({ url: result.init_point }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     })
