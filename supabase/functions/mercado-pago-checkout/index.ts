@@ -27,7 +27,7 @@ serve(async (req) => {
     }
 
     // Sempre usar URL de produção para back_url (localhost é rejeitado pelo MP)
-    const PRODUCTION_URL = 'https://opoesxpro.lovable.app';
+    const PRODUCTION_URL = 'https://www.opcoesprox.com.br';
     const backUrl = `${PRODUCTION_URL}/settings?payment=success`;
     console.log(`[mercado-pago-checkout] URL de retorno: ${backUrl}`);
 
