@@ -168,21 +168,8 @@ export default function Index() {
           </div>
         </div>
 
-        {/* Cenários + Portfólio row */}
+        {/* Portfólio row */}
         <div className="grid md:grid-cols-2 gap-10 mt-10">
-          <div className="space-y-6">
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><Brain className="h-5 w-5 text-primary" /></div>
-                <h3 className="text-2xl font-black tracking-tight">Cenários de Mercado</h3>
-                <Badge className="bg-primary/20 text-primary border-0 text-[10px] font-black">PRO</Badge>
-              </div>
-              <p className="text-muted-foreground">Simulação completa: Alta, Lateral e Baixa com explicação detalhada.</p>
-            </div>
-            <div className="rounded-2xl overflow-hidden border border-primary/20 shadow-xl">
-              <img src="/assets/screenshot-scenarios.png" alt="Cenários de Mercado" className="w-full h-auto" loading="lazy" />
-            </div>
-          </div>
 
           <div className="space-y-6">
             <div className="space-y-3">
@@ -279,7 +266,6 @@ export default function Index() {
               <PricingItem included label="Métricas (lucro, risco, breakeven)" />
               <PricingItem locked label="OCR de Imagem (IA)" />
               <PricingItem locked label="Análise com Inteligência Artificial" />
-              <PricingItem locked label="Cenários de Mercado (Alta/Lateral/Baixa)" />
               <PricingItem locked label="Portfólio e P&L consolidado" />
               <PricingItem locked label="Simulações ILIMITADAS" />
             </ul>
@@ -308,9 +294,8 @@ export default function Index() {
               <PricingItem included pro label="Métricas (lucro, risco, breakeven)" />
               <PricingItem included pro label="OCR de Imagem (IA)" highlight />
               <PricingItem included pro label="Análise com Inteligência Artificial" highlight />
-              <PricingItem included pro label="Cenários de Mercado (Alta/Lateral/Baixa)" highlight />
               <PricingItem included pro label="Portfólio e P&L consolidado" highlight />
-              <PricingItem included pro label="Suporte prioritário" highlight />
+              <PricingItem included pro label="Histórico de análises" highlight />
             </ul>
             <Button className="w-full h-14 text-lg font-black shadow-lg shadow-primary/30" onClick={() => navigate('/auth')}>
               ASSINAR PRO AGORA <ArrowRight className="ml-2 h-5 w-5" />
