@@ -24,7 +24,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2, Info, AlertTriangle } from 'lucide-react';
+import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2, Info, AlertTriangle, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, SectionDivider } from '@/components/ProfessionalLayout';
 import AIInsights from '@/components/AIInsights';
@@ -133,6 +133,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [legs, setLegs] = useState<Leg[]>([]);
   const [analysisName, setAnalysisName] = useState('');
+  const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
   const [hasManuallyNamed, setHasManuallyNamed] = useState(false);
   const [cdiRate, setCdiRate] = useState(14.90);
   const [daysToExpiry, setDaysToExpiry] = useState(0);
@@ -278,9 +279,13 @@ export default function Dashboard() {
     try {
       const { data: analysis, error: aError } = await supabase
         .from('analyses').insert({
-          user_id: user.id, name: analysisName || 'Análise sem nome',
-          underlying_asset: legs[0]?.asset || null, cdi_rate: cdiRate || null,
-          days_to_expiry: daysToExpiry || null, ai_suggestion: aiAnalysis ? JSON.stringify(aiAnalysis) : null,
+          user_id: user.id, 
+          name: analysisName || 'Análise sem nome',
+          underlying_asset: legs[0]?.asset || null, 
+          cdi_rate: cdiRate || null,
+          days_to_expiry: daysToExpiry || null, 
+          ai_suggestion: aiAnalysis ? JSON.stringify(aiAnalysis) : null,
+          created_at: new Date(entryDate).toISOString(),
         }).select().single();
       if (aError) throw aError;
 
@@ -425,24 +430,37 @@ export default function Dashboard() {
               </Button>
             </div>
 
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                Nome da análise
-                {legs.length > 0 && !hasManuallyNamed && (
-                  <Badge variant="outline" className="text-[9px] border-primary/30 text-primary animate-pulse">
-                    <Wand2 className="h-2 w-2 mr-1" /> Sugestão IA
-                  </Badge>
-                )}
-              </Label>
-              <Input 
-                value={analysisName} 
-                onChange={e => {
-                  setAnalysisName(e.target.value);
-                  setHasManuallyNamed(true);
-                }} 
-                placeholder="Ex: Trava de alta PETR4" 
-                className="max-w-md font-bold" 
-              />
+            <div className="grid gap-4 sm:grid-cols-2 max-w-2xl">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  Nome da análise
+                  {legs.length > 0 && !hasManuallyNamed && (
+                    <Badge variant="outline" className="text-[9px] border-primary/30 text-primary animate-pulse">
+                      <Wand2 className="h-2 w-2 mr-1" /> Sugestão IA
+                    </Badge>
+                  )}
+                </Label>
+                <Input 
+                  value={analysisName} 
+                  onChange={e => {
+                    setAnalysisName(e.target.value);
+                    setHasManuallyNamed(true);
+                  }} 
+                  placeholder="Ex: Trava de alta PETR4" 
+                  className="font-bold" 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary" /> Data de Entrada
+                </Label>
+                <Input 
+                  type="date"
+                  value={entryDate}
+                  onChange={e => setEntryDate(e.target.value)}
+                  className="font-bold"
+                />
+              </div>
             </div>
 
             {inputMode === null ? (
