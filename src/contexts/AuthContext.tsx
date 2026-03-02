@@ -54,33 +54,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      const isCustomDomain =
-        !window.location.hostname.includes('lovable.app') &&
-        !window.location.hostname.includes('lovableproject.com') &&
-        !window.location.hostname.includes('localhost');
-
-      if (isCustomDomain) {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: `${window.location.origin}/dashboard`,
-            skipBrowserRedirect: true,
-          },
-        });
-        if (error) return { error: error as Error };
-        if (data?.url) {
-          window.location.href = data.url;
-        }
-        return { error: null };
-      } else {
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: `${window.location.origin}/dashboard`,
-          },
-        });
-        return { error: error as Error | null };
-      }
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+      return { error: error as Error | null };
     } catch (err) {
       return { error: err as Error };
     }
