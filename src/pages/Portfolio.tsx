@@ -6,10 +6,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { 
   Loader2, TrendingUp, TrendingDown, Calendar, Edit2, 
-  RotateCcw, Trash2, Briefcase, Wallet, Target, DollarSign 
+  RotateCcw, Trash2, Briefcase, Wallet, Target, CalendarDays 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
@@ -34,6 +35,14 @@ interface LegWithPnL {
   option_type: string;
 }
 
+const MONTHS = [
+  { val: 'all', label: 'Todos os Meses' },
+  { val: '0', label: 'Janeiro' }, { val: '1', label: 'Fevereiro' }, { val: '2', label: 'Março' },
+  { val: '3', label: 'Abril' }, { val: '4', label: 'Maio' }, { val: '5', label: 'Junho' },
+  { val: '6', label: 'Julho' }, { val: '7', label: 'Agosto' }, { val: '8', label: 'Setembro' },
+  { val: '9', label: 'Outubro' }, { val: '10', label: 'Novembro' }, { val: '11', label: 'Dezembro' }
+];
+
 export default function Portfolio() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -42,6 +51,10 @@ export default function Portfolio() {
   const [loading, setLoading] = useState(true);
   const [reopeningId, setReopeningId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Filtros
+  const [filterMonth, setFilterMonth] = useState('all');
+  const [filterYear, setFilterYear] = useState('all');
 
   useEffect(() => {
     if (!user) return;
@@ -85,10 +98,17 @@ export default function Portfolio() {
     fetchData();
   }, [user]);
 
+  const years = useMemo(() => {
+    const y = new Set<string>();
+    analyses.forEach(a => {
+      if (a.closed_at) y.add(new Date(a.closed_at).getFullYear().toString());
+    });
+    return ['all', ...Array.from(y).sort((a, b) => b.localeCompare(a))];
+  }, [analyses]);
+
   const getPnL = (analysisId: string): number => {
     const legs = legsMap[analysisId] || [];
     return legs.reduce((total, leg) => {
-      // Se current_price for null, usamos o price de entrada (lucro zero) para não zerar o card
       const exitPrice = leg.current_price != null ? leg.current_price : leg.price;
       const mult = leg.side === 'buy' ? 1 : -1;
       return total + mult * (exitPrice - leg.price) * leg.quantity;
@@ -97,7 +117,6 @@ export default function Portfolio() {
 
   const getMontageCost = (analysisId: string): number => {
     const legs = legsMap[analysisId] || [];
-    // Custo de montagem: Compra (-) e Venda (+)
     return legs.reduce((acc, leg) => {
       const multiplier = leg.side === 'buy' ? -1 : 1;
       return acc + multiplier * leg.price * leg.quantity;
@@ -113,12 +132,21 @@ export default function Portfolio() {
     }, 0);
   };
 
+  const filteredAnalyses = useMemo(() => {
+    return analyses.filter(a => {
+      if (!a.closed_at) return false;
+      const date = new Date(a.closed_at);
+      const monthMatch = filterMonth === 'all' || date.getMonth().toString() === filterMonth;
+      const yearMatch = filterYear === 'all' || date.getFullYear().toString() === filterYear;
+      return monthMatch && yearMatch;
+    });
+  }, [analyses, filterMonth, filterYear]);
+
   const stats = useMemo(() => {
-    const pnls = analyses.map(a => getPnL(a.id));
-    const montageCosts = analyses.map(a => getMontageCost(a.id));
+    const pnls = filteredAnalyses.map(a => getPnL(a.id));
+    const montageCosts = filteredAnalyses.map(a => getMontageCost(a.id));
     
     const totalPL = pnls.reduce((s, p) => s + p, 0);
-    // Capital investido é a soma dos custos negativos (desembolsos)
     const totalInvested = montageCosts.reduce((s, c) => s + (c < 0 ? Math.abs(c) : 0), 0);
     
     const wins = pnls.filter(p => p > 0).length;
@@ -127,8 +155,8 @@ export default function Portfolio() {
     
     const totalReturnPct = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
 
-    return { totalPL, totalInvested, totalReturnPct, wins, losses, winRate, total: analyses.length };
-  }, [analyses, legsMap]);
+    return { totalPL, totalInvested, totalReturnPct, wins, losses, winRate, total: filteredAnalyses.length };
+  }, [filteredAnalyses, legsMap]);
 
   const handleReopen = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -171,6 +199,35 @@ export default function Portfolio() {
           title="Portfólio" 
           subtitle="Acompanhe o desempenho histórico das suas operações encerradas"
         />
+
+        {/* Filtros */}
+        <div className="flex flex-wrap items-center gap-3 p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground mr-2">
+            <CalendarDays className="h-4 w-4 text-primary" /> Filtrar Encerramento:
+          </div>
+          <Select value={filterMonth} onValueChange={setFilterMonth}>
+            <SelectTrigger className="w-[160px] h-10 font-bold">
+              <SelectValue placeholder="Mês" />
+            </SelectTrigger>
+            <SelectContent>
+              {MONTHS.map(m => <SelectItem key={m.val} value={m.val}>{m.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={filterYear} onValueChange={setFilterYear}>
+            <SelectTrigger className="w-[120px] h-10 font-bold">
+              <SelectValue placeholder="Ano" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os Anos</SelectItem>
+              {years.filter(y => y !== 'all').map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {(filterMonth !== 'all' || filterYear !== 'all') && (
+            <Button variant="ghost" size="sm" onClick={() => { setFilterMonth('all'); setFilterYear('all'); }} className="text-[10px] font-black uppercase">
+              Limpar Filtros
+            </Button>
+          )}
+        </div>
 
         {/* Stats Grid */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -246,7 +303,7 @@ export default function Portfolio() {
         {/* Operations List */}
         {loading ? (
           <div className="flex justify-center py-24"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
-        ) : analyses.length === 0 ? (
+        ) : filteredAnalyses.length === 0 ? (
           <ProfessionalCard className="border-dashed border-2 border-muted-foreground/20">
             <CardContent className="py-24 text-center space-y-6">
               <div className="flex justify-center">
@@ -255,17 +312,17 @@ export default function Portfolio() {
                 </div>
               </div>
               <div className="space-y-2">
-                <p className="text-xl font-black tracking-tight">Portfólio Vazio</p>
-                <p className="text-muted-foreground max-w-xs mx-auto">Encerre operações no Histórico para que elas apareçam aqui com seus resultados.</p>
+                <p className="text-xl font-black tracking-tight">Nenhuma operação encontrada</p>
+                <p className="text-muted-foreground max-w-xs mx-auto">Tente ajustar os filtros de período.</p>
               </div>
-              <Button onClick={() => navigate('/history')} variant="outline">
-                Ir para Histórico
+              <Button onClick={() => { setFilterMonth('all'); setFilterYear('all'); }} variant="outline">
+                Limpar Filtros
               </Button>
             </CardContent>
           </ProfessionalCard>
         ) : (
           <div className="grid gap-3">
-            {analyses.map(a => {
+            {filteredAnalyses.map(a => {
               const pnl = getPnL(a.id);
               const montage = getMontageCost(a.id);
               const exitValue = getExitValue(a.id);

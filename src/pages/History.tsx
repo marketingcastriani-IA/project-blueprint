@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent } from '@/components/ui/card';
+import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, Clock, PlusCircle, Trash2, Edit2, XCircle, RotateCcw, History as HistoryIcon } from 'lucide-react';
+import { Loader2, Clock, PlusCircle, Trash2, Edit2, XCircle, RotateCcw, History as HistoryIcon, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
 
@@ -21,6 +22,14 @@ interface AnalysisSummary {
   ai_suggestion: string | null;
 }
 
+const MONTHS = [
+  { val: 'all', label: 'Todos os Meses' },
+  { val: '0', label: 'Janeiro' }, { val: '1', label: 'Fevereiro' }, { val: '2', label: 'Março' },
+  { val: '3', label: 'Abril' }, { val: '4', label: 'Maio' }, { val: '5', label: 'Junho' },
+  { val: '6', label: 'Julho' }, { val: '7', label: 'Agosto' }, { val: '8', label: 'Setembro' },
+  { val: '9', label: 'Outubro' }, { val: '10', label: 'Novembro' }, { val: '11', label: 'Dezembro' }
+];
+
 export default function History() {
   const { user, loading: authLoading } = useAuth();
   const [analyses, setAnalyses] = useState<AnalysisSummary[]>([]);
@@ -28,6 +37,10 @@ export default function History() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [closingId, setClosingId] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  // Filtros
+  const [filterMonth, setFilterMonth] = useState('all');
+  const [filterYear, setFilterYear] = useState('all');
 
   useEffect(() => {
     if (!user) return;
@@ -41,6 +54,21 @@ export default function History() {
         setLoading(false);
       });
   }, [user]);
+
+  const years = useMemo(() => {
+    const y = new Set<string>();
+    analyses.forEach(a => y.add(new Date(a.created_at).getFullYear().toString()));
+    return ['all', ...Array.from(y).sort((a, b) => b.localeCompare(a))];
+  }, [analyses]);
+
+  const filteredAnalyses = useMemo(() => {
+    return analyses.filter(a => {
+      const date = new Date(a.created_at);
+      const monthMatch = filterMonth === 'all' || date.getMonth().toString() === filterMonth;
+      const yearMatch = filterYear === 'all' || date.getFullYear().toString() === filterYear;
+      return monthMatch && yearMatch;
+    });
+  }, [analyses, filterMonth, filterYear]);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -96,8 +124,8 @@ export default function History() {
   if (authLoading) return null;
   if (!user) return <Navigate to="/auth" replace />;
 
-  const activeAnalyses = analyses.filter(a => a.status === 'active');
-  const closedAnalyses = analyses.filter(a => a.status === 'closed');
+  const activeAnalyses = filteredAnalyses.filter(a => a.status === 'active');
+  const closedAnalyses = filteredAnalyses.filter(a => a.status === 'closed');
 
   const renderCard = (a: AnalysisSummary) => (
     <ProfessionalCard
@@ -197,9 +225,38 @@ export default function History() {
           </Button>
         </div>
 
+        {/* Filtros */}
+        <div className="flex flex-wrap items-center gap-3 p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground mr-2">
+            <CalendarDays className="h-4 w-4 text-primary" /> Filtrar Período:
+          </div>
+          <Select value={filterMonth} onValueChange={setFilterMonth}>
+            <SelectTrigger className="w-[160px] h-10 font-bold">
+              <SelectValue placeholder="Mês" />
+            </SelectTrigger>
+            <SelectContent>
+              {MONTHS.map(m => <SelectItem key={m.val} value={m.val}>{m.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={filterYear} onValueChange={setFilterYear}>
+            <SelectTrigger className="w-[120px] h-10 font-bold">
+              <SelectValue placeholder="Ano" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os Anos</SelectItem>
+              {years.filter(y => y !== 'all').map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {(filterMonth !== 'all' || filterYear !== 'all') && (
+            <Button variant="ghost" size="sm" onClick={() => { setFilterMonth('all'); setFilterYear('all'); }} className="text-[10px] font-black uppercase">
+              Limpar Filtros
+            </Button>
+          )}
+        </div>
+
         {loading ? (
           <div className="flex justify-center py-24"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
-        ) : analyses.length === 0 ? (
+        ) : filteredAnalyses.length === 0 ? (
           <ProfessionalCard className="border-dashed border-2 border-muted-foreground/20">
             <CardContent className="py-24 text-center space-y-6">
               <div className="flex justify-center">
@@ -209,10 +266,10 @@ export default function History() {
               </div>
               <div className="space-y-2">
                 <p className="text-xl font-black tracking-tight">Nenhuma análise encontrada</p>
-                <p className="text-muted-foreground max-w-xs mx-auto">Comece criando uma nova análise para vê-la listada aqui.</p>
+                <p className="text-muted-foreground max-w-xs mx-auto">Tente ajustar os filtros ou comece criando uma nova análise.</p>
               </div>
               <Button onClick={() => navigate('/dashboard')} size="lg">
-                Criar Primeira Análise
+                Criar Nova Análise
               </Button>
             </CardContent>
           </ProfessionalCard>

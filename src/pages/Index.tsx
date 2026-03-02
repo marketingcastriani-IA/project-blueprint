@@ -5,7 +5,7 @@ import {
   TrendingUp, ArrowRight, Brain, CheckCircle2,
   Lock, Sparkles, XCircle,
   Zap, Camera, FileSpreadsheet, Cpu, Star,
-  BarChart3, PieChart, Image as ImageIcon, Bot
+  BarChart3, PieChart, Bot
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Sun, Moon } from 'lucide-react';
@@ -22,14 +22,18 @@ export default function Index() {
 
   useEffect(() => {
     const fetchPrice = async () => {
-      const { data } = await (supabase
-        .from('site_settings' as any)
-        .select('*')
-        .eq('id', 'pro_plan')
-        .single() as any);
-      
-      if (data) {
-        setProPrice((data as any).value?.price ?? 49.90);
+      try {
+        const { data } = await (supabase
+          .from('site_settings' as any)
+          .select('*')
+          .eq('id', 'pro_plan')
+          .maybeSingle() as any);
+        
+        if (data && (data as any).value?.price) {
+          setProPrice(Number((data as any).value.price));
+        }
+      } catch (e) {
+        console.error("Erro ao buscar preço do plano PRO:", e);
       }
     };
     fetchPrice();
