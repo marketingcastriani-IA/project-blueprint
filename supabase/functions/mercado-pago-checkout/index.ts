@@ -26,19 +26,10 @@ serve(async (req) => {
       throw new Error("Usuário não autenticado");
     }
 
-    // Lógica robusta para capturar a URL base do site
-    const originHeader = req.headers.get('origin') || req.headers.get('referer') || 'https://opcoesx.com.br';
-    let baseUrl = 'https://opcoesx.com.br';
-    
-    try {
-      const url = new URL(originHeader);
-      baseUrl = `${url.protocol}//${url.host}`;
-    } catch (e) {
-      console.warn("[mercado-pago-checkout] Falha ao processar origin, usando fallback");
-    }
-
-    const backUrl = `${baseUrl}/settings?payment=success`;
-    console.log(`[mercado-pago-checkout] URL de retorno configurada: ${backUrl}`);
+    // Sempre usar URL de produção para back_url (localhost é rejeitado pelo MP)
+    const PRODUCTION_URL = 'https://opoesxpro.lovable.app';
+    const backUrl = `${PRODUCTION_URL}/settings?payment=success`;
+    console.log(`[mercado-pago-checkout] URL de retorno: ${backUrl}`);
 
     // Busca preço atualizado ou usa padrão
     let price = 19.90
