@@ -26,8 +26,19 @@ serve(async (req) => {
       throw new Error("Usuário não autenticado");
     }
 
-    const origin = req.headers.get('origin') || 'https://opcoesx.com.br';
-    const backUrl = `${origin}/settings?payment=success`;
+    // Lógica robusta para capturar a URL base do site
+    const originHeader = req.headers.get('origin') || req.headers.get('referer') || 'https://opcoesx.com.br';
+    let baseUrl = 'https://opcoesx.com.br';
+    
+    try {
+      const url = new URL(originHeader);
+      baseUrl = `${url.protocol}//${url.host}`;
+    } catch (e) {
+      console.warn("[mercado-pago-checkout] Falha ao processar origin, usando fallback");
+    }
+
+    const backUrl = `${baseUrl}/settings?payment=success`;
+    console.log(`[mercado-pago-checkout] URL de retorno configurada: ${backUrl}`);
 
     // Busca preço atualizado ou usa padrão
     let price = 19.90
@@ -47,7 +58,7 @@ serve(async (req) => {
 
     const MP_ACCESS_TOKEN = Deno.env.get("MP_ACCESS_TOKEN")
     if (!MP_ACCESS_TOKEN) {
-      console.error("[mercado-pago-checkout] ERRO: MP_ACCESS_TOKEN não configurado nos Secrets do Supabase.");
+      console.error("[mercado-pago-checkout] ERRO: MP_ACCESS_TOKEN não configurado.");
       return new Response(JSON.stringify({ 
         error: "Configuração incompleta: O administrador precisa configurar o MP_ACCESS_TOKEN no painel do Supabase." 
       }), {
@@ -55,8 +66,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
     }
-
-    console.log(`[mercado-pago-checkout] Criando assinatura para ${user.email} no valor de R$ ${price}`);
 
     // Criando Assinatura Recorrente (Preapproval)
     const mpResponse = await fetch("https://api.mercadopago.com/preapproval", {
@@ -85,7 +94,7 @@ serve(async (req) => {
     if (!mpResponse.ok) {
       console.error("[mercado-pago-checkout] Erro retornado pelo Mercado Pago:", result);
       return new Response(JSON.stringify({ 
-        error: `Erro no Mercado Pago: ${result.message || "Verifique se o Access Token é válido e tem permissões de assinatura."}`,
+        error: `Erro no Mercado Pago: ${result.message || "Erro na criação da assinatura."}`,
         details: result
       }), {
         status: 400,
