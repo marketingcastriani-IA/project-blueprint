@@ -67,16 +67,16 @@ export default function Index() {
         
         <div className="container text-center space-y-8">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/30 bg-primary/5 text-primary text-sm font-bold animate-fade-in">
-            <Sparkles className="h-4 w-4" /> ÚNICO NO BRASIL — IA + OCR PARA OPÇÕES B3
+            <Sparkles className="h-4 w-4" /> ANÁLISE DE OPÇÕES COM IA — ÚNICO NO BRASIL
           </div>
           
           <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.85] animate-fade-in">
-            ABANDONE AS <span className="text-primary">PLANILHAS.</span><br />
-            OPERE COM IA.
+            ANALISE SUAS <span className="text-primary">OPÇÕES</span><br />
+            COM UM <span className="text-primary">PRINT.</span>
           </h1>
           
           <p className="text-xl sm:text-2xl text-muted-foreground max-w-3xl mx-auto font-medium leading-relaxed">
-            A evolução do trader de opções chegou. Analise estruturas complexas em segundos com <span className="text-foreground font-bold">OCR e Inteligência Artificial</span>.
+            Tire um print da sua estrutura na corretora e receba <span className="text-foreground font-bold">payoff, métricas e análise de IA</span> em segundos. Sem planilhas, sem fórmulas.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
