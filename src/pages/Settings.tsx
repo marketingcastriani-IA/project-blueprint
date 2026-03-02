@@ -8,14 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Lock, Mail, LogOut, Shield, CheckCircle2, Crown, CreditCard, Sparkles, Zap, Camera, Bot, History, Briefcase } from 'lucide-react';
 import { useAccessControl } from '@/hooks/useAccessControl';
 
 export default function Settings() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const access = useAccessControl();
   const navigate = useNavigate();
   const [newPassword, setNewPassword] = useState('');
@@ -34,11 +34,11 @@ export default function Settings() {
           .eq('id', 'pro_plan')
           .maybeSingle() as any);
         
-        if (data) {
-          setProPrice((data as any).value?.price);
+        if (data && (data as any).value?.price) {
+          setProPrice(Number((data as any).value.price));
         }
       } catch (e) {
-        console.log("Preço padrão mantido");
+        console.log("Usando preço padrão");
       }
     };
     fetchPrice();
@@ -55,24 +55,14 @@ export default function Settings() {
     setUpgrading(true);
     try {
       const { data, error } = await supabase.functions.invoke('mercado-pago-checkout');
-      
-      if (error) {
-        const errorMsg = error instanceof Error ? error.message : "Erro na comunicação com o servidor";
-        throw new Error(errorMsg);
-      }
-      
+      if (error) throw error;
       if (data?.url) {
         window.location.href = data.url;
-      } else if (data?.error) {
-        toast.error("Erro no Checkout", { description: data.error });
       } else {
-        toast.error("Erro inesperado", { description: "Não foi possível gerar o link de pagamento." });
+        toast.error("Erro ao gerar link de pagamento");
       }
     } catch (err: any) {
-      console.error("[Settings] Erro no upgrade:", err);
-      toast.error("Falha ao iniciar checkout", { 
-        description: "Verifique se o Token do Mercado Pago foi configurado corretamente nos Secrets do Supabase." 
-      });
+      toast.error("Falha ao iniciar checkout");
     } finally {
       setUpgrading(false);
     }
@@ -80,10 +70,6 @@ export default function Settings() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPassword || !confirmPassword) {
-      toast.error('Preencha todos os campos');
-      return;
-    }
     if (newPassword !== confirmPassword) {
       toast.error('As senhas não conferem');
       return;
@@ -96,7 +82,7 @@ export default function Settings() {
       setNewPassword('');
       setConfirmPassword('');
     } catch (err: any) {
-      toast.error('Erro ao alterar senha', { description: err.message });
+      toast.error('Erro ao alterar senha');
     } finally {
       setLoading(false);
     }
@@ -125,7 +111,7 @@ export default function Settings() {
 
         <Card className={cn(
           "border-2 overflow-hidden",
-          access.planType === 'pro' ? "border-primary bg-gradient-to-br from-primary/10 to-card" : "border-border/40 bg-card"
+          access.planType === 'pro' ? "border-primary bg-primary/5" : "border-border/40 bg-card"
         )}>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
@@ -163,15 +149,16 @@ export default function Settings() {
           </CardContent>
         </Card>
 
-        {/* Modal de Upgrade */}
         <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
-          <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-2 border-primary/30">
-            <div className="bg-primary p-8 text-primary-foreground relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-20"><Crown className="h-24 w-24" /></div>
-              <DialogTitle className="text-3xl font-black tracking-tighter mb-2">TORNE-SE PRO X</DialogTitle>
-              <DialogDescription className="text-primary-foreground/90 font-bold text-base">
-                A ferramenta definitiva para quem opera opções na B3.
-              </DialogDescription>
+          <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-2 border-primary/30 bg-card">
+            <div className="bg-primary p-8 text-primary-foreground relative">
+              <div className="absolute top-0 right-0 p-4 opacity-20"><Crown className="h-20 w-20" /></div>
+              <DialogHeader>
+                <DialogTitle className="text-3xl font-black tracking-tighter mb-2 text-primary-foreground">TORNE-SE PRO X</DialogTitle>
+                <DialogDescription className="text-primary-foreground/90 font-bold text-base">
+                  A ferramenta definitiva para quem opera opções na B3.
+                </DialogDescription>
+              </DialogHeader>
             </div>
             <div className="p-6 space-y-6">
               <div className="grid gap-4">
@@ -199,14 +186,11 @@ export default function Settings() {
                 <Button 
                   onClick={handleUpgrade} 
                   disabled={upgrading} 
-                  className="w-full h-14 text-lg font-black shadow-[0_10px_30px_-10px_hsl(var(--primary)/0.6)]"
+                  className="w-full h-14 text-lg font-black shadow-lg"
                 >
                   {upgrading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <CreditCard className="mr-2 h-6 w-6" />}
-                  ASSINAR AGORA VIA MERCADO PAGO
+                  ASSINAR AGORA
                 </Button>
-                <p className="text-[10px] text-center text-muted-foreground mt-4 font-medium">
-                  Pagamento seguro processado pelo Mercado Pago. Cancele quando quiser.
-                </p>
               </div>
             </div>
           </DialogContent>
@@ -223,7 +207,7 @@ export default function Settings() {
             <div className="space-y-2">
               <Label>Email</Label>
               <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/50 border border-muted-foreground/20">
-                <p className="text-sm font-medium flex-1">{user.email}</p>
+                <p className="text-sm font-medium flex-1">{user?.email}</p>
                 <Badge className="bg-success/20 text-success border-success/30 text-xs">Verificado</Badge>
               </div>
             </div>
