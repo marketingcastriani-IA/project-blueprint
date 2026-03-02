@@ -3,24 +3,17 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { 
   TrendingUp, ArrowRight, Brain, Target, CheckCircle2,
-  Lock, Sparkles, Trophy, XCircle, AlertTriangle,
-  Rocket, Star, Shield, Zap, Users, BarChart3,
-  Clock, Eye, MousePointer2, ChevronRight, LayoutDashboard, Briefcase,
-  Camera
+  Lock, Sparkles, XCircle, AlertTriangle,
+  Shield, Zap, BarChart3, MousePointer2, Camera,
+  Layers, FileSpreadsheet, Cpu, Smartphone
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Sun, Moon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-
-// Mapeamento das imagens reais enviadas
-const imgPayoff = "https://daiyrwxcsqvbbntzjdzy.supabase.co/storage/v1/object/public/assets/pasted-image-2026-03-02T00-00-14-760Z.png";
-const imgAI = "https://daiyrwxcsqvbbntzjdzy.supabase.co/storage/v1/object/public/assets/pasted-image-2026-03-02T00-01-38-076Z.png";
-const imgOCR = "https://daiyrwxcsqvbbntzjdzy.supabase.co/storage/v1/object/public/assets/pasted-image-2026-03-02T00-01-51-790Z.png";
-const imgPortfolio = "https://daiyrwxcsqvbbntzjdzy.supabase.co/storage/v1/object/public/assets/pasted-image-2026-03-02T00-02-14-938Z.png";
 
 export default function Index() {
   const { user, loading } = useAuth();
@@ -79,12 +72,12 @@ export default function Index() {
           </div>
           
           <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.85] animate-fade-in">
-            PARE DE OPERAR <span className="text-primary">NO ESCURO.</span><br />
-            DOMINE O PAYOFF.
+            ABANDONE AS <span className="text-primary">PLANILHAS.</span><br />
+            OPERE COM IA.
           </h1>
           
           <p className="text-xl sm:text-2xl text-muted-foreground max-w-3xl mx-auto font-medium leading-relaxed">
-            A primeira plataforma que usa <span className="text-foreground font-bold">Inteligência Artificial</span> para validar se sua estratégia de opções realmente vence o CDI.
+            A evolução do trader de opções chegou. Analise estruturas complexas em segundos com <span className="text-foreground font-bold">OCR e Inteligência Artificial</span>.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
@@ -99,24 +92,88 @@ export default function Index() {
         </div>
       </section>
 
-      {/* MAIN PREVIEW - Payoff Chart */}
+      {/* MAIN PREVIEW */}
       <section className="container -mt-8 mb-20">
-        <div className="text-center mb-8 space-y-2">
-          <Badge className="bg-success/20 text-success border-success/30 font-black px-4 py-1">VISUALIZAÇÃO PROFISSIONAL</Badge>
-          <h2 className="text-3xl font-black tracking-tight">Gráfico de Payoff Dinâmico</h2>
-        </div>
         <div className="relative rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_40px_100px_-20px_hsl(var(--primary)/0.3)] bg-card">
           <img 
-            src={imgPayoff} 
-            alt="Gráfico de Payoff Real do App" 
+            src="/assets/dashboard.png" 
+            alt="Dashboard OpçõesX" 
             className="w-full h-auto"
-            loading="lazy"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/20 via-transparent to-transparent" />
         </div>
       </section>
 
-      {/* FEATURES GRID - OCR */}
+      {/* COMPARISON SECTION: APP VS SPREADSHEETS */}
+      <section className="container py-24">
+        <div className="text-center mb-16 space-y-4">
+          <Badge variant="outline" className="border-primary/30 text-primary font-bold">O FIM DA ERA MANUAL</Badge>
+          <h2 className="text-4xl sm:text-6xl font-black tracking-tighter">OpçõesX vs. Planilhas</h2>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Por que os melhores traders estão abandonando o Excel?</p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Planilhas */}
+          <Card className="p-8 border-destructive/20 bg-destructive/5 space-y-6 opacity-80">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-xl bg-destructive/10 flex items-center justify-center text-destructive">
+                <FileSpreadsheet className="h-6 w-6" />
+              </div>
+              <h3 className="text-2xl font-black">Planilhas Comuns</h3>
+            </div>
+            <ul className="space-y-4">
+              <li className="flex items-start gap-3 text-sm font-medium text-muted-foreground">
+                <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                Entrada manual lenta e sujeita a erros de digitação.
+              </li>
+              <li className="flex items-start gap-3 text-sm font-medium text-muted-foreground">
+                <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                Fórmulas complexas que quebram e exigem manutenção.
+              </li>
+              <li className="flex items-start gap-3 text-sm font-medium text-muted-foreground">
+                <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                Sem comparativo real com o CDI ou custo de oportunidade.
+              </li>
+              <li className="flex items-start gap-3 text-sm font-medium text-muted-foreground">
+                <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                Impossível de usar no celular durante o pregão.
+              </li>
+            </ul>
+          </Card>
+
+          {/* OpçõesX */}
+          <Card className="p-8 border-primary/30 bg-primary/5 space-y-6 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4">
+              <Badge className="bg-primary text-primary-foreground font-black">VENCEDOR</Badge>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
+                <Cpu className="h-6 w-6" />
+              </div>
+              <h3 className="text-2xl font-black">OpçõesX (IA)</h3>
+            </div>
+            <ul className="space-y-4">
+              <li className="flex items-start gap-3 text-sm font-bold">
+                <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                OCR: Tire um print e a IA lê as pernas instantaneamente.
+              </li>
+              <li className="flex items-start gap-3 text-sm font-bold">
+                <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                Análise Quantitativa: IA interpreta o risco e sugere ajustes.
+              </li>
+              <li className="flex items-start gap-3 text-sm font-bold">
+                <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                Eficiência vs CDI: Saiba se sua operação vale o risco.
+              </li>
+              <li className="flex items-start gap-3 text-sm font-bold">
+                <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                Mobile-First: Analise e acompanhe de qualquer lugar.
+              </li>
+            </ul>
+          </Card>
+        </div>
+      </section>
+
+      {/* OCR FEATURE */}
       <section className="container py-20 bg-muted/30 rounded-[3rem]">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           <div className="space-y-8">
@@ -124,87 +181,88 @@ export default function Index() {
               <Badge variant="outline" className="border-primary/30 text-primary font-bold">TECNOLOGIA OCR</Badge>
               <h2 className="text-4xl font-black tracking-tighter">Do Print para o Payoff em 2 segundos.</h2>
               <p className="text-lg text-muted-foreground">
-                Não perca tempo digitando perna por perna. Tire um print da sua corretora (Profit, FlexScan, Home Broker) e nossa IA extrai tudo automaticamente.
+                Chega de digitar strikes e prêmios. Nossa IA lê capturas de tela do Profit, FlexScan ou Home Broker e monta a estrutura para você.
               </p>
             </div>
-            
             <div className="grid gap-4">
-              <Card className="p-4 border-primary/20 bg-card/50 flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                  <Camera className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="font-bold">Upload Inteligente</p>
-                  <p className="text-xs text-muted-foreground">Reconhece ativos, strikes e prêmios instantaneamente.</p>
-                </div>
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border/40">
+                <Camera className="h-6 w-6 text-primary" />
+                <p className="font-bold text-sm">Upload de Imagem IA Powered</p>
+              </div>
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border/40">
+                <Zap className="h-6 w-6 text-primary" />
+                <p className="font-bold text-sm">Extração Instantânea de Dados B3</p>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-2xl overflow-hidden border-2 border-primary/20 shadow-2xl">
+            <img src="/assets/ocr_upload.png" alt="OCR Upload" className="w-full h-auto" />
+          </div>
+        </div>
+      </section>
+
+      {/* AI ANALYSIS */}
+      <section className="container py-24">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div className="order-2 lg:order-1 rounded-2xl overflow-hidden border-2 border-primary/20 shadow-2xl">
+            <img src="/assets/ai_report.png" alt="Relatório de IA" className="w-full h-auto" />
+          </div>
+          <div className="order-1 lg:order-2 space-y-8">
+            <div className="space-y-4">
+              <Badge variant="outline" className="border-primary/30 text-primary font-bold">INTELIGÊNCIA ARTIFICIAL</Badge>
+              <h2 className="text-4xl font-black tracking-tighter">Um Analista Sênior no seu Bolso.</h2>
+              <p className="text-lg text-muted-foreground">
+                Nossa IA analisa a atratividade, o risco e a probabilidade de sucesso da sua estrutura, fornecendo um resumo executivo técnico.
+              </p>
+            </div>
+            <div className="space-y-4">
+              <img src="/assets/strategy_scenarios.png" alt="Cenários de Mercado" className="rounded-xl border border-border/40 shadow-lg" />
+              <p className="text-sm font-bold text-center text-muted-foreground italic">Simulação completa de cenários: Alta, Lateral ou Baixa.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* PAYOFF & CDI */}
+      <section className="container py-20 bg-primary/5 rounded-[3rem] border border-primary/10">
+        <div className="text-center mb-12 space-y-4">
+          <h2 className="text-4xl font-black tracking-tighter">Métricas que Realmente Importam</h2>
+          <p className="text-lg text-muted-foreground">Compare sua estratégia com o benchmark mais importante do Brasil: o CDI.</p>
+        </div>
+        <div className="grid lg:grid-cols-2 gap-8">
+          <div className="rounded-2xl overflow-hidden border-2 border-primary/20 shadow-xl bg-card">
+            <img src="/assets/payoff_chart.png" alt="Gráfico de Payoff" className="w-full h-auto" />
+          </div>
+          <div className="rounded-2xl overflow-hidden border-2 border-primary/20 shadow-xl bg-card">
+            <img src="/assets/cdi_comparison.png" alt="Comparativo CDI" className="w-full h-auto" />
+          </div>
+        </div>
+      </section>
+
+      {/* PORTFOLIO */}
+      <section className="container py-24">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <Badge variant="outline" className="border-primary/30 text-primary font-bold">GESTÃO DE RISCO</Badge>
+              <h2 className="text-4xl font-black tracking-tighter">Seu Portfólio, Profissionalizado.</h2>
+              <p className="text-lg text-muted-foreground">
+                Acompanhe seu P&L consolidado, taxa de acerto e ROI total. Saiba exatamente quanto você está ganhando (ou perdendo) em cada estrutura.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="p-4 text-center border-success/20 bg-success/5">
+                <p className="text-2xl font-black text-success">100%</p>
+                <p className="text-[10px] font-bold uppercase">Taxa de Acerto</p>
               </Card>
-              <Card className="p-4 border-border/40 bg-card/50 flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
-                  <MousePointer2 className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="font-bold">Entrada Manual Precisa</p>
-                  <p className="text-xs text-muted-foreground">Controle total para ajustes finos na sua estrutura.</p>
-                </div>
+              <Card className="p-4 text-center border-primary/20 bg-primary/5">
+                <p className="text-2xl font-black text-primary">+24.16%</p>
+                <p className="text-[10px] font-bold uppercase">ROI Consolidado</p>
               </Card>
             </div>
           </div>
-          <div className="rounded-2xl overflow-hidden border-2 border-border/40 shadow-2xl">
-            <img src={imgOCR} alt="Interface de Upload OCR" className="w-full h-auto" />
-          </div>
-        </div>
-      </section>
-
-      {/* AI ANALYSIS SECTION */}
-      <section className="container py-24">
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-          <Badge className="bg-primary text-primary-foreground font-black">EXCLUSIVO</Badge>
-          <h2 className="text-4xl sm:text-6xl font-black tracking-tighter">Relatório de Estratégia com IA</h2>
-          <p className="text-xl text-muted-foreground">
-            Nossa IA não apenas calcula, ela <span className="text-foreground font-bold">interpreta</span>. Receba um veredito real sobre o risco da sua operação.
-          </p>
-        </div>
-
-        <div className="relative rounded-3xl overflow-hidden border-2 border-primary/30 shadow-2xl bg-card mb-12">
-          <img src={imgAI} alt="Relatório de IA Real" className="w-full h-auto" />
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          <Card className="p-6 border-success/20 bg-success/5 space-y-3">
-            <TrendingUp className="h-8 w-8 text-success" />
-            <h4 className="font-black">Eficiência vs CDI</h4>
-            <p className="text-sm text-muted-foreground">Saiba exatamente quantos % do CDI sua estrutura pode render no melhor cenário.</p>
-          </Card>
-          <Card className="p-6 border-warning/20 bg-warning/5 space-y-3">
-            <Target className="h-8 w-8 text-warning" />
-            <h4 className="font-black">Cenários de Mercado</h4>
-            <p className="text-sm text-muted-foreground">O que acontece se o ativo subir, cair ou ficar lateral? A IA simula tudo para você.</p>
-          </Card>
-          <Card className="p-6 border-destructive/20 bg-destructive/5 space-y-3">
-            <AlertTriangle className="h-8 w-8 text-destructive" />
-            <h4 className="font-black">Alerta de Risco Crítico</h4>
-            <p className="text-sm text-muted-foreground">Identifique vendas a descoberto ou riscos ilimitados antes de clicar no botão 'executar'.</p>
-          </Card>
-        </div>
-      </section>
-
-      {/* PORTFOLIO SECTION */}
-      <section className="container py-20 bg-primary/5 rounded-[3rem] border border-primary/10">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="order-2 lg:order-1 rounded-2xl overflow-hidden border-2 border-primary/20 shadow-2xl">
-            <img src={imgPortfolio} alt="Gestão de Portfólio" className="w-full h-auto" />
-          </div>
-          <div className="order-1 lg:order-2 space-y-6">
-            <Badge variant="outline" className="border-primary/30 text-primary font-bold">GESTÃO PROFISSIONAL</Badge>
-            <h2 className="text-4xl font-black tracking-tighter">Seu Portfólio Consolidado.</h2>
-            <p className="text-lg text-muted-foreground">
-              Acompanhe o P&L real de todas as suas operações encerradas. Veja sua taxa de acerto, capital alocado e ROI total em um dashboard limpo e intuitivo.
-            </p>
-            <ul className="space-y-3">
-              <li className="flex items-center gap-3 font-bold text-sm"><CheckCircle2 className="h-5 w-5 text-primary" /> Histórico completo de operações</li>
-              <li className="flex items-center gap-3 font-bold text-sm"><CheckCircle2 className="h-5 w-5 text-primary" /> Cálculo automático de lucro e prejuízo</li>
-              <li className="flex items-center gap-3 font-bold text-sm"><CheckCircle2 className="h-5 w-5 text-primary" /> Reabertura de estratégias com um clique</li>
-            </ul>
+          <div className="rounded-2xl overflow-hidden border-2 border-primary/20 shadow-2xl">
+            <img src="/assets/portfolio.png" alt="Portfólio" className="w-full h-auto" />
           </div>
         </div>
       </section>
