@@ -24,7 +24,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2, Info, AlertTriangle, Calendar, Percent } from 'lucide-react';
+import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2, Info, AlertTriangle, Calendar, Percent, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, SectionDivider } from '@/components/ProfessionalLayout';
 import AIInsights from '@/components/AIInsights';
@@ -435,6 +435,26 @@ export default function Dashboard() {
                 {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
                 Salvar Análise
               </Button>
+
+              {legs.length > 0 && (
+                <Button 
+                  variant="destructive"
+                  onClick={() => {
+                    setLegs([]);
+                    setAiAnalysis(null);
+                    setAnalysisName('');
+                    setHasManuallyNamed(false);
+                    setInputMode(null);
+                    setDaysToExpiry(0);
+                    setEntryDate(new Date().toISOString().split('T')[0]);
+                    toast.success('Análise limpa! Pronto para uma nova simulação.');
+                  }}
+                  className="text-base h-11 px-6"
+                >
+                  <Trash2 className="mr-2 h-5 w-5" />
+                  Nova Análise
+                </Button>
+              )}
             </div>
 
             <div className="grid gap-4 sm:grid-cols-3 max-w-3xl">
