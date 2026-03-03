@@ -62,11 +62,9 @@ export default function AdminLogin() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
           <div className="flex justify-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary shadow-[0_0_24px_-4px_hsl(var(--primary)/0.5)]">
-              <TrendingUp className="h-6 w-6 text-primary-foreground" />
-            </div>
+            <img src="/assets/logo.png" alt="Opções PRO X" className="h-12 w-12 object-contain" />
           </div>
-          <h1 className="text-2xl font-bold">OpçõesX Admin</h1>
+          <h1 className="text-2xl font-bold">Opções PRO X Admin</h1>
           <p className="text-sm text-muted-foreground">Painel de controle administrativo</p>
         </div>
 
