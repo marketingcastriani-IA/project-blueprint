@@ -58,25 +58,39 @@ serve(async (req) => {
       })
     }
 
-    // Criando Assinatura Recorrente (Preapproval)
-    const mpResponse = await fetch("https://api.mercadopago.com/preapproval", {
+    // Checkout Pro com PIX, Cartão e Boleto
+    const mpResponse = await fetch("https://api.mercadopago.com/checkout/preferences", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${MP_ACCESS_TOKEN}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        reason: "OpçõesX - Assinatura Mensal PRO",
-        auto_recurring: {
-          frequency: 1,
-          frequency_type: "months",
-          transaction_amount: price,
-          currency_id: "BRL"
+        items: [
+          {
+            title: "Opções PRO X - Plano Mensal",
+            quantity: 1,
+            unit_price: price,
+            currency_id: "BRL",
+          }
+        ],
+        payer: {
+          email: user.email,
         },
-        payer_email: user.email,
+        payment_methods: {
+          excluded_payment_types: [
+            { id: "ticket" } // exclui boleto se quiser, remova para incluir
+          ],
+          installments: 1
+        },
         external_reference: user.id,
-        back_url: backUrl,
-        status: "pending"
+        back_urls: {
+          success: `${PRODUCTION_URL}/settings?payment=success`,
+          failure: `${PRODUCTION_URL}/settings?payment=failure`,
+          pending: `${PRODUCTION_URL}/settings?payment=pending`,
+        },
+        auto_return: "approved",
+        statement_descriptor: "OPCOES PRO X",
       })
     })
 
@@ -85,7 +99,7 @@ serve(async (req) => {
     if (!mpResponse.ok) {
       console.error("[mercado-pago-checkout] Erro retornado pelo Mercado Pago:", result);
       return new Response(JSON.stringify({ 
-        error: `Erro no Mercado Pago: ${result.message || "Erro na criação da assinatura."}`,
+        error: `Erro no Mercado Pago: ${result.message || "Erro na criação do checkout."}`,
         details: result
       }), {
         status: 400,
