@@ -93,7 +93,23 @@ export default function AIInsights({ analysis, loading = false }: AIInsightsProp
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-8">
+      <CardContent className="space-y-8">
+          {/* Risk-Free Banner */}
+          {(analysis.risk_level === 'Baixo' && analysis.score >= 7) && (
+            <div className="flex items-center gap-4 p-4 rounded-2xl bg-success/10 border-2 border-success/30 shadow-[0_0_25px_-8px_hsl(var(--success)/0.4)] animate-fade-in">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-success/20 text-success">
+                <ShieldCheck className="h-7 w-7" />
+              </div>
+              <div>
+                <p className="text-sm font-black uppercase tracking-widest text-success">🛡️ ESTRUTURA RISCO ZERO</p>
+                <p className="text-xs text-muted-foreground font-medium mt-0.5">O crédito recebido cobre 100% da exposição máxima. Não há cenário de prejuízo.</p>
+              </div>
+              <Badge className="ml-auto bg-success text-success-foreground px-4 py-1.5 text-xs font-black uppercase tracking-wider rounded-full shadow-md">
+                PROTEGIDO
+              </Badge>
+            </div>
+          )}
+
           {/* Score & Summary Section */}
           <div className="grid gap-8 md:grid-cols-12">
             <div className="md:col-span-4 space-y-4">
