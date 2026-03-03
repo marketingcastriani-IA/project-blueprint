@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAccessControl } from '@/hooks/useAccessControl';
@@ -141,6 +141,7 @@ export default function Dashboard() {
   const [loadingAI, setLoadingAI] = useState(false);
   const [saving, setSaving] = useState(false);
   const [inputMode, setInputMode] = useState<InputMode>(null);
+  const aiSectionRef = useRef<HTMLDivElement>(null);
 
   const metrics = useMemo(() => calculateMetrics(legs), [legs]);
   const payoffData = useMemo(() => generatePayoffCurve(legs, daysToExpiry, cdiRate), [legs, daysToExpiry, cdiRate]);
@@ -255,6 +256,9 @@ export default function Dashboard() {
     }
     if (legs.length === 0) { toast.error('Adicione pernas primeiro.'); return; }
     setLoadingAI(true);
+    setTimeout(() => {
+      aiSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 200);
     try {
       const { data, error } = await supabase.functions.invoke('analyze-structure', {
         body: {
@@ -268,6 +272,9 @@ export default function Dashboard() {
       
       await incrementSimulations();
       toast.success('Análise de IA concluída!');
+      setTimeout(() => {
+        aiSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
     } catch (err: any) {
       toast.error('Erro na IA');
     } finally { setLoadingAI(false); }
@@ -534,8 +541,10 @@ export default function Dashboard() {
 
             {legs.length > 0 && (
               <>
-                <SectionDivider title="Análise de IA" />
-                <AIInsights analysis={aiAnalysis} loading={loadingAI} />
+                <div ref={aiSectionRef}>
+                  <SectionDivider title="Análise de IA" />
+                  <AIInsights analysis={aiAnalysis} loading={loadingAI} />
+                </div>
                 
                 <SectionDivider title="Métricas e Payoff" />
                 <MetricsCards metrics={metrics} cdiReturn={cdiReturn} daysToExpiry={daysToExpiry} investedCapital={investedCapital} />
