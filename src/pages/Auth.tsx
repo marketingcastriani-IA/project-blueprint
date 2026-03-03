@@ -90,10 +90,10 @@ export default function Auth() {
       )}
       <Card className="w-full max-w-md animate-fade-in border-2">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-primary shadow-[0_0_20px_-4px_hsl(var(--primary)/0.6)]">
-            <TrendingUp className="h-7 w-7 text-primary-foreground" />
+          <div className="mx-auto mb-4">
+            <img src="/assets/logo.png" alt="Opções PRO X" className="h-14 w-14 object-contain" />
           </div>
-          <CardTitle className="text-2xl font-black tracking-tight">OpçõesX</CardTitle>
+          <CardTitle className="text-2xl font-black tracking-tight">Opções PRO X</CardTitle>
           <CardDescription className="font-medium">
             {isSignUp ? 'Crie sua conta para começar' : 'Entre na sua conta'}
           </CardDescription>

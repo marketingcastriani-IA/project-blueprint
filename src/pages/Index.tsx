@@ -48,10 +48,8 @@ export default function Index() {
       <header className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/40">
         <div className="container flex items-center justify-between py-4">
           <div className="flex items-center gap-2.5 font-black text-2xl">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary shadow-[0_0_20px_-4px_hsl(var(--primary)/0.6)]">
-              <TrendingUp className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <span className="tracking-tighter">OpçõesX</span>
+            <img src="/assets/logo.png" alt="Opções PRO X" className="h-10 w-10 object-contain" />
+            <span className="tracking-tighter">Opções PRO X</span>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full">
@@ -340,10 +338,8 @@ export default function Index() {
       <footer className="border-t border-border/40 bg-muted/20 py-12">
         <div className="container text-center space-y-6">
           <div className="flex items-center justify-center gap-2.5 font-black text-xl">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <TrendingUp className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="tracking-tighter">OpçõesX</span>
+            <img src="/assets/logo.png" alt="Opções PRO X" className="h-8 w-8 object-contain" />
+            <span className="tracking-tighter">Opções PRO X</span>
           </div>
           <p className="text-[10px] text-muted-foreground max-w-3xl mx-auto leading-relaxed">
             AVISO LEGAL: Este aplicativo é uma ferramenta de simulação algorítmica baseada nas regras da B3. Os dados apresentados não constituem recomendação de investimento. Verifique os dados com sua corretora antes de operar.

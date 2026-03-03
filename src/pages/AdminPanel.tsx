@@ -192,10 +192,8 @@ export default function AdminPanel() {
       <header className="sticky top-0 z-50 border-b border-border/60 bg-card/80 backdrop-blur-md">
         <div className="container flex h-14 items-center justify-between">
           <div className="flex items-center gap-2 font-bold text-lg">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <TrendingUp className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="hidden sm:inline">OpçõesX Admin</span>
+            <img src="/assets/logo.png" alt="Opções PRO X" className="h-8 w-8 object-contain" />
+            <span className="hidden sm:inline">Opções PRO X Admin</span>
           </div>
           <div className="flex items-center gap-2">
             <Button 

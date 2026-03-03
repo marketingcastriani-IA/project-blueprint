@@ -39,11 +39,9 @@ export default function AccessBlocked({ status }: AccessBlockedProps) {
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary shadow-[0_0_24px_-4px_hsl(var(--primary)/0.5)]">
-              <TrendingUp className="h-6 w-6 text-primary-foreground" />
-            </div>
+            <img src="/assets/logo.png" alt="Opções PRO X" className="h-12 w-12 object-contain" />
           </div>
-          <h1 className="text-xl font-bold">OpçõesX</h1>
+          <h1 className="text-xl font-bold">Opções PRO X</h1>
         </div>
 
         <Card className={`${c.color} bg-card/50 backdrop-blur-sm`}>

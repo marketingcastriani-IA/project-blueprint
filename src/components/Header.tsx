@@ -30,10 +30,8 @@ export default function Header() {
     <header className="sticky top-0 z-50 border-b border-border/60 bg-card/80 backdrop-blur-md">
       <div className="container flex h-14 items-center justify-between">
         <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 font-bold text-lg shrink-0">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-[0_0_16px_-4px_hsl(var(--primary)/0.5)]">
-            <TrendingUp className="h-4 w-4 text-primary-foreground" />
-          </div>
-          <span className="hidden sm:inline tracking-tight">OpçõesX</span>
+          <img src="/assets/logo.png" alt="Opções PRO X" className="h-8 w-8 object-contain" />
+          <span className="hidden sm:inline tracking-tight">Opções PRO X</span>
           <Badge variant="outline" className={cn(
             "text-[8px] hidden sm:inline-flex",
             isFree ? "border-warning/50 text-warning" : "border-primary/30 text-primary"
