@@ -408,7 +408,7 @@ export default function Dashboard() {
                     ) : (
                       <Sparkles className="mr-2 h-5 w-5" />
                     )}
-                    Sugestão IA
+                    Analisar a Estrutura por IA
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent className="max-w-xs p-4 bg-card border-2 border-primary/30 shadow-xl">
@@ -463,7 +463,7 @@ export default function Dashboard() {
                   Nome da análise
                   {legs.length > 0 && !hasManuallyNamed && (
                     <Badge variant="outline" className="text-[9px] border-primary/30 text-primary animate-pulse">
-                      <Wand2 className="h-2 w-2 mr-1" /> Sugestão IA
+                      <Wand2 className="h-2 w-2 mr-1" /> Auto
                     </Badge>
                   )}
                 </Label>
@@ -603,7 +603,7 @@ export default function Dashboard() {
                     className="text-base h-12 px-8 font-black"
                   >
                     {loadingAI ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
-                    Sugestão IA
+                    Analisar a Estrutura por IA
                   </Button>
                 </div>
               </>
@@ -611,6 +611,31 @@ export default function Dashboard() {
           </>
         )}
       </main>
+
+      {/* Floating sticky bar - Analisar a Estrutura por IA */}
+      {legs.length > 0 && !isLimitReached && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-primary/30 bg-card/95 backdrop-blur-md shadow-[0_-4px_30px_-8px_hsl(var(--primary)/0.3)]">
+          <div className="container flex items-center justify-center py-3 gap-3">
+            <Button
+              onClick={getAISuggestion}
+              disabled={loadingAI}
+              className="animate-pulse bg-primary hover:bg-primary/90 text-primary-foreground font-black text-base h-12 px-8 shadow-[0_0_30px_-5px_hsl(var(--primary)/0.6)]"
+            >
+              {loadingAI ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
+              Analisar a Estrutura por IA
+            </Button>
+            <Button
+              onClick={saveAnalysis}
+              disabled={saving}
+              variant="outline"
+              className="font-black text-base h-12 px-6"
+            >
+              {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
+              Salvar
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
