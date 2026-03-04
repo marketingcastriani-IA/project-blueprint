@@ -216,9 +216,14 @@ export default function MetricsCards({ metrics, cdiReturn = 0, investedCapital =
                       <item.icon className="h-3.5 w-3.5" />
                     </div>
                   </div>
-                  <p className={cn('text-2xl font-bold tracking-tight leading-none', t.value)}>
-                    {item.value}
-                  </p>
+                  <p className={cn('text-2xl font-black tracking-tight leading-none', t.value)}>
+                     {item.value}
+                   </p>
+                   {item.value.includes('%') && (
+                     <div className={cn('mt-1.5 inline-block px-2 py-0.5 rounded-full text-xs font-black', t.badge)}>
+                       {item.value}
+                     </div>
+                   )}
                   {item.subtitle && (
                     <p className={cn('text-xs mt-1.5', 
                       item.theme === 'green' ? 'text-success' : 

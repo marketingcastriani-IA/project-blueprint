@@ -267,9 +267,9 @@ export default function AnalysisDetail() {
                   <p className={cn("text-3xl font-black tracking-tighter", currentPnL >= 0 ? "text-success" : "text-destructive")}>
                     R$ {currentPnL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
-                  <Badge variant="outline" className={cn("font-black text-[10px]", currentPnL >= 0 ? "border-success/30 text-success" : "border-destructive/30 text-destructive")}>
-                    {currentPnL >= 0 ? '+' : ''}{periodMetrics.pnlRoi.toFixed(2)}% ROI
-                  </Badge>
+                   <Badge className={cn("font-black text-sm px-3 py-1 rounded-full shadow-lg", currentPnL >= 0 ? "bg-success/20 border-success/50 text-success shadow-success/20" : "bg-destructive/20 border-destructive/50 text-destructive shadow-destructive/20")}>
+                     {currentPnL >= 0 ? '+' : ''}{periodMetrics.pnlRoi.toFixed(2)}% ROI
+                   </Badge>
                 </div>
               </CardContent>
             </Card>
@@ -286,9 +286,9 @@ export default function AnalysisDetail() {
                   <p className="text-3xl font-black tracking-tighter text-warning">
                     R$ {periodMetrics.cdiReturnSinceEntry.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
-                  <Badge variant="outline" className="border-warning/30 text-warning font-black text-[10px]">
-                    {periodMetrics.cdiRoi.toFixed(2)}% ROI
-                  </Badge>
+                   <Badge className="bg-warning/20 border-warning/50 text-warning font-black text-sm px-3 py-1 rounded-full shadow-lg shadow-warning/20">
+                     {periodMetrics.cdiRoi.toFixed(2)}% ROI
+                   </Badge>
                 </div>
                 <p className="text-[9px] font-bold text-muted-foreground uppercase mt-1">Rendimento no período da operação</p>
               </CardContent>
@@ -302,9 +302,9 @@ export default function AnalysisDetail() {
                     <Target className="h-4 w-4" />
                   </div>
                 </div>
-                <p className={cn("text-3xl font-black tracking-tighter", periodMetrics.efficiency >= 100 ? "text-success" : "text-destructive")}>
-                  {periodMetrics.efficiency.toFixed(0)}% <span className="text-sm font-bold">do CDI</span>
-                </p>
+                 <p className={cn("text-4xl font-black tracking-tighter", periodMetrics.efficiency >= 100 ? "text-success" : "text-destructive")}>
+                   {periodMetrics.efficiency.toFixed(0)}% <span className="text-base font-bold">do CDI</span>
+                 </p>
                 <p className="text-[9px] font-black text-muted-foreground uppercase mt-1 flex items-center gap-1">
                   {periodMetrics.efficiency >= 100 ? <><Zap className="h-3 w-3 text-success" /> ✓ Superando o CDI</> : <><AlertTriangle className="h-3 w-3 text-destructive" /> ✗ Abaixo do CDI</>}
                 </p>

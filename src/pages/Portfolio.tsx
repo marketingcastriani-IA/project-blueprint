@@ -10,8 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { 
   Loader2, TrendingUp, TrendingDown, Calendar, Edit2, 
-  RotateCcw, Trash2, Briefcase, Wallet, Target, CalendarDays 
+  RotateCcw, Trash2, Briefcase, Wallet, Target, CalendarDays, Percent, BarChart3 
 } from 'lucide-react';
+import { countBusinessDays } from '@/lib/b3-calendar';
+import { calculateCDIReturn } from '@/lib/payoff';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
 
@@ -24,6 +26,12 @@ interface ClosedAnalysis {
   cdi_rate: number | null;
   days_to_expiry: number | null;
 }
+
+const getCDIForPeriod = (createdAt: string, closedAt: string | null, cdiRate: number | null, invested: number): number => {
+  if (!closedAt || !cdiRate || invested <= 0) return 0;
+  const days = countBusinessDays(new Date(createdAt), new Date(closedAt));
+  return calculateCDIReturn(invested, cdiRate, days, false);
+};
 
 interface LegWithPnL {
   id: string;
@@ -154,8 +162,16 @@ export default function Portfolio() {
     const winRate = pnls.length > 0 ? ((wins / pnls.length) * 100).toFixed(1) : '0';
     
     const totalReturnPct = totalInvested > 0 ? (totalPL / totalInvested) * 100 : 0;
+    const avgProfit = pnls.length > 0 ? totalPL / pnls.length : 0;
 
-    return { totalPL, totalInvested, totalReturnPct, wins, losses, winRate, total: filteredAnalyses.length };
+    // CDI total for all operations
+    const totalCDI = filteredAnalyses.reduce((sum, a) => {
+      const montage = getMontageCost(a.id);
+      const invested = montage < 0 ? Math.abs(montage) : 0;
+      return sum + getCDIForPeriod(a.created_at, a.closed_at, a.cdi_rate, invested);
+    }, 0);
+
+    return { totalPL, totalInvested, totalReturnPct, wins, losses, winRate, total: filteredAnalyses.length, avgProfit, totalCDI };
   }, [filteredAnalyses, legsMap]);
 
   const handleReopen = async (e: React.MouseEvent, id: string) => {
@@ -230,72 +246,94 @@ export default function Portfolio() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <ProfessionalCard highlight={stats.totalPL >= 0}>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Resultado Total (P&L)</span>
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Resultado Total</span>
                 <div className={cn('p-2 rounded-lg', stats.totalPL >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive')}>
                   {stats.totalPL >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                 </div>
               </div>
-              <p className={cn('text-3xl font-black tracking-tighter', stats.totalPL >= 0 ? 'text-success' : 'text-destructive')}>
+              <p className={cn('text-2xl font-black tracking-tighter', stats.totalPL >= 0 ? 'text-success' : 'text-destructive')}>
                 R$ {stats.totalPL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
-              <div className="flex items-center gap-2 mt-2">
-                <Badge variant="outline" className={cn('text-[10px] font-black', stats.totalReturnPct >= 0 ? 'border-success/30 text-success' : 'border-destructive/30 text-destructive')}>
-                  {stats.totalReturnPct >= 0 ? '+' : ''}{stats.totalReturnPct.toFixed(2)}% ROI Total
-                </Badge>
-              </div>
+              <Badge variant="outline" className={cn('mt-2 text-sm font-black px-3 py-1 rounded-full', stats.totalReturnPct >= 0 ? 'border-success/50 text-success bg-success/10' : 'border-destructive/50 text-destructive bg-destructive/10')}>
+                {stats.totalReturnPct >= 0 ? '+' : ''}{stats.totalReturnPct.toFixed(2)}% ROI
+              </Badge>
             </CardContent>
           </ProfessionalCard>
 
           <ProfessionalCard>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Capital Alocado</span>
-                <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                  <Wallet className="h-4 w-4" />
-                </div>
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Capital Alocado</span>
+                <div className="p-2 rounded-lg bg-primary/10 text-primary"><Wallet className="h-4 w-4" /></div>
               </div>
-              <p className="text-3xl font-black tracking-tighter text-foreground">
+              <p className="text-2xl font-black tracking-tighter text-foreground">
                 R$ {stats.totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
-              <p className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-tight">Total desembolsado em montagens</p>
+              <p className="text-[9px] font-bold text-muted-foreground mt-2 uppercase">Total desembolsado</p>
             </CardContent>
           </ProfessionalCard>
 
           <ProfessionalCard>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Taxa de Acerto</span>
-                <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                  <Target className="h-4 w-4" />
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Média por Op.</span>
+                <div className={cn('p-2 rounded-lg', stats.avgProfit >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive')}>
+                  <BarChart3 className="h-4 w-4" />
                 </div>
               </div>
-              <p className="text-3xl font-black tracking-tighter text-foreground">
+              <p className={cn('text-2xl font-black tracking-tighter', stats.avgProfit >= 0 ? 'text-success' : 'text-destructive')}>
+                R$ {stats.avgProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </p>
+              <p className="text-[9px] font-bold text-muted-foreground mt-2 uppercase">Lucro médio por operação</p>
+            </CardContent>
+          </ProfessionalCard>
+
+          <ProfessionalCard>
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">vs CDI</span>
+                <div className={cn('p-2 rounded-lg', stats.totalPL >= stats.totalCDI ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning')}>
+                  <Percent className="h-4 w-4" />
+                </div>
+              </div>
+              <p className={cn('text-2xl font-black tracking-tighter', stats.totalPL >= stats.totalCDI ? 'text-success' : 'text-warning')}>
+                {stats.totalCDI > 0 ? `${((stats.totalPL / stats.totalCDI) * 100).toFixed(0)}%` : 'N/A'}
+              </p>
+              <Badge variant="outline" className={cn('mt-2 text-[10px] font-black', stats.totalPL >= stats.totalCDI ? 'border-success/40 text-success' : 'border-warning/40 text-warning')}>
+                CDI: R$ {stats.totalCDI.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </Badge>
+            </CardContent>
+          </ProfessionalCard>
+
+          <ProfessionalCard>
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Taxa de Acerto</span>
+                <div className="p-2 rounded-lg bg-primary/10 text-primary"><Target className="h-4 w-4" /></div>
+              </div>
+              <Badge className={cn('text-xl font-black px-4 py-2 rounded-full', parseFloat(stats.winRate) >= 50 ? 'bg-success text-success-foreground' : 'bg-destructive text-destructive-foreground')}>
                 {stats.winRate}%
-              </p>
+              </Badge>
               <div className="flex items-center gap-2 mt-2">
-                <span className="text-[10px] font-bold text-success uppercase">{stats.wins} Ganhos</span>
+                <span className="text-[9px] font-bold text-success uppercase">{stats.wins}W</span>
                 <span className="text-muted-foreground">/</span>
-                <span className="text-[10px] font-bold text-destructive uppercase">{stats.losses} Perdas</span>
+                <span className="text-[9px] font-bold text-destructive uppercase">{stats.losses}L</span>
               </div>
             </CardContent>
           </ProfessionalCard>
 
           <ProfessionalCard>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Operações</span>
-                <div className="p-2 rounded-lg bg-muted text-muted-foreground">
-                  <Briefcase className="h-4 w-4" />
-                </div>
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Operações</span>
+                <div className="p-2 rounded-lg bg-muted text-muted-foreground"><Briefcase className="h-4 w-4" /></div>
               </div>
-              <p className="text-3xl font-black tracking-tighter text-foreground">
-                {stats.total}
-              </p>
-              <p className="text-[10px] font-bold text-muted-foreground mt-2 uppercase tracking-tight">Total de estratégias encerradas</p>
+              <p className="text-2xl font-black tracking-tighter text-foreground">{stats.total}</p>
+              <p className="text-[9px] font-bold text-muted-foreground mt-2 uppercase">Estratégias encerradas</p>
             </CardContent>
           </ProfessionalCard>
         </div>
@@ -363,7 +401,7 @@ export default function Portfolio() {
                     </div>
 
                     {/* Metrics Section */}
-                    <div className="grid grid-cols-4 gap-4 lg:gap-8 px-4 py-3 lg:py-0 rounded-xl bg-muted/30 lg:bg-transparent border border-border/50 lg:border-none">
+                    <div className="grid grid-cols-5 gap-4 lg:gap-6 px-4 py-3 lg:py-0 rounded-xl bg-muted/30 lg:bg-transparent border border-border/50 lg:border-none">
                       <div className="text-center lg:text-right">
                         <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Investido</p>
                         <p className={cn("text-sm font-bold font-mono", montage >= 0 ? "text-info" : "text-foreground")}>
@@ -383,10 +421,23 @@ export default function Portfolio() {
                         </p>
                       </div>
                       <div className="text-center lg:text-right">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">ROI%</p>
-                        <Badge className={cn('font-black text-[10px]', pnl >= 0 ? 'bg-success text-success-foreground' : 'bg-destructive text-destructive-foreground')}>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">ROI</p>
+                        <Badge className={cn('font-black text-sm px-3 py-1 rounded-full shadow-lg', pnl >= 0 ? 'bg-success text-success-foreground shadow-success/30' : 'bg-destructive text-destructive-foreground shadow-destructive/30')}>
                           {roi >= 0 ? '+' : ''}{roi.toFixed(2)}%
                         </Badge>
+                      </div>
+                      <div className="text-center lg:text-right">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">vs CDI</p>
+                        {(() => {
+                          const cdiReturn = getCDIForPeriod(a.created_at, a.closed_at, a.cdi_rate, invested);
+                          const cdiPct = cdiReturn > 0 ? ((pnl / cdiReturn) * 100).toFixed(0) : 'N/A';
+                          const beats = typeof cdiPct === 'string' ? false : pnl >= cdiReturn;
+                          return (
+                            <Badge variant="outline" className={cn('font-black text-[11px] px-2 py-0.5', beats ? 'border-success/50 text-success bg-success/10' : 'border-warning/50 text-warning bg-warning/10')}>
+                              {cdiPct === 'N/A' ? 'N/A' : `${cdiPct}% CDI`}
+                            </Badge>
+                          );
+                        })()}
                       </div>
                     </div>
 
