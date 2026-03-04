@@ -282,25 +282,25 @@ export default function Index() {
 
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
           {/* FREE */}
-          <Card className="p-10 border-2 border-border/40 bg-card/50 space-y-8">
+          <Card className="p-10 border-2 border-primary/30 bg-card/50 space-y-8 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/60 to-primary/20" />
             <div className="space-y-2">
               <h3 className="text-2xl font-black tracking-tight">FREE</h3>
               <p className="text-4xl font-black tracking-tighter">R$ 0<span className="text-sm text-muted-foreground font-medium">/mês</span></p>
-               <p className="text-sm text-muted-foreground">Teste por 7 dias</p>
-             </div>
+              <p className="text-sm text-primary font-bold">✨ 7 dias com acesso TOTAL</p>
+            </div>
             <ul className="space-y-3">
-              <PricingItem included label="7 dias grátis — acesso completo" />
+              <PricingItem included label="7 dias grátis — acesso completo" highlight />
               <PricingItem included label="Gráfico de Payoff completo" />
               <PricingItem included label="Comparativo vs CDI" />
               <PricingItem included label="Entrada manual de pernas" />
               <PricingItem included label="Métricas (lucro, risco, breakeven)" />
-              <PricingItem locked label="OCR de Imagem (IA)" />
-              <PricingItem locked label="Análise com Inteligência Artificial" />
-              <PricingItem locked label="Portfólio e P&L consolidado" />
-              <PricingItem locked label="Simulações ILIMITADAS" />
+              <PricingItem included label="OCR de Imagem (IA)" />
+              <PricingItem included label="Análise com Inteligência Artificial" />
+              <PricingItem included label="Portfólio e P&L consolidado" />
             </ul>
-            <Button variant="outline" className="w-full h-12 font-black" onClick={() => navigate('/auth')}>
-              TESTAR 7 DIAS GRÁTIS
+            <Button className="w-full h-14 text-lg font-black bg-primary hover:bg-primary/90 shadow-[0_0_30px_-8px_hsl(var(--primary)/0.5)] hover:scale-[1.02] transition-transform" onClick={() => navigate('/auth')}>
+              TESTAR 7 DIAS GRÁTIS <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Card>
 
