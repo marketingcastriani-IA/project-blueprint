@@ -29,6 +29,7 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
   const [applyIRCDI, setApplyIRCDI] = useState(false);
   const [applyIROptions, setApplyIROptions] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const hasStrategy = !!metrics.strategyType;
 
@@ -90,6 +91,7 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
 
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
+    setCalendarOpen(false);
     if (date) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -147,7 +149,7 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Data de vencimento</Label>
-            <Popover>
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
