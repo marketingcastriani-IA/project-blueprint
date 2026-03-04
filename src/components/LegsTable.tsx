@@ -32,8 +32,8 @@ export default function LegsTable({ legs, onRemove, onUpdate }: LegsTableProps) 
   };
 
   return (
-    <div className="rounded-lg border-2 border-primary/30 overflow-x-auto bg-gradient-to-br from-card/80 to-card/40 shadow-[0_0_30px_-12px_hsl(var(--primary)/0.2)]">
-      <Table>
+    <div className="rounded-lg border-2 border-primary/30 overflow-x-auto bg-gradient-to-br from-card/80 to-card/40 shadow-[0_0_30px_-12px_hsl(var(--primary)/0.2)] -mx-4 sm:mx-0">
+      <Table className="min-w-[600px]">
         <TableHeader>
           <TableRow className="border-b-2 border-primary/20 bg-gradient-to-r from-primary/10 to-primary/5">
             <TableHead className="font-black text-xs uppercase tracking-wider">Lado</TableHead>

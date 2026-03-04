@@ -43,7 +43,7 @@ export default function LegForm({ onAdd }: LegFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Linha Principal de Inputs */}
-      <div className="grid gap-3 sm:grid-cols-6 items-end">
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 items-end">
         <div className="space-y-1">
           <Label className="text-xs font-semibold uppercase tracking-wider">Lado</Label>
           <Select value={leg.side} onValueChange={v => setLeg(p => ({ ...p, side: v as 'buy' | 'sell' }))}>
@@ -100,7 +100,7 @@ export default function LegForm({ onAdd }: LegFormProps) {
         {/* Campo de Preço com Destaque para Ativos */}
         <div className={cn(
           "space-y-1 transition-all duration-300",
-          isStock && "sm:col-span-2"
+          isStock && "col-span-2 sm:col-span-2"
         )}>
           <Label className={cn(
             "text-xs font-black uppercase tracking-widest transition-colors",
@@ -137,7 +137,7 @@ export default function LegForm({ onAdd }: LegFormProps) {
         </div>
 
         {/* Botão Submit */}
-        <div className="flex gap-2 items-end">
+        <div className="flex gap-2 items-end col-span-2 sm:col-span-1">
           <div className="space-y-1 flex-1">
             <Label className="text-xs font-semibold uppercase tracking-wider">Qtd</Label>
             <Input 
@@ -150,10 +150,9 @@ export default function LegForm({ onAdd }: LegFormProps) {
           </div>
           <Button 
             type="submit" 
-            size="icon" 
-            className="shrink-0 h-10 w-10 shadow-[0_0_20px_-6px_hsl(var(--primary)/0.4)]"
+            className="shrink-0 h-12 w-12 shadow-[0_0_25px_-4px_hsl(var(--primary)/0.6)] bg-primary hover:bg-primary/90 rounded-xl"
           >
-            <Plus className="h-5 w-5" />
+            <Plus className="h-6 w-6" />
           </Button>
         </div>
       </div>
