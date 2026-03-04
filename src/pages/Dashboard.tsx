@@ -585,6 +585,27 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
                 <CDIComparison metrics={metrics} cdiRate={cdiRate} setCdiRate={setCdiRate} daysToExpiry={daysToExpiry} setDaysToExpiry={setDaysToExpiry} />
+                
+                {/* Botão Salvar no fundo da página */}
+                <div className="flex gap-3 justify-center pt-4 pb-8">
+                  <Button 
+                    onClick={saveAnalysis} 
+                    disabled={saving || legs.length === 0}
+                    className="text-base h-12 px-8 font-black shadow-lg shadow-primary/30"
+                  >
+                    {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
+                    Salvar Análise
+                  </Button>
+                  <Button 
+                    onClick={getAISuggestion} 
+                    disabled={loadingAI || legs.length === 0} 
+                    variant="outline"
+                    className="text-base h-12 px-8 font-black"
+                  >
+                    {loadingAI ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
+                    Sugestão IA
+                  </Button>
+                </div>
               </>
             )}
           </>

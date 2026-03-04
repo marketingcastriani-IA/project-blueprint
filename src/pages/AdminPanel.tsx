@@ -277,10 +277,23 @@ export default function AdminPanel() {
                           {u.email}
                         </div>
                         <p className="text-[10px] font-mono text-muted-foreground/60 truncate max-w-[200px]">ID: {u.user_id}</p>
-                        <div className="flex gap-3 pt-2">
+                        <div className="flex gap-3 pt-2 flex-wrap">
                           <Badge variant="secondary" className="text-[10px] font-bold">
                             {u.simulations_count} Simulações Realizadas
                           </Badge>
+                          <Badge variant="outline" className="text-[10px] font-bold text-muted-foreground gap-1">
+                            <Calendar className="h-3 w-3" />
+                            Entrou: {new Date(u.created_at).toLocaleDateString('pt-BR')}
+                          </Badge>
+                          {u.expires_at && (
+                            <Badge variant="outline" className={cn(
+                              "text-[10px] font-bold gap-1",
+                              new Date(u.expires_at) < new Date() ? "text-destructive border-destructive/30" : "text-success border-success/30"
+                            )}>
+                              <Clock className="h-3 w-3" />
+                              {new Date(u.expires_at) < new Date() ? 'Venceu' : 'Vence'}: {new Date(u.expires_at).toLocaleDateString('pt-BR')}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </div>
