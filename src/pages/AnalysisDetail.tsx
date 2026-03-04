@@ -412,7 +412,7 @@ export default function AnalysisDetail() {
                     <th className="text-right py-2">Qtd</th>
                     <th className="text-center py-2">
                           <div className="flex flex-col items-center gap-0.5">
-                            <span className="text-[11px] font-black uppercase tracking-widest text-amber-400 animate-pulse drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]">⚡ DIGITE O VALOR ATUAL ⚡</span>
+                            <span className="text-[11px] font-black uppercase tracking-widest text-red-500 dark:text-amber-400 animate-pulse dark:drop-shadow-[0_0_8px_rgba(251,191,36,0.6)] drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]">⚡ DIGITE O VALOR ATUAL ⚡</span>
                             <span className="text-muted-foreground">{isSimulating ? "Novo Preço (Sim)" : "Preço Atual"}</span>
                           </div>
                         </th>
@@ -453,7 +453,7 @@ export default function AnalysisDetail() {
                                 "w-32 h-10 text-center text-base font-black tabular-nums", 
                                 isSimulating 
                                   ? "border-primary bg-primary/5" 
-                                  : "border-2 border-amber-400 bg-amber-400/5 text-amber-100 shadow-[0_0_16px_-2px_rgba(251,191,36,0.5)] focus:shadow-[0_0_24px_-2px_rgba(251,191,36,0.8)] focus:border-amber-300 focus:bg-amber-400/10 transition-all placeholder:text-amber-400/40"
+                                  : "border-2 border-red-500 dark:border-amber-400 bg-red-500/5 dark:bg-amber-400/5 text-foreground shadow-[0_0_16px_-2px_rgba(239,68,68,0.4)] dark:shadow-[0_0_16px_-2px_rgba(251,191,36,0.5)] focus:shadow-[0_0_24px_-2px_rgba(239,68,68,0.6)] dark:focus:shadow-[0_0_24px_-2px_rgba(251,191,36,0.8)] focus:border-red-400 dark:focus:border-amber-300 transition-all placeholder:text-red-400/50 dark:placeholder:text-amber-400/40"
                               )}
                               placeholder="0.00"
                             />
