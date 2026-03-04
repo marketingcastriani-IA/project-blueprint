@@ -138,11 +138,16 @@ export default function Settings() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
                 <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Simulações Realizadas</p>
-                <p className="text-2xl font-black">{access.simulationsCount}{access.planType === 'free' && '/3'}</p>
+                <p className="text-2xl font-black">{access.simulationsCount}</p>
               </div>
               <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
                 <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Status da Assinatura</p>
-                <p className="text-2xl font-black">{access.planType === 'pro' ? 'Ilimitado' : 'Limitado'}</p>
+                <p className="text-2xl font-black">{access.planType === 'pro' ? 'PRO' : 'FREE'}</p>
+                {access.planType === 'free' && access.daysRemaining !== null && (
+                  <p className={cn("text-sm font-bold mt-1", access.daysRemaining <= 2 ? "text-destructive" : "text-warning")}>
+                    {access.daysRemaining > 0 ? `${access.daysRemaining} dias restantes` : 'Período gratuito expirado'}
+                  </p>
+                )}
               </div>
             </div>
 
