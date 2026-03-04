@@ -410,7 +410,12 @@ export default function AnalysisDetail() {
                     <th className="text-right py-2">Strike</th>
                     <th className="text-right py-2">Preço Entrada</th>
                     <th className="text-right py-2">Qtd</th>
-                    <th className="text-right py-2">{isSimulating ? "Novo Preço (Sim)" : "Preço Atual"}</th>
+                    <th className="text-right py-2">
+                          <div className="flex flex-col items-end gap-0.5">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-amber-400 animate-pulse">⚡ Digite o valor atual</span>
+                            <span>{isSimulating ? "Novo Preço (Sim)" : "Preço Atual"}</span>
+                          </div>
+                        </th>
                     <th className="text-right py-2">P&L</th>
                   </tr>
                 </thead>
@@ -442,14 +447,13 @@ export default function AnalysisDetail() {
                           <div className="relative flex justify-end">
                             <Input 
                               type="number" step="0.01" 
-                              placeholder="Digite o valor atual"
                               value={isSimulating ? leg.price : (currentPrices[leg.id!] || '')} 
                               onChange={e => isSimulating ? updateSimLeg(i, 'price', parseFloat(e.target.value) || 0) : setCurrentPrices(p => ({...p, [leg.id!]: e.target.value}))}
                               className={cn(
-                                "w-36 h-9 text-right text-sm font-bold", 
+                                "w-28 h-9 text-right text-sm font-bold", 
                                 isSimulating 
                                   ? "border-primary bg-primary/5" 
-                                  : "border-2 border-amber-400/70 bg-amber-400/5 focus:border-amber-400 focus:ring-amber-400/30 placeholder:text-amber-400/50"
+                                  : "border-2 border-amber-400 shadow-[0_0_12px_-2px_rgba(251,191,36,0.5)] focus:shadow-[0_0_20px_-2px_rgba(251,191,36,0.7)] focus:border-amber-300 transition-shadow"
                               )}
                             />
                           </div>
