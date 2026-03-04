@@ -410,10 +410,10 @@ export default function AnalysisDetail() {
                     <th className="text-right py-2">Strike</th>
                     <th className="text-right py-2">Preço Entrada</th>
                     <th className="text-right py-2">Qtd</th>
-                    <th className="text-right py-2">
-                          <div className="flex flex-col items-end gap-0.5">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-amber-400 animate-pulse">⚡ Digite o valor atual</span>
-                            <span>{isSimulating ? "Novo Preço (Sim)" : "Preço Atual"}</span>
+                    <th className="text-center py-2">
+                          <div className="flex flex-col items-center gap-0.5">
+                            <span className="text-[11px] font-black uppercase tracking-widest text-amber-400 animate-pulse drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]">⚡ DIGITE O VALOR ATUAL ⚡</span>
+                            <span className="text-muted-foreground">{isSimulating ? "Novo Preço (Sim)" : "Preço Atual"}</span>
                           </div>
                         </th>
                     <th className="text-right py-2">P&L</th>
@@ -443,18 +443,19 @@ export default function AnalysisDetail() {
                         <td className="py-3 text-right font-mono">{leg.strike > 0 ? leg.strike.toFixed(2) : '-'}</td>
                         <td className="py-3 text-right font-mono">{isSimulating ? legs[i].price.toFixed(2) : leg.price.toFixed(2)}</td>
                         <td className="py-3 text-right font-bold">{leg.quantity}</td>
-                        <td className="py-3 text-right">
-                          <div className="relative flex justify-end">
+                        <td className="py-3">
+                          <div className="relative flex justify-center">
                             <Input 
                               type="number" step="0.01" 
                               value={isSimulating ? leg.price : (currentPrices[leg.id!] || '')} 
                               onChange={e => isSimulating ? updateSimLeg(i, 'price', parseFloat(e.target.value) || 0) : setCurrentPrices(p => ({...p, [leg.id!]: e.target.value}))}
                               className={cn(
-                                "w-28 h-9 text-right text-sm font-bold", 
+                                "w-32 h-10 text-center text-base font-black tabular-nums", 
                                 isSimulating 
                                   ? "border-primary bg-primary/5" 
-                                  : "border-2 border-amber-400 shadow-[0_0_12px_-2px_rgba(251,191,36,0.5)] focus:shadow-[0_0_20px_-2px_rgba(251,191,36,0.7)] focus:border-amber-300 transition-shadow"
+                                  : "border-2 border-amber-400 bg-amber-400/5 text-amber-100 shadow-[0_0_16px_-2px_rgba(251,191,36,0.5)] focus:shadow-[0_0_24px_-2px_rgba(251,191,36,0.8)] focus:border-amber-300 focus:bg-amber-400/10 transition-all placeholder:text-amber-400/40"
                               )}
+                              placeholder="0.00"
                             />
                           </div>
                         </td>
