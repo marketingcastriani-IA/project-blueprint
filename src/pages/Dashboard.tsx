@@ -302,8 +302,10 @@ export default function Dashboard() {
       }));
       await supabase.from('legs').insert(legsToInsert);
 
-      toast.success('Análise salva!');
-      navigate(`/analysis/${analysis.id}`);
+      toast.success('Análise salva! Redirecionando para o Histórico...', {
+        action: { label: 'Ver Histórico', onClick: () => navigate('/history') },
+      });
+      navigate('/history');
     } catch (err: any) {
       toast.error('Erro ao salvar');
     } finally { setSaving(false); }
