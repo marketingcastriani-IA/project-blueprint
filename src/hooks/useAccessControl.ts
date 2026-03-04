@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
-const FREE_MAX_SIMULATIONS = 3;
+const FREE_TRIAL_DAYS = 7;
 
 interface AccessStatus {
   status: 'pending' | 'approved' | 'rejected' | 'expired' | 'loading';
@@ -14,6 +14,7 @@ interface AccessStatus {
   expiresAt: string | null;
   trialDays: number;
   daysRemaining: number | null;
+  trialExpired: boolean;
 }
 
 export function useAccessControl() {
@@ -23,11 +24,12 @@ export function useAccessControl() {
     isAdmin: false,
     planType: 'free',
     simulationsCount: 0,
-    maxSimulations: FREE_MAX_SIMULATIONS,
+    maxSimulations: Infinity,
     canSimulate: true,
     expiresAt: null,
     trialDays: 0,
     daysRemaining: null,
+    trialExpired: false,
   });
 
   const fetchAccess = useCallback(async () => {
@@ -53,6 +55,7 @@ export function useAccessControl() {
           simulationsCount: 0, 
           maxSimulations: Infinity, 
           canSimulate: true,
+          trialExpired: false,
         });
         return;
       }
@@ -75,8 +78,9 @@ export function useAccessControl() {
           daysRemaining: null, 
           planType: 'free',
           simulationsCount: 0, 
-          maxSimulations: FREE_MAX_SIMULATIONS, 
-          canSimulate: true,
+          maxSimulations: Infinity, 
+          canSimulate: false,
+          trialExpired: false,
         });
         return;
       }
@@ -97,19 +101,20 @@ export function useAccessControl() {
 
       const planType = (ua.plan_type as 'free' | 'pro') || 'free';
       const simulationsCount = ua.simulations_count || 0;
-      const maxSimulations = planType === 'pro' ? Infinity : FREE_MAX_SIMULATIONS;
-      const canSimulate = planType === 'pro' || simulationsCount < FREE_MAX_SIMULATIONS;
+      const trialExpired = status === 'expired';
+      const canSimulate = planType === 'pro' || (!trialExpired && status === 'approved');
 
       setAccess({
         status, 
         isAdmin: false, 
         expiresAt: ua.expires_at,
-        trialDays: ua.trial_days ?? 0, 
+        trialDays: ua.trial_days ?? FREE_TRIAL_DAYS, 
         daysRemaining, 
         planType,
         simulationsCount, 
-        maxSimulations, 
+        maxSimulations: Infinity, 
         canSimulate,
+        trialExpired,
       });
     } catch (err) {
       console.error("[useAccessControl] Erro ao buscar acesso:", err);

@@ -57,7 +57,7 @@ export default function Index() {
             </Button>
             <Button variant="ghost" onClick={() => navigate('/auth')} className="font-bold hidden sm:inline-flex">Login</Button>
             <Button onClick={() => navigate('/auth')} className="font-bold shadow-lg shadow-primary/20">
-              Começar Grátis <ArrowRight className="ml-1 h-4 w-4" />
+              7 Dias Grátis <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -87,7 +87,7 @@ export default function Index() {
               className="h-16 px-12 text-xl font-black shadow-[0_20px_50px_-12px_hsl(var(--primary)/0.5)] hover:scale-105 transition-transform" 
               onClick={() => navigate('/auth')}
             >
-              ANALISAR MINHA ESTRUTURA <ArrowRight className="ml-2 h-6 w-6" />
+              TESTAR 7 DIAS GRÁTIS <ArrowRight className="ml-2 h-6 w-6" />
             </Button>
           </div>
         </div>
@@ -277,7 +277,7 @@ export default function Index() {
         <div className="text-center mb-16 space-y-4">
           <Badge variant="outline" className="border-primary/30 text-primary font-bold">PLANOS</Badge>
           <h2 className="text-5xl font-black tracking-tighter">FREE vs. PRO</h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Comece grátis e evolua quando quiser. Sem surpresas.</p>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Comece com <span className="text-foreground font-bold">7 dias grátis</span> e evolua quando quiser. Sem surpresas.</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
@@ -286,10 +286,10 @@ export default function Index() {
             <div className="space-y-2">
               <h3 className="text-2xl font-black tracking-tight">FREE</h3>
               <p className="text-4xl font-black tracking-tighter">R$ 0<span className="text-sm text-muted-foreground font-medium">/mês</span></p>
-              <p className="text-sm text-muted-foreground">Para quem está começando</p>
-            </div>
+               <p className="text-sm text-muted-foreground">Teste por 7 dias</p>
+             </div>
             <ul className="space-y-3">
-              <PricingItem included label="3 Simulações para teste" />
+              <PricingItem included label="7 dias grátis — acesso completo" />
               <PricingItem included label="Gráfico de Payoff completo" />
               <PricingItem included label="Comparativo vs CDI" />
               <PricingItem included label="Entrada manual de pernas" />
@@ -300,7 +300,7 @@ export default function Index() {
               <PricingItem locked label="Simulações ILIMITADAS" />
             </ul>
             <Button variant="outline" className="w-full h-12 font-black" onClick={() => navigate('/auth')}>
-              COMEÇAR GRÁTIS
+              TESTAR 7 DIAS GRÁTIS
             </Button>
           </Card>
 

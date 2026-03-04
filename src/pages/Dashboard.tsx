@@ -181,30 +181,10 @@ export default function Dashboard() {
     return calculateCDIOpportunityCost(investedCapital, cdiRate, daysToExpiry);
   }, [investedCapital, cdiRate, daysToExpiry]);
 
-  const isLimitReached = access.planType === 'free' && access.simulationsCount >= 3;
+  const isLimitReached = access.trialExpired || (access.planType === 'free' && access.daysRemaining !== null && access.daysRemaining <= 0);
 
   const incrementSimulations = async () => {
-    if (!user) return;
-    
-    try {
-      const { data: currentData } = await supabase
-        .from('user_access')
-        .select('simulations_count')
-        .eq('user_id', user.id)
-        .single();
-
-      const currentCount = currentData?.simulations_count || 0;
-
-      const { error } = await supabase
-        .from('user_access')
-        .update({ simulations_count: currentCount + 1 } as any)
-        .eq('user_id', user.id);
-      
-      if (error) throw error;
-    } catch (error) {
-      console.error("Erro ao incrementar simulações:", error);
-      toast.error("Erro ao contabilizar simulação.");
-    }
+    // No longer counting simulations - trial is time-based
   };
 
   const addLeg = useCallback(async (leg: Leg) => { 
@@ -213,8 +193,7 @@ export default function Dashboard() {
       return;
     }
     setLegs(prev => [...prev, leg]); 
-    await incrementSimulations();
-    toast.info("Simulação contabilizada (entrada manual).");
+    setLegs(prev => [...prev, leg]);
   }, [isLimitReached, user]);
 
   const removeLeg = useCallback((index: number) => { setLegs(prev => prev.filter((_, i) => i !== index)); }, []);
@@ -237,9 +216,6 @@ export default function Dashboard() {
 
     setLegs(prev => [...prev, ...sanitizedLegs]); 
     setInputMode('manual');
-    
-    await incrementSimulations();
-    toast.info("Simulação contabilizada (OCR de imagem).");
   }, [isLimitReached, user]);
 
   if (authLoading || access.status === 'loading') return null;
@@ -270,7 +246,6 @@ export default function Dashboard() {
       if (error) throw error;
       setAiAnalysis(data);
       
-      await incrementSimulations();
       toast.success('Análise de IA concluída!');
       setTimeout(() => {
         aiSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -317,30 +292,33 @@ export default function Dashboard() {
       <main className="container py-6 space-y-6 animate-fade-in">
         <PortfolioSummary userId={user.id} />
 
-        {access.planType === 'free' && (
-          <Card className={cn("border-2 transition-all", isLimitReached ? "border-destructive bg-destructive/5" : "border-warning/30 bg-warning/5")}>
+        {access.planType === 'free' && access.daysRemaining !== null && (
+          <Card className={cn("border-2 transition-all", isLimitReached ? "border-destructive bg-destructive/5" : "border-primary/30 bg-primary/5")}>
             <CardContent className="py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className={cn("p-2 rounded-lg", isLimitReached ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning")}>
-                  {isLimitReached ? <Lock className="h-5 w-5" /> : <BarChart3 className="h-5 w-5" />}
+                <div className={cn("p-2 rounded-lg", isLimitReached ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary")}>
+                  {isLimitReached ? <Lock className="h-5 w-5" /> : <Calendar className="h-5 w-5" />}
                 </div>
                 <div>
                   <p className="text-sm font-black uppercase tracking-tight">
-                    {isLimitReached ? "Limite de Simulações Atingido" : "Simulações Utilizadas"}
+                    {isLimitReached ? "Período de Teste Expirado" : "Período de Teste Gratuito"}
                   </p>
                   <p className="text-xs text-muted-foreground font-medium">
                     {isLimitReached 
-                      ? "Você atingiu o limite de 3 simulações do plano gratuito." 
-                      : "Você tem direito a 3 simulações no plano gratuito."}
+                      ? "Seus 7 dias gratuitos acabaram. Assine o PRO para continuar!" 
+                      : `Restam ${access.daysRemaining} dia${access.daysRemaining !== 1 ? 's' : ''} do seu teste gratuito de 7 dias.`}
                   </p>
                 </div>
               </div>
-              <div className="w-full sm:w-48 space-y-1.5">
-                <div className="flex justify-between text-[10px] font-black uppercase">
-                  <span>{access.simulationsCount} de 3</span>
-                  <span>{Math.min(100, Math.round((access.simulationsCount / 3) * 100))}%</span>
-                </div>
-                <Progress value={(access.simulationsCount / 3) * 100} className={cn("h-2", isLimitReached ? "bg-destructive/20" : "bg-warning/20")} />
+              <div className="flex items-center gap-3">
+                {!isLimitReached && (
+                  <Badge variant="outline" className="border-primary/30 text-primary font-black text-lg px-4 py-1">
+                    {access.daysRemaining} dia{access.daysRemaining !== 1 ? 's' : ''}
+                  </Badge>
+                )}
+                <Button onClick={() => navigate('/settings')} variant={isLimitReached ? "default" : "outline"} className={cn("font-bold", isLimitReached && "animate-pulse shadow-lg shadow-primary/30")}>
+                  <Crown className="mr-2 h-4 w-4" /> {isLimitReached ? "ASSINAR PRO" : "Ver PRO"}
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -358,7 +336,7 @@ export default function Dashboard() {
                   </Badge>
                 ) : (
                   <Badge variant="outline" className={cn("font-bold", isLimitReached ? "border-destructive text-destructive" : "border-primary/30 text-primary")}>
-                    FREE ({access.simulationsCount}/3)
+                    FREE • {isLimitReached ? 'Expirado' : `${access.daysRemaining}d restantes`}
                   </Badge>
                 )}
               </div>
@@ -379,9 +357,9 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="space-y-2">
-              <h3 className="text-2xl font-black tracking-tight">Acesso Limitado</h3>
+              <h3 className="text-2xl font-black tracking-tight">Período de Teste Expirado</h3>
               <p className="text-muted-foreground max-w-md mx-auto font-medium">
-                Você já realizou as 3 simulações gratuitas permitidas. Para continuar analisando estruturas com IA e OCR, faça o upgrade para o plano PRO.
+                Seus 7 dias de teste gratuito acabaram. Para continuar analisando estruturas com IA e OCR, faça o upgrade para o plano PRO.
               </p>
             </div>
             <Button onClick={() => navigate('/settings')} size="lg" className="font-black px-10">
