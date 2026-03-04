@@ -442,11 +442,14 @@ export default function AnalysisDetail() {
                           <div className="relative flex justify-end">
                             <Input 
                               type="number" step="0.01" 
+                              placeholder="Digite o valor atual"
                               value={isSimulating ? leg.price : (currentPrices[leg.id!] || '')} 
                               onChange={e => isSimulating ? updateSimLeg(i, 'price', parseFloat(e.target.value) || 0) : setCurrentPrices(p => ({...p, [leg.id!]: e.target.value}))}
                               className={cn(
-                                "w-28 h-9 text-right text-sm font-bold", 
-                                isSimulating ? "border-primary bg-primary/5" : "border-primary/30 focus:border-primary"
+                                "w-36 h-9 text-right text-sm font-bold", 
+                                isSimulating 
+                                  ? "border-primary bg-primary/5" 
+                                  : "border-2 border-amber-400/70 bg-amber-400/5 focus:border-amber-400 focus:ring-amber-400/30 placeholder:text-amber-400/50"
                               )}
                             />
                           </div>
