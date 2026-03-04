@@ -1,14 +1,19 @@
 import { useMemo, useState } from 'react';
 import { calculateCDIReturn } from '@/lib/payoff';
 import { AnalysisMetrics } from '@/lib/types';
-import { getExpiryOptions } from '@/lib/b3-calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { countBusinessDays } from '@/lib/b3-calendar';
+import { cn } from '@/lib/utils';
 
 interface CDIComparisonProps {
   metrics: AnalysisMetrics;
@@ -20,24 +25,10 @@ interface CDIComparisonProps {
 
 const formatMoney = (value: number) => `R$ ${value.toFixed(2)}`;
 
-const parseDate = (value: string) => {
-  const [year, month, day] = value.split('-').map(Number);
-  return new Date(year, month - 1, day);
-};
-
-const calculateDaysFromDate = (value: string) => {
-  if (!value) return 0;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return countBusinessDays(today, parseDate(value));
-};
-
 export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpiry, setDaysToExpiry }: CDIComparisonProps) {
   const [applyIRCDI, setApplyIRCDI] = useState(false);
   const [applyIROptions, setApplyIROptions] = useState(false);
-  const [expiryDate, setExpiryDate] = useState('');
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const expiryOptions = useMemo(() => getExpiryOptions(selectedYear), [selectedYear]);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
   const hasStrategy = !!metrics.strategyType;
 
@@ -97,9 +88,13 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
     ? (optionMaxGain / investedCapital) * 100
     : null;
 
-  const handleExpiryChange = (value: string) => {
-    setExpiryDate(value);
-    setDaysToExpiry(calculateDaysFromDate(value));
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    if (date) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      setDaysToExpiry(countBusinessDays(today, date));
+    }
   };
 
   // Rótulo do breakeven
@@ -151,31 +146,31 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
             />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">Ano</Label>
-            <Select value={String(selectedYear)} onValueChange={v => setSelectedYear(Number(v))}>
-              <SelectTrigger className="h-9 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {[0, 1, 2, 3, 4].map(offset => {
-                  const y = new Date().getFullYear() + offset;
-                  return <SelectItem key={y} value={String(y)}>{y}</SelectItem>;
-                })}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Vencimento B3</Label>
-            <Select value={expiryDate} onValueChange={handleExpiryChange}>
-              <SelectTrigger className="h-9 text-xs">
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {expiryOptions.map(item => (
-                  <SelectItem key={item.date} value={item.date}>{item.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label className="text-xs">Data de vencimento</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full h-10 justify-start text-left font-mono text-sm",
+                    !selectedDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {selectedDate ? format(selectedDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={handleDateSelect}
+                  disabled={(date) => date < new Date()}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Capital investido</Label>
