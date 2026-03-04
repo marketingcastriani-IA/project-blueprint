@@ -189,7 +189,7 @@ export default function Dashboard() {
 
   const addLeg = useCallback(async (leg: Leg) => { 
     if (isLimitReached) {
-      toast.error('Limite de simulações atingido!');
+      toast.error('Período de teste expirado! Assine o PRO para continuar.');
       return;
     }
     setLegs(prev => [...prev, leg]); 
@@ -201,7 +201,7 @@ export default function Dashboard() {
   
   const handleLegsFromImage = useCallback(async (extractedLegs: any[]) => { 
     if (isLimitReached) {
-      toast.error('Limite de simulações atingido!');
+      toast.error('Período de teste expirado! Assine o PRO para continuar.');
       return;
     }
 
@@ -227,7 +227,7 @@ export default function Dashboard() {
 
   const getAISuggestion = async () => {
     if (isLimitReached) {
-      toast.error('Limite de simulações atingido!');
+      toast.error('Período de teste expirado! Assine o PRO para continuar.');
       return;
     }
     if (legs.length === 0) { toast.error('Adicione pernas primeiro.'); return; }
