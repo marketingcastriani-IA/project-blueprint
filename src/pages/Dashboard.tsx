@@ -192,7 +192,6 @@ export default function Dashboard() {
       toast.error('Período de teste expirado! Assine o PRO para continuar.');
       return;
     }
-    setLegs(prev => [...prev, leg]); 
     setLegs(prev => [...prev, leg]);
   }, [isLimitReached, user]);
 
@@ -289,7 +288,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background pb-16">
       <Header />
-      <main className="container py-6 space-y-6 animate-fade-in">
+      <main className="container px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in">
         <PortfolioSummary userId={user.id} />
 
         {access.planType === 'free' && access.daysRemaining !== null && (
@@ -368,7 +367,7 @@ export default function Dashboard() {
           </Card>
         ) : (
           <>
-            <div className="flex gap-3 flex-wrap items-center">
+            <div className="flex gap-2 sm:gap-3 flex-wrap items-center">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
@@ -437,7 +436,7 @@ export default function Dashboard() {
               )}
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3 max-w-3xl">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 max-w-3xl">
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   Nome da análise
@@ -483,7 +482,7 @@ export default function Dashboard() {
             </div>
 
             {inputMode === null ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-4 sm:gap-6">
                 <button 
                   onClick={() => setInputMode('image')} 
                   className="group relative overflow-hidden rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card p-8 text-left transition-all duration-500 hover:border-primary hover:shadow-[0_0_60px_-12px_hsl(var(--primary)/0.5)] hover:-translate-y-1.5"
