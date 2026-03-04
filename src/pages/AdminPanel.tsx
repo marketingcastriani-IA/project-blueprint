@@ -10,11 +10,12 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import {
   TrendingUp, Users, CheckCircle2, XCircle, Clock, Shield,
   Loader2, LogOut, Sun, Moon, RefreshCw, Search, Crown, Wallet,
-  ArrowLeft, LayoutDashboard, Ban, RotateCcw, Calendar, Settings, Key, Save, User, Mail, DollarSign
+  ArrowLeft, LayoutDashboard, Ban, RotateCcw, Calendar, Settings, Key, Save, User, Mail, DollarSign, AlertTriangle, CalendarClock
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
@@ -27,6 +28,7 @@ interface UserRow {
   expires_at: string | null;
   notes: string | null;
   created_at: string;
+  updated_at: string;
   email?: string;
   display_name?: string;
   plan_type: string;
@@ -43,6 +45,10 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  
+  // Editable fields per user
+  const [editingExpiry, setEditingExpiry] = useState<Record<string, string>>({});
+  const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
   
   // Mercado Pago Config
   const [mpPublicKey, setMpPublicKey] = useState('TEST-223bd091-629e-4853-a6df-c50a120fb48b');
@@ -154,6 +160,23 @@ export default function AdminPanel() {
     }
   };
 
+  const updateExpiryDate = async (userId: string, date: string) => {
+    setActionLoading(userId);
+    try {
+      const expiresAt = date ? new Date(date + 'T23:59:59').toISOString() : null;
+      await supabase
+        .from('user_access')
+        .update({ expires_at: expiresAt } as any)
+        .eq('user_id', userId);
+      toast.success('Data de vencimento atualizada!');
+      fetchUsers();
+    } catch (err: any) {
+      toast.error('Erro: ' + err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const saveSettings = async () => {
     try {
       const { error } = await (supabase
@@ -170,11 +193,20 @@ export default function AdminPanel() {
     }
   };
 
+  const getDaysRemaining = (expiresAt: string | null) => {
+    if (!expiresAt) return null;
+    const now = new Date();
+    const exp = new Date(expiresAt);
+    const diff = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return diff;
+  };
+
   const stats = {
     total: users.length,
     pro: users.filter(u => u.plan_type === 'pro').length,
     pending: users.filter(u => u.status === 'pending').length,
     totalSims: users.reduce((acc, u) => acc + (u.simulations_count || 0), 0),
+    expired: users.filter(u => u.expires_at && new Date(u.expires_at) < new Date()).length,
   };
 
   const filtered = users.filter(u => {
@@ -213,7 +245,7 @@ export default function AdminPanel() {
       </header>
 
       <main className="container py-6 space-y-6 animate-fade-in">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <Card className="p-4 text-center space-y-1">
             <Users className="h-5 w-5 mx-auto text-muted-foreground" />
             <p className="text-2xl font-black">{stats.total}</p>
@@ -228,6 +260,11 @@ export default function AdminPanel() {
             <Clock className="h-5 w-5 mx-auto text-warning" />
             <p className="text-2xl font-black text-warning">{stats.pending}</p>
             <p className="text-[10px] font-bold uppercase text-muted-foreground">Pendentes</p>
+          </Card>
+          <Card className="p-4 text-center space-y-1 border-destructive/30">
+            <AlertTriangle className="h-5 w-5 mx-auto text-destructive" />
+            <p className="text-2xl font-black text-destructive">{stats.expired}</p>
+            <p className="text-[10px] font-bold uppercase text-muted-foreground">Vencidos</p>
           </Card>
           <Card className="p-4 text-center space-y-1">
             <TrendingUp className="h-5 w-5 mx-auto text-success" />
@@ -252,14 +289,20 @@ export default function AdminPanel() {
             </div>
 
             <div className="space-y-3">
-              {filtered.map(u => (
-                <Card key={u.user_id} className={cn("p-5 transition-all border-2", u.status === 'rejected' ? "opacity-60 bg-muted/20 border-destructive/20" : "border-border/40 hover:border-primary/20")}>
-                  <div className="flex flex-col lg:flex-row justify-between gap-6">
-                    <div className="flex items-start gap-4 flex-1">
+              {filtered.map(u => {
+                const daysRemaining = getDaysRemaining(u.expires_at);
+                const isExpired = daysRemaining !== null && daysRemaining < 0;
+                const isExpiringSoon = daysRemaining !== null && daysRemaining >= 0 && daysRemaining <= 7;
+                
+                return (
+                <Card key={u.user_id} className={cn("p-5 transition-all border-2", u.status === 'rejected' ? "opacity-60 bg-muted/20 border-destructive/20" : isExpired ? "border-destructive/30" : "border-border/40 hover:border-primary/20")}>
+                  <div className="flex flex-col gap-5">
+                    {/* Top row: user info + badges */}
+                    <div className="flex items-start gap-4">
                       <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
                         <User className="h-6 w-6 text-primary" />
                       </div>
-                      <div className="space-y-1 min-w-0">
+                      <div className="space-y-1 min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-black text-lg tracking-tight">{u.display_name}</p>
                           <Badge variant={u.plan_type === 'pro' ? 'default' : 'outline'} className={u.plan_type === 'pro' ? 'bg-primary' : ''}>
@@ -271,6 +314,14 @@ export default function AdminPanel() {
                           )}>
                             {u.status.toUpperCase()}
                           </Badge>
+                          {daysRemaining !== null && (
+                            <Badge variant="outline" className={cn(
+                              "text-[10px] font-black",
+                              isExpired ? "text-destructive border-destructive/40 bg-destructive/10" : isExpiringSoon ? "text-warning border-warning/40 bg-warning/10" : "text-success border-success/40 bg-success/10"
+                            )}>
+                              {isExpired ? `Vencido há ${Math.abs(daysRemaining)} dias` : `${daysRemaining} dias restantes`}
+                            </Badge>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
                           <Mail className="h-3 w-3" />
@@ -279,30 +330,60 @@ export default function AdminPanel() {
                         <p className="text-[10px] font-mono text-muted-foreground/60 truncate max-w-[200px]">ID: {u.user_id}</p>
                         <div className="flex gap-3 pt-2 flex-wrap">
                           <Badge variant="secondary" className="text-[10px] font-bold">
-                            {u.simulations_count} Simulações Realizadas
+                            {u.simulations_count} Simulações
                           </Badge>
                           <Badge variant="outline" className="text-[10px] font-bold text-muted-foreground gap-1">
                             <Calendar className="h-3 w-3" />
-                            Entrou: {new Date(u.created_at).toLocaleDateString('pt-BR')}
+                            Cadastro: {new Date(u.created_at).toLocaleDateString('pt-BR')}
                           </Badge>
                           {u.expires_at && (
                             <Badge variant="outline" className={cn(
                               "text-[10px] font-bold gap-1",
-                              new Date(u.expires_at) < new Date() ? "text-destructive border-destructive/30" : "text-success border-success/30"
+                              isExpired ? "text-destructive border-destructive/30" : "text-success border-success/30"
                             )}>
                               <Clock className="h-3 w-3" />
-                              {new Date(u.expires_at) < new Date() ? 'Venceu' : 'Vence'}: {new Date(u.expires_at).toLocaleDateString('pt-BR')}
+                              {isExpired ? 'Venceu' : 'Vence'}: {new Date(u.expires_at).toLocaleDateString('pt-BR')}
                             </Badge>
                           )}
+                          <Badge variant="outline" className="text-[10px] font-bold text-muted-foreground/60 gap-1">
+                            Atualizado: {new Date(u.updated_at).toLocaleDateString('pt-BR')}
+                          </Badge>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-4 lg:border-l lg:pl-6 border-border/40">
-                      <div className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Alterar Plano</span>
+                    {/* Middle row: editable fields */}
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 border-t border-border/40 pt-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                          <CalendarClock className="h-3 w-3" /> Data de Vencimento
+                        </Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="date"
+                            value={editingExpiry[u.user_id] ?? (u.expires_at ? new Date(u.expires_at).toISOString().split('T')[0] : '')}
+                            onChange={e => setEditingExpiry(prev => ({ ...prev, [u.user_id]: e.target.value }))}
+                            className="h-9 text-xs font-mono flex-1"
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-9 px-3 text-[10px] font-black text-primary border-primary/30 hover:bg-primary/10"
+                            disabled={actionLoading === u.user_id}
+                            onClick={() => {
+                              const val = editingExpiry[u.user_id] ?? (u.expires_at ? new Date(u.expires_at).toISOString().split('T')[0] : '');
+                              updateExpiryDate(u.user_id, val);
+                            }}
+                          >
+                            <Save className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Alterar Plano</Label>
                         <Select value={u.plan_type} onValueChange={(v) => updatePlan(u.user_id, v)}>
-                          <SelectTrigger className="w-32 h-10 text-xs font-bold">
+                          <SelectTrigger className="h-9 text-xs font-bold">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -311,28 +392,29 @@ export default function AdminPanel() {
                           </SelectContent>
                         </Select>
                       </div>
-                      
-                      <div className="flex flex-col gap-1.5">
-                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Ações de Acesso</span>
+
+                      <div className="space-y-1.5">
+                        <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Ações Rápidas</Label>
                         <div className="flex gap-2">
                           {u.status === 'pending' || u.status === 'rejected' ? (
-                            <Button size="sm" variant="outline" onClick={() => updateStatus(u.user_id, 'approved')} className="h-10 px-4 text-xs font-bold text-success border-success/30 hover:bg-success/10">
-                              <CheckCircle2 className="h-4 w-4 mr-2" /> APROVAR
+                            <Button size="sm" variant="outline" onClick={() => updateStatus(u.user_id, 'approved')} className="h-9 px-3 text-[10px] font-bold text-success border-success/30 hover:bg-success/10">
+                              <CheckCircle2 className="h-3 w-3 mr-1" /> APROVAR
                             </Button>
                           ) : (
-                            <Button size="sm" variant="outline" onClick={() => updateStatus(u.user_id, 'rejected')} className="h-10 px-4 text-xs font-bold text-destructive border-destructive/30 hover:bg-destructive/10">
-                              <Ban className="h-4 w-4 mr-2" /> BLOQUEAR
+                            <Button size="sm" variant="outline" onClick={() => updateStatus(u.user_id, 'rejected')} className="h-9 px-3 text-[10px] font-bold text-destructive border-destructive/30 hover:bg-destructive/10">
+                              <Ban className="h-3 w-3 mr-1" /> BLOQUEAR
                             </Button>
                           )}
-                          <Button size="sm" variant="outline" onClick={() => resetSimulations(u.user_id)} className="h-10 px-4 text-xs font-bold hover:bg-primary/10">
-                            <RotateCcw className="h-4 w-4 mr-2" /> RESET SIMS
+                          <Button size="sm" variant="outline" onClick={() => resetSimulations(u.user_id)} className="h-9 px-3 text-[10px] font-bold hover:bg-primary/10">
+                            <RotateCcw className="h-3 w-3 mr-1" /> RESET
                           </Button>
                         </div>
                       </div>
                     </div>
                   </div>
                 </Card>
-              ))}
+              );
+              })}
             </div>
           </TabsContent>
 

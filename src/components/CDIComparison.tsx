@@ -184,13 +184,13 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
         </div>
 
         <div className="flex flex-wrap gap-4">
-          <div className="flex items-center gap-2">
-            <Switch checked={applyIRCDI} onCheckedChange={setApplyIRCDI} id="ir-cdi-switch" />
-            <Label htmlFor="ir-cdi-switch" className="text-xs">Aplicar IR no CDI</Label>
+          <div className="flex items-center gap-2 rounded-lg border-2 border-warning/40 bg-warning/10 px-3 py-2">
+            <Switch checked={applyIRCDI} onCheckedChange={setApplyIRCDI} id="ir-cdi-switch" className="data-[state=checked]:bg-warning" />
+            <Label htmlFor="ir-cdi-switch" className="text-xs font-black text-warning cursor-pointer">⚠️ Aplicar IR no CDI</Label>
           </div>
-          <div className="flex items-center gap-2">
-            <Switch checked={applyIROptions} onCheckedChange={setApplyIROptions} id="ir-opcoes-switch" />
-            <Label htmlFor="ir-opcoes-switch" className="text-xs">Aplicar IR nas opções</Label>
+          <div className="flex items-center gap-2 rounded-lg border-2 border-warning/40 bg-warning/10 px-3 py-2">
+            <Switch checked={applyIROptions} onCheckedChange={setApplyIROptions} id="ir-opcoes-switch" className="data-[state=checked]:bg-warning" />
+            <Label htmlFor="ir-opcoes-switch" className="text-xs font-black text-warning cursor-pointer">⚠️ Aplicar IR nas opções</Label>
           </div>
         </div>
 
