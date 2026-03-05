@@ -466,6 +466,9 @@ export default function Dashboard() {
                   onChange={e => setEntryDate(e.target.value)}
                   className="font-black text-base h-14 border-2 border-primary/50 bg-background/80 hover:border-primary transition-all cursor-pointer"
                 />
+                <p className="text-[10px] sm:text-xs text-primary/70 leading-relaxed">
+                  Informe a <span className="font-black text-primary">data de entrada correta</span> para que o cálculo do CDI reflita o período exato da operação.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label className="flex items-center gap-2 font-black uppercase tracking-widest text-xs text-muted-foreground">
