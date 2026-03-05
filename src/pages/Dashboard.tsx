@@ -169,7 +169,7 @@ export default function Dashboard() {
       const entry = new Date(entryDate + 'T00:00:00');
       setDaysToExpiry(countBusinessDays(entry, inferredExpiry));
     }
-  }, [inferredExpiry]);
+  }, [inferredExpiry, entryDate]);
 
   const investedCapital = useMemo(() => {
     if (metrics.montageTotal) return Math.abs(metrics.montageTotal);
