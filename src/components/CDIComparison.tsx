@@ -147,24 +147,29 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
               className="font-mono"
             />
           </div>
-          <div className="sm:col-span-2 lg:col-span-4 rounded-xl border-2 border-info/50 bg-info/[0.08] p-4 space-y-2">
-            <div className="flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5 text-info" />
-              <Label className="text-sm font-black text-info uppercase tracking-wide">📅 Data de Entrada</Label>
+          <div className="sm:col-span-2 lg:col-span-4 rounded-2xl border-2 border-primary shadow-[0_0_30px_-8px_hsl(var(--primary)/0.4)] bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 dark:from-primary/25 dark:via-primary/15 dark:to-primary/5 p-5 sm:p-6 space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/20 dark:bg-primary/30">
+                <CalendarIcon className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <Label className="text-base sm:text-lg font-black text-primary uppercase tracking-wide">📅 Data de Entrada</Label>
+                <p className="text-[10px] sm:text-xs text-primary/70 font-semibold uppercase tracking-wider">Campo obrigatório para cálculo</p>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Informe a <span className="font-bold text-foreground">data de vencimento correta</span> da sua estrutura para que o cálculo do CDI reflita exatamente o período restante em dias úteis.
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+              Informe a <span className="font-black text-primary">data de vencimento correta</span> da sua estrutura para que o cálculo do CDI reflita exatamente o <span className="font-bold text-foreground">período restante em dias úteis</span>.
             </p>
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full h-12 justify-start text-left font-mono text-base border-2 border-info/40 hover:border-info/70 transition-colors",
+                    "w-full h-14 justify-start text-left font-mono text-base sm:text-lg border-2 border-primary/50 hover:border-primary bg-background/80 hover:bg-background transition-all shadow-sm",
                     !selectedDate && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-5 w-5 text-info" />
+                  <CalendarIcon className="mr-3 h-6 w-6 text-primary" />
                   {selectedDate ? format(selectedDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data de vencimento"}
                 </Button>
               </PopoverTrigger>
@@ -180,9 +185,12 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
               </PopoverContent>
             </Popover>
             {selectedDate && (
-              <p className="text-xs font-mono text-info font-bold">
-                ✅ {daysToExpiry} dias úteis até o vencimento
-              </p>
+              <div className="flex items-center gap-2 rounded-lg bg-success/15 border border-success/30 px-3 py-2">
+                <span className="text-success text-lg">✅</span>
+                <p className="text-sm font-mono text-success font-bold">
+                  {daysToExpiry} dias úteis até o vencimento
+                </p>
+              </div>
             )}
           </div>
           <div className="space-y-1">
