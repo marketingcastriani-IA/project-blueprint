@@ -157,6 +157,7 @@ export type Database = {
           expires_at: string | null
           id: string
           plan_type: string | null
+          purchased_at: string | null
           simulations_count: number | null
           status: string
           trial_days: number | null
@@ -168,6 +169,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           plan_type?: string | null
+          purchased_at?: string | null
           simulations_count?: number | null
           status?: string
           trial_days?: number | null
@@ -179,6 +181,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           plan_type?: string | null
+          purchased_at?: string | null
           simulations_count?: number | null
           status?: string
           trial_days?: number | null

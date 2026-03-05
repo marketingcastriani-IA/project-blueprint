@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import {
   TrendingUp, Users, CheckCircle2, XCircle, Clock, Shield,
   Loader2, LogOut, Sun, Moon, RefreshCw, Search, Crown, Wallet,
-  ArrowLeft, LayoutDashboard, Ban, RotateCcw, Calendar, Settings, Key, Save, User, Mail, DollarSign, AlertTriangle, CalendarClock
+  ArrowLeft, LayoutDashboard, Ban, RotateCcw, Calendar, Settings, Key, Save, User, Mail, DollarSign, AlertTriangle, CalendarClock, ShoppingCart, Send
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
@@ -26,6 +26,7 @@ interface UserRow {
   trial_days: number;
   approved_at: string | null;
   expires_at: string | null;
+  purchased_at: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -49,6 +50,12 @@ export default function AdminPanel() {
   // Editable fields per user
   const [editingExpiry, setEditingExpiry] = useState<Record<string, string>>({});
   const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
+  const [editingPurchaseDate, setEditingPurchaseDate] = useState<Record<string, string>>({});
+  
+  // Email modal
+  const [emailTarget, setEmailTarget] = useState<UserRow | null>(null);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailBody, setEmailBody] = useState('');
   
   // Mercado Pago Config
   const [mpPublicKey, setMpPublicKey] = useState('TEST-223bd091-629e-4853-a6df-c50a120fb48b');
@@ -175,6 +182,67 @@ export default function AdminPanel() {
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const registerPurchase = async (userId: string, purchaseDate: string) => {
+    setActionLoading(userId);
+    try {
+      const purchasedAt = purchaseDate ? new Date(purchaseDate + 'T12:00:00').toISOString() : new Date().toISOString();
+      const expiryDate = new Date(purchasedAt);
+      expiryDate.setMonth(expiryDate.getMonth() + 1);
+      
+      await supabase
+        .from('user_access')
+        .update({ 
+          purchased_at: purchasedAt, 
+          expires_at: expiryDate.toISOString(),
+          plan_type: 'pro',
+          status: 'approved'
+        } as any)
+        .eq('user_id', userId);
+      toast.success('Compra registrada! Validade de 1 mês definida automaticamente.');
+      fetchUsers();
+    } catch (err: any) {
+      toast.error('Erro: ' + err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const openEmailForUser = (u: UserRow, template: 'promo' | 'renewal' | 'news' | 'custom') => {
+    const templates: Record<string, { subject: string; body: string }> = {
+      promo: {
+        subject: '🔥 Promoção Especial - Opções PRO X',
+        body: `Olá ${u.display_name},\n\nTemos uma promoção especial para você no Opções PRO X!\n\n✅ Acesso completo a todas as ferramentas\n✅ Análise de IA avançada\n✅ OCR para leitura automática de notas\n✅ Portfólio e histórico ilimitados\n\nAproveite agora!\n\nEquipe Opções PRO X`
+      },
+      renewal: {
+        subject: '⚠️ Renovação de Assinatura - Opções PRO X',
+        body: `Olá ${u.display_name},\n\nSua assinatura do Opções PRO X está próxima do vencimento${u.expires_at ? ' (' + new Date(u.expires_at).toLocaleDateString('pt-BR') + ')' : ''}.\n\nRenove agora para continuar com acesso total:\n✅ Simulações ilimitadas\n✅ Relatórios de IA\n✅ OCR e análise de imagens\n\nAcesse: https://www.opcoesprox.com.br/settings\n\nEquipe Opções PRO X`
+      },
+      news: {
+        subject: '🚀 Novidades - Opções PRO X',
+        body: `Olá ${u.display_name},\n\nConfira as últimas novidades do Opções PRO X!\n\n📊 Novos recursos de análise\n🤖 IA aprimorada\n📈 Melhorias no gráfico de payoff\n\nAcesse agora: https://www.opcoesprox.com.br\n\nEquipe Opções PRO X`
+      },
+      custom: {
+        subject: '',
+        body: `Olá ${u.display_name},\n\n\n\nEquipe Opções PRO X`
+      }
+    };
+    
+    const t = templates[template];
+    setEmailTarget(u);
+    setEmailSubject(t.subject);
+    setEmailBody(t.body);
+  };
+
+  const sendEmailViaMailto = () => {
+    if (!emailTarget?.email) return;
+    const mailto = `mailto:${emailTarget.email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+    window.open(mailto, '_blank');
+    setEmailTarget(null);
+    setEmailSubject('');
+    setEmailBody('');
+    toast.success('Cliente de email aberto!');
   };
 
   const saveSettings = async () => {
@@ -336,6 +404,12 @@ export default function AdminPanel() {
                             <Calendar className="h-3 w-3" />
                             Cadastro: {new Date(u.created_at).toLocaleDateString('pt-BR')}
                           </Badge>
+                          {u.purchased_at && (
+                            <Badge variant="outline" className="text-[10px] font-bold text-primary border-primary/30 bg-primary/10 gap-1">
+                              <ShoppingCart className="h-3 w-3" />
+                              Compra: {new Date(u.purchased_at).toLocaleDateString('pt-BR')}
+                            </Badge>
+                          )}
                           {u.expires_at && (
                             <Badge variant="outline" className={cn(
                               "text-[10px] font-bold gap-1",
@@ -352,8 +426,34 @@ export default function AdminPanel() {
                       </div>
                     </div>
 
-                    {/* Middle row: editable fields */}
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 border-t border-border/40 pt-4">
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 border-t border-border/40 pt-4">
+                      <div className="space-y-1.5">
+                        <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                          <ShoppingCart className="h-3 w-3" /> Data da Compra
+                        </Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="date"
+                            value={editingPurchaseDate[u.user_id] ?? (u.purchased_at ? new Date(u.purchased_at).toISOString().split('T')[0] : '')}
+                            onChange={e => setEditingPurchaseDate(prev => ({ ...prev, [u.user_id]: e.target.value }))}
+                            className="h-9 text-xs font-mono flex-1"
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-9 px-3 text-[10px] font-black text-primary border-primary/30 hover:bg-primary/10"
+                            disabled={actionLoading === u.user_id}
+                            onClick={() => {
+                              const val = editingPurchaseDate[u.user_id] ?? (u.purchased_at ? new Date(u.purchased_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+                              registerPurchase(u.user_id, val);
+                            }}
+                          >
+                            <Save className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <p className="text-[9px] text-muted-foreground">Salvar registra compra + 1 mês de validade</p>
+                      </div>
+
                       <div className="space-y-1.5">
                         <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
                           <CalendarClock className="h-3 w-3" /> Data de Vencimento
@@ -395,7 +495,7 @@ export default function AdminPanel() {
 
                       <div className="space-y-1.5">
                         <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Ações Rápidas</Label>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                           {u.status === 'pending' || u.status === 'rejected' ? (
                             <Button size="sm" variant="outline" onClick={() => updateStatus(u.user_id, 'approved')} className="h-9 px-3 text-[10px] font-bold text-success border-success/30 hover:bg-success/10">
                               <CheckCircle2 className="h-3 w-3 mr-1" /> APROVAR
@@ -409,6 +509,27 @@ export default function AdminPanel() {
                             <RotateCcw className="h-3 w-3 mr-1" /> RESET
                           </Button>
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Email actions row */}
+                    <div className="border-t border-border/40 pt-4">
+                      <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1 mb-2">
+                        <Send className="h-3 w-3" /> Enviar Email para {u.display_name}
+                      </Label>
+                      <div className="flex gap-2 flex-wrap">
+                        <Button size="sm" variant="outline" onClick={() => openEmailForUser(u, 'promo')} className="h-8 px-3 text-[10px] font-bold border-primary/30 hover:bg-primary/10">
+                          🔥 Promoção
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => openEmailForUser(u, 'renewal')} className="h-8 px-3 text-[10px] font-bold border-warning/30 text-warning hover:bg-warning/10">
+                          ⚠️ Renovação
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => openEmailForUser(u, 'news')} className="h-8 px-3 text-[10px] font-bold border-success/30 text-success hover:bg-success/10">
+                          🚀 Novidades
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => openEmailForUser(u, 'custom')} className="h-8 px-3 text-[10px] font-bold hover:bg-accent">
+                          ✏️ Personalizado
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -463,6 +584,37 @@ export default function AdminPanel() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Email Modal */}
+      {emailTarget && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setEmailTarget(null)}>
+          <Card className="w-full max-w-lg" onClick={e => e.stopPropagation()}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Send className="h-5 w-5 text-primary" />
+                Enviar Email para {emailTarget.display_name}
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">{emailTarget.email}</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-black uppercase">Assunto</Label>
+                <Input value={emailSubject} onChange={e => setEmailSubject(e.target.value)} placeholder="Assunto do email..." />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-black uppercase">Mensagem</Label>
+                <Textarea value={emailBody} onChange={e => setEmailBody(e.target.value)} rows={8} placeholder="Corpo do email..." className="text-sm" />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => setEmailTarget(null)}>Cancelar</Button>
+                <Button onClick={sendEmailViaMailto} className="font-bold">
+                  <Send className="h-4 w-4 mr-2" /> Abrir Email
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

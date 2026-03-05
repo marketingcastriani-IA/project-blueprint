@@ -1,0 +1,1 @@
+ALTER TABLE public.user_access ADD COLUMN IF NOT EXISTS purchased_at timestamp with time zone DEFAULT NULL;
