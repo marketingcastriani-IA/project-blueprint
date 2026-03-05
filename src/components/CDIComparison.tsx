@@ -21,11 +21,12 @@ interface CDIComparisonProps {
   setCdiRate: (v: number) => void;
   daysToExpiry: number;
   setDaysToExpiry: (v: number) => void;
+  entryDate?: string;
 }
 
 const formatMoney = (value: number) => `R$ ${value.toFixed(2)}`;
 
-export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpiry, setDaysToExpiry }: CDIComparisonProps) {
+export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpiry, setDaysToExpiry, entryDate }: CDIComparisonProps) {
   const [applyIRCDI, setApplyIRCDI] = useState(false);
   const [applyIROptions, setApplyIROptions] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
@@ -93,9 +94,9 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
     setSelectedDate(date);
     setCalendarOpen(false);
     if (date) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      setDaysToExpiry(countBusinessDays(today, date));
+      const start = entryDate ? new Date(entryDate + 'T00:00:00') : new Date();
+      start.setHours(0, 0, 0, 0);
+      setDaysToExpiry(countBusinessDays(start, date));
     }
   };
 
