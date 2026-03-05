@@ -147,19 +147,25 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
               className="font-mono"
             />
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Data de vencimento</Label>
+          <div className="sm:col-span-2 lg:col-span-4 rounded-xl border-2 border-info/50 bg-info/[0.08] p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <CalendarIcon className="h-5 w-5 text-info" />
+              <Label className="text-sm font-black text-info uppercase tracking-wide">📅 Data de Entrada</Label>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Informe a <span className="font-bold text-foreground">data de vencimento correta</span> da sua estrutura para que o cálculo do CDI reflita exatamente o período restante em dias úteis.
+            </p>
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full h-10 justify-start text-left font-mono text-sm",
+                    "w-full h-12 justify-start text-left font-mono text-base border-2 border-info/40 hover:border-info/70 transition-colors",
                     !selectedDate && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {selectedDate ? format(selectedDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data"}
+                  <CalendarIcon className="mr-2 h-5 w-5 text-info" />
+                  {selectedDate ? format(selectedDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data de vencimento"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -173,6 +179,11 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
                 />
               </PopoverContent>
             </Popover>
+            {selectedDate && (
+              <p className="text-xs font-mono text-info font-bold">
+                ✅ {daysToExpiry} dias úteis até o vencimento
+              </p>
+            )}
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Capital investido</Label>
