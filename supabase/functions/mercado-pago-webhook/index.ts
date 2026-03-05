@@ -54,12 +54,16 @@ serve(async (req) => {
       console.log(`[mercado-pago-webhook] Liberando acesso PRO para: ${userId}`)
 
       // 1. Atualizar acesso no banco
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 31 * 24 * 60 * 60 * 1000);
+      
       await supabaseAdmin
         .from('user_access')
         .update({ 
           plan_type: 'pro', 
           status: 'approved',
-          expires_at: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString()
+          purchased_at: now.toISOString(),
+          expires_at: expiresAt.toISOString()
         } as any)
         .eq('user_id', userId)
 
