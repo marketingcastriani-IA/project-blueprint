@@ -166,8 +166,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (inferredExpiry) {
-      const today = new Date();
-      setDaysToExpiry(countBusinessDays(today, inferredExpiry));
+      const entry = new Date(entryDate + 'T00:00:00');
+      setDaysToExpiry(countBusinessDays(entry, inferredExpiry));
     }
   }, [inferredExpiry]);
 
@@ -566,7 +566,7 @@ export default function Dashboard() {
                     />
                   </CardContent>
                 </Card>
-                <CDIComparison metrics={metrics} cdiRate={cdiRate} setCdiRate={setCdiRate} daysToExpiry={daysToExpiry} setDaysToExpiry={setDaysToExpiry} />
+                <CDIComparison metrics={metrics} cdiRate={cdiRate} setCdiRate={setCdiRate} daysToExpiry={daysToExpiry} setDaysToExpiry={setDaysToExpiry} entryDate={entryDate} />
                 
                 {/* Botão Salvar no fundo da página */}
                 <div className="flex gap-3 justify-center pt-4 pb-8">
