@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { calculateCDIReturn } from '@/lib/payoff';
 import { AnalysisMetrics } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -99,6 +99,15 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
       setDaysToExpiry(countBusinessDays(start, date));
     }
   };
+
+  // Recalculate when entryDate changes and a date is already selected
+  useEffect(() => {
+    if (selectedDate) {
+      const start = entryDate ? new Date(entryDate + 'T00:00:00') : new Date();
+      start.setHours(0, 0, 0, 0);
+      setDaysToExpiry(countBusinessDays(start, selectedDate));
+    }
+  }, [entryDate]);
 
   // Rótulo do breakeven
   const breakevenDisplay = metrics.realBreakeven != null
