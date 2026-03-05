@@ -153,7 +153,7 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
                 <CalendarIcon className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <Label className="text-base sm:text-lg font-black text-primary uppercase tracking-wide">📅 Data de Entrada</Label>
+                <Label className="text-base sm:text-lg font-black text-primary uppercase tracking-wide">📅 Data de Vencimento</Label>
                 <p className="text-[10px] sm:text-xs text-primary/70 font-semibold uppercase tracking-wider">Campo obrigatório para cálculo</p>
               </div>
             </div>
@@ -215,23 +215,23 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-lg border p-3 bg-muted/20">
                 <p className="text-xs text-muted-foreground mb-1">Retorno CDI</p>
-                <p className="text-lg font-bold font-mono">{formatMoney(cdiReturn)}</p>
-                <p className="text-xs text-muted-foreground font-mono">ROI: {cdiRoi.toFixed(2)}%</p>
+                <p className="text-xl sm:text-2xl font-black font-mono">{formatMoney(cdiReturn)}</p>
+                <p className="text-sm text-muted-foreground font-mono font-bold">ROI: {cdiRoi.toFixed(2)}%</p>
               </div>
 
               <div className="rounded-lg border p-3 bg-muted/20">
                 <p className="text-xs text-muted-foreground mb-1">Ganho máximo da estrutura</p>
-                <p className="text-lg font-bold font-mono text-success">
+                <p className="text-xl sm:text-2xl font-black font-mono text-success">
                   {Number.isFinite(optionMaxGain) ? formatMoney(optionMaxGain) : 'Ilimitado'}
                 </p>
-                <p className="text-xs text-muted-foreground font-mono">
+                <p className="text-sm text-muted-foreground font-mono font-bold">
                   ROI: {optionRoi !== null ? `${optionRoi.toFixed(2)}%` : '∞'}
                 </p>
               </div>
 
               <div className="rounded-lg border p-3 bg-muted/20">
                 <p className="text-xs text-muted-foreground mb-1">Perda máxima da estrutura</p>
-                <p className={`text-lg font-bold font-mono ${metrics.isRiskFree ? 'text-success' : 'text-destructive'}`}>
+                <p className={`text-xl sm:text-2xl font-black font-mono ${metrics.isRiskFree ? 'text-success' : 'text-destructive'}`}>
                   {metrics.isRiskFree
                     ? 'Risco Zero'
                     : (Number.isFinite(optionMaxLoss)
@@ -242,7 +242,7 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
 
               <div className="rounded-lg border p-3 bg-muted/20">
                 <p className="text-xs text-muted-foreground mb-1">Breakeven</p>
-                <p className="text-sm font-mono">{breakevenDisplay}</p>
+                <p className="text-lg sm:text-xl font-black font-mono">{breakevenDisplay}</p>
               </div>
             </div>
 
@@ -250,16 +250,16 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
               <div className="rounded-lg border bg-muted/40 p-4 space-y-3">
                 <div className="text-center">
                   {comparison.efficiency !== null ? (
-                    <div className={`text-3xl font-extrabold font-mono ${comparison.efficiency >= 100 ? 'text-success' : 'text-destructive'}`}>
+                    <div className={`text-4xl sm:text-5xl font-black font-mono ${comparison.efficiency >= 100 ? 'text-success' : 'text-destructive'}`}>
                       {comparison.efficiency.toFixed(0)}%
-                      <span className="text-sm font-medium ml-1">do CDI</span>
+                      <span className="text-base font-semibold ml-2">do CDI</span>
                     </div>
                   ) : (
-                    <div className="text-3xl font-extrabold text-success font-mono">
-                      ∞ <span className="text-sm font-medium ml-1">potencial ilimitado</span>
+                    <div className="text-4xl sm:text-5xl font-black text-success font-mono">
+                      ∞ <span className="text-base font-semibold ml-2">potencial ilimitado</span>
                     </div>
                   )}
-                  <p className="text-xs text-muted-foreground mt-1 font-mono">
+                  <p className="text-sm text-muted-foreground mt-1 font-mono font-bold">
                     Estrutura: {optionRoi !== null ? `${optionRoi.toFixed(2)}%` : '∞'} ROI | CDI: {cdiRoi.toFixed(2)}% ROI
                   </p>
                 </div>
