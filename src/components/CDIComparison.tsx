@@ -250,16 +250,16 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
               <div className="rounded-lg border bg-muted/40 p-4 space-y-3">
                 <div className="text-center">
                   {comparison.efficiency !== null ? (
-                    <div className={`text-4xl sm:text-5xl font-black font-mono ${comparison.efficiency >= 100 ? 'text-success' : 'text-destructive'}`}>
+                    <div className={`text-5xl sm:text-6xl lg:text-7xl font-black font-mono ${comparison.efficiency >= 100 ? 'text-success' : 'text-destructive'}`}>
                       {comparison.efficiency.toFixed(0)}%
-                      <span className="text-base font-semibold ml-2">do CDI</span>
+                      <span className="text-lg sm:text-xl font-semibold ml-2">do CDI</span>
                     </div>
                   ) : (
-                    <div className="text-4xl sm:text-5xl font-black text-success font-mono">
-                      ∞ <span className="text-base font-semibold ml-2">potencial ilimitado</span>
+                    <div className="text-5xl sm:text-6xl lg:text-7xl font-black text-success font-mono">
+                      ∞ <span className="text-lg sm:text-xl font-semibold ml-2">potencial ilimitado</span>
                     </div>
                   )}
-                  <p className="text-sm text-muted-foreground mt-1 font-mono font-bold">
+                  <p className="text-base text-muted-foreground mt-2 font-mono font-bold">
                     Estrutura: {optionRoi !== null ? `${optionRoi.toFixed(2)}%` : '∞'} ROI | CDI: {cdiRoi.toFixed(2)}% ROI
                   </p>
                 </div>

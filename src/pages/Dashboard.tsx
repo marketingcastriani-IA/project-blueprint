@@ -436,9 +436,9 @@ export default function Dashboard() {
               )}
             </div>
 
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 max-w-3xl">
+            <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
               <div className="space-y-2">
-                <Label className="flex items-center gap-2">
+                <Label className="flex items-center gap-2 text-sm font-bold">
                   Nome da análise
                   {legs.length > 0 && !hasManuallyNamed && (
                     <Badge variant="outline" className="text-[9px] border-primary/30 text-primary animate-pulse">
@@ -453,30 +453,30 @@ export default function Dashboard() {
                     setHasManuallyNamed(true);
                   }} 
                   placeholder="Ex: Trava de alta PETR4" 
-                  className="font-bold" 
+                  className="font-bold text-base h-14" 
                 />
               </div>
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2 font-black uppercase tracking-widest text-[10px] text-muted-foreground">
-                  <Calendar className="h-3 w-3 text-primary" /> Data de Entrada
+              <div className="space-y-2 rounded-xl border-2 border-primary shadow-[0_0_20px_-6px_hsl(var(--primary)/0.35)] bg-gradient-to-br from-primary/15 to-primary/5 p-3">
+                <Label className="flex items-center gap-2 font-black uppercase tracking-widest text-xs text-primary">
+                  <Calendar className="h-4 w-4 text-primary" /> 📅 Data de Entrada
                 </Label>
                 <Input 
                   type="date"
                   value={entryDate}
                   onChange={e => setEntryDate(e.target.value)}
-                  className="font-bold h-11 border-primary/40 bg-primary/5 hover:border-primary transition-all cursor-pointer"
+                  className="font-black text-base h-14 border-2 border-primary/50 bg-background/80 hover:border-primary transition-all cursor-pointer"
                 />
               </div>
               <div className="space-y-2">
-                <Label className="flex items-center gap-2 font-black uppercase tracking-widest text-[10px] text-muted-foreground">
-                  <Percent className="h-3 w-3 text-primary" /> Taxa CDI (% a.a.)
+                <Label className="flex items-center gap-2 font-black uppercase tracking-widest text-xs text-muted-foreground">
+                  <Percent className="h-4 w-4 text-primary" /> Taxa CDI (% a.a.)
                 </Label>
                 <Input 
                   type="number"
                   step="0.01"
                   value={cdiRate}
                   onChange={e => setCdiRate(parseFloat(e.target.value) || 0)}
-                  className="font-bold h-11 border-primary/40 bg-primary/5 hover:border-primary transition-all"
+                  className="font-bold text-base h-14 border-primary/40 bg-primary/5 hover:border-primary transition-all"
                 />
               </div>
             </div>
