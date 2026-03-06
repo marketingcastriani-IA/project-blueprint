@@ -25,6 +25,57 @@ function calculatePayoffAtPrice(legs: any[], price: number): number {
   return Math.round(total * 100) / 100
 }
 
+// Calculate montage total from legs directly
+function calculateMontageFromLegs(legs: any[]): { totalCapital: number; optionsNet: number; stockCost: number } {
+  let stockCost = 0
+  let optionsNet = 0
+
+  for (const leg of legs) {
+    const qty = leg.quantity || 100
+    if (leg.option_type === 'stock') {
+      stockCost += leg.price * qty * (leg.side === 'buy' ? 1 : -1)
+    } else {
+      // buy option = debit (positive cost), sell option = credit (negative cost)
+      optionsNet += leg.price * qty * (leg.side === 'buy' ? 1 : -1)
+    }
+  }
+
+  return {
+    totalCapital: Math.round((stockCost + optionsNet) * 100) / 100,
+    optionsNet: Math.round(optionsNet * 100) / 100,
+    stockCost: Math.round(stockCost * 100) / 100,
+  }
+}
+
+// Per-leg breakdown for each scenario
+function legBreakdown(legs: any[], price: number): string {
+  const parts: string[] = []
+  for (const leg of legs) {
+    const qty = leg.quantity || 100
+    const side = leg.side === 'buy' ? 1 : -1
+    const sideLabel = leg.side === 'buy' ? 'COMPRA' : 'VENDA'
+    let result = 0
+    let detail = ''
+
+    if (leg.option_type === 'stock') {
+      result = (price - leg.price) * qty * side
+      detail = `${sideLabel} AÇÃO ${leg.asset}: (${price.toFixed(2)} - ${leg.price.toFixed(2)}) × ${qty} = R$ ${result.toFixed(2)}`
+    } else if (leg.option_type === 'call') {
+      const intrinsic = Math.max(0, price - leg.strike)
+      result = (intrinsic - leg.price) * qty * side
+      const exercida = intrinsic > 0 ? 'EXERCIDA' : 'expira sem valor'
+      detail = `${sideLabel} CALL ${leg.asset} strike ${leg.strike}: ${exercida}, resultado = R$ ${result.toFixed(2)}`
+    } else if (leg.option_type === 'put') {
+      const intrinsic = Math.max(0, leg.strike - price)
+      result = (intrinsic - leg.price) * qty * side
+      const exercida = intrinsic > 0 ? 'EXERCIDA' : 'expira sem valor'
+      detail = `${sideLabel} PUT ${leg.asset} strike ${leg.strike}: ${exercida}, resultado = R$ ${result.toFixed(2)}`
+    }
+    parts.push(detail)
+  }
+  return parts.join(' | ')
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -41,27 +92,25 @@ serve(async (req) => {
 
     console.log("[analyze-structure] Iniciando análise da estrutura...")
 
-    const isDebit = (metrics.montageTotal || metrics.netCost || 0) > 0
-    const costLabel = isDebit ? "Custo da montagem (DÉBITO)" : "Crédito líquido recebido"
-    const costValue = Math.abs(metrics.montageTotal || metrics.netCost || 0)
+    // Calculate montage from legs directly for accuracy
+    const montageCosts = calculateMontageFromLegs(legs)
+    const hasStock = legs.some((l: any) => l.option_type === 'stock')
+    
+    // Use montageTotal from strategy detection if available, otherwise calculate from legs
+    const montageTotal = metrics.montageTotal !== undefined && metrics.montageTotal !== null 
+      ? metrics.montageTotal 
+      : montageCosts.totalCapital
+
+    const isDebit = montageTotal > 0
     const strategyName = metrics.strategyLabel || 'Estrutura de Opções'
 
-    // Pre-calculate scenario payoffs
-    const strikes = legs.filter((l: any) => l.option_type !== 'stock').map((l: any) => l.strike).sort((a: number, b: number) => a - b)
-    const minStrike = strikes[0] || 0
-    const maxStrike = strikes[strikes.length - 1] || 0
-    const stockLeg = legs.find((l: any) => l.option_type === 'stock')
-    const stockPrice = stockLeg?.price || 0
-    const breakeven = metrics.realBreakeven || (Array.isArray(metrics.breakevens) ? metrics.breakevens[0] : metrics.breakevens) || 0
-
-    // Pre-calculate CDI comparison
-    const montageTotalAbs = Math.abs(metrics.montageTotal || metrics.netCost || 0)
+    // For CDI comparison, use total capital at risk (absolute)
+    const capitalBase = Math.abs(montageTotal)
     const maxGainNum = typeof metrics.maxGain === 'number' ? metrics.maxGain : 0
-    const roiStructure = montageTotalAbs > 0 ? (maxGainNum / montageTotalAbs) * 100 : 0
+    const roiStructure = capitalBase > 0 ? (maxGainNum / capitalBase) * 100 : 0
     const cdiReturnValue = metrics.cdiReturn || 0
-    const roiCdi = montageTotalAbs > 0 ? (cdiReturnValue / montageTotalAbs) * 100 : 0
+    const roiCdi = capitalBase > 0 ? (cdiReturnValue / capitalBase) * 100 : 0
     const cdiEfficiency = roiCdi > 0 ? Math.round((roiStructure / roiCdi) * 100) : 0
-    // Diferença ABSOLUTA em pontos percentuais (ex: 1.62% - 1.58% = 0.04pp)
     const roiDiffPP = Math.abs(roiStructure - roiCdi)
     const roiDiffFormatted = roiDiffPP.toFixed(2)
     const cdiComparisonText = roiStructure > roiCdi
@@ -70,7 +119,12 @@ serve(async (req) => {
         ? `A estrutura empata com o CDI no período (ROI ${roiStructure.toFixed(2)}%).`
         : `A estrutura rende ${cdiEfficiency}% do CDI (ROI ${roiStructure.toFixed(2)}% vs CDI ${roiCdi.toFixed(2)}%), ficando ${roiDiffFormatted} pontos percentuais ABAIXO do CDI.`
 
-    // Calculate EXACT payoffs at specific prices
+    // Calculate scenario payoffs
+    const strikes = legs.filter((l: any) => l.option_type !== 'stock').map((l: any) => l.strike).sort((a: number, b: number) => a - b)
+    const minStrike = strikes[0] || 0
+    const maxStrike = strikes[strikes.length - 1] || 0
+    const breakeven = metrics.realBreakeven || (Array.isArray(metrics.breakevens) ? metrics.breakevens[0] : metrics.breakevens) || 0
+
     const priceUp = maxStrike + 3
     const priceFlat = breakeven
     const priceDown = minStrike - 3
@@ -79,40 +133,22 @@ serve(async (req) => {
     const payoffFlat = calculatePayoffAtPrice(legs, priceFlat)
     const payoffDown = calculatePayoffAtPrice(legs, priceDown)
 
-    // Per-leg breakdown for each scenario
-    function legBreakdown(legs: any[], price: number): string {
-      const parts: string[] = []
-      for (const leg of legs) {
-        const qty = leg.quantity || 100
-        const side = leg.side === 'buy' ? 1 : -1
-        const sideLabel = leg.side === 'buy' ? 'COMPRA' : 'VENDA'
-        let result = 0
-        let detail = ''
-
-        if (leg.option_type === 'stock') {
-          result = (price - leg.price) * qty * side
-          detail = `${sideLabel} AÇÃO ${leg.asset}: (${price.toFixed(2)} - ${leg.price.toFixed(2)}) × ${qty} = R$ ${result.toFixed(2)}`
-        } else if (leg.option_type === 'call') {
-          const intrinsic = Math.max(0, price - leg.strike)
-          result = (intrinsic - leg.price) * qty * side
-          const exercida = intrinsic > 0 ? 'EXERCIDA' : 'expira sem valor'
-          detail = `${sideLabel} CALL ${leg.asset} strike ${leg.strike}: ${exercida}, resultado = R$ ${result.toFixed(2)}`
-        } else if (leg.option_type === 'put') {
-          const intrinsic = Math.max(0, leg.strike - price)
-          result = (intrinsic - leg.price) * qty * side
-          const exercida = intrinsic > 0 ? 'EXERCIDA' : 'expira sem valor'
-          detail = `${sideLabel} PUT ${leg.asset} strike ${leg.strike}: ${exercida}, resultado = R$ ${result.toFixed(2)}`
-        }
-        parts.push(detail)
-      }
-      return parts.join(' | ')
-    }
-
     const breakdownUp = legBreakdown(legs, priceUp)
     const breakdownFlat = legBreakdown(legs, priceFlat)
     const breakdownDown = legBreakdown(legs, priceDown)
 
-    console.log(`[analyze-structure] Payoffs calculados: UP(${priceUp})=${payoffUp}, FLAT(${priceFlat})=${payoffFlat}, DOWN(${priceDown})=${payoffDown}`)
+    console.log(`[analyze-structure] Payoffs: UP(${priceUp})=${payoffUp}, FLAT(${priceFlat})=${payoffFlat}, DOWN(${priceDown})=${payoffDown}`)
+    console.log(`[analyze-structure] Capital: total=${montageTotal}, stock=${montageCosts.stockCost}, options=${montageCosts.optionsNet}`)
+
+    // Build cost description
+    let costDescription: string
+    if (hasStock) {
+      costDescription = `Capital total investido: R$ ${Math.abs(montageTotal).toFixed(2)} (Ativo: R$ ${Math.abs(montageCosts.stockCost).toFixed(2)} | Prêmios líquidos opções: R$ ${montageCosts.optionsNet > 0 ? '+' : ''}${montageCosts.optionsNet.toFixed(2)})`
+    } else {
+      costDescription = isDebit 
+        ? `Custo da montagem (DÉBITO): R$ ${Math.abs(montageTotal).toFixed(2)}`
+        : `Crédito líquido recebido: R$ ${Math.abs(montageTotal).toFixed(2)}`
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -130,10 +166,6 @@ serve(async (req) => {
 ## REGRA ABSOLUTA: TODOS os valores numéricos foram pré-calculados. NÃO recalcule NADA.
 Use os valores EXATOS fornecidos para cada cenário e para as métricas.
 
-## TERMINOLOGIA:
-- montageTotal > 0 → "Custo da montagem". NUNCA diga "crédito" quando é débito.
-- montageTotal < 0 → "Crédito líquido recebido".
-
 ## CENÁRIOS: Use os PAYOFFS PRÉ-CALCULADOS fornecidos.
 Para cada cenário, descreva em 3-4 frases:
 1. O preço de referência do cenário
@@ -150,7 +182,7 @@ Retorne APENAS JSON (sem markdown):
   "verdict": "Compra Forte" | "Atrativo" | "Neutro" | "Evitar" | "Perigoso",
   "score": number (0-10),
   "risk_level": "Baixo" | "Moderado" | "Alto" | "Crítico",
-  "cdi_comparison": "use a comparação CDI pré-calculada fornecida",
+  "cdi_comparison": "use a comparação CDI pré-calculada fornecida EXATAMENTE",
   "strategy_explanation": "2-3 frases sobre a estratégia, COMECE com o nome da estratégia",
   "scenarios": {
     "up": "3-4 frases com o payoff EXATO pré-calculado",
@@ -173,19 +205,15 @@ ESTRUTURA:
 ${legs.map((l: any) => `- ${l.side === 'buy' ? 'COMPRA' : 'VENDA'} ${l.quantity}x ${l.option_type === 'stock' ? 'AÇÃO' : l.option_type.toUpperCase()} ${l.asset} | Strike: ${l.strike} | Preço: R$ ${l.price}`).join('\n')}
 
 MÉTRICAS (VERDADE ABSOLUTA):
-- ${costLabel}: R$ ${costValue.toFixed(2)}
+- ${costDescription}
 - Lucro máximo: ${typeof metrics.maxGain === 'string' ? metrics.maxGain : 'R$ ' + (metrics.maxGain || 0).toFixed(2)}
-- Lucro mínimo garantido: R$ ${Math.min(payoffUp, payoffFlat, payoffDown).toFixed(2)}
-- Risco máximo: R$ ${Math.abs(metrics.maxLoss || 0).toFixed(2)}${metrics.maxLoss >= 0 ? ' (SEM RISCO — RISCO ZERO)' : ''}
-- Breakeven: R$ ${breakeven}
+- Risco máximo: ${typeof metrics.maxLoss === 'string' ? metrics.maxLoss : 'R$ ' + Math.abs(metrics.maxLoss || 0).toFixed(2)}${(typeof metrics.maxLoss === 'number' && metrics.maxLoss >= 0) ? ' (SEM RISCO — RISCO ZERO)' : ''}
+- Breakeven: ${Array.isArray(breakeven) ? breakeven.map((b: number) => 'R$ ' + b.toFixed(2)).join(', ') : 'R$ ' + Number(breakeven).toFixed(2)}
 - Risco Zero: ${metrics.isRiskFree ? 'SIM' : 'NÃO'}
 
-═══════ COMPARAÇÃO CDI PRÉ-CALCULADA (VERDADE ABSOLUTA) ═══════
-- ROI da estrutura: ${roiStructure.toFixed(2)}%
-- ROI do CDI: ${roiCdi.toFixed(2)}%
-- Eficiência vs CDI: ${cdiEfficiency}%
-- Veredicto CDI: ${cdiComparisonText}
-⚠️ USE EXATAMENTE este veredicto no campo "cdi_comparison". NÃO invente outro.
+═══════ COMPARAÇÃO CDI PRÉ-CALCULADA (COPIE EXATAMENTE) ═══════
+${cdiComparisonText}
+⚠️ COPIE esta frase EXATAMENTE no campo "cdi_comparison". NÃO modifique.
 
 ═══════ CENÁRIOS PRÉ-CALCULADOS (USE ESTES VALORES EXATOS) ═══════
 
@@ -201,16 +229,14 @@ Breakdown: ${breakdownFlat}
 Breakdown: ${breakdownDown}
 >>> RESULTADO TOTAL: R$ ${payoffDown.toFixed(2)} <<<
 
-REGRAS ABSOLUTAS:
+REGRAS:
 - O "summary" DEVE começar com "Estratégia: ${strategyName}."
-- O "cdi_comparison" DEVE usar o veredicto CDI pré-calculado acima
-- O resultado do cenário UP deve ser EXATAMENTE R$ ${payoffUp.toFixed(2)}
-- O resultado do cenário FLAT deve ser EXATAMENTE R$ ${payoffFlat.toFixed(2)}
-- O resultado do cenário DOWN deve ser EXATAMENTE R$ ${payoffDown.toFixed(2)}
-- NUNCA invente valores diferentes dos pré-calculados
-- Se isRiskFree=true e algum payoff < 0, algo está errado mas ainda assim use o valor calculado
-- NUNCA diga "crédito" se montageTotal > 0
-- Se eficiência CDI < 100%, NUNCA diga que supera o CDI`
+- O "cdi_comparison" DEVE ser a frase CDI pré-calculada acima (COPIE-A)
+- Resultado cenário UP = EXATAMENTE R$ ${payoffUp.toFixed(2)}
+- Resultado cenário FLAT = EXATAMENTE R$ ${payoffFlat.toFixed(2)}
+- Resultado cenário DOWN = EXATAMENTE R$ ${payoffDown.toFixed(2)}
+- NUNCA invente valores diferentes
+- Se isRiskFree=true, risk_level="Baixo"` 
           },
         ],
       }),
@@ -236,7 +262,9 @@ REGRAS ABSOLUTAS:
       })
     }
 
-    // Force coherence
+    // === POST-PROCESSING: Force correctness ===
+
+    // Force risk level for risk-free strategies
     if (metrics.isRiskFree && parsed.risk_level !== "Baixo") {
       parsed.risk_level = "Baixo"
     }
@@ -247,12 +275,16 @@ REGRAS ABSOLUTAS:
         !c.toLowerCase().includes('risco de')
       )
     }
+
+    // Force CDI comparison to be exact pre-calculated text
+    parsed.cdi_comparison = cdiComparisonText
+
     // Fix "crédito" when it's actually a debit
     if (isDebit) {
       const fixCredit = (text: string) => text
         .replace(/crédito\s*líquido\s*recebido/gi, 'custo da montagem')
         .replace(/crédito\s*(líquido|recebido|net[oa]?)?/gi, 'custo da montagem')
-      const allTextFields = ['summary', 'strategy_explanation', 'cdi_comparison'] as const
+      const allTextFields = ['summary', 'strategy_explanation'] as const
       for (const field of allTextFields) {
         if (parsed[field]) parsed[field] = fixCredit(parsed[field])
       }
