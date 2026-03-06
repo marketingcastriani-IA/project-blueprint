@@ -5,6 +5,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Calculate exact payoff at a given price for a set of legs
+function calculatePayoffAtPrice(legs: any[], price: number): number {
+  let total = 0
+  for (const leg of legs) {
+    const qty = leg.quantity || 100
+    const side = leg.side === 'buy' ? 1 : -1
+
+    if (leg.option_type === 'stock') {
+      total += (price - leg.price) * qty * side
+    } else if (leg.option_type === 'call') {
+      const intrinsic = Math.max(0, price - leg.strike)
+      total += (intrinsic - leg.price) * qty * side
+    } else if (leg.option_type === 'put') {
+      const intrinsic = Math.max(0, leg.strike - price)
+      total += (intrinsic - leg.price) * qty * side
+    }
+  }
+  return Math.round(total * 100) / 100
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -20,18 +40,62 @@ serve(async (req) => {
     }
 
     console.log("[analyze-structure] Iniciando análise da estrutura...")
-    console.log("[analyze-structure] Metrics recebidas:", JSON.stringify(metrics))
 
     const isDebit = (metrics.montageTotal || metrics.netCost || 0) > 0
     const costLabel = isDebit ? "Custo da montagem (DÉBITO)" : "Crédito líquido recebido"
     const costValue = Math.abs(metrics.montageTotal || metrics.netCost || 0)
 
-    // Pre-calculate scenario hints for the AI
+    // Pre-calculate scenario payoffs
     const strikes = legs.filter((l: any) => l.option_type !== 'stock').map((l: any) => l.strike).sort((a: number, b: number) => a - b)
     const minStrike = strikes[0] || 0
     const maxStrike = strikes[strikes.length - 1] || 0
     const stockLeg = legs.find((l: any) => l.option_type === 'stock')
     const stockPrice = stockLeg?.price || 0
+    const breakeven = metrics.realBreakeven || (Array.isArray(metrics.breakevens) ? metrics.breakevens[0] : metrics.breakevens) || 0
+
+    // Calculate EXACT payoffs at specific prices
+    const priceUp = maxStrike + 3
+    const priceFlat = breakeven
+    const priceDown = minStrike - 3
+
+    const payoffUp = calculatePayoffAtPrice(legs, priceUp)
+    const payoffFlat = calculatePayoffAtPrice(legs, priceFlat)
+    const payoffDown = calculatePayoffAtPrice(legs, priceDown)
+
+    // Per-leg breakdown for each scenario
+    function legBreakdown(legs: any[], price: number): string {
+      const parts: string[] = []
+      for (const leg of legs) {
+        const qty = leg.quantity || 100
+        const side = leg.side === 'buy' ? 1 : -1
+        const sideLabel = leg.side === 'buy' ? 'COMPRA' : 'VENDA'
+        let result = 0
+        let detail = ''
+
+        if (leg.option_type === 'stock') {
+          result = (price - leg.price) * qty * side
+          detail = `${sideLabel} AÇÃO ${leg.asset}: (${price.toFixed(2)} - ${leg.price.toFixed(2)}) × ${qty} = R$ ${result.toFixed(2)}`
+        } else if (leg.option_type === 'call') {
+          const intrinsic = Math.max(0, price - leg.strike)
+          result = (intrinsic - leg.price) * qty * side
+          const exercida = intrinsic > 0 ? 'EXERCIDA' : 'expira sem valor'
+          detail = `${sideLabel} CALL ${leg.asset} strike ${leg.strike}: ${exercida}, resultado = R$ ${result.toFixed(2)}`
+        } else if (leg.option_type === 'put') {
+          const intrinsic = Math.max(0, leg.strike - price)
+          result = (intrinsic - leg.price) * qty * side
+          const exercida = intrinsic > 0 ? 'EXERCIDA' : 'expira sem valor'
+          detail = `${sideLabel} PUT ${leg.asset} strike ${leg.strike}: ${exercida}, resultado = R$ ${result.toFixed(2)}`
+        }
+        parts.push(detail)
+      }
+      return parts.join(' | ')
+    }
+
+    const breakdownUp = legBreakdown(legs, priceUp)
+    const breakdownFlat = legBreakdown(legs, priceFlat)
+    const breakdownDown = legBreakdown(legs, priceDown)
+
+    console.log(`[analyze-structure] Payoffs calculados: UP(${priceUp})=${payoffUp}, FLAT(${priceFlat})=${payoffFlat}, DOWN(${priceDown})=${payoffDown}`)
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -46,84 +110,77 @@ serve(async (req) => {
             role: "system",
             content: `Você é um analista sênior de derivativos da B3. Retorne um JSON preciso.
 
-## REGRA ABSOLUTA: metrics é VERDADE — NÃO recalcule maxGain, maxLoss, breakevens.
-Use os valores de metrics diretamente.
+## REGRA ABSOLUTA: TODOS os valores numéricos foram pré-calculados. NÃO recalcule NADA.
+Use os valores EXATOS fornecidos para cada cenário e para as métricas.
 
 ## TERMINOLOGIA:
-- montageTotal > 0 → "Custo da montagem" ou "Débito líquido". NUNCA diga "crédito" quando é débito.
+- montageTotal > 0 → "Custo da montagem". NUNCA diga "crédito" quando é débito.
 - montageTotal < 0 → "Crédito líquido recebido".
 
-## CENÁRIOS — DETALHE CADA CENÁRIO COM 3-5 FRASES:
-Para cada cenário (up/flat/down), explique:
-1. O que acontece com CADA PERNA da estrutura (exercida ou expira sem valor)
-2. O resultado financeiro de cada perna em R$
-3. O resultado TOTAL líquido em R$ (já descontando o custo/crédito da montagem)
+## CENÁRIOS: Use os PAYOFFS PRÉ-CALCULADOS fornecidos.
+Para cada cenário, descreva em 3-4 frases:
+1. O preço de referência do cenário
+2. O que acontece com cada perna (use o breakdown fornecido)
+3. O resultado TOTAL EXATO (use o payoff pré-calculado, NÃO invente outro)
 
-### COMO CALCULAR CADA CENÁRIO NO VENCIMENTO:
-- Para cada opção, calcule: valor intrínseco = max(0, preço_cenário - strike) para CALL ou max(0, strike - preço_cenário) para PUT
-- Multiplique pelo lado: compra = +1, venda = -1
-- Multiplique pela quantidade
-- Some o resultado da ação (se houver): (preço_cenário - preço_compra) × quantidade × lado
-- Subtraia o custo da montagem (ou some o crédito)
+## COERÊNCIA:
+- isRiskFree=true → risk_level="Baixo", ZERO menção a prejuízo.
+- Use EXATAMENTE os payoffs pré-calculados nos cenários.
+- PROS/CONS: máximo 3 itens cada, frases curtas.
 
-### IMPORTANTE PARA CENÁRIOS:
-- "Se SUBIR" = ativo VAI ACIMA do maior strike. Calcule o payoff com preço ACIMA de ${maxStrike}.
-- "Se LATERAL" = ativo fica ENTRE os strikes ou próximo ao breakeven. Use preço ≈ ${metrics.realBreakeven || ((minStrike + maxStrike) / 2)}.
-- "Se CAIR" = ativo VAI ABAIXO do menor strike. Calcule o payoff com preço ABAIXO de ${minStrike}.
-- Os valores de cada cenário DEVEM ser coerentes com o gráfico de payoff.
-- O lucro máximo (metrics.maxGain = ${typeof metrics.maxGain === 'string' ? metrics.maxGain : 'R$ ' + (metrics.maxGain || 0).toFixed(2)}) ocorre no cenário onde o payoff é máximo.
-- O prejuízo máximo (metrics.maxLoss = R$ ${(metrics.maxLoss || 0).toFixed(2)}) ocorre no cenário onde o payoff é mínimo.
-
-## COERÊNCIA OBRIGATÓRIA:
-- isRiskFree=true → risk_level="Baixo", ZERO menção a prejuízo em cenários e cons.
-- maxLoss >= 0 → ZERO cenários com prejuízo.
-- O valor de CADA cenário deve ser DIFERENTE (up ≠ flat ≠ down) a menos que a estrutura assim determine.
-- NUNCA coloque o lucro máximo no cenário errado.
-
-## PROS/CONS: máximo 3 itens cada, frase objetiva.
-
-Retorne APENAS este JSON (sem markdown):
+Retorne APENAS JSON (sem markdown):
 {
   "verdict": "Compra Forte" | "Atrativo" | "Neutro" | "Evitar" | "Perigoso",
   "score": number (0-10),
   "risk_level": "Baixo" | "Moderado" | "Alto" | "Crítico",
   "cdi_comparison": "frase comparando retorno vs CDI",
-  "strategy_explanation": "2-3 frases explicando como as pernas interagem",
+  "strategy_explanation": "2-3 frases sobre a estratégia",
   "scenarios": {
-    "up": "3-5 frases detalhando cada perna e resultado total em R$",
-    "flat": "3-5 frases detalhando cada perna e resultado total em R$",
-    "down": "3-5 frases detalhando cada perna e resultado total em R$"
+    "up": "3-4 frases com o payoff EXATO pré-calculado",
+    "flat": "3-4 frases com o payoff EXATO pré-calculado",
+    "down": "3-4 frases com o payoff EXATO pré-calculado"
   },
-  "pros": ["max 3 itens"],
-  "cons": ["max 3 itens"],
-  "summary": "2-3 frases com valores exatos de metrics",
+  "pros": ["max 3"],
+  "cons": ["max 3"],
+  "summary": "2-3 frases com valores exatos",
   "probability_success": "Alta" | "Média" | "Baixa"
 }`
           },
           { 
             role: "user", 
-            content: `Analise esta estrutura. NÃO recalcule maxGain/maxLoss — use metrics como verdade.
+            content: `Analise esta estrutura. TODOS OS PAYOFFS FORAM PRÉ-CALCULADOS — use-os EXATAMENTE.
 
 ESTRUTURA:
 ${legs.map((l: any) => `- ${l.side === 'buy' ? 'COMPRA' : 'VENDA'} ${l.quantity}x ${l.option_type === 'stock' ? 'AÇÃO' : l.option_type.toUpperCase()} ${l.asset} | Strike: ${l.strike} | Preço: R$ ${l.price}`).join('\n')}
 
-MÉTRICAS CALCULADAS (VERDADE ABSOLUTA):
+MÉTRICAS (VERDADE ABSOLUTA):
 - ${costLabel}: R$ ${costValue.toFixed(2)}
 - Lucro máximo: ${typeof metrics.maxGain === 'string' ? metrics.maxGain : 'R$ ' + (metrics.maxGain || 0).toFixed(2)}
-- Risco máximo: R$ ${Math.abs(metrics.maxLoss || 0).toFixed(2)}${metrics.maxLoss >= 0 ? ' (SEM RISCO)' : ''}
-- Risco Zero: ${metrics.isRiskFree ? 'SIM — nenhum cenário pode ter prejuízo' : 'NÃO'}
-- Breakeven: R$ ${metrics.realBreakeven || JSON.stringify(metrics.breakevens)}
-- Strikes: ${JSON.stringify(strikes)}
-${stockLeg ? `- Preço da ação na montagem: R$ ${stockPrice}` : ''}
+- Risco máximo: R$ ${Math.abs(metrics.maxLoss || 0).toFixed(2)}${metrics.maxLoss >= 0 ? ' (SEM RISCO — RISCO ZERO)' : ''}
+- Breakeven: R$ ${breakeven}
+- Risco Zero: ${metrics.isRiskFree ? 'SIM' : 'NÃO'}
 
-CDI: ${cdiRate}% a.a. | Dias até vencimento: ${daysToExpiry}
+═══════ CENÁRIOS PRÉ-CALCULADOS (USE ESTES VALORES EXATOS) ═══════
 
-REGRAS PARA CENÁRIOS:
-- Detalhe o que acontece com cada perna em cada cenário
-- Calcule o resultado de cada perna separadamente e some
-- O resultado TOTAL deve bater com o gráfico de payoff
-- Se isRiskFree=true, NENHUM cenário pode mostrar prejuízo
-- NUNCA diga "crédito" se montageTotal > 0 (é DÉBITO/CUSTO)` 
+📈 SE SUBIR (ativo a R$ ${priceUp.toFixed(2)}):
+Breakdown: ${breakdownUp}
+>>> RESULTADO TOTAL: R$ ${payoffUp.toFixed(2)} <<<
+
+📊 SE LATERAL (ativo a R$ ${priceFlat.toFixed(2)} = breakeven):
+Breakdown: ${breakdownFlat}
+>>> RESULTADO TOTAL: R$ ${payoffFlat.toFixed(2)} <<<
+
+📉 SE CAIR (ativo a R$ ${priceDown.toFixed(2)}):
+Breakdown: ${breakdownDown}
+>>> RESULTADO TOTAL: R$ ${payoffDown.toFixed(2)} <<<
+
+REGRAS ABSOLUTAS:
+- O resultado do cenário UP deve ser EXATAMENTE R$ ${payoffUp.toFixed(2)}
+- O resultado do cenário FLAT deve ser EXATAMENTE R$ ${payoffFlat.toFixed(2)}
+- O resultado do cenário DOWN deve ser EXATAMENTE R$ ${payoffDown.toFixed(2)}
+- NUNCA invente valores diferentes dos pré-calculados
+- Se isRiskFree=true e algum payoff < 0, algo está errado mas ainda assim use o valor calculado
+- NUNCA diga "crédito" se montageTotal > 0` 
           },
         ],
       }),
@@ -139,7 +196,6 @@ REGRAS PARA CENÁRIOS:
     let content = result.choices[0].message.content
     content = content.replace(/```json\n?/, '').replace(/\n?```/, '').trim()
     
-    // Parse and validate against metrics
     let parsed
     try {
       parsed = JSON.parse(content)
@@ -150,10 +206,9 @@ REGRAS PARA CENÁRIOS:
       })
     }
 
-    // Force coherence with programmatic metrics
+    // Force coherence
     if (metrics.isRiskFree && parsed.risk_level !== "Baixo") {
       parsed.risk_level = "Baixo"
-      console.log("[analyze-structure] Forçado risk_level para Baixo (isRiskFree=true)")
     }
     if (metrics.isRiskFree && parsed.cons) {
       parsed.cons = parsed.cons.filter((c: string) => 
