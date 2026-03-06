@@ -160,18 +160,25 @@ export default function Dashboard() {
     }
   }, [legs, metrics.strategyLabel, hasManuallyNamed]);
 
+  const [hasManualExpiry, setHasManualExpiry] = useState(false);
+
   const inferredExpiry = useMemo(() => {
     const leg = legs.find(l => l.option_type !== 'stock');
     return leg ? getExpiryFromTicker(leg.asset) : null;
   }, [legs]);
 
   useEffect(() => {
-    if (inferredExpiry) {
+    if (inferredExpiry && !hasManualExpiry) {
       const entry = new Date(entryDate + 'T00:00:00');
       setDaysToExpiry(countBusinessDays(entry, inferredExpiry));
       setExpiryDate(inferredExpiry);
     }
-  }, [inferredExpiry, entryDate]);
+  }, [inferredExpiry, entryDate, hasManualExpiry]);
+
+  const handleExpiryDateChange = (date: Date | undefined) => {
+    setExpiryDate(date);
+    setHasManualExpiry(!!date);
+  };
 
   const investedCapital = useMemo(() => {
     if (metrics.montageTotal) return Math.abs(metrics.montageTotal);
@@ -586,7 +593,7 @@ export default function Dashboard() {
                     />
                   </CardContent>
                 </Card>
-                <CDIComparison metrics={metrics} cdiRate={cdiRate} setCdiRate={setCdiRate} daysToExpiry={daysToExpiry} setDaysToExpiry={setDaysToExpiry} entryDate={entryDate} expiryDate={expiryDate} onExpiryDateChange={setExpiryDate} />
+                <CDIComparison metrics={metrics} cdiRate={cdiRate} setCdiRate={setCdiRate} daysToExpiry={daysToExpiry} setDaysToExpiry={setDaysToExpiry} entryDate={entryDate} expiryDate={expiryDate} onExpiryDateChange={handleExpiryDateChange} />
                 
                 {/* Botão Salvar no fundo da página */}
                 <div className="flex gap-3 justify-center pt-4 pb-8">
