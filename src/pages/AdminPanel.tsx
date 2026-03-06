@@ -56,7 +56,7 @@ export default function AdminPanel() {
   const [emailTarget, setEmailTarget] = useState<UserRow | null>(null);
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
-  
+  const [sendingEmail, setSendingEmail] = useState(false);
   // Mercado Pago Config
   const [mpPublicKey, setMpPublicKey] = useState('TEST-223bd091-629e-4853-a6df-c50a120fb48b');
   const [mpAccessToken, setMpAccessToken] = useState('TEST-8723062167465367-030112-b03bf6309f490dcda5d967d47b41851c-467698330');
@@ -235,14 +235,33 @@ export default function AdminPanel() {
     setEmailBody(t.body);
   };
 
-  const sendEmailViaMailto = () => {
-    if (!emailTarget?.email) return;
-    const mailto = `mailto:${emailTarget.email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
-    window.open(mailto, '_blank');
-    setEmailTarget(null);
-    setEmailSubject('');
-    setEmailBody('');
-    toast.success('Cliente de email aberto!');
+
+
+  const sendEmailViaResend = async () => {
+    if (!emailTarget?.email || !emailSubject || !emailBody) {
+      toast.error('Preencha todos os campos');
+      return;
+    }
+    setSendingEmail(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-admin-email', {
+        body: {
+          to: emailTarget.email,
+          subject: emailSubject,
+          body: emailBody,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Email enviado com sucesso para ${emailTarget.email}!`);
+      setEmailTarget(null);
+      setEmailSubject('');
+      setEmailBody('');
+    } catch (err: any) {
+      toast.error('Erro ao enviar email: ' + (err.message || 'Erro desconhecido'));
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   const saveSettings = async () => {
@@ -607,8 +626,9 @@ export default function AdminPanel() {
               </div>
               <div className="flex gap-2 justify-end">
                 <Button variant="outline" onClick={() => setEmailTarget(null)}>Cancelar</Button>
-                <Button onClick={sendEmailViaMailto} className="font-bold">
-                  <Send className="h-4 w-4 mr-2" /> Abrir Email
+                <Button onClick={sendEmailViaResend} disabled={sendingEmail} className="font-bold">
+                  {sendingEmail ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+                  {sendingEmail ? 'Enviando...' : 'Enviar Email'}
                 </Button>
               </div>
             </CardContent>
