@@ -137,6 +137,7 @@ export default function Dashboard() {
   const [hasManuallyNamed, setHasManuallyNamed] = useState(false);
   const [cdiRate, setCdiRate] = useState(15.00);
   const [daysToExpiry, setDaysToExpiry] = useState(0);
+  const [expiryDate, setExpiryDate] = useState<Date | undefined>(undefined);
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
   const [loadingAI, setLoadingAI] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -168,6 +169,7 @@ export default function Dashboard() {
     if (inferredExpiry) {
       const entry = new Date(entryDate + 'T00:00:00');
       setDaysToExpiry(countBusinessDays(entry, inferredExpiry));
+      setExpiryDate(inferredExpiry);
     }
   }, [inferredExpiry, entryDate]);
 
@@ -281,7 +283,8 @@ export default function Dashboard() {
           name: analysisName || 'Análise sem nome',
           underlying_asset: legs[0]?.asset || null, 
           cdi_rate: cdiRate || null,
-          days_to_expiry: daysToExpiry || null, 
+          days_to_expiry: daysToExpiry || null,
+          expiry_date: expiryDate ? `${expiryDate.getFullYear()}-${String(expiryDate.getMonth() + 1).padStart(2, '0')}-${String(expiryDate.getDate()).padStart(2, '0')}` : null,
           ai_suggestion: aiAnalysis ? JSON.stringify(aiAnalysis) : null,
           created_at: new Date(entryDate).toISOString(),
         }).select().single();
@@ -583,7 +586,7 @@ export default function Dashboard() {
                     />
                   </CardContent>
                 </Card>
-                <CDIComparison metrics={metrics} cdiRate={cdiRate} setCdiRate={setCdiRate} daysToExpiry={daysToExpiry} setDaysToExpiry={setDaysToExpiry} entryDate={entryDate} />
+                <CDIComparison metrics={metrics} cdiRate={cdiRate} setCdiRate={setCdiRate} daysToExpiry={daysToExpiry} setDaysToExpiry={setDaysToExpiry} entryDate={entryDate} expiryDate={expiryDate} onExpiryDateChange={setExpiryDate} />
                 
                 {/* Botão Salvar no fundo da página */}
                 <div className="flex gap-3 justify-center pt-4 pb-8">

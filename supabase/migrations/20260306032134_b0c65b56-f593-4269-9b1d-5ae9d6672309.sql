@@ -1,0 +1,1 @@
+ALTER TABLE public.analyses ADD COLUMN expiry_date date NULL;

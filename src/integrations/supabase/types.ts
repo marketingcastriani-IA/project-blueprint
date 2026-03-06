@@ -21,6 +21,7 @@ export type Database = {
           closed_at: string | null
           created_at: string
           days_to_expiry: number | null
+          expiry_date: string | null
           id: string
           name: string
           status: string
@@ -34,6 +35,7 @@ export type Database = {
           closed_at?: string | null
           created_at?: string
           days_to_expiry?: number | null
+          expiry_date?: string | null
           id?: string
           name: string
           status?: string
@@ -47,6 +49,7 @@ export type Database = {
           closed_at?: string | null
           created_at?: string
           days_to_expiry?: number | null
+          expiry_date?: string | null
           id?: string
           name?: string
           status?: string
