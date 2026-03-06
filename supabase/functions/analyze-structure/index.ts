@@ -55,17 +55,20 @@ serve(async (req) => {
     const breakeven = metrics.realBreakeven || (Array.isArray(metrics.breakevens) ? metrics.breakevens[0] : metrics.breakevens) || 0
 
     // Pre-calculate CDI comparison
-    const montageTotal = Math.abs(metrics.montageTotal || metrics.netCost || 0)
+    const montageTotalAbs = Math.abs(metrics.montageTotal || metrics.netCost || 0)
     const maxGainNum = typeof metrics.maxGain === 'number' ? metrics.maxGain : 0
-    const roiStructure = montageTotal > 0 ? (maxGainNum / montageTotal) * 100 : 0
+    const roiStructure = montageTotalAbs > 0 ? (maxGainNum / montageTotalAbs) * 100 : 0
     const cdiReturnValue = metrics.cdiReturn || 0
-    const roiCdi = montageTotal > 0 ? (cdiReturnValue / montageTotal) * 100 : 0
+    const roiCdi = montageTotalAbs > 0 ? (cdiReturnValue / montageTotalAbs) * 100 : 0
     const cdiEfficiency = roiCdi > 0 ? Math.round((roiStructure / roiCdi) * 100) : 0
-    const cdiComparisonText = cdiEfficiency > 100 
-      ? `A estrutura rende ${cdiEfficiency}% do CDI, SUPERANDO o CDI em ${(cdiEfficiency - 100)}%.`
-      : cdiEfficiency === 100
-        ? `A estrutura empata com o CDI no período.`
-        : `A estrutura rende ${cdiEfficiency}% do CDI, ficando ABAIXO do CDI em ${(100 - cdiEfficiency)}%.`
+    // Diferença ABSOLUTA em pontos percentuais (ex: 1.62% - 1.58% = 0.04pp)
+    const roiDiffPP = Math.abs(roiStructure - roiCdi)
+    const roiDiffFormatted = roiDiffPP.toFixed(2)
+    const cdiComparisonText = roiStructure > roiCdi
+      ? `A estrutura rende ${cdiEfficiency}% do CDI (ROI ${roiStructure.toFixed(2)}% vs CDI ${roiCdi.toFixed(2)}%), SUPERANDO o CDI em ${roiDiffFormatted} pontos percentuais.`
+      : roiStructure === roiCdi
+        ? `A estrutura empata com o CDI no período (ROI ${roiStructure.toFixed(2)}%).`
+        : `A estrutura rende ${cdiEfficiency}% do CDI (ROI ${roiStructure.toFixed(2)}% vs CDI ${roiCdi.toFixed(2)}%), ficando ${roiDiffFormatted} pontos percentuais ABAIXO do CDI.`
 
     // Calculate EXACT payoffs at specific prices
     const priceUp = maxStrike + 3
