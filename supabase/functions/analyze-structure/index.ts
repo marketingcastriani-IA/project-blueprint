@@ -121,7 +121,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
         messages: [
           {
             role: "system",
@@ -249,13 +249,17 @@ REGRAS ABSOLUTAS:
     }
     // Fix "crédito" when it's actually a debit
     if (isDebit) {
-      const fixCredit = (text: string) => text.replace(/crédito\s*(líquido|recebido)?/gi, 'custo da montagem')
-      if (parsed.summary) parsed.summary = fixCredit(parsed.summary)
-      if (parsed.strategy_explanation) parsed.strategy_explanation = fixCredit(parsed.strategy_explanation)
+      const fixCredit = (text: string) => text
+        .replace(/crédito\s*líquido\s*recebido/gi, 'custo da montagem')
+        .replace(/crédito\s*(líquido|recebido|net[oa]?)?/gi, 'custo da montagem')
+      const allTextFields = ['summary', 'strategy_explanation', 'cdi_comparison'] as const
+      for (const field of allTextFields) {
+        if (parsed[field]) parsed[field] = fixCredit(parsed[field])
+      }
       if (parsed.scenarios) {
-        if (parsed.scenarios.up) parsed.scenarios.up = fixCredit(parsed.scenarios.up)
-        if (parsed.scenarios.flat) parsed.scenarios.flat = fixCredit(parsed.scenarios.flat)
-        if (parsed.scenarios.down) parsed.scenarios.down = fixCredit(parsed.scenarios.down)
+        for (const key of ['up', 'flat', 'down'] as const) {
+          if (parsed.scenarios[key]) parsed.scenarios[key] = fixCredit(parsed.scenarios[key])
+        }
       }
     }
     
