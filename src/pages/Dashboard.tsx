@@ -243,7 +243,24 @@ export default function Dashboard() {
         },
       });
       if (error) throw error;
-      setAiAnalysis(data);
+      
+      // Frontend validation: force AI coherence with calculated metrics
+      const validated = { ...data };
+      if (metrics.isRiskFree && validated.risk_level !== 'Baixo') {
+        validated.risk_level = 'Baixo';
+        console.warn('[AI Validation] Forçado risk_level para Baixo (isRiskFree=true)');
+      }
+      if (metrics.isRiskFree && validated.cons) {
+        validated.cons = validated.cons.filter((c: string) => 
+          !c.toLowerCase().includes('prejuízo') && !c.toLowerCase().includes('perda') && !c.toLowerCase().includes('risco')
+        );
+      }
+      // Check if AI mentions "crédito" when it's actually a debit
+      if (metrics.montageTotal > 0 && validated.summary) {
+        validated.summary = validated.summary.replace(/crédito líquido/gi, 'custo da montagem');
+      }
+      
+      setAiAnalysis(validated);
       
       toast.success('Análise de IA concluída!');
       setTimeout(() => {
