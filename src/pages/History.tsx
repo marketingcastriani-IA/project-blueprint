@@ -20,6 +20,7 @@ interface AnalysisSummary {
   created_at: string;
   closed_at: string | null;
   ai_suggestion: string | null;
+  days_to_expiry: number | null;
 }
 
 const MONTHS = [
@@ -46,7 +47,7 @@ export default function History() {
     if (!user) return;
     supabase
       .from('analyses')
-      .select('id, name, underlying_asset, status, created_at, closed_at, ai_suggestion')
+      .select('id, name, underlying_asset, status, created_at, closed_at, ai_suggestion, days_to_expiry')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .then(({ data }) => {
@@ -158,6 +159,17 @@ export default function History() {
               <Clock className="h-3 w-3" />
               {new Date(a.created_at).toLocaleDateString('pt-BR')}
             </span>
+            {a.days_to_expiry != null && (
+              <span className="flex items-center gap-1">
+                <CalendarDays className="h-3 w-3" />
+                Venc: {(() => {
+                  const expiry = new Date(a.created_at);
+                  expiry.setDate(expiry.getDate() + a.days_to_expiry);
+                  return expiry.toLocaleDateString('pt-BR');
+                })()}
+                <span className="text-muted-foreground/60">({a.days_to_expiry}d)</span>
+              </span>
+            )}
             {a.closed_at && (
               <span className="flex items-center gap-1">
                 <XCircle className="h-3 w-3" />
