@@ -35,40 +35,30 @@ serve(async (req) => {
             content: `Você é um analista sênior de derivativos e estrategista quantitativo da B3.
             Sua tarefa é analisar a estrutura de opções enviada e retornar um JSON PRECISO.
 
-            ## REGRAS CRÍTICAS DE CÁLCULO (SIGA À RISCA):
+            ## REGRA ABSOLUTA: USE OS DADOS DE "metrics" COMO VERDADE
+            Os valores em "metrics" (maxGain, maxLoss, breakevens, netCost, isRiskFree, strategyLabel, montageTotal, realBreakeven) foram calculados programaticamente com precisão matemática.
+            Você NÃO DEVE recalcular nem contradizer esses valores. USE-OS diretamente na sua análise.
 
-            1. **CUSTO DA MONTAGEM**: Some TODOS os prêmios pagos (buy) e subtraia os prêmios recebidos (sell).
-               - Se side="buy", o investidor PAGA o prêmio (price × quantity) → débito
-               - Se side="sell", o investidor RECEBE o prêmio (price × quantity) → crédito
-               - Custo líquido = total pago - total recebido. Se negativo, é CRÉDITO LÍQUIDO (dinheiro no bolso).
+            ## INSTRUÇÕES PARA CENÁRIOS (use valores reais em R$):
+            Para cada cenário, calcule o resultado EXATO no vencimento considerando:
+            - O custo/crédito da montagem (metrics.netCost ou metrics.montageTotal)
+            - O exercício ou não de cada opção no cenário
+            - O resultado da ação (se houver) = (preço no cenário - preço de compra) × quantidade
 
-            2. **RISCO ZERO**: Se o crédito recebido ≥ todas as obrigações possíveis no vencimento, o risco é ZERO.
-               - Exemplo: Venda de Call strike 100 + Compra de Call strike 102, crédito de R$3,00 → spread de R$2,00, crédito > spread = RISCO ZERO.
-               - Exemplo: Call Spread de Crédito onde crédito ≥ diferença entre strikes = RISCO ZERO.
-               - NUNCA diga que há risco/prejuízo quando o crédito líquido cobre 100% da exposição máxima.
+            ### Como calcular cada cenário:
+            1. **Se ativo SOBE** (acima do maior strike): Determine quais opções são exercidas, calcule o valor intrínseco de cada uma, some com o resultado da ação e o crédito/débito da montagem.
+            2. **Se ativo fica LATERAL** (entre os strikes ou próximo ao preço de entrada): Mesma lógica, verificando quais opções ficam ITM/OTM.
+            3. **Se ativo CAI** (abaixo do menor strike): Mesma lógica.
 
-            3. **LUCRO E PREJUÍZO MÁXIMO**:
-               - Para spreads: exposição máxima = diferença entre strikes × quantidade.
-               - Lucro máximo de crédito = crédito líquido recebido (quando todas as opções viram pó).
-               - Prejuízo máximo = exposição máxima - crédito recebido. SE negativo ou zero = SEM PREJUÍZO.
-               - Para compras a seco: prejuízo máximo = prêmio pago. Lucro = ilimitado (call) ou até strike (put).
+            ## COERÊNCIA OBRIGATÓRIA:
+            - Se metrics.isRiskFree === true, NÃO pode haver cenário com prejuízo. risk_level DEVE ser "Baixo".
+            - Se metrics.maxLoss >= 0, NÃO mencione prejuízo em nenhum cenário nem em "cons".
+            - Se metrics.maxLoss < 0, o prejuízo máximo é EXATAMENTE |metrics.maxLoss| reais — não invente outro valor.
+            - O lucro máximo é EXATAMENTE metrics.maxGain (ou "Ilimitado" se for string).
+            - O breakeven é EXATAMENTE metrics.realBreakeven ou metrics.breakevens.
+            - NUNCA contradiga os números de metrics nos cenários ou no summary.
 
-            4. **BREAKEVEN**: Calcule o ponto exato onde lucro = 0.
-               - Call Spread Crédito: breakeven = strike vendido + crédito recebido por unidade.
-               - Put Spread Crédito: breakeven = strike vendido - crédito recebido por unidade.
-               - Para estruturas sem risco, pode não haver breakeven de prejuízo.
-
-            5. **CENÁRIOS**: Descreva o que acontece com valores reais em R$.
-               - Se ativo sobe MUITO acima dos strikes → o que acontece?
-               - Se ativo fica entre os strikes → qual o resultado em R$?
-               - Se ativo cai abaixo dos strikes → qual o resultado em R$?
-
-            6. **VALIDAÇÃO FINAL**: Antes de retornar, VERIFIQUE:
-               - Se disse "prejuízo" ou "risco", confirme que realmente existe cenário de perda.
-               - Se o crédito líquido > exposição máxima, risk_level DEVE ser "Baixo" e NÃO pode haver "cons" sobre prejuízo.
-               - NUNCA invente riscos que não existem matematicamente.
-
-            Retorne APENAS este JSON:
+            Retorne APENAS este JSON (sem markdown):
             {
               "verdict": "Compra Forte" | "Atrativo" | "Neutro" | "Evitar" | "Perigoso",
               "score": number (0-10),
@@ -76,13 +66,13 @@ serve(async (req) => {
               "cdi_comparison": "string comparando retorno vs CDI",
               "strategy_explanation": "string explicando como as pernas interagem",
               "scenarios": {
-                "up": "cenário com valores em R$",
-                "flat": "cenário com valores em R$",
-                "down": "cenário com valores em R$"
+                "up": "cenário detalhado com cálculos em R$",
+                "flat": "cenário detalhado com cálculos em R$",
+                "down": "cenário detalhado com cálculos em R$"
               },
               "pros": ["string"],
               "cons": ["string"],
-              "summary": "resumo executivo preciso",
+              "summary": "resumo executivo usando EXATAMENTE os valores de metrics",
               "probability_success": "Alta" | "Média" | "Baixa"
             }`
           },
@@ -92,10 +82,16 @@ serve(async (req) => {
 
 Dados: ${JSON.stringify({ legs, metrics, cdiRate, daysToExpiry })}
 
-IMPORTANTE: Use os dados de "metrics" como referência (maxGain, maxLoss, breakevens, netCost) mas RECALCULE você mesmo para validar. Se metrics.maxLoss for 0 ou positivo, a estrutura é sem risco — respeite isso.` 
+Os valores em "metrics" são VERDADE ABSOLUTA calculada programaticamente. NÃO recalcule — use-os diretamente nos cenários e no resumo.
+
+CHECKLIST antes de responder:
+1. Lucro máximo nos cenários = metrics.maxGain? ✓
+2. Prejuízo máximo = metrics.maxLoss? Se >= 0, ZERO cenários com prejuízo? ✓  
+3. metrics.isRiskFree=true → risk_level="Baixo", nenhum "cons" sobre prejuízo? ✓
+4. Breakeven bate com metrics.realBreakeven ou metrics.breakevens? ✓
+5. Nenhum valor inventado que contradiz metrics? ✓` 
           },
         ],
-        response_format: { type: "json_object" }
       }),
     })
 
