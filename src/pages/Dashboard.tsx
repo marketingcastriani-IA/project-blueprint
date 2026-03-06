@@ -545,7 +545,7 @@ export default function Dashboard() {
               <>
                 <div ref={aiSectionRef}>
                   <SectionDivider title="Análise de IA" />
-                  <AIInsights analysis={aiAnalysis} loading={loadingAI} />
+                  <AIInsights analysis={aiAnalysis} loading={loadingAI} isRiskFree={!!metrics.isRiskFree} />
                 </div>
                 
                 <SectionDivider title="Métricas e Payoff" />

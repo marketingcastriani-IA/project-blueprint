@@ -30,9 +30,10 @@ interface AIAnalysis {
 interface AIInsightsProps {
   analysis: AIAnalysis | null;
   loading?: boolean;
+  isRiskFree?: boolean;
 }
 
-export default function AIInsights({ analysis, loading = false }: AIInsightsProps) {
+export default function AIInsights({ analysis, loading = false, isRiskFree = false }: AIInsightsProps) {
   if (loading) {
     return (
       <Card className="relative overflow-hidden border-2 border-primary/20 bg-card/50 backdrop-blur-sm">
@@ -95,7 +96,7 @@ export default function AIInsights({ analysis, loading = false }: AIInsightsProp
 
       <CardContent className="space-y-8">
           {/* Risk-Free Banner */}
-          {(analysis.risk_level === 'Baixo' && analysis.score >= 7) && (
+          {isRiskFree && (
             <div className="flex items-center gap-4 p-4 rounded-2xl bg-success/10 border-2 border-success/30 shadow-[0_0_25px_-8px_hsl(var(--success)/0.4)] animate-fade-in">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-success/20 text-success">
                 <ShieldCheck className="h-7 w-7" />
