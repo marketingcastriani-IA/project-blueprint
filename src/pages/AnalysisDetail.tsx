@@ -40,6 +40,7 @@ interface DbAnalysis {
   status: string;
   cdi_rate: number | null;
   days_to_expiry: number | null;
+  expiry_date: string | null;
   ai_suggestion: string | null;
   created_at: string;
 }
@@ -57,6 +58,7 @@ export default function AnalysisDetail() {
   const [closing, setClosing] = useState(false);
   const [cdiRate, setCdiRate] = useState(14.90);
   const [daysToExpiry, setDaysToExpiry] = useState(0);
+  const [expiryDate, setExpiryDate] = useState<Date | undefined>(undefined);
   
   const [isSimulating, setIsSimulating] = useState(false);
   const [simLegs, setSimLegs] = useState<Leg[]>([]);
@@ -77,6 +79,10 @@ export default function AnalysisDetail() {
         setAnalysis(a);
         setCdiRate(a.cdi_rate ?? 14.90);
         setDaysToExpiry(a.days_to_expiry ?? 0);
+        if (a.expiry_date) {
+          const [y, m, d] = a.expiry_date.split('-').map(Number);
+          setExpiryDate(new Date(y, m - 1, d));
+        }
       }
       if (lRes.data) {
         const legs = lRes.data as unknown as DbLeg[];
@@ -169,7 +175,8 @@ export default function AnalysisDetail() {
       // Salvar taxa CDI e dias para vencimento na análise
       await supabase.from('analyses').update({ 
         cdi_rate: cdiRate,
-        days_to_expiry: daysToExpiry
+        days_to_expiry: daysToExpiry,
+        expiry_date: expiryDate ? `${expiryDate.getFullYear()}-${String(expiryDate.getMonth() + 1).padStart(2, '0')}-${String(expiryDate.getDate()).padStart(2, '0')}` : null,
       } as any).eq('id', id!);
 
       toast.success('Configurações e preços salvos!');
@@ -511,7 +518,7 @@ export default function AnalysisDetail() {
         </Card>
 
         <MetricsCards metrics={metrics} cdiReturn={calculateCDIOpportunityCost(Math.abs(metrics.montageTotal || metrics.netCost), cdiRate, daysToExpiry)} daysToExpiry={daysToExpiry} />
-        <CDIComparison metrics={metrics} cdiRate={cdiRate} setCdiRate={setCdiRate} daysToExpiry={daysToExpiry} setDaysToExpiry={setDaysToExpiry} />
+        <CDIComparison metrics={metrics} cdiRate={cdiRate} setCdiRate={setCdiRate} daysToExpiry={daysToExpiry} setDaysToExpiry={setDaysToExpiry} expiryDate={expiryDate} onExpiryDateChange={setExpiryDate} />
       </main>
     </div>
   );

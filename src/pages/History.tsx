@@ -21,6 +21,7 @@ interface AnalysisSummary {
   closed_at: string | null;
   ai_suggestion: string | null;
   days_to_expiry: number | null;
+  expiry_date: string | null;
 }
 
 const MONTHS = [
@@ -47,7 +48,7 @@ export default function History() {
     if (!user) return;
     supabase
       .from('analyses')
-      .select('id, name, underlying_asset, status, created_at, closed_at, ai_suggestion, days_to_expiry')
+      .select('id, name, underlying_asset, status, created_at, closed_at, ai_suggestion, days_to_expiry, expiry_date')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .then(({ data }) => {
@@ -159,15 +160,16 @@ export default function History() {
               <Clock className="h-3 w-3" />
               {new Date(a.created_at).toLocaleDateString('pt-BR')}
             </span>
-            {a.days_to_expiry != null && (
+            {a.expiry_date && (
               <span className="flex items-center gap-1">
                 <CalendarDays className="h-3 w-3" />
                 Venc: {(() => {
-                  const expiry = new Date(a.created_at);
-                  expiry.setDate(expiry.getDate() + a.days_to_expiry);
-                  return expiry.toLocaleDateString('pt-BR');
+                  const [y, m, d] = a.expiry_date.split('-').map(Number);
+                  return new Date(y, m - 1, d).toLocaleDateString('pt-BR');
                 })()}
-                <span className="text-muted-foreground/60">({a.days_to_expiry}d)</span>
+                {a.days_to_expiry != null && (
+                  <span className="text-muted-foreground/60">({a.days_to_expiry}du)</span>
+                )}
               </span>
             )}
             {a.closed_at && (

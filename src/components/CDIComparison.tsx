@@ -22,14 +22,16 @@ interface CDIComparisonProps {
   daysToExpiry: number;
   setDaysToExpiry: (v: number) => void;
   entryDate?: string;
+  expiryDate?: Date;
+  onExpiryDateChange?: (date: Date | undefined) => void;
 }
 
 const formatMoney = (value: number) => `R$ ${value.toFixed(2)}`;
 
-export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpiry, setDaysToExpiry, entryDate }: CDIComparisonProps) {
+export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpiry, setDaysToExpiry, entryDate, expiryDate, onExpiryDateChange }: CDIComparisonProps) {
   const [applyIRCDI, setApplyIRCDI] = useState(false);
   const [applyIROptions, setApplyIROptions] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(expiryDate);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
   const hasStrategy = !!metrics.strategyType;
@@ -92,6 +94,7 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
 
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
+    onExpiryDateChange?.(date);
     setCalendarOpen(false);
     if (date) {
       const start = entryDate ? new Date(entryDate + 'T00:00:00') : new Date();
@@ -99,6 +102,13 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
       setDaysToExpiry(countBusinessDays(start, date));
     }
   };
+
+  // Sync external expiryDate prop
+  useEffect(() => {
+    if (expiryDate && !selectedDate) {
+      setSelectedDate(expiryDate);
+    }
+  }, [expiryDate]);
 
   // Recalculate when entryDate changes and a date is already selected
   useEffect(() => {
