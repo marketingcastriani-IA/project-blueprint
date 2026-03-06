@@ -44,6 +44,7 @@ serve(async (req) => {
     const isDebit = (metrics.montageTotal || metrics.netCost || 0) > 0
     const costLabel = isDebit ? "Custo da montagem (DÉBITO)" : "Crédito líquido recebido"
     const costValue = Math.abs(metrics.montageTotal || metrics.netCost || 0)
+    const strategyName = metrics.strategyLabel || 'Estrutura de Opções'
 
     // Pre-calculate scenario payoffs
     const strikes = legs.filter((l: any) => l.option_type !== 'stock').map((l: any) => l.strike).sort((a: number, b: number) => a - b)
@@ -52,6 +53,19 @@ serve(async (req) => {
     const stockLeg = legs.find((l: any) => l.option_type === 'stock')
     const stockPrice = stockLeg?.price || 0
     const breakeven = metrics.realBreakeven || (Array.isArray(metrics.breakevens) ? metrics.breakevens[0] : metrics.breakevens) || 0
+
+    // Pre-calculate CDI comparison
+    const montageTotal = Math.abs(metrics.montageTotal || metrics.netCost || 0)
+    const maxGainNum = typeof metrics.maxGain === 'number' ? metrics.maxGain : 0
+    const roiStructure = montageTotal > 0 ? (maxGainNum / montageTotal) * 100 : 0
+    const cdiReturnValue = metrics.cdiReturn || 0
+    const roiCdi = montageTotal > 0 ? (cdiReturnValue / montageTotal) * 100 : 0
+    const cdiEfficiency = roiCdi > 0 ? Math.round((roiStructure / roiCdi) * 100) : 0
+    const cdiComparisonText = cdiEfficiency > 100 
+      ? `A estrutura rende ${cdiEfficiency}% do CDI, SUPERANDO o CDI em ${(cdiEfficiency - 100)}%.`
+      : cdiEfficiency === 100
+        ? `A estrutura empata com o CDI no período.`
+        : `A estrutura rende ${cdiEfficiency}% do CDI, ficando ABAIXO do CDI em ${(100 - cdiEfficiency)}%.`
 
     // Calculate EXACT payoffs at specific prices
     const priceUp = maxStrike + 3
@@ -133,8 +147,8 @@ Retorne APENAS JSON (sem markdown):
   "verdict": "Compra Forte" | "Atrativo" | "Neutro" | "Evitar" | "Perigoso",
   "score": number (0-10),
   "risk_level": "Baixo" | "Moderado" | "Alto" | "Crítico",
-  "cdi_comparison": "frase comparando retorno vs CDI",
-  "strategy_explanation": "2-3 frases sobre a estratégia",
+  "cdi_comparison": "use a comparação CDI pré-calculada fornecida",
+  "strategy_explanation": "2-3 frases sobre a estratégia, COMECE com o nome da estratégia",
   "scenarios": {
     "up": "3-4 frases com o payoff EXATO pré-calculado",
     "flat": "3-4 frases com o payoff EXATO pré-calculado",
@@ -142,7 +156,7 @@ Retorne APENAS JSON (sem markdown):
   },
   "pros": ["max 3"],
   "cons": ["max 3"],
-  "summary": "2-3 frases com valores exatos",
+  "summary": "COMECE com 'Estratégia: [NOME].' Depois 2-3 frases com valores exatos incluindo comparação CDI",
   "probability_success": "Alta" | "Média" | "Baixa"
 }`
           },
@@ -150,15 +164,25 @@ Retorne APENAS JSON (sem markdown):
             role: "user", 
             content: `Analise esta estrutura. TODOS OS PAYOFFS FORAM PRÉ-CALCULADOS — use-os EXATAMENTE.
 
+NOME DA ESTRATÉGIA: ${strategyName}
+
 ESTRUTURA:
 ${legs.map((l: any) => `- ${l.side === 'buy' ? 'COMPRA' : 'VENDA'} ${l.quantity}x ${l.option_type === 'stock' ? 'AÇÃO' : l.option_type.toUpperCase()} ${l.asset} | Strike: ${l.strike} | Preço: R$ ${l.price}`).join('\n')}
 
 MÉTRICAS (VERDADE ABSOLUTA):
 - ${costLabel}: R$ ${costValue.toFixed(2)}
 - Lucro máximo: ${typeof metrics.maxGain === 'string' ? metrics.maxGain : 'R$ ' + (metrics.maxGain || 0).toFixed(2)}
+- Lucro mínimo garantido: R$ ${Math.min(payoffUp, payoffFlat, payoffDown).toFixed(2)}
 - Risco máximo: R$ ${Math.abs(metrics.maxLoss || 0).toFixed(2)}${metrics.maxLoss >= 0 ? ' (SEM RISCO — RISCO ZERO)' : ''}
 - Breakeven: R$ ${breakeven}
 - Risco Zero: ${metrics.isRiskFree ? 'SIM' : 'NÃO'}
+
+═══════ COMPARAÇÃO CDI PRÉ-CALCULADA (VERDADE ABSOLUTA) ═══════
+- ROI da estrutura: ${roiStructure.toFixed(2)}%
+- ROI do CDI: ${roiCdi.toFixed(2)}%
+- Eficiência vs CDI: ${cdiEfficiency}%
+- Veredicto CDI: ${cdiComparisonText}
+⚠️ USE EXATAMENTE este veredicto no campo "cdi_comparison". NÃO invente outro.
 
 ═══════ CENÁRIOS PRÉ-CALCULADOS (USE ESTES VALORES EXATOS) ═══════
 
@@ -175,12 +199,15 @@ Breakdown: ${breakdownDown}
 >>> RESULTADO TOTAL: R$ ${payoffDown.toFixed(2)} <<<
 
 REGRAS ABSOLUTAS:
+- O "summary" DEVE começar com "Estratégia: ${strategyName}."
+- O "cdi_comparison" DEVE usar o veredicto CDI pré-calculado acima
 - O resultado do cenário UP deve ser EXATAMENTE R$ ${payoffUp.toFixed(2)}
 - O resultado do cenário FLAT deve ser EXATAMENTE R$ ${payoffFlat.toFixed(2)}
 - O resultado do cenário DOWN deve ser EXATAMENTE R$ ${payoffDown.toFixed(2)}
 - NUNCA invente valores diferentes dos pré-calculados
 - Se isRiskFree=true e algum payoff < 0, algo está errado mas ainda assim use o valor calculado
-- NUNCA diga "crédito" se montageTotal > 0` 
+- NUNCA diga "crédito" se montageTotal > 0
+- Se eficiência CDI < 100%, NUNCA diga que supera o CDI`
           },
         ],
       }),
