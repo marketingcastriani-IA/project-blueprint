@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
       </div>
     `;
 
-    const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'Opções PRO X <onboarding@resend.dev>';
+    const fromEmail = 'Opções PRO X <contato@opcoesprox.com.br>';
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
