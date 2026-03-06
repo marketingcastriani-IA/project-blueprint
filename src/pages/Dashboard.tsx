@@ -286,7 +286,7 @@ export default function Dashboard() {
           days_to_expiry: daysToExpiry || null,
           expiry_date: expiryDate ? `${expiryDate.getFullYear()}-${String(expiryDate.getMonth() + 1).padStart(2, '0')}-${String(expiryDate.getDate()).padStart(2, '0')}` : null,
           ai_suggestion: aiAnalysis ? JSON.stringify(aiAnalysis) : null,
-          created_at: new Date(entryDate).toISOString(),
+          created_at: new Date(entryDate + 'T12:00:00').toISOString(),
         }).select().single();
       if (aError) throw aError;
 
