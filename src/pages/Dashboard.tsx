@@ -451,6 +451,8 @@ export default function Dashboard() {
                     setHasManuallyNamed(false);
                     setInputMode(null);
                     setDaysToExpiry(0);
+                    setExpiryDate(undefined);
+                    setHasManualExpiry(false);
                     setEntryDate(new Date().toISOString().split('T')[0]);
                     toast.success('Análise limpa! Pronto para uma nova simulação.');
                   }}
