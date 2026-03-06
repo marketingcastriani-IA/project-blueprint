@@ -19,7 +19,10 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured")
     }
 
-    console.log("[analyze-structure] Iniciando análise profunda da estrutura...")
+    console.log("[analyze-structure] Iniciando análise da estrutura...")
+
+    const isDebit = metrics.montageTotal > 0 || metrics.netCost > 0
+    const costLabel = isDebit ? "Custo da montagem (débito)" : "Crédito líquido recebido"
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -32,64 +35,57 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `Você é um analista sênior de derivativos e estrategista quantitativo da B3.
-            Sua tarefa é analisar a estrutura de opções enviada e retornar um JSON PRECISO.
+            content: `Você é um analista sênior de derivativos da B3. Retorne um JSON preciso e CONCISO.
 
-            ## REGRA ABSOLUTA: USE OS DADOS DE "metrics" COMO VERDADE
-            Os valores em "metrics" (maxGain, maxLoss, breakevens, netCost, isRiskFree, strategyLabel, montageTotal, realBreakeven) foram calculados programaticamente com precisão matemática.
-            Você NÃO DEVE recalcular nem contradizer esses valores. USE-OS diretamente na sua análise.
+## REGRA ABSOLUTA: metrics é VERDADE — NÃO recalcule nada.
+Use os valores de metrics diretamente: maxGain, maxLoss, breakevens, netCost, isRiskFree, montageTotal, realBreakeven.
 
-            ## INSTRUÇÕES PARA CENÁRIOS (use valores reais em R$):
-            Para cada cenário, calcule o resultado EXATO no vencimento considerando:
-            - O custo/crédito da montagem (metrics.netCost ou metrics.montageTotal)
-            - O exercício ou não de cada opção no cenário
-            - O resultado da ação (se houver) = (preço no cenário - preço de compra) × quantidade
+## TERMINOLOGIA:
+- montageTotal > 0 → "Custo da montagem" ou "Débito líquido". NUNCA diga "crédito" quando é débito.
+- montageTotal < 0 → "Crédito líquido recebido".
 
-            ### Como calcular cada cenário:
-            1. **Se ativo SOBE** (acima do maior strike): Determine quais opções são exercidas, calcule o valor intrínseco de cada uma, some com o resultado da ação e o crédito/débito da montagem.
-            2. **Se ativo fica LATERAL** (entre os strikes ou próximo ao preço de entrada): Mesma lógica, verificando quais opções ficam ITM/OTM.
-            3. **Se ativo CAI** (abaixo do menor strike): Mesma lógica.
+## CENÁRIOS: MÁXIMO 2 FRASES CURTAS cada, com resultado em R$.
+Exemplo: "Lucro de R$ 66,00. Call exercida, put expira sem valor."
 
-            ## COERÊNCIA OBRIGATÓRIA:
-            - Se metrics.isRiskFree === true, NÃO pode haver cenário com prejuízo. risk_level DEVE ser "Baixo".
-            - Se metrics.maxLoss >= 0, NÃO mencione prejuízo em nenhum cenário nem em "cons".
-            - Se metrics.maxLoss < 0, o prejuízo máximo é EXATAMENTE |metrics.maxLoss| reais — não invente outro valor.
-            - O lucro máximo é EXATAMENTE metrics.maxGain (ou "Ilimitado" se for string).
-            - O breakeven é EXATAMENTE metrics.realBreakeven ou metrics.breakevens.
-            - NUNCA contradiga os números de metrics nos cenários ou no summary.
+## COERÊNCIA:
+- isRiskFree=true → risk_level="Baixo", ZERO menção a prejuízo em cenários e cons.
+- maxLoss >= 0 → ZERO cenários com prejuízo.
+- Lucro máximo = metrics.maxGain. Prejuízo máximo = metrics.maxLoss.
+- Breakeven = metrics.realBreakeven ou metrics.breakevens.
 
-            Retorne APENAS este JSON (sem markdown):
-            {
-              "verdict": "Compra Forte" | "Atrativo" | "Neutro" | "Evitar" | "Perigoso",
-              "score": number (0-10),
-              "risk_level": "Baixo" | "Moderado" | "Alto" | "Crítico",
-              "cdi_comparison": "string comparando retorno vs CDI",
-              "strategy_explanation": "string explicando como as pernas interagem",
-              "scenarios": {
-                "up": "cenário detalhado com cálculos em R$",
-                "flat": "cenário detalhado com cálculos em R$",
-                "down": "cenário detalhado com cálculos em R$"
-              },
-              "pros": ["string"],
-              "cons": ["string"],
-              "summary": "resumo executivo usando EXATAMENTE os valores de metrics",
-              "probability_success": "Alta" | "Média" | "Baixa"
-            }`
+## PROS/CONS: máximo 3 itens cada, frase curta.
+
+Retorne APENAS este JSON (sem markdown):
+{
+  "verdict": "Compra Forte" | "Atrativo" | "Neutro" | "Evitar" | "Perigoso",
+  "score": number (0-10),
+  "risk_level": "Baixo" | "Moderado" | "Alto" | "Crítico",
+  "cdi_comparison": "frase curta vs CDI",
+  "strategy_explanation": "max 2 frases sobre a estratégia",
+  "scenarios": {
+    "up": "max 2 frases com R$",
+    "flat": "max 2 frases com R$",
+    "down": "max 2 frases com R$"
+  },
+  "pros": ["max 3 curtos"],
+  "cons": ["max 3 curtos"],
+  "summary": "2 frases com valores exatos de metrics",
+  "probability_success": "Alta" | "Média" | "Baixa"
+}`
           },
           { 
             role: "user", 
-            content: `Analise esta estrutura com PRECISÃO MATEMÁTICA. Calcule os valores reais antes de classificar risco.
+            content: `Analise esta estrutura. NÃO recalcule — use metrics como verdade.
 
-Dados: ${JSON.stringify({ legs, metrics, cdiRate, daysToExpiry })}
+${costLabel}: R$ ${Math.abs(metrics.montageTotal || metrics.netCost || 0).toFixed(2)}
+Lucro máximo: ${typeof metrics.maxGain === 'string' ? metrics.maxGain : 'R$ ' + (metrics.maxGain || 0).toFixed(2)}
+Risco máximo: ${typeof metrics.maxLoss === 'string' ? metrics.maxLoss : 'R$ ' + Math.abs(metrics.maxLoss || 0).toFixed(2)}
+Risco Zero: ${metrics.isRiskFree ? 'SIM' : 'NÃO'}
+Breakeven: ${JSON.stringify(metrics.realBreakeven || metrics.breakevens)}
 
-Os valores em "metrics" são VERDADE ABSOLUTA calculada programaticamente. NÃO recalcule — use-os diretamente nos cenários e no resumo.
+Dados completos: ${JSON.stringify({ legs, metrics, cdiRate, daysToExpiry })}
 
-CHECKLIST antes de responder:
-1. Lucro máximo nos cenários = metrics.maxGain? ✓
-2. Prejuízo máximo = metrics.maxLoss? Se >= 0, ZERO cenários com prejuízo? ✓  
-3. metrics.isRiskFree=true → risk_level="Baixo", nenhum "cons" sobre prejuízo? ✓
-4. Breakeven bate com metrics.realBreakeven ou metrics.breakevens? ✓
-5. Nenhum valor inventado que contradiz metrics? ✓` 
+REGRAS: cenários MAX 2 frases. Pros/Cons MAX 3 itens. Se isRiskFree=true, risk_level="Baixo" sem prejuízo. NUNCA diga "crédito" se montageTotal > 0.` 
           },
         ],
       }),
@@ -104,7 +100,29 @@ CHECKLIST antes de responder:
     let content = result.choices[0].message.content
     content = content.replace(/```json\n?/, '').replace(/\n?```/, '').trim()
     
-    return new Response(content, {
+    // Parse and validate against metrics
+    let parsed
+    try {
+      parsed = JSON.parse(content)
+    } catch {
+      return new Response(content, {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      })
+    }
+
+    // Force coherence with programmatic metrics
+    if (metrics.isRiskFree && parsed.risk_level !== "Baixo") {
+      parsed.risk_level = "Baixo"
+    }
+    if (metrics.isRiskFree && parsed.cons) {
+      parsed.cons = parsed.cons.filter((c: string) => 
+        !c.toLowerCase().includes('prejuízo') && 
+        !c.toLowerCase().includes('perda') &&
+        !c.toLowerCase().includes('risco')
+      )
+    }
+    
+    return new Response(JSON.stringify(parsed), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     })
   } catch (e: any) {
