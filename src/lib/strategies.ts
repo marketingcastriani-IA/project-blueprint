@@ -55,12 +55,16 @@ export function detectStrategy(legs: Leg[]): StrategyInfo | null {
 
     if (!root || root !== putRoot || root !== callRoot) return null;
 
+    // Detect if it's a calendar collar (different expiry months)
+    const callMonth = getExpiryMonth(callSell.asset);
+    const putMonth = getExpiryMonth(putBuy.asset);
+    const isCalendar = callMonth !== null && putMonth !== null && callMonth !== putMonth;
+
     const qty = stockBuy.quantity;
     const montageTotal = (stockBuy.price * qty) + (putBuy.price * qty) - (callSell.price * qty);
     const breakeven = montageTotal / qty;
     
     // Cálculo robusto para Collar (funciona com strikes invertidos)
-    // No vencimento, o lucro estabiliza nos strikes.
     const profitAtCallStrike = (callSell.strike - breakeven) * qty;
     const profitAtPutStrike = (putBuy.strike - breakeven) * qty;
     
@@ -69,8 +73,8 @@ export function detectStrategy(legs: Leg[]): StrategyInfo | null {
     const isRiskFree = minProfit >= 0;
 
     return {
-      type: 'Collar',
-      label: 'Collar (Financiamento com Proteção)',
+      type: isCalendar ? 'CalendarCollar' : 'Collar',
+      label: isCalendar ? 'Collar Calendário (Calendar Spread)' : 'Collar (Financiamento com Proteção)',
       montageTotal: Math.round(montageTotal * 100) / 100,
       breakeven: Math.round(breakeven * 100) / 100,
       maxProfit: Math.round(maxProfit * 100) / 100,
