@@ -316,6 +316,20 @@ export default function AdminPanel() {
     const matchesPlan = planFilter === 'all' ? true : u.plan_type === planFilter;
     if (!matchesPlan) return false;
 
+    // Status filter
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'expired') {
+        const isExpired = u.expires_at && new Date(u.expires_at) < new Date();
+        if (!isExpired) return false;
+      } else if (u.status !== statusFilter) return false;
+    }
+
+    // Expiring in 7 days filter
+    if (expiryFilter === 'expiring7') {
+      const days = getDaysRemaining(u.expires_at);
+      if (days === null || days < 0 || days > 7) return false;
+    }
+
     if (!searchTerm) return true;
     const s = searchTerm.toLowerCase();
     return (
