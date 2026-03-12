@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { detectStrategy } from "../lib/strategies";
-import { calculatePayoffAtExpiry, calculateMetrics } from "../lib/payoff";
+import { calculatePayoffAtExpiry, calculatePayoffAtCutoff, calculateMetrics } from "../lib/payoff";
 import { Leg } from "../lib/types";
 
 describe("detectStrategy", () => {
@@ -60,8 +60,7 @@ describe("detectStrategy", () => {
     expect(strategy).toBeNull();
   });
 
-  it("should detect Collar with different expiry months (calendar collar)", () => {
-    // Structure from user: Sell Call D(Apr) + Buy Stock + Buy Put R(Jun)
+  it("should detect Calendar Collar with different expiry months", () => {
     const legs: Leg[] = [
       { side: "sell", option_type: "call", asset: "PETRD474", strike: 47.40, price: 1.76, quantity: 100 },
       { side: "buy", option_type: "stock", asset: "PETR4", strike: 0, price: 45.71, quantity: 100 },
@@ -69,20 +68,23 @@ describe("detectStrategy", () => {
     ];
     const strategy = detectStrategy(legs);
     expect(strategy).not.toBeNull();
-    expect(strategy?.type).toBe("Collar");
-
-    // montageTotal = (45.71 + 3.31 - 1.76) * 100 = 47.26 * 100 = 4726
+    expect(strategy?.type).toBe("CalendarCollar");
+    expect(strategy?.label).toBe("Collar Calendário (Calendar Spread)");
     expect(strategy?.montageTotal).toBe(4726.00);
-    // breakeven = 4726 / 100 = 47.26
     expect(strategy?.breakeven).toBe(47.26);
-
-    // At call strike (47.40): profit = (47.40 - 47.26) * 100 = 14
-    // At put strike (48.48): profit = (48.48 - 47.26) * 100 = 122
-    // Max profit = 122 (at put strike, since put > call)
-    expect(strategy?.maxProfit).toBe(122.00);
-    // Min profit = 14 (at call strike) - risk free!
-    expect(strategy?.maxLoss).toBe(14.00);
     expect(strategy?.isRiskFree).toBe(true);
+  });
+
+  it("should detect standard Collar with same expiry month", () => {
+    const legs: Leg[] = [
+      { side: "sell", option_type: "call", asset: "PETRD474", strike: 47.40, price: 1.76, quantity: 100 },
+      { side: "buy", option_type: "stock", asset: "PETR4", strike: 0, price: 45.71, quantity: 100 },
+      { side: "buy", option_type: "put", asset: "PETRD484", strike: 48.48, price: 3.31, quantity: 100 },
+    ];
+    const strategy = detectStrategy(legs);
+    expect(strategy).not.toBeNull();
+    expect(strategy?.type).toBe("Collar");
+    expect(strategy?.label).toBe("Collar (Financiamento com Proteção)");
   });
 });
 
@@ -94,47 +96,67 @@ describe("calculatePayoffAtExpiry - Collar structure", () => {
   ];
 
   it("should calculate correct payoff when price is below put strike", () => {
-    // At price 40: stock=-571, call=+176, put=(48.48-40-3.31)*100=517 → total=122
     const payoff = calculatePayoffAtExpiry(legs, 40);
     expect(payoff).toBeCloseTo(122, 0);
   });
 
   it("should calculate correct payoff at current stock price (45.71)", () => {
     const payoff = calculatePayoffAtExpiry(legs, 45.71);
-    // Stock: 0, Call: +176 (OTM), Put: (48.48-45.71-3.31)*100 = -54 → total = 122
     expect(payoff).toBeCloseTo(122, 0);
   });
 
   it("should calculate correct payoff at call strike (47.40)", () => {
-    // Stock: (47.40-45.71)*100=169, Call: +176-0=176 (ATM), Put: (48.48-47.40-3.31)*100=-223*... 
-    // Actually: stock=169, call sell=176(premium, 0 intrinsic), put buy=(1.08-3.31)*100=-223
-    // Wait, let me recalc properly
-    // Stock buy: (47.40 - 45.71) * 100 = 169
-    // Sell call: -(max(0, 47.40-47.40) - 1.76) * 100 = -(-1.76)*100 = 176
-    // Buy put: (max(0, 48.48-47.40) - 3.31) * 100 = (1.08 - 3.31)*100 = -223
-    // Total = 169 + 176 - 223 = 122... hmm wait
-    // Actually: multiplier for sell = -1
-    // sell call: -1 * (max(0, 47.40-47.40) - 1.76) * 100 = -1 * (-1.76) * 100 = 176
-    // buy put: 1 * (max(0, 48.48-47.40) - 3.31) * 100 = 1 * (1.08-3.31) * 100 = -223
-    // buy stock: 1 * (47.40 - 45.71) * 100 = 169
-    // Total = 176 - 223 + 169 = 122
     const payoff = calculatePayoffAtExpiry(legs, 47.40);
     expect(payoff).toBeCloseTo(122, 0);
   });
 
   it("should calculate correct payoff between strikes (48.00)", () => {
-    // Stock: (48-45.71)*100=229, Sell call: -1*(48-47.40-1.76)*100=-1*(-1.16)*100=116
-    // Buy put: (48.48-48-3.31)*100=(-2.83)*100=-283
-    // Total = 229 + 116 - 283 = 62
     const payoff = calculatePayoffAtExpiry(legs, 48.00);
     expect(payoff).toBeCloseTo(62, 0);
   });
 
   it("should calculate correct payoff above put strike (55)", () => {
-    // Stock: (55-45.71)*100=929, Sell call: -1*(55-47.40-1.76)*100=-1*(5.84)*100=-584
-    // Buy put: (0-3.31)*100=-331
-    // Total = 929 - 584 - 331 = 14
     const payoff = calculatePayoffAtExpiry(legs, 55);
     expect(payoff).toBeCloseTo(14, 0);
+  });
+});
+
+describe("calculatePayoffAtCutoff - Calendar Collar with BS", () => {
+  // Calendar Collar: Call expires April, Put expires June
+  // At the Call's expiry, the Put still has ~42 business days of time value
+  const legs: Leg[] = [
+    { side: "sell", option_type: "call", asset: "PETRD474", strike: 47.40, price: 1.76, quantity: 100, expiry_date: "2026-04-17" },
+    { side: "buy", option_type: "stock", asset: "PETR4", strike: 0, price: 45.71, quantity: 100 },
+    { side: "buy", option_type: "put", asset: "PETRR484", strike: 48.48, price: 3.31, quantity: 100, expiry_date: "2026-06-19" },
+  ];
+
+  it("should give higher max profit than intrinsic-only calculation due to time value", () => {
+    // With BS, the put has time value at the call's expiry, increasing the peak profit
+    const legRemainingDays = new Map<number, number>();
+    legRemainingDays.set(0, 0);  // call expires at cutoff
+    legRemainingDays.set(1, 0);  // stock, no expiry
+    legRemainingDays.set(2, 42); // put has ~42 business days remaining
+
+    // At spot = 45.71 (near the peak), BS put value should be higher than intrinsic
+    const bsPayoff = calculatePayoffAtCutoff(legs, 45.71, legRemainingDays, 14.90, 0.35);
+    const intrinsicPayoff = calculatePayoffAtExpiry(legs, 45.71);
+
+    // The BS payoff should be higher because the put still has time value
+    expect(bsPayoff).toBeGreaterThan(intrinsicPayoff);
+  });
+
+  it("should produce a bell-shaped curve peaking near 45-47 range", () => {
+    const legRemainingDays = new Map<number, number>();
+    legRemainingDays.set(0, 0);
+    legRemainingDays.set(1, 0);
+    legRemainingDays.set(2, 42);
+
+    const payoffAt30 = calculatePayoffAtCutoff(legs, 30, legRemainingDays, 14.90, 0.35);
+    const payoffAt45 = calculatePayoffAtCutoff(legs, 45, legRemainingDays, 14.90, 0.35);
+    const payoffAt60 = calculatePayoffAtCutoff(legs, 60, legRemainingDays, 14.90, 0.35);
+
+    // Peak should be around 45-47, extremes should be lower
+    expect(payoffAt45).toBeGreaterThan(payoffAt30);
+    expect(payoffAt45).toBeGreaterThan(payoffAt60);
   });
 });
