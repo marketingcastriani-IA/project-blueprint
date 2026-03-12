@@ -46,6 +46,8 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [planFilter, setPlanFilter] = useState<'all' | 'pro' | 'free'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'approved' | 'pending' | 'rejected' | 'expired'>('all');
+  const [expiryFilter, setExpiryFilter] = useState<'all' | 'expiring7'>('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   
   // Editable fields per user
@@ -314,6 +316,20 @@ export default function AdminPanel() {
     const matchesPlan = planFilter === 'all' ? true : u.plan_type === planFilter;
     if (!matchesPlan) return false;
 
+    // Status filter
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'expired') {
+        const isExpired = u.expires_at && new Date(u.expires_at) < new Date();
+        if (!isExpired) return false;
+      } else if (u.status !== statusFilter) return false;
+    }
+
+    // Expiring in 7 days filter
+    if (expiryFilter === 'expiring7') {
+      const days = getDaysRemaining(u.expires_at);
+      if (days === null || days < 0 || days > 7) return false;
+    }
+
     if (!searchTerm) return true;
     const s = searchTerm.toLowerCase();
     return (
@@ -336,10 +352,12 @@ export default function AdminPanel() {
     }
 
     const templateData = buildEmailTemplate(template);
-    const planLabel = planFilter === 'all' ? 'Todos os planos' : planFilter.toUpperCase();
+    const planLabel = planFilter === 'all' ? 'Todos' : planFilter.toUpperCase();
+    const statusLabel = statusFilter !== 'all' ? ` | ${statusFilter}` : '';
+    const expiryLabel = expiryFilter === 'expiring7' ? ' | ⚠️ expirando 7d' : '';
 
     setEmailRecipients(recipients);
-    setEmailContextLabel(`${recipients.length} usuários filtrados (${planLabel})`);
+    setEmailContextLabel(`${recipients.length} usuários filtrados (${planLabel}${statusLabel}${expiryLabel})`);
     setEmailSubject(templateData.subject);
     setEmailBody(templateData.body);
   };
@@ -411,13 +429,34 @@ export default function AdminPanel() {
                 <Input placeholder="Buscar por nome, email ou ID..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9" />
               </div>
               <Select value={planFilter} onValueChange={(value: 'all' | 'pro' | 'free') => setPlanFilter(value)}>
-                <SelectTrigger className="w-full lg:w-[170px]">
+                <SelectTrigger className="w-full lg:w-[150px]">
                   <SelectValue placeholder="Filtrar plano" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os planos</SelectItem>
                   <SelectItem value="pro">Somente PRO</SelectItem>
                   <SelectItem value="free">Somente FREE</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={(value: 'all' | 'approved' | 'pending' | 'rejected' | 'expired') => setStatusFilter(value)}>
+                <SelectTrigger className="w-full lg:w-[160px]">
+                  <SelectValue placeholder="Filtrar status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="approved">Aprovados</SelectItem>
+                  <SelectItem value="pending">Pendentes</SelectItem>
+                  <SelectItem value="rejected">Rejeitados</SelectItem>
+                  <SelectItem value="expired">Vencidos</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={expiryFilter} onValueChange={(value: 'all' | 'expiring7') => setExpiryFilter(value)}>
+                <SelectTrigger className="w-full lg:w-[180px]">
+                  <SelectValue placeholder="Vencimento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os vencimentos</SelectItem>
+                  <SelectItem value="expiring7">Expirando em 7 dias</SelectItem>
                 </SelectContent>
               </Select>
               <Button variant="outline" onClick={fetchUsers}><RefreshCw className="h-4 w-4" /></Button>
