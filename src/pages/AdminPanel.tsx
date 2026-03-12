@@ -427,13 +427,34 @@ export default function AdminPanel() {
                 <Input placeholder="Buscar por nome, email ou ID..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9" />
               </div>
               <Select value={planFilter} onValueChange={(value: 'all' | 'pro' | 'free') => setPlanFilter(value)}>
-                <SelectTrigger className="w-full lg:w-[170px]">
+                <SelectTrigger className="w-full lg:w-[150px]">
                   <SelectValue placeholder="Filtrar plano" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os planos</SelectItem>
                   <SelectItem value="pro">Somente PRO</SelectItem>
                   <SelectItem value="free">Somente FREE</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={statusFilter} onValueChange={(value: 'all' | 'approved' | 'pending' | 'rejected' | 'expired') => setStatusFilter(value)}>
+                <SelectTrigger className="w-full lg:w-[160px]">
+                  <SelectValue placeholder="Filtrar status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="approved">Aprovados</SelectItem>
+                  <SelectItem value="pending">Pendentes</SelectItem>
+                  <SelectItem value="rejected">Rejeitados</SelectItem>
+                  <SelectItem value="expired">Vencidos</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={expiryFilter} onValueChange={(value: 'all' | 'expiring7') => setExpiryFilter(value)}>
+                <SelectTrigger className="w-full lg:w-[180px]">
+                  <SelectValue placeholder="Vencimento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os vencimentos</SelectItem>
+                  <SelectItem value="expiring7">Expirando em 7 dias</SelectItem>
                 </SelectContent>
               </Select>
               <Button variant="outline" onClick={fetchUsers}><RefreshCw className="h-4 w-4" /></Button>
