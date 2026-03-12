@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         from: fromEmail,
-        to: [to],
+        to: recipients,
         subject,
         html: htmlBody,
       }),
@@ -106,8 +106,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log(`Admin email sent to ${to}: ${subject}`);
-    return new Response(JSON.stringify({ success: true, id: resData.id }), {
+    console.log(`Admin email sent to ${recipients.length} recipient(s): ${subject}`);
+    return new Response(JSON.stringify({ success: true, id: resData.id, recipients: recipients.length }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
