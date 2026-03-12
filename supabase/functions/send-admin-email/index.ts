@@ -66,13 +66,18 @@ Deno.serve(async (req) => {
     }
 
     // Convert plain text body to HTML
+    const checkoutUrl = 'https://www.opcoesprox.com.br/settings?upgrade=true';
+
     const htmlBody = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #ffffff;">
         <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #f0f0f0;">
           <h1 style="color: #1a1a2e; margin: 0;">Opções PRO X</h1>
         </div>
-        <div style="padding: 30px 0; white-space: pre-line; line-height: 1.6;">
+        <div style="padding: 30px 0; white-space: pre-line; line-height: 1.6; color: #333;">
           ${body.replace(/\n/g, '<br>')}
+        </div>
+        <div style="text-align: center; padding: 20px 0;">
+          <a href="${checkoutUrl}" style="display: inline-block; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-size: 18px; font-weight: bold; letter-spacing: 0.5px;">🚀 Assinar PRO Agora</a>
         </div>
         <div style="border-top: 2px solid #f0f0f0; padding-top: 20px; text-align: center; color: #999; font-size: 12px;">
           <p>Opções PRO X - Análise profissional de opções</p>
