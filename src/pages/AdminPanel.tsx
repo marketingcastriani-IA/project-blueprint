@@ -45,6 +45,7 @@ export default function AdminPanel() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [planFilter, setPlanFilter] = useState<'all' | 'pro' | 'free'>('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   
   // Editable fields per user
@@ -53,7 +54,8 @@ export default function AdminPanel() {
   const [editingPurchaseDate, setEditingPurchaseDate] = useState<Record<string, string>>({});
   
   // Email modal
-  const [emailTarget, setEmailTarget] = useState<UserRow | null>(null);
+  const [emailRecipients, setEmailRecipients] = useState<string[]>([]);
+  const [emailContextLabel, setEmailContextLabel] = useState('');
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
@@ -209,36 +211,47 @@ export default function AdminPanel() {
     }
   };
 
-  const openEmailForUser = (u: UserRow, template: 'promo' | 'renewal' | 'news' | 'custom') => {
+  const buildEmailTemplate = (template: 'promo' | 'renewal' | 'news' | 'custom', recipientName?: string) => {
+    const namePrefix = recipientName ? `Olá ${recipientName},` : 'Olá,';
+
     const templates: Record<string, { subject: string; body: string }> = {
       promo: {
         subject: '🔥 Promoção Especial - Opções PRO X',
-        body: `Olá ${u.display_name},\n\nTemos uma promoção especial para você no Opções PRO X!\n\n✅ Acesso completo a todas as ferramentas\n✅ Análise de IA avançada\n✅ OCR para leitura automática de notas\n✅ Portfólio e histórico ilimitados\n\nAproveite agora!\n\nEquipe Opções PRO X`
+        body: `${namePrefix}\n\nTemos uma promoção especial para você no Opções PRO X!\n\n✅ Acesso completo a todas as ferramentas\n✅ Análise de IA avançada\n✅ OCR para leitura automática de notas\n✅ Portfólio e histórico ilimitados\n\nAproveite agora!\n\nEquipe Opções PRO X`
       },
       renewal: {
         subject: '⚠️ Renovação de Assinatura - Opções PRO X',
-        body: `Olá ${u.display_name},\n\nSua assinatura do Opções PRO X está próxima do vencimento${u.expires_at ? ' (' + new Date(u.expires_at).toLocaleDateString('pt-BR') + ')' : ''}.\n\nRenove agora para continuar com acesso total:\n✅ Simulações ilimitadas\n✅ Relatórios de IA\n✅ OCR e análise de imagens\n\nAcesse: https://www.opcoesprox.com.br/settings\n\nEquipe Opções PRO X`
+        body: `${namePrefix}\n\nSua assinatura do Opções PRO X está próxima do vencimento.\n\nRenove agora para continuar com acesso total:\n✅ Simulações ilimitadas\n✅ Relatórios de IA\n✅ OCR e análise de imagens\n\nAcesse: https://www.opcoesprox.com.br/settings\n\nEquipe Opções PRO X`
       },
       news: {
         subject: '🚀 Novidades - Opções PRO X',
-        body: `Olá ${u.display_name},\n\nConfira as últimas novidades do Opções PRO X!\n\n📊 Novos recursos de análise\n🤖 IA aprimorada\n📈 Melhorias no gráfico de payoff\n\nAcesse agora: https://www.opcoesprox.com.br\n\nEquipe Opções PRO X`
+        body: `${namePrefix}\n\nConfira as últimas novidades do Opções PRO X!\n\n📊 Novos recursos de análise\n🤖 IA aprimorada\n📈 Melhorias no gráfico de payoff\n\nAcesse agora: https://www.opcoesprox.com.br\n\nEquipe Opções PRO X`
       },
       custom: {
         subject: '',
-        body: `Olá ${u.display_name},\n\n\n\nEquipe Opções PRO X`
+        body: `${namePrefix}\n\n\n\nEquipe Opções PRO X`
       }
     };
-    
-    const t = templates[template];
-    setEmailTarget(u);
+
+    return templates[template];
+  };
+
+  const openEmailForUser = (u: UserRow, template: 'promo' | 'renewal' | 'news' | 'custom') => {
+    const recipient = u.email?.includes('@') ? u.email : null;
+    if (!recipient) {
+      toast.error('Este usuário não possui e-mail válido para envio');
+      return;
+    }
+
+    const t = buildEmailTemplate(template, u.display_name);
+    setEmailRecipients([recipient]);
+    setEmailContextLabel(`1 usuário (${u.display_name})`);
     setEmailSubject(t.subject);
     setEmailBody(t.body);
   };
 
-
-
   const sendEmailViaResend = async () => {
-    if (!emailTarget?.email || !emailSubject || !emailBody) {
+    if (!emailRecipients.length || !emailSubject || !emailBody) {
       toast.error('Preencha todos os campos');
       return;
     }
@@ -246,15 +259,16 @@ export default function AdminPanel() {
     try {
       const { data, error } = await supabase.functions.invoke('send-admin-email', {
         body: {
-          to: emailTarget.email,
+          to: emailRecipients,
           subject: emailSubject,
           body: emailBody,
         },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success(`Email enviado com sucesso para ${emailTarget.email}!`);
-      setEmailTarget(null);
+      toast.success(`Email enviado com sucesso para ${emailRecipients.length} destinatário(s)!`);
+      setEmailRecipients([]);
+      setEmailContextLabel('');
       setEmailSubject('');
       setEmailBody('');
     } catch (err: any) {
@@ -296,15 +310,39 @@ export default function AdminPanel() {
     expired: users.filter(u => u.expires_at && new Date(u.expires_at) < new Date()).length,
   };
 
-  const filtered = users.filter(u => {
+  const matchesUserFilters = (u: UserRow) => {
+    const matchesPlan = planFilter === 'all' ? true : u.plan_type === planFilter;
+    if (!matchesPlan) return false;
+
     if (!searchTerm) return true;
     const s = searchTerm.toLowerCase();
     return (
-      (u.display_name?.toLowerCase().includes(s)) || 
-      (u.email?.toLowerCase().includes(s)) || 
+      (u.display_name?.toLowerCase().includes(s)) ||
+      (u.email?.toLowerCase().includes(s)) ||
       u.user_id.includes(s)
     );
-  });
+  };
+
+  const filtered = users.filter(matchesUserFilters);
+
+  const openBulkEmailForFiltered = (template: 'promo' | 'renewal' | 'news' | 'custom') => {
+    const recipients = filtered
+      .map((u) => u.email)
+      .filter((email): email is string => Boolean(email && email.includes('@')));
+
+    if (!recipients.length) {
+      toast.error('Nenhum e-mail válido encontrado no filtro atual');
+      return;
+    }
+
+    const templateData = buildEmailTemplate(template);
+    const planLabel = planFilter === 'all' ? 'Todos os planos' : planFilter.toUpperCase();
+
+    setEmailRecipients(recipients);
+    setEmailContextLabel(`${recipients.length} usuários filtrados (${planLabel})`);
+    setEmailSubject(templateData.subject);
+    setEmailBody(templateData.body);
+  };
 
   return (
     <div className="min-h-screen bg-background pb-16">
@@ -367,12 +405,38 @@ export default function AdminPanel() {
           </TabsList>
 
           <TabsContent value="users" className="space-y-6">
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 lg:flex-row">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Buscar por nome, email ou ID..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9" />
               </div>
+              <Select value={planFilter} onValueChange={(value: 'all' | 'pro' | 'free') => setPlanFilter(value)}>
+                <SelectTrigger className="w-full lg:w-[170px]">
+                  <SelectValue placeholder="Filtrar plano" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os planos</SelectItem>
+                  <SelectItem value="pro">Somente PRO</SelectItem>
+                  <SelectItem value="free">Somente FREE</SelectItem>
+                </SelectContent>
+              </Select>
               <Button variant="outline" onClick={fetchUsers}><RefreshCw className="h-4 w-4" /></Button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/50 bg-card p-3">
+              <p className="text-xs font-bold text-muted-foreground">Email em massa (usuários filtrados):</p>
+              <Button size="sm" variant="outline" onClick={() => openBulkEmailForFiltered('promo')} className="h-8 px-3 text-[10px] font-bold border-primary/30 hover:bg-primary/10">
+                🔥 Promoção
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => openBulkEmailForFiltered('renewal')} className="h-8 px-3 text-[10px] font-bold border-warning/30 text-warning hover:bg-warning/10">
+                ⚠️ Renovação
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => openBulkEmailForFiltered('news')} className="h-8 px-3 text-[10px] font-bold border-success/30 text-success hover:bg-success/10">
+                🚀 Novidades
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => openBulkEmailForFiltered('custom')} className="h-8 px-3 text-[10px] font-bold hover:bg-accent">
+                ✏️ Personalizado
+              </Button>
             </div>
 
             <div className="space-y-3">
@@ -605,15 +669,15 @@ export default function AdminPanel() {
       </main>
 
       {/* Email Modal */}
-      {emailTarget && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setEmailTarget(null)}>
+      {emailRecipients.length > 0 && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setEmailRecipients([])}>
           <Card className="w-full max-w-lg" onClick={e => e.stopPropagation()}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Send className="h-5 w-5 text-primary" />
-                Enviar Email para {emailTarget.display_name}
+                Enviar Email em Massa
               </CardTitle>
-              <p className="text-xs text-muted-foreground">{emailTarget.email}</p>
+              <p className="text-xs text-muted-foreground">{emailContextLabel}</p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -625,10 +689,10 @@ export default function AdminPanel() {
                 <Textarea value={emailBody} onChange={e => setEmailBody(e.target.value)} rows={8} placeholder="Corpo do email..." className="text-sm" />
               </div>
               <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setEmailTarget(null)}>Cancelar</Button>
+                <Button variant="outline" onClick={() => setEmailRecipients([])}>Cancelar</Button>
                 <Button onClick={sendEmailViaResend} disabled={sendingEmail} className="font-bold">
                   {sendingEmail ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
-                  {sendingEmail ? 'Enviando...' : 'Enviar Email'}
+                  {sendingEmail ? 'Enviando...' : `Enviar para ${emailRecipients.length}`}
                 </Button>
               </div>
             </CardContent>

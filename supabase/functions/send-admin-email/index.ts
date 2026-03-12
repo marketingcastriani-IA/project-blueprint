@@ -54,8 +54,12 @@ Deno.serve(async (req) => {
   try {
     const { to, subject, body } = await req.json();
 
-    if (!to || !subject || !body) {
-      return new Response(JSON.stringify({ error: 'Missing required fields: to, subject, body' }), {
+    const recipients = Array.isArray(to)
+      ? to.filter((email) => typeof email === 'string' && email.trim().length > 0)
+      : (typeof to === 'string' && to.trim().length > 0 ? [to] : []);
+
+    if (!recipients.length || !subject || !body) {
+      return new Response(JSON.stringify({ error: 'Missing required fields: to (string|string[]), subject, body' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -86,7 +90,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         from: fromEmail,
-        to: [to],
+        to: recipients,
         subject,
         html: htmlBody,
       }),
@@ -102,8 +106,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    console.log(`Admin email sent to ${to}: ${subject}`);
-    return new Response(JSON.stringify({ success: true, id: resData.id }), {
+    console.log(`Admin email sent to ${recipients.length} recipient(s): ${subject}`);
+    return new Response(JSON.stringify({ success: true, id: resData.id, recipients: recipients.length }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
