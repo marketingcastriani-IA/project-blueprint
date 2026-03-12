@@ -1,10 +1,14 @@
 import { useState } from 'react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Leg } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, CheckCircle2 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Plus, CheckCircle2, CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface LegFormProps {
@@ -20,6 +24,8 @@ export default function LegForm({ onAdd }: LegFormProps) {
     price: 0,
     quantity: 1,
   });
+  const [expiryDate, setExpiryDate] = useState<Date | undefined>();
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const isStock = leg.option_type === 'stock';
   const hasAssetPrice = isStock && leg.price > 0;
@@ -30,20 +36,23 @@ export default function LegForm({ onAdd }: LegFormProps) {
     if (leg.quantity <= 0) return;
     if (leg.price < 0) return;
     
-    // Validação para opções: strike é obrigatório
     if (leg.option_type !== 'stock') {
       if (leg.strike <= 0) return;
     }
 
     const strike = leg.option_type === 'stock' && leg.strike <= 0 ? leg.price : leg.strike;
-    onAdd({ ...leg, strike });
+    const expiry_date = expiryDate 
+      ? `${expiryDate.getFullYear()}-${String(expiryDate.getMonth() + 1).padStart(2, '0')}-${String(expiryDate.getDate()).padStart(2, '0')}`
+      : undefined;
+    onAdd({ ...leg, strike, expiry_date });
     setLeg(prev => ({ ...prev, strike: 0, price: 0, quantity: 1 }));
+    // Keep expiry date for next leg (common to reuse)
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Linha Principal de Inputs */}
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 items-end">
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 items-end">
         <div className="space-y-1">
           <Label className="text-xs font-semibold uppercase tracking-wider">Lado</Label>
           <Select value={leg.side} onValueChange={v => setLeg(p => ({ ...p, side: v as 'buy' | 'sell' }))}>
@@ -97,16 +106,16 @@ export default function LegForm({ onAdd }: LegFormProps) {
           </div>
         )}
 
-        {/* Campo de Preço com Destaque para Ativos */}
+        {/* Campo de Preço */}
         <div className={cn(
           "space-y-1 transition-all duration-300",
-          isStock && "col-span-2 sm:col-span-2"
+          isStock && "col-span-2 sm:col-span-1"
         )}>
           <Label className={cn(
             "text-xs font-black uppercase tracking-widest transition-colors",
             isStock ? "text-primary" : "text-muted-foreground"
           )}>
-            {isStock ? '💰 PREÇO DO ATIVO' : 'Prêmio'}
+            {isStock ? '💰 PREÇO' : 'Prêmio'}
           </Label>
           <div className={cn(
             "relative",
@@ -136,6 +145,39 @@ export default function LegForm({ onAdd }: LegFormProps) {
           </div>
         </div>
 
+        {/* Data de Vencimento da Perna */}
+        {!isStock && (
+          <div className="space-y-1">
+            <Label className="text-xs font-semibold uppercase tracking-wider">Vencimento</Label>
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "h-10 w-full justify-start text-left font-normal text-xs",
+                    !expiryDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-1 h-3.5 w-3.5" />
+                  {expiryDate ? format(expiryDate, "dd/MM/yy") : "Venc."}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={expiryDate}
+                  onSelect={(date) => {
+                    setExpiryDate(date);
+                    setCalendarOpen(false);
+                  }}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+        )}
+
         {/* Botão Submit */}
         <div className="flex gap-2 items-end col-span-2 sm:col-span-1">
           <div className="space-y-1 flex-1">
@@ -157,7 +199,7 @@ export default function LegForm({ onAdd }: LegFormProps) {
         </div>
       </div>
 
-      {/* Indicador de Status para Ativos - Apenas informativo, sem bloquear */}
+      {/* Indicador de Status para Ativos */}
       {isStock && (
         <div className={cn(
           "px-4 py-2 rounded-lg text-sm font-semibold text-center transition-all",

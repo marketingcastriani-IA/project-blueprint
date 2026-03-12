@@ -1,0 +1,1 @@
+ALTER TABLE public.legs ADD COLUMN expiry_date date;

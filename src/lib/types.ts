@@ -6,6 +6,7 @@ export interface Leg {
   strike: number;
   price: number;
   quantity: number;
+  expiry_date?: string; // ISO date string YYYY-MM-DD
 }
 
 export interface Analysis {

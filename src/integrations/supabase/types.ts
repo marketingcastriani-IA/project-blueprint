@@ -65,6 +65,7 @@ export type Database = {
           asset: string
           created_at: string
           current_price: number | null
+          expiry_date: string | null
           id: string
           option_type: string
           price: number
@@ -77,6 +78,7 @@ export type Database = {
           asset?: string
           created_at?: string
           current_price?: number | null
+          expiry_date?: string | null
           id?: string
           option_type: string
           price?: number
@@ -89,6 +91,7 @@ export type Database = {
           asset?: string
           created_at?: string
           current_price?: number | null
+          expiry_date?: string | null
           id?: string
           option_type?: string
           price?: number
