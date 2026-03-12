@@ -46,6 +46,8 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [planFilter, setPlanFilter] = useState<'all' | 'pro' | 'free'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'approved' | 'pending' | 'rejected' | 'expired'>('all');
+  const [expiryFilter, setExpiryFilter] = useState<'all' | 'expiring7'>('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   
   // Editable fields per user
