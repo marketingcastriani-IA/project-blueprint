@@ -48,6 +48,10 @@ export default function Settings() {
       toast.success("Pagamento aprovado!", { description: "Seu plano PRO será liberado em instantes." });
     } else if (params.get('payment') === 'failure') {
       toast.error("Pagamento não concluído", { description: "Houve um problema com a transação." });
+    } else if (params.get('upgrade') === 'true') {
+      // Auto-trigger checkout when coming from email CTA
+      handleUpgrade();
+      window.history.replaceState({}, '', '/settings');
     }
   }, []);
 
