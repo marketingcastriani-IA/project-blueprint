@@ -55,11 +55,6 @@ export function detectStrategy(legs: Leg[]): StrategyInfo | null {
 
     if (!root || root !== putRoot || root !== callRoot) return null;
 
-    const putMonth = getExpiryMonth(putBuy.asset);
-    const callMonth = getExpiryMonth(callSell.asset);
-
-    if (!putMonth || !callMonth || putMonth !== callMonth) return null;
-
     const qty = stockBuy.quantity;
     const montageTotal = (stockBuy.price * qty) + (putBuy.price * qty) - (callSell.price * qty);
     const breakeven = montageTotal / qty;
