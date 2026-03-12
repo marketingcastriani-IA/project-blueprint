@@ -54,8 +54,12 @@ Deno.serve(async (req) => {
   try {
     const { to, subject, body } = await req.json();
 
-    if (!to || !subject || !body) {
-      return new Response(JSON.stringify({ error: 'Missing required fields: to, subject, body' }), {
+    const recipients = Array.isArray(to)
+      ? to.filter((email) => typeof email === 'string' && email.trim().length > 0)
+      : (typeof to === 'string' && to.trim().length > 0 ? [to] : []);
+
+    if (!recipients.length || !subject || !body) {
+      return new Response(JSON.stringify({ error: 'Missing required fields: to (string|string[]), subject, body' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

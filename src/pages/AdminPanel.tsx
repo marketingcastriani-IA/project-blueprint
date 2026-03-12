@@ -45,6 +45,7 @@ export default function AdminPanel() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [planFilter, setPlanFilter] = useState<'all' | 'pro' | 'free'>('all');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   
   // Editable fields per user
@@ -53,7 +54,8 @@ export default function AdminPanel() {
   const [editingPurchaseDate, setEditingPurchaseDate] = useState<Record<string, string>>({});
   
   // Email modal
-  const [emailTarget, setEmailTarget] = useState<UserRow | null>(null);
+  const [emailRecipients, setEmailRecipients] = useState<string[]>([]);
+  const [emailContextLabel, setEmailContextLabel] = useState('');
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
   const [sendingEmail, setSendingEmail] = useState(false);
