@@ -1,8 +1,12 @@
+import { useState } from 'react';
+import { format } from 'date-fns';
 import { Leg } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Trash2, CheckCircle2, CalendarIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 
 interface LegsTableProps {
@@ -33,7 +37,7 @@ export default function LegsTable({ legs, onRemove, onUpdate }: LegsTableProps) 
 
   return (
     <div className="rounded-lg border-2 border-primary/30 overflow-x-auto bg-gradient-to-br from-card/80 to-card/40 shadow-[0_0_30px_-12px_hsl(var(--primary)/0.2)] -mx-4 sm:mx-0">
-      <Table className="min-w-[600px]">
+      <Table className="min-w-[700px]">
         <TableHeader>
           <TableRow className="border-b-2 border-primary/20 bg-gradient-to-r from-primary/10 to-primary/5">
             <TableHead className="font-black text-xs uppercase tracking-wider">Lado</TableHead>
@@ -41,6 +45,7 @@ export default function LegsTable({ legs, onRemove, onUpdate }: LegsTableProps) 
             <TableHead className="font-black text-xs uppercase tracking-wider">Ativo</TableHead>
             <TableHead className="text-right font-black text-xs uppercase tracking-wider">Strike</TableHead>
             <TableHead className="text-right font-black text-xs uppercase tracking-wider">Preço</TableHead>
+            <TableHead className="text-center font-black text-xs uppercase tracking-wider">Vencimento</TableHead>
             <TableHead className="text-right font-black text-xs uppercase tracking-wider">Qtd</TableHead>
             <TableHead className="w-10" />
           </TableRow>
@@ -49,6 +54,7 @@ export default function LegsTable({ legs, onRemove, onUpdate }: LegsTableProps) 
           {legs.map((leg, i) => {
             const isStock = leg.option_type === 'stock';
             const hasPrice = isStock && leg.price > 0;
+            const legExpiryDate = leg.expiry_date ? new Date(leg.expiry_date + 'T12:00:00') : undefined;
 
             return (
               <TableRow 
@@ -131,12 +137,26 @@ export default function LegsTable({ legs, onRemove, onUpdate }: LegsTableProps) 
                         isStock && "border-primary/40 bg-gradient-to-r from-primary/20 to-primary/10 text-primary font-black",
                         !isStock && "font-mono"
                       )}
-                      
                     />
                     {isStock && hasPrice && (
                       <CheckCircle2 className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 text-success" />
                     )}
                   </div>
+                </TableCell>
+                <TableCell>
+                  {!isStock ? (
+                    <LegDatePicker
+                      date={legExpiryDate}
+                      onChange={(date) => {
+                        const expiry_date = date 
+                          ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+                          : undefined;
+                        onUpdate(i, { ...leg, expiry_date });
+                      }}
+                    />
+                  ) : (
+                    <span className="text-xs text-muted-foreground text-center block">—</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Input
@@ -163,5 +183,37 @@ export default function LegsTable({ legs, onRemove, onUpdate }: LegsTableProps) 
         </TableBody>
       </Table>
     </div>
+  );
+}
+
+function LegDatePicker({ date, onChange }: { date?: Date; onChange: (date?: Date) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            "h-9 w-full justify-center text-xs px-2",
+            !date && "text-muted-foreground"
+          )}
+        >
+          <CalendarIcon className="mr-1 h-3 w-3" />
+          {date ? format(date, "dd/MM/yy") : "Venc."}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={(d) => {
+            onChange(d);
+            setOpen(false);
+          }}
+          initialFocus
+          className={cn("p-3 pointer-events-auto")}
+        />
+      </PopoverContent>
+    </Popover>
   );
 }
