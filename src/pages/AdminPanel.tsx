@@ -211,36 +211,47 @@ export default function AdminPanel() {
     }
   };
 
-  const openEmailForUser = (u: UserRow, template: 'promo' | 'renewal' | 'news' | 'custom') => {
+  const buildEmailTemplate = (template: 'promo' | 'renewal' | 'news' | 'custom', recipientName?: string) => {
+    const namePrefix = recipientName ? `Olá ${recipientName},` : 'Olá,';
+
     const templates: Record<string, { subject: string; body: string }> = {
       promo: {
         subject: '🔥 Promoção Especial - Opções PRO X',
-        body: `Olá ${u.display_name},\n\nTemos uma promoção especial para você no Opções PRO X!\n\n✅ Acesso completo a todas as ferramentas\n✅ Análise de IA avançada\n✅ OCR para leitura automática de notas\n✅ Portfólio e histórico ilimitados\n\nAproveite agora!\n\nEquipe Opções PRO X`
+        body: `${namePrefix}\n\nTemos uma promoção especial para você no Opções PRO X!\n\n✅ Acesso completo a todas as ferramentas\n✅ Análise de IA avançada\n✅ OCR para leitura automática de notas\n✅ Portfólio e histórico ilimitados\n\nAproveite agora!\n\nEquipe Opções PRO X`
       },
       renewal: {
         subject: '⚠️ Renovação de Assinatura - Opções PRO X',
-        body: `Olá ${u.display_name},\n\nSua assinatura do Opções PRO X está próxima do vencimento${u.expires_at ? ' (' + new Date(u.expires_at).toLocaleDateString('pt-BR') + ')' : ''}.\n\nRenove agora para continuar com acesso total:\n✅ Simulações ilimitadas\n✅ Relatórios de IA\n✅ OCR e análise de imagens\n\nAcesse: https://www.opcoesprox.com.br/settings\n\nEquipe Opções PRO X`
+        body: `${namePrefix}\n\nSua assinatura do Opções PRO X está próxima do vencimento.\n\nRenove agora para continuar com acesso total:\n✅ Simulações ilimitadas\n✅ Relatórios de IA\n✅ OCR e análise de imagens\n\nAcesse: https://www.opcoesprox.com.br/settings\n\nEquipe Opções PRO X`
       },
       news: {
         subject: '🚀 Novidades - Opções PRO X',
-        body: `Olá ${u.display_name},\n\nConfira as últimas novidades do Opções PRO X!\n\n📊 Novos recursos de análise\n🤖 IA aprimorada\n📈 Melhorias no gráfico de payoff\n\nAcesse agora: https://www.opcoesprox.com.br\n\nEquipe Opções PRO X`
+        body: `${namePrefix}\n\nConfira as últimas novidades do Opções PRO X!\n\n📊 Novos recursos de análise\n🤖 IA aprimorada\n📈 Melhorias no gráfico de payoff\n\nAcesse agora: https://www.opcoesprox.com.br\n\nEquipe Opções PRO X`
       },
       custom: {
         subject: '',
-        body: `Olá ${u.display_name},\n\n\n\nEquipe Opções PRO X`
+        body: `${namePrefix}\n\n\n\nEquipe Opções PRO X`
       }
     };
-    
-    const t = templates[template];
-    setEmailTarget(u);
+
+    return templates[template];
+  };
+
+  const openEmailForUser = (u: UserRow, template: 'promo' | 'renewal' | 'news' | 'custom') => {
+    const recipient = u.email?.includes('@') ? u.email : null;
+    if (!recipient) {
+      toast.error('Este usuário não possui e-mail válido para envio');
+      return;
+    }
+
+    const t = buildEmailTemplate(template, u.display_name);
+    setEmailRecipients([recipient]);
+    setEmailContextLabel(`1 usuário (${u.display_name})`);
     setEmailSubject(t.subject);
     setEmailBody(t.body);
   };
 
-
-
   const sendEmailViaResend = async () => {
-    if (!emailTarget?.email || !emailSubject || !emailBody) {
+    if (!emailRecipients.length || !emailSubject || !emailBody) {
       toast.error('Preencha todos os campos');
       return;
     }
@@ -248,15 +259,16 @@ export default function AdminPanel() {
     try {
       const { data, error } = await supabase.functions.invoke('send-admin-email', {
         body: {
-          to: emailTarget.email,
+          to: emailRecipients,
           subject: emailSubject,
           body: emailBody,
         },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success(`Email enviado com sucesso para ${emailTarget.email}!`);
-      setEmailTarget(null);
+      toast.success(`Email enviado com sucesso para ${emailRecipients.length} destinatário(s)!`);
+      setEmailRecipients([]);
+      setEmailContextLabel('');
       setEmailSubject('');
       setEmailBody('');
     } catch (err: any) {
