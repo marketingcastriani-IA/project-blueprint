@@ -405,12 +405,38 @@ export default function AdminPanel() {
           </TabsList>
 
           <TabsContent value="users" className="space-y-6">
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 lg:flex-row">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Buscar por nome, email ou ID..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9" />
               </div>
+              <Select value={planFilter} onValueChange={(value: 'all' | 'pro' | 'free') => setPlanFilter(value)}>
+                <SelectTrigger className="w-full lg:w-[170px]">
+                  <SelectValue placeholder="Filtrar plano" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os planos</SelectItem>
+                  <SelectItem value="pro">Somente PRO</SelectItem>
+                  <SelectItem value="free">Somente FREE</SelectItem>
+                </SelectContent>
+              </Select>
               <Button variant="outline" onClick={fetchUsers}><RefreshCw className="h-4 w-4" /></Button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/50 bg-card p-3">
+              <p className="text-xs font-bold text-muted-foreground">Email em massa (usuários filtrados):</p>
+              <Button size="sm" variant="outline" onClick={() => openBulkEmailForFiltered('promo')} className="h-8 px-3 text-[10px] font-bold border-primary/30 hover:bg-primary/10">
+                🔥 Promoção
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => openBulkEmailForFiltered('renewal')} className="h-8 px-3 text-[10px] font-bold border-warning/30 text-warning hover:bg-warning/10">
+                ⚠️ Renovação
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => openBulkEmailForFiltered('news')} className="h-8 px-3 text-[10px] font-bold border-success/30 text-success hover:bg-success/10">
+                🚀 Novidades
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => openBulkEmailForFiltered('custom')} className="h-8 px-3 text-[10px] font-bold hover:bg-accent">
+                ✏️ Personalizado
+              </Button>
             </div>
 
             <div className="space-y-3">
