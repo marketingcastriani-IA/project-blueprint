@@ -1,8 +1,9 @@
 import { Leg, PayoffPoint, AnalysisMetrics } from './types';
 import { detectStrategy } from './strategies';
+import { countBusinessDays } from './b3-calendar';
 
 /**
- * Black-Scholes mathematical helpers for T+0 payoff
+ * Black-Scholes mathematical helpers
  */
 function normalCDF(x: number): number {
   const t = 1 / (1 + 0.2316419 * Math.abs(x));
@@ -13,17 +14,17 @@ function normalCDF(x: number): number {
 
 export function calculateOptionPrice(
   type: 'call' | 'put',
-  S: number, // Spot
-  K: number, // Strike
-  T: number, // Time to expiry (years)
-  r: number, // Risk-free rate
-  v: number  // Volatility
+  S: number,
+  K: number,
+  T: number,
+  r: number,
+  v: number
 ): number {
   if (T <= 0.001) return type === 'call' ? Math.max(0, S - K) : Math.max(0, K - S);
-  
+
   const d1 = (Math.log(S / K) + (r + v * v / 2) * T) / (v * Math.sqrt(T));
   const d2 = d1 - v * Math.sqrt(T);
-  
+
   if (type === 'call') {
     return S * normalCDF(d1) - K * Math.exp(-r * T) * normalCDF(d2);
   } else {
@@ -32,7 +33,7 @@ export function calculateOptionPrice(
 }
 
 /**
- * Calcula o payoff no vencimento para um dado preço spot.
+ * Calcula o payoff no vencimento para um dado preço spot (todas as pernas vencem juntas).
  */
 export function calculatePayoffAtExpiry(legs: Leg[], spotPrice: number): number {
   let total = 0;
@@ -53,13 +54,111 @@ export function calculatePayoffAtExpiry(legs: Leg[], spotPrice: number): number 
 }
 
 /**
+ * Determina se a estrutura tem vencimentos múltiplos (calendar spread).
+ * Retorna a data de corte (vencimento mais curto) e os dias úteis restantes de cada perna.
+ */
+function getMultiMaturityInfo(legs: Leg[]): {
+  isMultiMaturity: boolean;
+  cutoffDate: Date | null;
+  legRemainingDays: Map<number, number>; // index -> business days remaining after cutoff
+} {
+  const expiryDates: Date[] = [];
+  const legDates: (Date | null)[] = [];
+
+  for (const leg of legs) {
+    if (leg.option_type === 'stock') {
+      legDates.push(null); // stock has no expiry
+      continue;
+    }
+    if (leg.expiry_date) {
+      const d = new Date(leg.expiry_date + 'T12:00:00');
+      legDates.push(d);
+      expiryDates.push(d);
+    } else {
+      legDates.push(null);
+    }
+  }
+
+  if (expiryDates.length < 2) {
+    return { isMultiMaturity: false, cutoffDate: null, legRemainingDays: new Map() };
+  }
+
+  // Find earliest expiry
+  const sorted = [...expiryDates].sort((a, b) => a.getTime() - b.getTime());
+  const cutoffDate = sorted[0];
+  const latestDate = sorted[sorted.length - 1];
+
+  // Check if they're actually different
+  if (cutoffDate.getTime() === latestDate.getTime()) {
+    return { isMultiMaturity: false, cutoffDate: null, legRemainingDays: new Map() };
+  }
+
+  const legRemainingDays = new Map<number, number>();
+  for (let i = 0; i < legs.length; i++) {
+    const d = legDates[i];
+    if (d && d.getTime() > cutoffDate.getTime()) {
+      legRemainingDays.set(i, countBusinessDays(cutoffDate, d));
+    } else {
+      legRemainingDays.set(i, 0); // expires at cutoff or is stock
+    }
+  }
+
+  return { isMultiMaturity: true, cutoffDate, legRemainingDays };
+}
+
+/**
+ * Calcula o payoff na data de corte (vencimento mais curto) para calendar spreads.
+ * Pernas que vencem na data de corte: valor intrínseco.
+ * Pernas que vencem depois: valor Black-Scholes (com tempo restante).
+ */
+export function calculatePayoffAtCutoff(
+  legs: Leg[],
+  spotPrice: number,
+  legRemainingDays: Map<number, number>,
+  cdiRate: number = 14.90,
+  volatility: number = 0.35
+): number {
+  let total = 0;
+  const r = cdiRate / 100;
+
+  for (let i = 0; i < legs.length; i++) {
+    const leg = legs[i];
+    const multiplier = leg.side === 'buy' ? 1 : -1;
+    const remainingDays = legRemainingDays.get(i) ?? 0;
+
+    if (leg.option_type === 'stock') {
+      total += multiplier * (spotPrice - leg.price) * leg.quantity;
+    } else if (remainingDays <= 0) {
+      // This leg expires at cutoff → intrinsic value
+      const intrinsic = leg.option_type === 'call'
+        ? Math.max(0, spotPrice - leg.strike)
+        : Math.max(0, leg.strike - spotPrice);
+      total += multiplier * (intrinsic - leg.price) * leg.quantity;
+    } else {
+      // This leg still has time → Black-Scholes value
+      const T = remainingDays / 252;
+      const bsValue = calculateOptionPrice(
+        leg.option_type as 'call' | 'put',
+        spotPrice,
+        leg.strike,
+        T,
+        r,
+        volatility
+      );
+      total += multiplier * (bsValue - leg.price) * leg.quantity;
+    }
+  }
+  return total;
+}
+
+/**
  * Calcula o payoff estimado para HOJE (T+0) usando Black-Scholes.
  */
 export function calculatePayoffToday(legs: Leg[], spotPrice: number, daysToExpiry: number, cdiRate: number): number {
   let total = 0;
-  const T = daysToExpiry / 252; // Tempo em anos (dias úteis)
+  const T = daysToExpiry / 252;
   const r = cdiRate / 100;
-  const v = 0.35; // Volatilidade implícita padrão (35%)
+  const v = 0.35;
 
   for (const leg of legs) {
     const multiplier = leg.side === 'buy' ? 1 : -1;
@@ -83,6 +182,7 @@ export function calculatePayoffToday(legs: Leg[], spotPrice: number, daysToExpir
 
 /**
  * Gera a curva de payoff com uma faixa de preços adequada.
+ * Detecta automaticamente calendar spreads e usa BS para pernas com vencimento futuro.
  */
 export function generatePayoffCurve(legs: Leg[], daysToExpiry = 0, cdiRate = 14.90, numPoints = 200): PayoffPoint[] {
   if (legs.length === 0) return [];
@@ -102,18 +202,29 @@ export function generatePayoffCurve(legs: Leg[], daysToExpiry = 0, cdiRate = 14.
   const maxRef = Math.max(...referencePoints);
   const range = maxRef - minRef || maxRef * 0.2;
 
-  // Aumentamos o padding para detectar tendências de lucro ilimitado
   const padding = Math.max(range * 1.5, maxRef * 0.5);
   const start = Math.max(0, minRef - padding);
   const end = maxRef + padding;
   const step = (end - start) / numPoints;
 
+  // Check for multi-maturity (calendar spread)
+  const { isMultiMaturity, legRemainingDays } = getMultiMaturityInfo(legs);
+
   const points: PayoffPoint[] = [];
   for (let i = 0; i <= numPoints; i++) {
     const price = start + step * i;
+
+    let profitAtExpiry: number;
+    if (isMultiMaturity) {
+      // Calendar spread: use BS for longer-dated legs at the cutoff date
+      profitAtExpiry = calculatePayoffAtCutoff(legs, price, legRemainingDays, cdiRate);
+    } else {
+      profitAtExpiry = calculatePayoffAtExpiry(legs, price);
+    }
+
     points.push({
       price: Math.round(price * 100) / 100,
-      profitAtExpiry: Math.round(calculatePayoffAtExpiry(legs, price) * 100) / 100,
+      profitAtExpiry: Math.round(profitAtExpiry * 100) / 100,
       profitToday: Math.round(calculatePayoffToday(legs, price, daysToExpiry, cdiRate) * 100) / 100,
     });
   }
@@ -125,6 +236,8 @@ export function generatePayoffCurve(legs: Leg[], daysToExpiry = 0, cdiRate = 14.
  */
 export function calculateMetrics(legs: Leg[]): AnalysisMetrics {
   if (legs.length === 0) return { maxGain: 0, maxLoss: 0, breakevens: [], netCost: 0 };
+
+  const { isMultiMaturity, legRemainingDays } = getMultiMaturityInfo(legs);
 
   // Geramos uma curva ampla para análise de limites
   const curve = generatePayoffCurve(legs, 0, 14.90, 1000);
@@ -155,15 +268,16 @@ export function calculateMetrics(legs: Leg[]): AnalysisMetrics {
   const firstProfit = profits[0];
   const secondProfit = profits[1];
 
-  // Se a curva termina subindo, o lucro é ilimitado (ex: compra de ativo ou call)
-  const isGainUnlimited = lastProfit > secondLastProfit + 0.01;
-  
-  // Se a curva termina caindo no lado direito, o prejuízo é ilimitado (ex: venda de call a seco)
-  const isLossUnlimited = lastProfit < secondLastProfit - 0.01;
+  // For calendar spreads (bell-shaped curve), don't mark as unlimited
+  const isGainUnlimited = !isMultiMaturity && lastProfit > secondLastProfit + 0.01;
+  const isLossUnlimited = !isMultiMaturity && (lastProfit < secondLastProfit - 0.01);
 
-  // Cálculo da perda máxima real (considerando o pior cenário: ativo a zero ou extremidade da curva)
-  const lossAtZero = calculatePayoffAtExpiry(legs, 0);
-  const absoluteMinProfit = Math.min(minProfit, lossAtZero);
+  // Cálculo da perda máxima real
+  let absoluteMinProfit = minProfit;
+  if (!isMultiMaturity) {
+    const lossAtZero = calculatePayoffAtExpiry(legs, 0);
+    absoluteMinProfit = Math.min(minProfit, lossAtZero);
+  }
 
   const result: AnalysisMetrics = {
     maxGain: isGainUnlimited ? 'Ilimitado' : Math.round(maxProfit * 100) / 100,
@@ -179,10 +293,12 @@ export function calculateMetrics(legs: Leg[]): AnalysisMetrics {
     result.montageTotal = strategy.montageTotal;
     result.realBreakeven = strategy.breakeven;
     result.isRiskFree = strategy.isRiskFree;
-    
-    // Só sobrescrevemos se a estratégia detectada for mais precisa que a análise numérica
-    if (strategy.maxProfit !== 'Ilimitado') result.maxGain = strategy.maxProfit;
-    if (!isLossUnlimited) result.maxLoss = strategy.isRiskFree ? strategy.maxLoss : Math.min(result.maxLoss as number, -Math.abs(strategy.maxLoss as number));
+
+    // For calendar spreads, use the curve-derived metrics (more accurate with BS)
+    if (!isMultiMaturity) {
+      if (strategy.maxProfit !== 'Ilimitado') result.maxGain = strategy.maxProfit;
+      if (!isLossUnlimited) result.maxLoss = strategy.isRiskFree ? strategy.maxLoss : Math.min(result.maxLoss as number, -Math.abs(strategy.maxLoss as number));
+    }
   }
 
   return result;
