@@ -669,15 +669,15 @@ export default function AdminPanel() {
       </main>
 
       {/* Email Modal */}
-      {emailTarget && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setEmailTarget(null)}>
+      {emailRecipients.length > 0 && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setEmailRecipients([])}>
           <Card className="w-full max-w-lg" onClick={e => e.stopPropagation()}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Send className="h-5 w-5 text-primary" />
-                Enviar Email para {emailTarget.display_name}
+                Enviar Email em Massa
               </CardTitle>
-              <p className="text-xs text-muted-foreground">{emailTarget.email}</p>
+              <p className="text-xs text-muted-foreground">{emailContextLabel}</p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -689,10 +689,10 @@ export default function AdminPanel() {
                 <Textarea value={emailBody} onChange={e => setEmailBody(e.target.value)} rows={8} placeholder="Corpo do email..." className="text-sm" />
               </div>
               <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setEmailTarget(null)}>Cancelar</Button>
+                <Button variant="outline" onClick={() => setEmailRecipients([])}>Cancelar</Button>
                 <Button onClick={sendEmailViaResend} disabled={sendingEmail} className="font-bold">
                   {sendingEmail ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
-                  {sendingEmail ? 'Enviando...' : 'Enviar Email'}
+                  {sendingEmail ? 'Enviando...' : `Enviar para ${emailRecipients.length}`}
                 </Button>
               </div>
             </CardContent>
