@@ -299,6 +299,7 @@ export default function Dashboard() {
       const legsToInsert = legs.map(l => ({
         analysis_id: analysis.id, side: l.side, option_type: l.option_type,
         asset: l.asset, strike: l.strike, price: l.price, quantity: l.quantity,
+        expiry_date: l.expiry_date || null,
       }));
       await supabase.from('legs').insert(legsToInsert);
 
