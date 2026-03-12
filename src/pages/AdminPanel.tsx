@@ -310,15 +310,39 @@ export default function AdminPanel() {
     expired: users.filter(u => u.expires_at && new Date(u.expires_at) < new Date()).length,
   };
 
-  const filtered = users.filter(u => {
+  const matchesUserFilters = (u: UserRow) => {
+    const matchesPlan = planFilter === 'all' ? true : u.plan_type === planFilter;
+    if (!matchesPlan) return false;
+
     if (!searchTerm) return true;
     const s = searchTerm.toLowerCase();
     return (
-      (u.display_name?.toLowerCase().includes(s)) || 
-      (u.email?.toLowerCase().includes(s)) || 
+      (u.display_name?.toLowerCase().includes(s)) ||
+      (u.email?.toLowerCase().includes(s)) ||
       u.user_id.includes(s)
     );
-  });
+  };
+
+  const filtered = users.filter(matchesUserFilters);
+
+  const openBulkEmailForFiltered = (template: 'promo' | 'renewal' | 'news' | 'custom') => {
+    const recipients = filtered
+      .map((u) => u.email)
+      .filter((email): email is string => Boolean(email && email.includes('@')));
+
+    if (!recipients.length) {
+      toast.error('Nenhum e-mail válido encontrado no filtro atual');
+      return;
+    }
+
+    const templateData = buildEmailTemplate(template);
+    const planLabel = planFilter === 'all' ? 'Todos os planos' : planFilter.toUpperCase();
+
+    setEmailRecipients(recipients);
+    setEmailContextLabel(`${recipients.length} usuários filtrados (${planLabel})`);
+    setEmailSubject(templateData.subject);
+    setEmailBody(templateData.body);
+  };
 
   return (
     <div className="min-h-screen bg-background pb-16">
