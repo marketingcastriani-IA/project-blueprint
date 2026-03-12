@@ -352,10 +352,12 @@ export default function AdminPanel() {
     }
 
     const templateData = buildEmailTemplate(template);
-    const planLabel = planFilter === 'all' ? 'Todos os planos' : planFilter.toUpperCase();
+    const planLabel = planFilter === 'all' ? 'Todos' : planFilter.toUpperCase();
+    const statusLabel = statusFilter !== 'all' ? ` | ${statusFilter}` : '';
+    const expiryLabel = expiryFilter === 'expiring7' ? ' | ⚠️ expirando 7d' : '';
 
     setEmailRecipients(recipients);
-    setEmailContextLabel(`${recipients.length} usuários filtrados (${planLabel})`);
+    setEmailContextLabel(`${recipients.length} usuários filtrados (${planLabel}${statusLabel}${expiryLabel})`);
     setEmailSubject(templateData.subject);
     setEmailBody(templateData.body);
   };
