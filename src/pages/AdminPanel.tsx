@@ -266,6 +266,7 @@ export default function AdminPanel() {
           to: emailRecipients,
           subject: emailSubject,
           body: emailBody,
+          imageDataUrl: emailImageDataUrl,
         },
       });
       if (error) throw error;
