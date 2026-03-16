@@ -461,7 +461,7 @@ type ModalState =
   | { tipo: "excluir"; estrategia: Estrategia }
   | null;
 
-export default function PortfolioDiversificador() {
+export default function Diversificador() {
   const [patrimonio, setPatrimonio] = useState(100000);
   const [inputPatrimonio, setInputPatrimonio] = useState("100000");
   const [estrategias, setEstrategias] = useState<Estrategia[]>(ESTRATEGIAS_PADRAO);
