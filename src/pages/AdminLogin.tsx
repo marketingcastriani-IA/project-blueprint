@@ -91,11 +91,13 @@ export default function AdminLogin() {
               </div>
               <div className="space-y-2">
                 <Label>Senha</Label>
+                <div className="relative">
                 <Input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
+                  className="pr-10"
                   required
                 />
               </div>
