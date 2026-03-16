@@ -12,6 +12,7 @@ import History from "./pages/History";
 import AnalysisDetail from "./pages/AnalysisDetail";
 import Portfolio from "./pages/Portfolio";
 import Settings from "./pages/Settings";
+import Diversificador from "./pages/Diversificador";
 import AdminLogin from "./pages/AdminLogin";
 import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/history" element={<History />} />
               <Route path="/portfolio" element={<Portfolio />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/diversificador" element={<Diversificador />} />
               <Route path="/analysis/:id" element={<AnalysisDetail />} />
               <Route path="/admin-login" element={<AdminLogin />} />
               <Route path="/admin" element={<AdminPanel />} />

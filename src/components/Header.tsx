@@ -2,7 +2,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, Briefcase, Settings, Crown, Zap } from 'lucide-react';
+import { TrendingUp, Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, Briefcase, Settings, Crown, Zap, PieChart } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
@@ -20,6 +20,7 @@ export default function Header() {
     { label: 'Nova Análise', path: '/dashboard', icon: PlusCircle },
     { label: 'Histórico', path: '/history', icon: History },
     { label: 'Portfólio', path: '/portfolio', icon: Briefcase },
+    { label: 'Diversificador', path: '/diversificador', icon: PieChart },
     { label: 'Configurações', path: '/settings', icon: Settings },
     ...(access.isAdmin ? [{ label: 'Admin', path: '/admin', icon: Shield }] : []),
   ];
