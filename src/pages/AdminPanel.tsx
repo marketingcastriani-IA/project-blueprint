@@ -276,6 +276,8 @@ export default function AdminPanel() {
       setEmailContextLabel('');
       setEmailSubject('');
       setEmailBody('');
+      setEmailImageDataUrl(null);
+      setEmailImagePreview(null);
     } catch (err: any) {
       toast.error('Erro ao enviar email: ' + (err.message || 'Erro desconhecido'));
     } finally {
