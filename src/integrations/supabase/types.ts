@@ -59,6 +59,92 @@ export type Database = {
         }
         Relationships: []
       }
+      diversificacao_estrategias: {
+        Row: {
+          alavancagem: number
+          ativo: boolean
+          cor_texto: string | null
+          created_at: string
+          descricao: string | null
+          diversificacao_id: string
+          frequencia: string
+          id: string
+          min_acoes: number
+          nome: string
+          obs: string | null
+          percentual: number
+          risco: string
+          vezes: number
+        }
+        Insert: {
+          alavancagem?: number
+          ativo?: boolean
+          cor_texto?: string | null
+          created_at?: string
+          descricao?: string | null
+          diversificacao_id: string
+          frequencia?: string
+          id?: string
+          min_acoes?: number
+          nome: string
+          obs?: string | null
+          percentual?: number
+          risco?: string
+          vezes?: number
+        }
+        Update: {
+          alavancagem?: number
+          ativo?: boolean
+          cor_texto?: string | null
+          created_at?: string
+          descricao?: string | null
+          diversificacao_id?: string
+          frequencia?: string
+          id?: string
+          min_acoes?: number
+          nome?: string
+          obs?: string | null
+          percentual?: number
+          risco?: string
+          vezes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diversificacao_estrategias_diversificacao_id_fkey"
+            columns: ["diversificacao_id"]
+            isOneToOne: false
+            referencedRelation: "diversificacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      diversificacoes: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          patrimonio: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          patrimonio?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          patrimonio?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       legs: {
         Row: {
           analysis_id: string
