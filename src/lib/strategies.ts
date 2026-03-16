@@ -55,6 +55,9 @@ export function detectStrategy(legs: Leg[]): StrategyInfo | null {
 
     if (!root || root !== putRoot || root !== callRoot) return null;
 
+    // Quantities must match for a proper Collar
+    if (stockBuy.quantity !== putBuy.quantity || stockBuy.quantity !== callSell.quantity) return null;
+
     // Detect if it's a calendar collar (different expiry months)
     const callMonth = getExpiryMonth(callSell.asset);
     const putMonth = getExpiryMonth(putBuy.asset);
