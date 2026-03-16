@@ -552,18 +552,18 @@ export default function Diversificador() {
         />
       )}
 
-      {/* Header sticky */}
-      <div className="border-b border-zinc-800 bg-zinc-900/60 backdrop-blur sticky top-0 z-10">
+      {/* Header com patrimônio */}
+      <div className="border-b border-border/60 bg-card/60 backdrop-blur">
         <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
           <div>
-            <h1 className="text-xl font-semibold tracking-tight text-white">
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">
               Diversificador de Portfólio
             </h1>
-            <p className="text-xs text-zinc-500 mt-0.5">Gestão de estratégias em opções</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Gestão de estratégias em opções</p>
           </div>
-          <div className="flex items-center gap-3 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5">
-            <span className="text-xs text-zinc-400 font-medium whitespace-nowrap">Patrimônio</span>
-            <span className="text-sm text-zinc-500">R$</span>
+          <div className="flex items-center gap-3 bg-muted border border-border rounded-xl px-4 py-2.5">
+            <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">Patrimônio</span>
+            <span className="text-sm text-muted-foreground">R$</span>
             <input
               type="text"
               value={inputPatrimonio}
@@ -572,7 +572,7 @@ export default function Diversificador() {
                 setInputPatrimonio(raw);
                 setPatrimonio(parseInt(raw || "0", 10));
               }}
-              className="bg-transparent text-white text-base font-semibold outline-none w-32 text-right"
+              className="bg-transparent text-foreground text-base font-semibold outline-none w-32 text-right"
               placeholder="100000"
             />
           </div>
@@ -587,8 +587,8 @@ export default function Diversificador() {
                 onClick={() => setTabAtiva(tab)}
                 className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                   tabAtiva === tab
-                    ? "border-violet-500 text-violet-400"
-                    : "border-transparent text-zinc-500 hover:text-zinc-300"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {labels[tab]}
