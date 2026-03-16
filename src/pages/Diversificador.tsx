@@ -526,6 +526,7 @@ export default function Diversificador() {
 
   return (
     <>
+      <Header />
       {/* Modais */}
       {modal?.tipo === "novo" && (
         <ModalEstrategia
