@@ -20,6 +20,7 @@ export default function Header() {
     { label: 'Nova Análise', path: '/dashboard', icon: PlusCircle },
     { label: 'Histórico', path: '/history', icon: History },
     { label: 'Portfólio', path: '/portfolio', icon: Briefcase },
+    { label: 'Diversificador', path: '/diversificador', icon: PieChart },
     { label: 'Configurações', path: '/settings', icon: Settings },
     ...(access.isAdmin ? [{ label: 'Admin', path: '/admin', icon: Shield }] : []),
   ];

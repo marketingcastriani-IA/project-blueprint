@@ -34,6 +34,7 @@ const App = () => (
               <Route path="/history" element={<History />} />
               <Route path="/portfolio" element={<Portfolio />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/diversificador" element={<Diversificador />} />
               <Route path="/analysis/:id" element={<AnalysisDetail />} />
               <Route path="/admin-login" element={<AdminLogin />} />
               <Route path="/admin" element={<AdminPanel />} />

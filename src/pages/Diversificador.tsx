@@ -917,6 +917,6 @@ export default function Diversificador() {
           </>
         )}
       </div>
-    </div>
+    </>
   );
 }
