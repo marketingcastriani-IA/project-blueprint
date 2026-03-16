@@ -732,8 +732,45 @@ export default function AdminPanel() {
                 <Label className="text-xs font-black uppercase">Mensagem</Label>
                 <Textarea value={emailBody} onChange={e => setEmailBody(e.target.value)} rows={8} placeholder="Corpo do email..." className="text-sm" />
               </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-black uppercase flex items-center gap-1">
+                  <ImageIcon className="h-3 w-3" /> Imagem Promocional (opcional)
+                </Label>
+                {emailImagePreview ? (
+                  <div className="relative inline-block">
+                    <img src={emailImagePreview} alt="Preview" className="max-h-40 rounded-lg border border-border/40" />
+                    <button
+                      onClick={() => { setEmailImageDataUrl(null); setEmailImagePreview(null); }}
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs hover:scale-110 transition-transform"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex items-center gap-2 cursor-pointer rounded-lg border-2 border-dashed border-primary/30 hover:border-primary/50 bg-primary/5 p-4 transition-colors">
+                    <Upload className="h-5 w-5 text-primary" />
+                    <span className="text-sm text-muted-foreground">Clique para enviar uma imagem</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const preview = URL.createObjectURL(file);
+                        setEmailImagePreview(preview);
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          setEmailImageDataUrl(ev.target?.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
               <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setEmailRecipients([])}>Cancelar</Button>
+                <Button variant="outline" onClick={() => { setEmailRecipients([]); setEmailImageDataUrl(null); setEmailImagePreview(null); }}>Cancelar</Button>
                 <Button onClick={sendEmailViaResend} disabled={sendingEmail} className="font-bold">
                   {sendingEmail ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
                   {sendingEmail ? 'Enviando...' : `Enviar para ${emailRecipients.length}`}
