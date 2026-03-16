@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     const { to, subject, body, imageDataUrl } = await req.json();
 
     const recipients = Array.isArray(to)
-      ? to.filter((email) => typeof email === 'string' && email.trim().length > 0)
+      ? to.filter((email: string) => typeof email === 'string' && email.trim().length > 0)
       : (typeof to === 'string' && to.trim().length > 0 ? [to] : []);
 
     if (!recipients.length || !subject || !body) {
@@ -65,32 +65,133 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Convert plain text body to HTML
+    // Upload image to Supabase Storage if provided
+    let imagePublicUrl = '';
+    if (imageDataUrl && imageDataUrl.startsWith('data:')) {
+      try {
+        const matches = imageDataUrl.match(/^data:([^;]+);base64,(.+)$/);
+        if (matches) {
+          const mimeType = matches[1];
+          const base64Data = matches[2];
+          const ext = mimeType.split('/')[1] || 'png';
+          const fileName = `promo-${Date.now()}.${ext}`;
+
+          // Convert base64 to Uint8Array
+          const binaryStr = atob(base64Data);
+          const bytes = new Uint8Array(binaryStr.length);
+          for (let i = 0; i < binaryStr.length; i++) {
+            bytes[i] = binaryStr.charCodeAt(i);
+          }
+
+          const { error: uploadError } = await serviceClient.storage
+            .from('email-images')
+            .upload(fileName, bytes.buffer, {
+              contentType: mimeType,
+              upsert: true,
+            });
+
+          if (!uploadError) {
+            const { data: publicUrlData } = serviceClient.storage
+              .from('email-images')
+              .getPublicUrl(fileName);
+            imagePublicUrl = publicUrlData.publicUrl;
+            console.log('Image uploaded successfully:', imagePublicUrl);
+          } else {
+            console.error('Image upload error:', uploadError);
+          }
+        }
+      } catch (imgErr) {
+        console.error('Error processing image:', imgErr);
+      }
+    }
+
     const checkoutUrl = 'https://www.opcoesprox.com.br/settings?upgrade=true';
 
-    const imageHtml = imageDataUrl
-      ? `<div style="text-align: center; padding: 20px 0;">
-           <img src="${imageDataUrl}" alt="Promoção" style="max-width: 100%; height: auto; border-radius: 12px; border: 1px solid #e0e0e0;" />
-         </div>`
+    const imageHtml = imagePublicUrl
+      ? `<tr>
+           <td style="padding: 0;">
+             <img src="${imagePublicUrl}" alt="Promoção Opções PRO X" style="width: 100%; max-width: 560px; height: auto; display: block; border-radius: 12px; margin: 0 auto;" />
+           </td>
+         </tr>
+         <tr><td style="height: 24px;"></td></tr>`
       : '';
 
     const htmlBody = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #ffffff;">
-        <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #f0f0f0;">
-          <h1 style="color: #1a1a2e; margin: 0;">Opções PRO X</h1>
-        </div>
-        ${imageHtml}
-        <div style="padding: 30px 0; white-space: pre-line; line-height: 1.6; color: #333;">
-          ${body.replace(/\n/g, '<br>')}
-        </div>
-        <div style="text-align: center; padding: 20px 0;">
-          <a href="${checkoutUrl}" style="display: inline-block; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-size: 18px; font-weight: bold; letter-spacing: 0.5px;">🚀 Assinar PRO Agora</a>
-        </div>
-        <div style="border-top: 2px solid #f0f0f0; padding-top: 20px; text-align: center; color: #999; font-size: 12px;">
-          <p>Opções PRO X - Análise profissional de opções</p>
-        </div>
-      </div>
-    `;
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; background-color: #0f0f1a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #0f0f1a; padding: 32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%;">
+          
+          <!-- Header -->
+          <tr>
+            <td style="text-align: center; padding: 32px 20px 24px;">
+              <h1 style="margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -0.5px;">
+                <span style="color: #a78bfa;">Opções</span>
+                <span style="color: #ffffff;"> PRO </span>
+                <span style="background: linear-gradient(135deg, #6366f1, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">X</span>
+              </h1>
+            </td>
+          </tr>
+
+          <!-- Main Card -->
+          <tr>
+            <td>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(145deg, #1a1a2e, #16213e); border-radius: 16px; border: 1px solid rgba(99, 102, 241, 0.2); overflow: hidden;">
+                
+                <!-- Image -->
+                ${imageHtml}
+
+                <!-- Body -->
+                <tr>
+                  <td style="padding: 28px 32px; color: #e2e8f0; font-size: 15px; line-height: 1.7;">
+                    ${body.replace(/\n/g, '<br>')}
+                  </td>
+                </tr>
+
+                <!-- CTA Button -->
+                <tr>
+                  <td style="padding: 8px 32px 32px; text-align: center;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+                      <tr>
+                        <td style="border-radius: 12px; background: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa); padding: 2px;">
+                          <a href="${checkoutUrl}" style="display: block; padding: 16px 48px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 10px; color: #ffffff; text-decoration: none; font-size: 18px; font-weight: 800; letter-spacing: 0.5px; text-align: center;">
+                            🚀 Assinar PRO Agora
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 20px 16px; text-align: center;">
+              <p style="margin: 0 0 8px; color: #64748b; font-size: 12px;">
+                <a href="https://www.opcoesprox.com.br" style="color: #818cf8; text-decoration: none; font-weight: 600;">opcoesprox.com.br</a>
+              </p>
+              <p style="margin: 0; color: #475569; font-size: 11px;">
+                Opções PRO X — Análise profissional de opções
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 
     const fromEmail = 'Opções PRO X <contato@opcoesprox.com.br>';
 
