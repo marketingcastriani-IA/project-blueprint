@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { to, subject, body } = await req.json();
+    const { to, subject, body, imageDataUrl } = await req.json();
 
     const recipients = Array.isArray(to)
       ? to.filter((email) => typeof email === 'string' && email.trim().length > 0)
@@ -68,11 +68,18 @@ Deno.serve(async (req) => {
     // Convert plain text body to HTML
     const checkoutUrl = 'https://www.opcoesprox.com.br/settings?upgrade=true';
 
+    const imageHtml = imageDataUrl
+      ? `<div style="text-align: center; padding: 20px 0;">
+           <img src="${imageDataUrl}" alt="Promoção" style="max-width: 100%; height: auto; border-radius: 12px; border: 1px solid #e0e0e0;" />
+         </div>`
+      : '';
+
     const htmlBody = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #ffffff;">
         <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #f0f0f0;">
           <h1 style="color: #1a1a2e; margin: 0;">Opções PRO X</h1>
         </div>
+        ${imageHtml}
         <div style="padding: 30px 0; white-space: pre-line; line-height: 1.6; color: #333;">
           ${body.replace(/\n/g, '<br>')}
         </div>
