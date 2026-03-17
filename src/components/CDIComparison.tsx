@@ -31,6 +31,8 @@ const formatMoney = (value: number) => `R$ ${value.toFixed(2)}`;
 export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpiry, setDaysToExpiry, entryDate, expiryDate, onExpiryDateChange }: CDIComparisonProps) {
   const [applyIRCDI, setApplyIRCDI] = useState(false);
   const [applyIROptions, setApplyIROptions] = useState(false);
+  const [irCDIRate, setIrCDIRate] = useState(22.5);
+  const [irOptionsRate, setIrOptionsRate] = useState(15);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(expiryDate);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
