@@ -482,6 +482,24 @@ export default function Diversificador() {
     );
   };
 
+  // ── Supabase: Auto-load última diversificação ao montar ─────────────────
+
+  useEffect(() => {
+    if (!user) return;
+    const autoLoad = async () => {
+      const { data } = await supabase
+        .from("diversificacoes")
+        .select("id")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false })
+        .limit(1);
+      if (data && data.length > 0) {
+        await carregarDiversificacao(data[0].id);
+      }
+    };
+    autoLoad();
+  }, [user]);
+
   // ── Supabase: Salvar ──────────────────────────────────────────────────────
 
   const salvarNoSupabase = async (nome: string) => {
@@ -493,16 +511,18 @@ export default function Diversificador() {
     try {
       if (diversificacaoAtualId) {
         // Update existing
-        await supabase.from("diversificacoes").update({
+        const { error: errUpdate } = await supabase.from("diversificacoes").update({
           nome,
           patrimonio,
         }).eq("id", diversificacaoAtualId);
+        if (errUpdate) throw errUpdate;
 
         // Delete old strategies and re-insert
-        await supabase.from("diversificacao_estrategias").delete().eq("diversificacao_id", diversificacaoAtualId);
+        const { error: errDel } = await supabase.from("diversificacao_estrategias").delete().eq("diversificacao_id", diversificacaoAtualId);
+        if (errDel) throw errDel;
 
         if (estrategias.length > 0) {
-          await supabase.from("diversificacao_estrategias").insert(
+          const { error: errIns } = await supabase.from("diversificacao_estrategias").insert(
             estrategias.map((e) => ({
               diversificacao_id: diversificacaoAtualId,
               nome: e.nome,
@@ -518,6 +538,7 @@ export default function Diversificador() {
               obs: e.obs,
             }))
           );
+          if (errIns) throw errIns;
         }
 
         setDiversificacaoAtualNome(nome);
@@ -533,7 +554,7 @@ export default function Diversificador() {
         if (error) throw error;
 
         if (estrategias.length > 0) {
-          await supabase.from("diversificacao_estrategias").insert(
+          const { error: errIns } = await supabase.from("diversificacao_estrategias").insert(
             estrategias.map((e) => ({
               diversificacao_id: data.id,
               nome: e.nome,
@@ -549,6 +570,7 @@ export default function Diversificador() {
               obs: e.obs,
             }))
           );
+          if (errIns) throw errIns;
         }
 
         setDiversificacaoAtualId(data.id);
@@ -556,6 +578,7 @@ export default function Diversificador() {
         toast({ title: "Diversificação salva!" });
       }
     } catch (err: any) {
+      console.error("Erro ao salvar diversificação:", err);
       toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });
     } finally {
       setSaving(false);
