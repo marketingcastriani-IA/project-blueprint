@@ -2,3 +2,15 @@ project_id = "daiyrwxcsqvbbntzjdzy"
 
 [functions.send-renewal-reminders]
 verify_jwt = false
+
+[functions.analyze-exit]
+verify_jwt = false
+
+[functions.analyze-options-image]
+verify_jwt = false
+
+[functions.analyze-structure]
+verify_jwt = false
+
+[functions.mercado-pago-webhook]
+verify_jwt = false

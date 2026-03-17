@@ -64,8 +64,8 @@ export default function AdminPanel() {
   const [emailImageDataUrl, setEmailImageDataUrl] = useState<string | null>(null);
   const [emailImagePreview, setEmailImagePreview] = useState<string | null>(null);
   // Mercado Pago Config
-  const [mpPublicKey, setMpPublicKey] = useState('TEST-223bd091-629e-4853-a6df-c50a120fb48b');
-  const [mpAccessToken, setMpAccessToken] = useState('TEST-8723062167465367-030112-b03bf6309f490dcda5d967d47b41851c-467698330');
+  const [mpPublicKey, setMpPublicKey] = useState('');
+  const [mpAccessToken, setMpAccessToken] = useState('');
   const [proPrice, setProPrice] = useState('19.90');
 
   const fetchUsers = async () => {
