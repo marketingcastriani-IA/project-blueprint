@@ -226,13 +226,69 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
         </div>
 
         <div className="flex flex-wrap gap-4">
-          <div className="flex items-center gap-2 rounded-lg border-2 border-warning/40 bg-warning/10 px-3 py-2">
-            <Switch checked={applyIRCDI} onCheckedChange={setApplyIRCDI} id="ir-cdi-switch" className="data-[state=checked]:bg-warning" />
-            <Label htmlFor="ir-cdi-switch" className="text-xs font-black text-warning cursor-pointer">⚠️ Aplicar IR no CDI</Label>
+          <div className={cn(
+            "flex items-center gap-2 rounded-lg border-2 px-3 py-2 transition-all",
+            applyIRCDI 
+              ? "border-success/60 bg-success/15 animate-glow-pulse" 
+              : "border-destructive/40 bg-destructive/10"
+          )}>
+            <Switch 
+              checked={applyIRCDI} 
+              onCheckedChange={setApplyIRCDI} 
+              id="ir-cdi-switch" 
+              className={cn(
+                applyIRCDI ? "data-[state=checked]:bg-success" : "data-[state=unchecked]:bg-destructive/50"
+              )} 
+            />
+            <Label htmlFor="ir-cdi-switch" className={cn(
+              "text-xs font-black cursor-pointer",
+              applyIRCDI ? "text-success" : "text-destructive"
+            )}>
+              {applyIRCDI ? "✅ IR no CDI LIGADO" : "❌ IR no CDI DESLIGADO"}
+            </Label>
+            {applyIRCDI && (
+              <Input
+                type="number"
+                step="0.5"
+                value={irCDIRate}
+                onChange={e => setIrCDIRate(parseFloat(e.target.value) || 0)}
+                className="h-7 w-20 text-xs font-mono font-bold text-center"
+                title="Alíquota IR Renda Fixa (%)"
+              />
+            )}
+            {applyIRCDI && <span className="text-xs font-bold text-success">%</span>}
           </div>
-          <div className="flex items-center gap-2 rounded-lg border-2 border-warning/40 bg-warning/10 px-3 py-2">
-            <Switch checked={applyIROptions} onCheckedChange={setApplyIROptions} id="ir-opcoes-switch" className="data-[state=checked]:bg-warning" />
-            <Label htmlFor="ir-opcoes-switch" className="text-xs font-black text-warning cursor-pointer">⚠️ Aplicar IR nas opções</Label>
+          <div className={cn(
+            "flex items-center gap-2 rounded-lg border-2 px-3 py-2 transition-all",
+            applyIROptions 
+              ? "border-success/60 bg-success/15 animate-glow-pulse" 
+              : "border-destructive/40 bg-destructive/10"
+          )}>
+            <Switch 
+              checked={applyIROptions} 
+              onCheckedChange={setApplyIROptions} 
+              id="ir-opcoes-switch" 
+              className={cn(
+                applyIROptions ? "data-[state=checked]:bg-success" : "data-[state=unchecked]:bg-destructive/50"
+              )} 
+            />
+            <Label htmlFor="ir-opcoes-switch" className={cn(
+              "text-xs font-black cursor-pointer",
+              applyIROptions ? "text-success" : "text-destructive"
+            )}>
+              {applyIROptions ? "✅ IR Opções LIGADO" : "❌ IR Opções DESLIGADO"}
+            </Label>
+            {applyIROptions && (
+              <Input
+                type="number"
+                step="0.5"
+                value={irOptionsRate}
+                onChange={e => setIrOptionsRate(parseFloat(e.target.value) || 0)}
+                className="h-7 w-20 text-xs font-mono font-bold text-center"
+                title="Alíquota IR Opções (%)"
+              />
+            )}
+            {applyIROptions && <span className="text-xs font-bold text-success">%</span>}
           </div>
         </div>
 
