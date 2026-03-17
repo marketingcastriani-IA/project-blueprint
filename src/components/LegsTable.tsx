@@ -188,18 +188,21 @@ export default function LegsTable({ legs, onRemove, onUpdate }: LegsTableProps) 
 
 function LegDatePicker({ date, onChange }: { date?: Date; onChange: (date?: Date) => void }) {
   const [open, setOpen] = useState(false);
+  const isEmpty = !date;
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           className={cn(
-            "h-9 w-full justify-center text-xs px-2",
-            !date && "text-muted-foreground"
+            "h-9 w-full justify-center text-xs px-2 transition-all",
+            isEmpty 
+              ? "border-2 border-warning text-warning font-black animate-pulse bg-warning/10 hover:bg-warning/20 shadow-[0_0_12px_2px_hsl(var(--warning)/0.4)]"
+              : "border-success/50 text-success font-bold bg-success/10",
           )}
         >
-          <CalendarIcon className="mr-1 h-3 w-3" />
-          {date ? format(date, "dd/MM/yy") : "Venc."}
+          <CalendarIcon className={cn("mr-1 h-3 w-3", isEmpty ? "text-warning" : "text-success")} />
+          {date ? format(date, "dd/MM/yy") : "⚠️ Preencher"}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
