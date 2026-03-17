@@ -125,9 +125,20 @@ serve(async (req) => {
     const maxStrike = strikes[strikes.length - 1] || 0
     const breakeven = metrics.realBreakeven || (Array.isArray(metrics.breakevens) ? metrics.breakevens[0] : metrics.breakevens) || 0
 
-    const priceUp = maxStrike + 3
-    const priceFlat = breakeven
-    const priceDown = minStrike - 3
+    // Use stock entry price as reference if available, otherwise use midpoint of strikes
+    const stockLeg = legs.find((l: any) => l.option_type === 'stock')
+    const referencePrice = stockLeg ? stockLeg.price : (minStrike + maxStrike) / 2
+    
+    // Scenarios: +10% up, flat at entry, -10% down (more meaningful than strike-based)
+    const priceUp = hasStock 
+      ? Math.round(referencePrice * 1.10 * 100) / 100
+      : maxStrike + 3
+    const priceFlat = hasStock 
+      ? referencePrice 
+      : breakeven
+    const priceDown = hasStock 
+      ? Math.round(referencePrice * 0.90 * 100) / 100
+      : minStrike - 3
 
     const payoffUp = calculatePayoffAtPrice(legs, priceUp)
     const payoffFlat = calculatePayoffAtPrice(legs, priceFlat)
