@@ -48,7 +48,11 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
     return nc > 0 ? nc : 100;
   }, [hasStrategy, metrics.montageTotal, metrics.netCost]);
 
-  const cdiReturn = calculateCDIReturn(investedCapital, cdiRate, daysToExpiry, applyIRCDI);
+  const irCDIMultiplier = applyIRCDI ? (1 - irCDIRate / 100) : 1;
+  const irOptionsMultiplier = applyIROptions ? (1 - irOptionsRate / 100) : 1;
+
+  const cdiReturnGross = calculateCDIReturn(investedCapital, cdiRate, daysToExpiry, false);
+  const cdiReturn = cdiReturnGross * irCDIMultiplier;
 
   const optionMaxGainRaw = metrics.maxGain === 'Ilimitado'
     ? Number.POSITIVE_INFINITY
@@ -59,11 +63,11 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
     : (typeof metrics.maxLoss === 'number' ? metrics.maxLoss : Number.NEGATIVE_INFINITY);
 
   const optionMaxGain = Number.isFinite(optionMaxGainRaw)
-    ? (applyIROptions ? optionMaxGainRaw * 0.85 : optionMaxGainRaw)
+    ? optionMaxGainRaw * irOptionsMultiplier
     : optionMaxGainRaw;
 
   const optionMaxLoss = Number.isFinite(optionMaxLossRaw)
-    ? (applyIROptions ? optionMaxLossRaw * 0.85 : optionMaxLossRaw)
+    ? optionMaxLossRaw * irOptionsMultiplier
     : optionMaxLossRaw;
 
   const comparison = useMemo(() => {
