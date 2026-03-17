@@ -83,11 +83,11 @@ serve(async (req) => {
 
   try {
     const { legs, metrics, cdiRate, daysToExpiry } = await req.json()
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")
     
-    if (!LOVABLE_API_KEY) {
-      console.error("[analyze-structure] LOVABLE_API_KEY não configurada")
-      throw new Error("LOVABLE_API_KEY is not configured")
+    if (!OPENAI_API_KEY) {
+      console.error("[analyze-structure] OPENAI_API_KEY não configurada")
+      throw new Error("OPENAI_API_KEY is not configured")
     }
 
     console.log("[analyze-structure] Iniciando análise da estrutura...")
