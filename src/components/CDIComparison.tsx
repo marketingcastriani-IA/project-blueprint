@@ -173,13 +173,13 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
               className="font-mono"
             />
           </div>
-          <div className="sm:col-span-2 lg:col-span-4 rounded-2xl border-2 border-primary shadow-[0_0_30px_-8px_hsl(var(--primary)/0.4)] bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 dark:from-primary/25 dark:via-primary/15 dark:to-primary/5 p-5 sm:p-6 space-y-3">
+          <div className="sm:col-span-2 lg:col-span-4 rounded-2xl border-2 border-primary bg-gradient-to-br from-primary/20 via-primary/10 to-primary/5 dark:from-primary/25 dark:via-primary/15 dark:to-primary/5 p-5 sm:p-6 space-y-3 shadow-[0_0_25px_-4px_hsl(var(--primary)/0.5),0_0_60px_-8px_hsl(var(--primary)/0.3),inset_0_1px_0_hsl(var(--primary)/0.2)] animate-glow-pulse">
             <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/20 dark:bg-primary/30">
+              <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/20 dark:bg-primary/30 shadow-[0_0_15px_hsl(var(--primary)/0.4)]">
                 <CalendarIcon className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <Label className="text-base sm:text-lg font-black text-primary uppercase tracking-wide">📅 Data de Vencimento</Label>
+                <Label className="text-base sm:text-lg font-black text-primary uppercase tracking-wide">📅 DATA DE VENCIMENTO PARA COMPARAR COM CDI</Label>
                 <p className="text-[10px] sm:text-xs text-primary/70 font-semibold uppercase tracking-wider">Campo obrigatório para cálculo</p>
               </div>
             </div>
@@ -191,12 +191,12 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full h-14 justify-start text-left font-mono text-base sm:text-lg border-2 border-primary/50 hover:border-primary bg-background/80 hover:bg-background transition-all shadow-sm",
-                    !selectedDate && "text-muted-foreground"
+                    "w-full h-14 justify-start text-left font-mono text-base sm:text-lg border-2 border-primary/60 hover:border-primary bg-background/80 hover:bg-background transition-all shadow-[0_0_20px_-4px_hsl(var(--primary)/0.4)]",
+                    !selectedDate && "text-muted-foreground animate-pulse border-primary"
                   )}
                 >
                   <CalendarIcon className="mr-3 h-6 w-6 text-primary" />
-                  {selectedDate ? format(selectedDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione a data de vencimento"}
+                  {selectedDate ? format(selectedDate, "dd/MM/yyyy", { locale: ptBR }) : "⚠️ Selecione a data de vencimento"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -211,7 +211,7 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
               </PopoverContent>
             </Popover>
             {selectedDate && (
-              <div className="flex items-center gap-2 rounded-lg bg-success/15 border border-success/30 px-3 py-2">
+              <div className="flex items-center gap-2 rounded-lg bg-success/15 border-2 border-success/40 px-3 py-2 shadow-[0_0_15px_-4px_hsl(var(--success)/0.4)]">
                 <span className="text-success text-lg">✅</span>
                 <p className="text-sm font-mono text-success font-bold">
                   {daysToExpiry} dias úteis até o vencimento
