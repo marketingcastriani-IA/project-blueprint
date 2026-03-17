@@ -77,20 +77,27 @@ export default function ImageUpload({ onLegsExtracted, onImageChange, onClear }:
       });
       
       if (error) {
-        // Check for 402 credit exhaustion
-        if (error.message?.includes('402') || error.context?.status === 402) {
+        // Try to read the response body for specific error codes
+        const errorStr = String(error.message || '') + String(error.context || '');
+        const isCreditsError = errorStr.includes('402') || errorStr.includes('payment') || errorStr.includes('credits');
+        const isRateLimited = errorStr.includes('429') || errorStr.includes('rate');
+        
+        if (isCreditsError) {
           toast.error('Créditos de IA esgotados. Entre em contato com o administrador.');
           return;
         }
-        if (error.message?.includes('429') || error.context?.status === 429) {
+        if (isRateLimited) {
           toast.error('Muitas requisições. Aguarde alguns segundos e tente novamente.');
           return;
         }
-        throw error;
+        // For any other edge function error, show friendly message and don't crash
+        toast.error('Erro ao processar imagem. Tente novamente.');
+        console.error('[ImageUpload] Edge function error:', error);
+        return;
       }
       
       if (data?.error) {
-        if (data.error.includes('402')) {
+        if (String(data.error).includes('402')) {
           toast.error('Créditos de IA esgotados. Entre em contato com o administrador.');
           return;
         }
