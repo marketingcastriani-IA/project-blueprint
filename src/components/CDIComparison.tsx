@@ -31,6 +31,8 @@ const formatMoney = (value: number) => `R$ ${value.toFixed(2)}`;
 export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpiry, setDaysToExpiry, entryDate, expiryDate, onExpiryDateChange }: CDIComparisonProps) {
   const [applyIRCDI, setApplyIRCDI] = useState(false);
   const [applyIROptions, setApplyIROptions] = useState(false);
+  const [irCDIRate, setIrCDIRate] = useState(22.5);
+  const [irOptionsRate, setIrOptionsRate] = useState(15);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(expiryDate);
   const [calendarOpen, setCalendarOpen] = useState(false);
 
@@ -46,7 +48,11 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
     return nc > 0 ? nc : 100;
   }, [hasStrategy, metrics.montageTotal, metrics.netCost]);
 
-  const cdiReturn = calculateCDIReturn(investedCapital, cdiRate, daysToExpiry, applyIRCDI);
+  const irCDIMultiplier = applyIRCDI ? (1 - irCDIRate / 100) : 1;
+  const irOptionsMultiplier = applyIROptions ? (1 - irOptionsRate / 100) : 1;
+
+  const cdiReturnGross = calculateCDIReturn(investedCapital, cdiRate, daysToExpiry, false);
+  const cdiReturn = cdiReturnGross * irCDIMultiplier;
 
   const optionMaxGainRaw = metrics.maxGain === 'Ilimitado'
     ? Number.POSITIVE_INFINITY
@@ -57,11 +63,11 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
     : (typeof metrics.maxLoss === 'number' ? metrics.maxLoss : Number.NEGATIVE_INFINITY);
 
   const optionMaxGain = Number.isFinite(optionMaxGainRaw)
-    ? (applyIROptions ? optionMaxGainRaw * 0.85 : optionMaxGainRaw)
+    ? optionMaxGainRaw * irOptionsMultiplier
     : optionMaxGainRaw;
 
   const optionMaxLoss = Number.isFinite(optionMaxLossRaw)
-    ? (applyIROptions ? optionMaxLossRaw * 0.85 : optionMaxLossRaw)
+    ? optionMaxLossRaw * irOptionsMultiplier
     : optionMaxLossRaw;
 
   const comparison = useMemo(() => {
@@ -220,13 +226,69 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
         </div>
 
         <div className="flex flex-wrap gap-4">
-          <div className="flex items-center gap-2 rounded-lg border-2 border-warning/40 bg-warning/10 px-3 py-2">
-            <Switch checked={applyIRCDI} onCheckedChange={setApplyIRCDI} id="ir-cdi-switch" className="data-[state=checked]:bg-warning" />
-            <Label htmlFor="ir-cdi-switch" className="text-xs font-black text-warning cursor-pointer">⚠️ Aplicar IR no CDI</Label>
+          <div className={cn(
+            "flex items-center gap-2 rounded-lg border-2 px-3 py-2 transition-all",
+            applyIRCDI 
+              ? "border-success/60 bg-success/15 animate-glow-pulse" 
+              : "border-destructive/40 bg-destructive/10"
+          )}>
+            <Switch 
+              checked={applyIRCDI} 
+              onCheckedChange={setApplyIRCDI} 
+              id="ir-cdi-switch" 
+              className={cn(
+                applyIRCDI ? "data-[state=checked]:bg-success" : "data-[state=unchecked]:bg-destructive/50"
+              )} 
+            />
+            <Label htmlFor="ir-cdi-switch" className={cn(
+              "text-xs font-black cursor-pointer",
+              applyIRCDI ? "text-success" : "text-destructive"
+            )}>
+              {applyIRCDI ? "✅ IR no CDI LIGADO" : "❌ IR no CDI DESLIGADO"}
+            </Label>
+            {applyIRCDI && (
+              <Input
+                type="number"
+                step="0.5"
+                value={irCDIRate}
+                onChange={e => setIrCDIRate(parseFloat(e.target.value) || 0)}
+                className="h-7 w-20 text-xs font-mono font-bold text-center"
+                title="Alíquota IR Renda Fixa (%)"
+              />
+            )}
+            {applyIRCDI && <span className="text-xs font-bold text-success">%</span>}
           </div>
-          <div className="flex items-center gap-2 rounded-lg border-2 border-warning/40 bg-warning/10 px-3 py-2">
-            <Switch checked={applyIROptions} onCheckedChange={setApplyIROptions} id="ir-opcoes-switch" className="data-[state=checked]:bg-warning" />
-            <Label htmlFor="ir-opcoes-switch" className="text-xs font-black text-warning cursor-pointer">⚠️ Aplicar IR nas opções</Label>
+          <div className={cn(
+            "flex items-center gap-2 rounded-lg border-2 px-3 py-2 transition-all",
+            applyIROptions 
+              ? "border-success/60 bg-success/15 animate-glow-pulse" 
+              : "border-destructive/40 bg-destructive/10"
+          )}>
+            <Switch 
+              checked={applyIROptions} 
+              onCheckedChange={setApplyIROptions} 
+              id="ir-opcoes-switch" 
+              className={cn(
+                applyIROptions ? "data-[state=checked]:bg-success" : "data-[state=unchecked]:bg-destructive/50"
+              )} 
+            />
+            <Label htmlFor="ir-opcoes-switch" className={cn(
+              "text-xs font-black cursor-pointer",
+              applyIROptions ? "text-success" : "text-destructive"
+            )}>
+              {applyIROptions ? "✅ IR Opções LIGADO" : "❌ IR Opções DESLIGADO"}
+            </Label>
+            {applyIROptions && (
+              <Input
+                type="number"
+                step="0.5"
+                value={irOptionsRate}
+                onChange={e => setIrOptionsRate(parseFloat(e.target.value) || 0)}
+                className="h-7 w-20 text-xs font-mono font-bold text-center"
+                title="Alíquota IR Opções (%)"
+              />
+            )}
+            {applyIROptions && <span className="text-xs font-bold text-success">%</span>}
           </div>
         </div>
 
