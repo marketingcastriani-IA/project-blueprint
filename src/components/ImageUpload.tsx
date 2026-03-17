@@ -76,7 +76,27 @@ export default function ImageUpload({ onLegsExtracted, onImageChange, onClear }:
         body: { imageDataUrl },
       });
       
-      if (error) throw error;
+      if (error) {
+        // Check for 402 credit exhaustion
+        if (error.message?.includes('402') || error.context?.status === 402) {
+          toast.error('Créditos de IA esgotados. Entre em contato com o administrador.');
+          return;
+        }
+        if (error.message?.includes('429') || error.context?.status === 429) {
+          toast.error('Muitas requisições. Aguarde alguns segundos e tente novamente.');
+          return;
+        }
+        throw error;
+      }
+      
+      if (data?.error) {
+        if (data.error.includes('402')) {
+          toast.error('Créditos de IA esgotados. Entre em contato com o administrador.');
+          return;
+        }
+        toast.error(data.error);
+        return;
+      }
       
       if (data?.legs && data.legs.length > 0) {
         onLegsExtracted(data.legs);
