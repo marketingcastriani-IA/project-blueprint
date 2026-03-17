@@ -6,12 +6,61 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+async function verifyMPSignature(req: Request, body: any): Promise<boolean> {
+  const MP_WEBHOOK_SECRET = Deno.env.get("MP_WEBHOOK_SECRET")
+  if (!MP_WEBHOOK_SECRET) {
+    console.warn("[mercado-pago-webhook] MP_WEBHOOK_SECRET not configured, skipping signature verification")
+    return true // graceful fallback if secret not yet configured
+  }
+
+  const xSignature = req.headers.get("x-signature")
+  const xRequestId = req.headers.get("x-request-id")
+  if (!xSignature || !xRequestId) {
+    console.error("[mercado-pago-webhook] Missing x-signature or x-request-id headers")
+    return false
+  }
+
+  // Parse x-signature: "ts=...,v1=..."
+  const parts: Record<string, string> = {}
+  for (const part of xSignature.split(",")) {
+    const [key, value] = part.split("=", 2)
+    parts[key.trim()] = value.trim()
+  }
+
+  const ts = parts["ts"]
+  const v1 = parts["v1"]
+  if (!ts || !v1) return false
+
+  const dataId = body?.data?.id || ""
+  const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`
+
+  const encoder = new TextEncoder()
+  const key = await crypto.subtle.importKey("raw", encoder.encode(MP_WEBHOOK_SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["sign"])
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(manifest))
+  const hexHash = Array.from(new Uint8Array(signature)).map(b => b.toString(16).padStart(2, '0')).join('')
+
+  if (hexHash !== v1) {
+    console.error("[mercado-pago-webhook] Invalid signature")
+    return false
+  }
+  return true
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
 
   try {
     const body = await req.json()
     console.log("[mercado-pago-webhook] Notificação recebida:", body)
+
+    // Verify webhook signature
+    const isValid = await verifyMPSignature(req, body)
+    if (!isValid) {
+      return new Response(JSON.stringify({ error: 'Invalid signature' }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      })
+    }
 
     const MP_ACCESS_TOKEN = Deno.env.get("MP_ACCESS_TOKEN")
     const supabaseAdmin = createClient(
