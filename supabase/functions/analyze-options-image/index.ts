@@ -21,25 +21,25 @@ serve(async (req) => {
       })
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")
-    if (!LOVABLE_API_KEY) {
-      console.error("[analyze-options-image] LOVABLE_API_KEY não configurada");
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")
+    if (!OPENAI_API_KEY) {
+      console.error("[analyze-options-image] OPENAI_API_KEY não configurada");
       return new Response(JSON.stringify({ error: "Configuração do servidor incompleta" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
     }
 
-    console.log("[analyze-options-image] Enviando imagem para análise (gemini-3-flash)...")
+    console.log("[analyze-options-image] Enviando imagem para análise via OpenAI gpt-4o...")
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gpt-4o",
         messages: [
           { 
             role: "system", 
@@ -53,13 +53,28 @@ serve(async (req) => {
             ],
           },
         ],
+        response_format: { type: "json_object" },
       }),
     })
 
     if (!response.ok) {
       const errorData = await response.text()
-      console.error(`[analyze-options-image] Erro na API de IA: ${response.status}`, errorData)
-      return new Response(JSON.stringify({ error: `Erro na IA: ${response.status}` }), {
+      console.error(`[analyze-options-image] Erro na OpenAI: ${response.status}`, errorData)
+      
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit da OpenAI. Aguarde e tente novamente." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        })
+      }
+      if (response.status === 401) {
+        return new Response(JSON.stringify({ error: "Chave da OpenAI inválida ou expirada." }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        })
+      }
+      
+      return new Response(JSON.stringify({ error: `Erro na OpenAI: ${response.status}` }), {
         status: response.status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
@@ -69,24 +84,24 @@ serve(async (req) => {
     let content = result.choices?.[0]?.message?.content
 
     if (!content) {
-      console.error("[analyze-options-image] Resposta da IA vazia")
+      console.error("[analyze-options-image] Resposta da OpenAI vazia")
       return new Response(JSON.stringify({ error: "A IA não conseguiu processar a imagem" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       })
     }
 
-    // Limpeza de Markdown caso a IA ignore o response_format
+    // Limpeza de Markdown caso a IA retorne com backticks
     content = content.replace(/```json\n?/, '').replace(/\n?```/, '').trim();
 
     try {
       const parsed = JSON.parse(content);
-      console.log("[analyze-options-image] Sucesso ao processar imagem");
+      console.log("[analyze-options-image] Sucesso ao processar imagem via OpenAI");
       return new Response(JSON.stringify(parsed), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } catch (parseError) {
-      console.error("[analyze-options-image] Erro ao parsear JSON da IA:", content);
+      console.error("[analyze-options-image] Erro ao parsear JSON da OpenAI:", content);
       return new Response(JSON.stringify({ error: "Resposta da IA em formato inválido" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
