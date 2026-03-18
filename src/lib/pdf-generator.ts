@@ -116,7 +116,7 @@ export const generateFAQPdf = () => {
   y = addParagraph(doc, 'O Opções PRO X é uma ferramenta profissional de simulação e análise de estratégias com opções na B3. Ele permite montar estruturas, visualizar o gráfico de payoff, comparar com o CDI, receber análises de IA e gerenciar todo o ciclo de vida das suas operações — do estudo ao encerramento.', y);
 
   y += 4;
-  addTable(doc, {
+  y = addTable(doc, {
     startY: y,
     head: [['Recurso', 'Descrição']],
     body: [
@@ -145,7 +145,7 @@ export const generateFAQPdf = () => {
     ['5', 'Salve a Análise', 'Dê um nome descritivo e salve. A operação ficará no Histórico como "Ativa".'],
   ];
 
-  addTable(doc, {
+  y = addTable(doc, {
     startY: y,
     head: [['Passo', 'Ação', 'Descrição']],
     body: steps,
@@ -162,7 +162,7 @@ export const generateFAQPdf = () => {
   y = addSectionTitle(doc, '3. Gráfico de Payoff & Métricas', y);
   y = addParagraph(doc, 'O gráfico de payoff mostra visualmente o lucro ou prejuízo da sua estrutura para cada cenário de preço do ativo-objeto no vencimento. Use os botões VALOR e % ROI para alternar a visualização. A linha tracejada amarela representa o retorno do CDI.', y);
 
-  addTable(doc, {
+  y = addTable(doc, {
     startY: y,
     head: [['Métrica', 'Descrição']],
     body: [
@@ -184,7 +184,7 @@ export const generateFAQPdf = () => {
   y = addSectionTitle(doc, '4. Comparação com CDI', y);
   y = addParagraph(doc, 'A comparação com CDI permite avaliar se a sua estratégia de opções supera o rendimento do CDI (Certificado de Depósito Interbancário), a taxa de referência para investimentos de renda fixa no Brasil.', y);
 
-  addTable(doc, {
+  y = addTable(doc, {
     startY: y,
     head: [['Campo', 'Descrição']],
     body: [
@@ -209,7 +209,7 @@ export const generateFAQPdf = () => {
   y = addSectionTitle(doc, '5. Acompanhamento de Operações Ativas', y);
   y = addParagraph(doc, 'Ao abrir uma operação ativa, você acessa a tela de Detalhes. Nela é possível monitorar o P&L em tempo real, comparar com o custo de oportunidade do CDI e solicitar um Veredito de Saída da IA para decidir o melhor momento de encerrar.', y);
 
-  addTable(doc, {
+  y = addTable(doc, {
     startY: y,
     head: [['Indicador', 'Descrição']],
     body: [
@@ -236,7 +236,7 @@ export const generateFAQPdf = () => {
   y = checkPageBreak(doc, y, 50);
   y = addSectionTitle(doc, '7. Fluxo: Histórico → Portfólio', y);
 
-  addTable(doc, {
+  y = addTable(doc, {
     startY: y,
     head: [['De', 'Para', 'Ação']],
     body: [
@@ -277,7 +277,7 @@ export const generateFAQPdf = () => {
     ['Diferença Free vs PRO?', 'Free: acesso básico com limites. PRO: simulações ilimitadas, IA, CDI, diversificador e todos os recursos.'],
   ];
 
-  addTable(doc, {
+  y = addTable(doc, {
     startY: y,
     head: [['Pergunta', 'Resposta']],
     body: faqs,
@@ -366,7 +366,7 @@ export const generateHistoryPdf = async (
     try {
       const legs = await fetchLegs(a.id);
       if (legs.length > 0) {
-        addTable(doc, {
+        y = addTable(doc, {
           startY: y,
           head: [['Ativo', 'Tipo', 'Lado', 'Strike', 'Preço', 'Qtd', 'Vencimento']],
           body: legs.map(l => [
@@ -440,7 +440,7 @@ export const generatePortfolioPdf = (
 
   y = addSectionTitle(doc, 'Resumo do Portfólio', y);
 
-  addTable(doc, {
+  y = addTable(doc, {
     startY: y,
     head: [['Métrica', 'Valor']],
     body: [
@@ -487,7 +487,7 @@ export const generatePortfolioPdf = (
     ];
   });
 
-  addTable(doc, {
+  y = addTable(doc, {
     startY: y,
     head: [['Nome', 'Ativo', 'Entrada', 'Saída', 'Investido', 'Resultado', 'ROI']],
     body: rows,
@@ -523,7 +523,7 @@ export const generatePortfolioPdf = (
     doc.text(`Pernas — ${a.name}`, 14, y);
     y += 4;
 
-    addTable(doc, {
+    y = addTable(doc, {
       startY: y,
       head: [['Tipo', 'Lado', 'Preço Entrada', 'Preço Saída', 'Qtd', 'P&L']],
       body: legs.map(l => {
