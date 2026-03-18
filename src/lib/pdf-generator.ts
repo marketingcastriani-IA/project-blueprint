@@ -10,14 +10,15 @@ declare module 'jspdf' {
 }
 
 const COLORS = {
-  primary: [0, 163, 204],
-  dark: [15, 23, 42],
-  gray: [100, 116, 139],
-  lightGray: [226, 232, 240],
-  success: [34, 197, 94],
-  destructive: [239, 68, 68],
-  white: [255, 255, 255],
-  bg: [241, 245, 249],
+  primary: [0, 163, 204] as [number, number, number],
+  dark: [15, 23, 42] as [number, number, number],
+  gray: [100, 116, 139] as [number, number, number],
+  lightGray: [226, 232, 240] as [number, number, number],
+  success: [34, 197, 94] as [number, number, number],
+  destructive: [239, 68, 68] as [number, number, number],
+  white: [255, 255, 255] as [number, number, number],
+  bg: [241, 245, 249] as [number, number, number],
+  darkSlate: [30, 41, 59] as [number, number, number],
 };
 
 const addHeader = (doc: jsPDF, title: string) => {
