@@ -75,10 +75,19 @@ export default function FAQ() {
     <div className="min-h-screen bg-background pb-16">
       <Header />
       <main className="container py-8 space-y-8 animate-fade-in max-w-4xl">
-        <ProfessionalHeader 
-          title="Manual do Usuário" 
-          subtitle="Guia completo para dominar o Opções PRO X — da simulação ao controle do portfólio"
-        />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <ProfessionalHeader 
+            title="Manual do Usuário" 
+            subtitle="Guia completo para dominar o Opções PRO X — da simulação ao controle do portfólio"
+          />
+          <Button 
+            variant="outline" 
+            onClick={() => window.print()} 
+            className="h-12 px-5 font-bold border-primary/30 text-primary hover:bg-primary/10 shrink-0"
+          >
+            <Download className="mr-2 h-5 w-5" /> Baixar PDF
+          </Button>
+        </div>
 
         {/* Visão Geral */}
         <FeatureSection icon={BookOpen} title="O que é o Opções PRO X?" badge="Visão Geral">

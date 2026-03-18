@@ -234,9 +234,18 @@ export default function History() {
             title="Histórico" 
             subtitle="Gerencie e acompanhe todas as suas análises salvas"
           />
-          <Button onClick={() => navigate('/dashboard')} className="h-12 px-6 text-base font-bold shadow-[0_0_30px_-8px_hsl(var(--primary)/0.4)]">
-            <PlusCircle className="mr-2 h-5 w-5" /> Nova Análise
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => window.print()} 
+              className="h-12 px-5 font-bold border-primary/30 text-primary hover:bg-primary/10"
+            >
+              <Download className="mr-2 h-5 w-5" /> Baixar PDF
+            </Button>
+            <Button onClick={() => navigate('/dashboard')} className="h-12 px-6 text-base font-bold shadow-[0_0_30px_-8px_hsl(var(--primary)/0.4)]">
+              <PlusCircle className="mr-2 h-5 w-5" /> Nova Análise
+            </Button>
+          </div>
         </div>
 
         {/* Filtros */}
