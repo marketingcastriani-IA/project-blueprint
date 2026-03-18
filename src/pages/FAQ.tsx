@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { generateFAQPdf } from '@/lib/pdf-generator';
 
 import faqPayoff from '@/assets/faq-payoff.png';
 import faqCdi from '@/assets/faq-cdi.png';
