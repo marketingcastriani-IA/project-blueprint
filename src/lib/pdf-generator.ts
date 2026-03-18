@@ -1,13 +1,11 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-// Extend jsPDF type for autotable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-    lastAutoTable: { finalY: number };
-  }
-}
+// Helper to call autoTable and return finalY
+const addTable = (doc: jsPDF, options: any): number => {
+  autoTable(doc, options);
+  return (doc as any).lastAutoTable.finalY;
+};
 
 const COLORS = {
   primary: [0, 163, 204] as [number, number, number],
