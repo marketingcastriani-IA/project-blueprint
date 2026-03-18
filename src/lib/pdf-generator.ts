@@ -551,7 +551,7 @@ export const generatePortfolioPdf = (
         ];
       }),
       theme: 'grid',
-      headStyles: { fillColor: [30, 41, 59], textColor: COLORS.white, fontStyle: 'bold', fontSize: 7 },
+      headStyles: { fillColor: COLORS.darkSlate, textColor: COLORS.white, fontStyle: 'bold', fontSize: 7 },
       bodyStyles: { fontSize: 7, textColor: COLORS.dark },
       alternateRowStyles: { fillColor: COLORS.bg },
       margin: { left: 14, right: 14 },
