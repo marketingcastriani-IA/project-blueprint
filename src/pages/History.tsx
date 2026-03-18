@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { Loader2, Clock, PlusCircle, Trash2, Edit2, XCircle, RotateCcw, History as HistoryIcon, CalendarDays, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
+import { generateHistoryPdf } from '@/lib/pdf-generator';
 
 interface AnalysisSummary {
   id: string;
