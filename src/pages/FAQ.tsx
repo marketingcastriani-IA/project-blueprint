@@ -14,6 +14,7 @@ import faqCdi from '@/assets/faq-cdi.png';
 import faqHistorico from '@/assets/faq-historico.png';
 import faqPortfolio from '@/assets/faq-portfolio.png';
 import faqAnaliseDetalhe from '@/assets/faq-analise-detalhe.png';
+import faqDiversificador from '@/assets/faq-diversificador.png';
 
 const StepCard = ({ step, title, description, icon: Icon }: { step: number; title: string; description: string; icon: React.ComponentType<{ className?: string }> }) => (
   <div className="flex gap-4 items-start">
