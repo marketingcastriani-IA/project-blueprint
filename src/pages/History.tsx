@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, Clock, PlusCircle, Trash2, Edit2, XCircle, RotateCcw, History as HistoryIcon, CalendarDays } from 'lucide-react';
+import { Loader2, Clock, PlusCircle, Trash2, Edit2, XCircle, RotateCcw, History as HistoryIcon, CalendarDays, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
 
@@ -234,9 +234,18 @@ export default function History() {
             title="Histórico" 
             subtitle="Gerencie e acompanhe todas as suas análises salvas"
           />
-          <Button onClick={() => navigate('/dashboard')} className="h-12 px-6 text-base font-bold shadow-[0_0_30px_-8px_hsl(var(--primary)/0.4)]">
-            <PlusCircle className="mr-2 h-5 w-5" /> Nova Análise
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => window.print()} 
+              className="h-12 px-5 font-bold border-primary/30 text-primary hover:bg-primary/10"
+            >
+              <Download className="mr-2 h-5 w-5" /> Baixar PDF
+            </Button>
+            <Button onClick={() => navigate('/dashboard')} className="h-12 px-6 text-base font-bold shadow-[0_0_30px_-8px_hsl(var(--primary)/0.4)]">
+              <PlusCircle className="mr-2 h-5 w-5" /> Nova Análise
+            </Button>
+          </div>
         </div>
 
         {/* Filtros */}

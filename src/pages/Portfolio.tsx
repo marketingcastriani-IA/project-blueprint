@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { 
   Loader2, TrendingUp, TrendingDown, Calendar, Edit2, 
-  RotateCcw, Trash2, Briefcase, Wallet, Target, CalendarDays, Percent, BarChart3 
+  RotateCcw, Trash2, Briefcase, Wallet, Target, CalendarDays, Percent, BarChart3, Download 
 } from 'lucide-react';
 import { countBusinessDays } from '@/lib/b3-calendar';
 import { calculateCDIReturn } from '@/lib/payoff';
@@ -211,10 +211,19 @@ export default function Portfolio() {
     <div className="min-h-screen bg-background pb-16">
       <Header />
       <main className="container py-8 space-y-8 animate-fade-in">
-        <ProfessionalHeader 
-          title="Portfólio" 
-          subtitle="Acompanhe o desempenho histórico das suas operações encerradas"
-        />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <ProfessionalHeader 
+            title="Portfólio" 
+            subtitle="Acompanhe o desempenho histórico das suas operações encerradas"
+          />
+          <Button 
+            variant="outline" 
+            onClick={() => window.print()} 
+            className="h-12 px-5 font-bold border-primary/30 text-primary hover:bg-primary/10"
+          >
+            <Download className="mr-2 h-5 w-5" /> Baixar PDF
+          </Button>
+        </div>
 
         {/* Filtros */}
         <div className="flex flex-wrap items-center gap-3 p-4 rounded-2xl bg-muted/30 border border-border/50">
