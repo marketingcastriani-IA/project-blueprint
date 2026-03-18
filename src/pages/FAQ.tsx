@@ -8,6 +8,7 @@ import {
   Camera, Brain, PieChart, Calculator, Shield, Eye, Download
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 import faqPayoff from '@/assets/faq-payoff.png';
 import faqCdi from '@/assets/faq-cdi.png';
