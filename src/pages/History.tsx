@@ -8,10 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, Clock, PlusCircle, Trash2, Edit2, XCircle, RotateCcw, History as HistoryIcon, CalendarDays, Download } from 'lucide-react';
+import { Loader2, Clock, PlusCircle, Trash2, Edit2, XCircle, RotateCcw, History as HistoryIcon, CalendarDays, Download, TrendingUp, TrendingDown, Target, ShieldCheck, AlertTriangle, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
 import { generateHistoryPdf } from '@/lib/pdf-generator';
+import { calculateMetrics, calculateCDIOpportunityCost } from '@/lib/payoff';
+import { Leg } from '@/lib/types';
+import type { AnalysisMetrics } from '@/lib/types';
 
 interface AnalysisSummary {
   id: string;
@@ -23,6 +26,7 @@ interface AnalysisSummary {
   ai_suggestion: string | null;
   days_to_expiry: number | null;
   expiry_date: string | null;
+  cdi_rate: number | null;
 }
 
 const MONTHS = [
@@ -39,23 +43,62 @@ export default function History() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [closingId, setClosingId] = useState<string | null>(null);
+  const [legsMap, setLegsMap] = useState<Record<string, Leg[]>>({});
+  const [metricsMap, setMetricsMap] = useState<Record<string, AnalysisMetrics>>({});
   const navigate = useNavigate();
 
-  // Filtros
   const [filterMonth, setFilterMonth] = useState('all');
   const [filterYear, setFilterYear] = useState('all');
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from('analyses')
-      .select('id, name, underlying_asset, status, created_at, closed_at, ai_suggestion, days_to_expiry, expiry_date')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        setAnalyses((data as unknown as AnalysisSummary[]) || []);
-        setLoading(false);
-      });
+    const fetchData = async () => {
+      const { data: analysesData } = await supabase
+        .from('analyses')
+        .select('id, name, underlying_asset, status, created_at, closed_at, ai_suggestion, days_to_expiry, expiry_date, cdi_rate')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      const list = (analysesData as unknown as AnalysisSummary[]) || [];
+      setAnalyses(list);
+
+      if (list.length > 0) {
+        const ids = list.map(a => a.id);
+        const { data: allLegs } = await supabase
+          .from('legs')
+          .select('analysis_id, side, option_type, asset, strike, price, quantity, expiry_date')
+          .in('analysis_id', ids);
+
+        if (allLegs) {
+          const lMap: Record<string, Leg[]> = {};
+          const mMap: Record<string, AnalysisMetrics> = {};
+
+          allLegs.forEach((l: any) => {
+            if (!lMap[l.analysis_id]) lMap[l.analysis_id] = [];
+            lMap[l.analysis_id].push({
+              side: l.side,
+              option_type: l.option_type,
+              asset: l.asset,
+              strike: l.strike,
+              price: l.price,
+              quantity: l.quantity,
+              expiry_date: l.expiry_date,
+            });
+          });
+
+          // Calculate metrics for each analysis
+          Object.entries(lMap).forEach(([analysisId, legs]) => {
+            mMap[analysisId] = calculateMetrics(legs);
+          });
+
+          setLegsMap(lMap);
+          setMetricsMap(mMap);
+        }
+      }
+
+      setLoading(false);
+    };
+    fetchData();
   }, [user]);
 
   const years = useMemo(() => {
@@ -130,101 +173,185 @@ export default function History() {
   const activeAnalyses = filteredAnalyses.filter(a => a.status === 'active');
   const closedAnalyses = filteredAnalyses.filter(a => a.status === 'closed');
 
-  const renderCard = (a: AnalysisSummary) => (
-    <ProfessionalCard
-      key={a.id}
-      className="group cursor-pointer"
-      onClick={() => navigate(`/analysis/${a.id}`)}
-    >
-      <CardContent className="flex items-start justify-between py-5 px-6 gap-4">
-        <div className="min-w-0 flex-1 space-y-2">
-          <div className="flex items-center gap-3 flex-wrap">
-            <p className="text-lg font-black tracking-tight">{a.name}</p>
-            {a.underlying_asset && (
-              <Badge variant="outline" className="text-[10px] border-primary/30 text-primary font-bold">
-                {a.underlying_asset}
-              </Badge>
-            )}
-            <Badge
-              className={cn(
-                'text-[10px] font-black uppercase tracking-widest',
-                a.status === 'active'
-                  ? 'bg-success/20 text-success border-success/30'
-                  : 'bg-muted text-muted-foreground'
-              )}
-            >
-              {a.status === 'active' ? 'Ativa' : 'Encerrada'}
-            </Badge>
-          </div>
-          <div className="flex items-center gap-4 text-[11px] text-muted-foreground font-medium">
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {new Date(a.created_at).toLocaleDateString('pt-BR')}
-            </span>
-            {a.expiry_date && (
-              <span className="flex items-center gap-1">
-                <CalendarDays className="h-3 w-3" />
-                Venc: {(() => {
-                  const [y, m, d] = a.expiry_date.split('-').map(Number);
-                  return new Date(y, m - 1, d).toLocaleDateString('pt-BR');
-                })()}
-                {a.days_to_expiry != null && (
-                  <span className="text-muted-foreground/60">({a.days_to_expiry}du)</span>
-                )}
-              </span>
-            )}
-            {a.closed_at && (
-              <span className="flex items-center gap-1">
-                <XCircle className="h-3 w-3" />
-                Encerrada: {new Date(a.closed_at).toLocaleDateString('pt-BR')}
-              </span>
-            )}
-          </div>
-        </div>
+  const formatValue = (val: number | string | 'Ilimitado') => {
+    if (val === 'Ilimitado') return 'Ilimitado';
+    const n = typeof val === 'string' ? parseFloat(val) : val;
+    return `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
 
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-9 px-3 hover:bg-primary/10 hover:text-primary transition-all"
-            onClick={(e) => { e.stopPropagation(); navigate(`/analysis/${a.id}`); }}
-          >
-            <Edit2 className="h-4 w-4 mr-2" /> Editar
-          </Button>
-          {a.status === 'active' ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-9 px-3 text-warning hover:bg-warning/10 transition-all"
-              disabled={closingId === a.id}
-              onClick={(e) => handleClose(e, a.id)}
-            >
-              {closingId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4 mr-2" />}
-              Encerrar
-            </Button>
-          ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-9 px-3 text-info hover:bg-info/10 transition-all"
-              onClick={(e) => handleReopen(e, a.id)}
-            >
-              <RotateCcw className="h-4 w-4 mr-2" /> Reabrir
-            </Button>
+  const renderCard = (a: AnalysisSummary) => {
+    const m = metricsMap[a.id];
+    const legs = legsMap[a.id] || [];
+    
+    // Calculate CDI comparison
+    const cdiRate = a.cdi_rate || 15;
+    const daysToExpiry = a.days_to_expiry || 0;
+    const investedCapital = m ? Math.max(Math.abs(m.montageTotal || m.netCost || 0), 1) : 0;
+    const cdiReturn = investedCapital > 0 && daysToExpiry > 0 
+      ? calculateCDIOpportunityCost(investedCapital, cdiRate, daysToExpiry) 
+      : 0;
+    const cdiEfficiency = cdiReturn > 0 && m && typeof m.maxGain === 'number' 
+      ? Math.round((m.maxGain / cdiReturn) * 100) 
+      : null;
+
+    return (
+      <ProfessionalCard
+        key={a.id}
+        className="group cursor-pointer"
+        onClick={() => navigate(`/analysis/${a.id}`)}
+      >
+        <CardContent className="py-5 px-6 space-y-3">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="flex items-center gap-3 flex-wrap">
+                <p className="text-lg font-black tracking-tight">{a.name}</p>
+                {a.underlying_asset && (
+                  <Badge variant="outline" className="text-[10px] border-primary/30 text-primary font-bold">
+                    {a.underlying_asset}
+                  </Badge>
+                )}
+                <Badge
+                  className={cn(
+                    'text-[10px] font-black uppercase tracking-widest',
+                    a.status === 'active'
+                      ? 'bg-success/20 text-success border-success/30'
+                      : 'bg-muted text-muted-foreground'
+                  )}
+                >
+                  {a.status === 'active' ? 'Ativa' : 'Encerrada'}
+                </Badge>
+                {m?.strategyLabel && (
+                  <Badge variant="outline" className="text-[10px] border-accent/30 text-accent-foreground font-bold bg-accent/10">
+                    {m.strategyLabel}
+                  </Badge>
+                )}
+                {m?.isRiskFree && (
+                  <Badge className="text-[10px] font-black bg-success/20 text-success border-success/40 gap-1">
+                    <ShieldCheck className="h-3 w-3" /> Risco Zero
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-4 text-[11px] text-muted-foreground font-medium">
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {new Date(a.created_at).toLocaleDateString('pt-BR')}
+                </span>
+                {a.expiry_date && (
+                  <span className="flex items-center gap-1">
+                    <CalendarDays className="h-3 w-3" />
+                    Venc: {(() => {
+                      const [y, mo, d] = a.expiry_date.split('-').map(Number);
+                      return new Date(y, mo - 1, d).toLocaleDateString('pt-BR');
+                    })()}
+                    {a.days_to_expiry != null && (
+                      <span className="text-muted-foreground/60">({a.days_to_expiry}du)</span>
+                    )}
+                  </span>
+                )}
+                {a.closed_at && (
+                  <span className="flex items-center gap-1">
+                    <XCircle className="h-3 w-3" />
+                    Encerrada: {new Date(a.closed_at).toLocaleDateString('pt-BR')}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 px-3 hover:bg-primary/10 hover:text-primary transition-all"
+                onClick={(e) => { e.stopPropagation(); navigate(`/analysis/${a.id}`); }}
+              >
+                <Edit2 className="h-4 w-4 mr-2" /> Editar
+              </Button>
+              {a.status === 'active' ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 px-3 text-warning hover:bg-warning/10 transition-all"
+                  disabled={closingId === a.id}
+                  onClick={(e) => handleClose(e, a.id)}
+                >
+                  {closingId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4 mr-2" />}
+                  Encerrar
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 px-3 text-info hover:bg-info/10 transition-all"
+                  onClick={(e) => handleReopen(e, a.id)}
+                >
+                  <RotateCcw className="h-4 w-4 mr-2" /> Reabrir
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 text-destructive hover:bg-destructive/10 transition-all"
+                disabled={deleting === a.id}
+                onClick={(e) => handleDelete(e, a.id)}
+              >
+                {deleting === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
+
+          {/* Metrics row */}
+          {m && legs.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-2 border-t border-border/30">
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Custo / PM</p>
+                <p className="text-sm font-bold text-foreground">
+                  {formatValue(Math.abs(m.montageTotal || m.netCost))}
+                </p>
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                  <TrendingUp className="h-3 w-3 text-success" /> Lucro Máx
+                </p>
+                <p className={cn("text-sm font-bold", m.maxGain === 'Ilimitado' || (typeof m.maxGain === 'number' && m.maxGain > 0) ? "text-success" : "text-foreground")}>
+                  {formatValue(m.maxGain)}
+                </p>
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3 text-destructive" /> Risco Máx
+                </p>
+                <p className={cn("text-sm font-bold", m.isRiskFree ? "text-success" : "text-destructive")}>
+                  {m.isRiskFree ? 'R$ 0,00' : formatValue(m.maxLoss)}
+                </p>
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                  <Target className="h-3 w-3 text-primary" /> Breakeven
+                </p>
+                <p className="text-sm font-bold text-foreground">
+                  {m.breakevens.length > 0 ? m.breakevens.map(b => `R$ ${b.toFixed(2)}`).join(' / ') : '—'}
+                </p>
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                  <BarChart3 className="h-3 w-3 text-primary" /> CDI ({daysToExpiry}du)
+                </p>
+                <p className="text-sm font-bold text-foreground">
+                  {cdiReturn > 0 ? `R$ ${cdiReturn.toFixed(2)}` : '—'}
+                </p>
+              </div>
+              <div className="space-y-0.5">
+                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Eficiência CDI</p>
+                <p className={cn("text-sm font-bold", cdiEfficiency && cdiEfficiency > 100 ? "text-success" : "text-foreground")}>
+                  {cdiEfficiency != null ? `${cdiEfficiency}%` : '—'}
+                </p>
+              </div>
+            </div>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 text-destructive hover:bg-destructive/10 transition-all"
-            disabled={deleting === a.id}
-            onClick={(e) => handleDelete(e, a.id)}
-          >
-            {deleting === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-          </Button>
-        </div>
-      </CardContent>
-    </ProfessionalCard>
-  );
+        </CardContent>
+      </ProfessionalCard>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background pb-16">
