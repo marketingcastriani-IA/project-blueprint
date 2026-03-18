@@ -1,5 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { calculateMetrics, calculateCDIOpportunityCost } from './payoff';
+import type { Leg, AnalysisMetrics } from './types';
 
 // Helper to call autoTable and return finalY + spacing
 const addTable = (doc: jsPDF, options: any, spacing = 10): number => {
@@ -19,23 +21,24 @@ const COLORS = {
   darkSlate: [30, 41, 59] as [number, number, number],
 };
 
+const TABLE_STYLES = {
+  theme: 'grid' as const,
+  headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontStyle: 'bold' as const, fontSize: 9 },
+  bodyStyles: { fontSize: 8, textColor: COLORS.dark },
+  alternateRowStyles: { fillColor: COLORS.bg },
+  margin: { left: 14, right: 14 },
+};
+
 const addHeader = (doc: jsPDF, title: string) => {
-  // Background bar
   doc.setFillColor(...COLORS.dark);
   doc.rect(0, 0, 210, 28, 'F');
-
-  // Logo text
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
   doc.setTextColor(...COLORS.primary);
   doc.text('Opções PRO X', 14, 14);
-
-  // Title
   doc.setFontSize(11);
   doc.setTextColor(...COLORS.white);
   doc.text(title, 14, 22);
-
-  // Date
   doc.setFontSize(8);
   doc.setTextColor(...COLORS.lightGray);
   const date = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -80,6 +83,20 @@ const checkPageBreak = (doc: jsPDF, y: number, needed: number = 30): number => {
   return y;
 };
 
+const addAllFooters = (doc: jsPDF) => {
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    addFooter(doc, i, totalPages);
+  }
+};
+
+const formatMetricValue = (val: number | string | 'Ilimitado'): string => {
+  if (val === 'Ilimitado') return 'Ilimitado';
+  const n = typeof val === 'string' ? parseFloat(val) : val;
+  return `R$ ${n.toFixed(2)}`;
+};
+
 // ==================== FAQ MANUAL PDF ====================
 export const generateFAQPdf = () => {
   const doc = new jsPDF();
@@ -87,27 +104,23 @@ export const generateFAQPdf = () => {
   // Cover page
   doc.setFillColor(...COLORS.dark);
   doc.rect(0, 0, 210, 297, 'F');
-
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(36);
   doc.setTextColor(...COLORS.primary);
   doc.text('Opções PRO X', 105, 90, { align: 'center' });
-
   doc.setFontSize(18);
   doc.setTextColor(...COLORS.white);
   doc.text('Manual do Usuário', 105, 108, { align: 'center' });
-
   doc.setFontSize(11);
   doc.setTextColor(...COLORS.lightGray);
   doc.text('Guia completo para dominar a plataforma', 105, 120, { align: 'center' });
   doc.text('Da simulação ao controle do portfólio', 105, 128, { align: 'center' });
-
   const date = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   doc.setFontSize(10);
   doc.setTextColor(...COLORS.gray);
   doc.text(`Versão: ${date}`, 105, 200, { align: 'center' });
 
-  // Page 2 - What is
+  // Page 2
   doc.addPage();
   addHeader(doc, 'Manual do Usuário');
   let y = 36;
@@ -126,38 +139,26 @@ export const generateFAQPdf = () => {
       ['Portfólio', 'Controle de operações encerradas com métricas consolidadas'],
       ['Diversificador', 'Planejamento de alocação entre diferentes estratégias'],
     ],
-    theme: 'grid',
-    headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontStyle: 'bold', fontSize: 9 },
-    bodyStyles: { fontSize: 8, textColor: COLORS.dark },
-    alternateRowStyles: { fillColor: COLORS.bg },
-    margin: { left: 14, right: 14 },
+    ...TABLE_STYLES,
   });
 
-  // How to create analysis
   y = checkPageBreak(doc, y, 80);
   y = addSectionTitle(doc, '2. Como Criar uma Análise', y);
-
-  const steps = [
-    ['1', 'Upload da Imagem (OCR)', 'Faça upload de um print da tela de opções da sua corretora. A IA irá extrair automaticamente os dados das opções via OCR.'],
-    ['2', 'Ajuste as Pernas', 'Revise e ajuste as pernas da operação: lado (compra/venda), tipo (call/put/ação), strike, preço, quantidade e vencimento.'],
-    ['3', 'Visualize Payoff e Métricas', 'O gráfico de payoff mostra lucro/prejuízo em cada cenário. Métricas: ganho máximo, perda máxima, breakevens e custo líquido.'],
-    ['4', 'Solicite Análise de IA', 'A IA avalia risco/retorno, cenários favoráveis/desfavoráveis e sugere ajustes na estrutura.'],
-    ['5', 'Salve a Análise', 'Dê um nome descritivo e salve. A operação ficará no Histórico como "Ativa".'],
-  ];
 
   y = addTable(doc, {
     startY: y,
     head: [['Passo', 'Ação', 'Descrição']],
-    body: steps,
-    theme: 'grid',
-    headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontStyle: 'bold', fontSize: 9 },
-    bodyStyles: { fontSize: 8, textColor: COLORS.dark },
-    alternateRowStyles: { fillColor: COLORS.bg },
-    columnStyles: { 0: { cellWidth: 12, halign: 'center', fontStyle: 'bold' }, 1: { cellWidth: 40, fontStyle: 'bold' } },
-    margin: { left: 14, right: 14 },
+    body: [
+      ['1', 'Upload da Imagem (OCR)', 'Faça upload de um print da tela de opções da sua corretora. A IA irá extrair automaticamente os dados das opções via OCR.'],
+      ['2', 'Ajuste as Pernas', 'Revise e ajuste as pernas da operação: lado (compra/venda), tipo (call/put/ação), strike, preço, quantidade e vencimento.'],
+      ['3', 'Visualize Payoff e Métricas', 'O gráfico de payoff mostra lucro/prejuízo em cada cenário. Métricas: ganho máximo, perda máxima, breakevens e custo líquido.'],
+      ['4', 'Solicite Análise de IA', 'A IA avalia risco/retorno, cenários favoráveis/desfavoráveis e sugere ajustes na estrutura.'],
+      ['5', 'Salve a Análise', 'Dê um nome descritivo e salve. A operação ficará no Histórico como "Ativa".'],
+    ],
+    ...TABLE_STYLES,
+    columnStyles: { 0: { cellWidth: 12, halign: 'center' as const, fontStyle: 'bold' as const }, 1: { cellWidth: 40, fontStyle: 'bold' as const } },
   });
 
-  // Payoff
   y = checkPageBreak(doc, y, 50);
   y = addSectionTitle(doc, '3. Gráfico de Payoff & Métricas', y);
   y = addParagraph(doc, 'O gráfico de payoff mostra visualmente o lucro ou prejuízo da sua estrutura para cada cenário de preço do ativo-objeto no vencimento. Use os botões VALOR e % ROI para alternar a visualização. A linha tracejada amarela representa o retorno do CDI.', y);
@@ -172,14 +173,9 @@ export const generateFAQPdf = () => {
       ['Breakeven', 'Preço do ativo onde o resultado é zero'],
       ['Eficiência vs CDI', 'Percentual do retorno comparado ao CDI no período'],
     ],
-    theme: 'grid',
-    headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontStyle: 'bold', fontSize: 9 },
-    bodyStyles: { fontSize: 8, textColor: COLORS.dark },
-    alternateRowStyles: { fillColor: COLORS.bg },
-    margin: { left: 14, right: 14 },
+    ...TABLE_STYLES,
   });
 
-  // CDI Comparison
   y = checkPageBreak(doc, y, 60);
   y = addSectionTitle(doc, '4. Comparação com CDI', y);
   y = addParagraph(doc, 'A comparação com CDI permite avaliar se a sua estratégia de opções supera o rendimento do CDI (Certificado de Depósito Interbancário), a taxa de referência para investimentos de renda fixa no Brasil.', y);
@@ -195,16 +191,11 @@ export const generateFAQPdf = () => {
       ['IR no CDI / IR Opções', 'Ative para incluir imposto de renda na comparação'],
       ['Retorno CDI (R$)', 'Valor que o capital renderia no CDI no mesmo período'],
     ],
-    theme: 'grid',
-    headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontStyle: 'bold', fontSize: 9 },
-    bodyStyles: { fontSize: 8, textColor: COLORS.dark },
-    alternateRowStyles: { fillColor: COLORS.bg },
-    columnStyles: { 0: { cellWidth: 40, fontStyle: 'bold' } },
-    margin: { left: 14, right: 14 },
+    ...TABLE_STYLES,
+    columnStyles: { 0: { cellWidth: 40, fontStyle: 'bold' as const } },
   });
   y = addParagraph(doc, 'Dica: Estratégias com risco limitado e eficiência CDI acima de 100% são consideradas atrativas, pois oferecem retorno superior à renda fixa com risco controlado.', y);
 
-  // Monitoring active ops
   y = checkPageBreak(doc, y, 50);
   y = addSectionTitle(doc, '5. Acompanhamento de Operações Ativas', y);
   y = addParagraph(doc, 'Ao abrir uma operação ativa, você acessa a tela de Detalhes. Nela é possível monitorar o P&L em tempo real, comparar com o custo de oportunidade do CDI e solicitar um Veredito de Saída da IA para decidir o melhor momento de encerrar.', y);
@@ -218,21 +209,15 @@ export const generateFAQPdf = () => {
       ['Eficiência vs CDI', 'Percentual de rendimento comparado ao CDI'],
       ['IA: Veredito de Saída', 'Análise automática que avalia se é hora de encerrar a operação'],
     ],
-    theme: 'grid',
-    headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontStyle: 'bold', fontSize: 9 },
-    bodyStyles: { fontSize: 8, textColor: COLORS.dark },
-    alternateRowStyles: { fillColor: COLORS.bg },
-    columnStyles: { 0: { cellWidth: 45, fontStyle: 'bold' } },
-    margin: { left: 14, right: 14 },
+    ...TABLE_STYLES,
+    columnStyles: { 0: { cellWidth: 45, fontStyle: 'bold' as const } },
   });
 
-  // History
   y = checkPageBreak(doc, y, 50);
   y = addSectionTitle(doc, '6. Aba Histórico', y);
   y = addParagraph(doc, 'O Histórico é o centro de controle das suas análises. Todas as operações salvas aparecem organizadas por status (Ativas e Encerradas) com filtros por mês e ano.', y);
   y = addParagraph(doc, '• Operações Ativas: Podem ser editadas, encerradas ou deletadas.\n• Operações Encerradas: Ficam registradas com a data de encerramento. Podem ser reabertas.', y);
 
-  // Flow
   y = checkPageBreak(doc, y, 50);
   y = addSectionTitle(doc, '7. Fluxo: Histórico → Portfólio', y);
 
@@ -244,58 +229,38 @@ export const generateFAQPdf = () => {
       ['Histórico', 'Portfólio', 'Ao encerrar uma operação ativa, ela é movida para o Portfólio'],
       ['Portfólio', 'Histórico', 'Você pode reabrir uma operação encerrada se precisar'],
     ],
-    theme: 'grid',
-    headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontStyle: 'bold', fontSize: 9 },
-    bodyStyles: { fontSize: 8, textColor: COLORS.dark },
-    alternateRowStyles: { fillColor: COLORS.bg },
-    margin: { left: 14, right: 14 },
+    ...TABLE_STYLES,
   });
-
   y = addParagraph(doc, 'Como encerrar: Acesse Histórico → Localize a operação Ativa → Clique em "Encerrar" → Confirme → A operação muda para "Encerrada" e aparece no Portfólio.', y);
 
-  // Portfolio
   y = checkPageBreak(doc, y, 40);
   y = addSectionTitle(doc, '8. Aba Portfólio', y);
   y = addParagraph(doc, 'O Portfólio consolida todas as operações encerradas. Métricas disponíveis: Resultado Total, Capital Alocado, Média por Operação, VS CDI, Taxa de Acerto e total de Estratégias Encerradas.', y);
 
-  // Diversifier
   y = checkPageBreak(doc, y, 40);
   y = addSectionTitle(doc, '9. Diversificador de Estratégias', y);
   y = addParagraph(doc, 'O módulo Diversificador permite criar planos de alocação para distribuir seu patrimônio entre diferentes estratégias de opções. Defina percentuais, nível de risco e alavancagem para cada estratégia, mantendo um controle disciplinado da sua exposição ao mercado.', y);
 
-  // FAQ
   y = checkPageBreak(doc, y, 80);
   y = addSectionTitle(doc, '10. Perguntas Frequentes', y);
-
-  const faqs = [
-    ['Preciso ter conta em corretora?', 'O Opções PRO X é uma ferramenta de simulação. Você precisa de corretora apenas para executar operações reais.'],
-    ['Como funciona o OCR?', 'Faça um print da tela de opções da sua corretora e faça upload. A IA extrai automaticamente os dados das opções.'],
-    ['O que é "Eficiência CDI"?', 'Indica quanto a estratégia rende em relação ao CDI. Ex: 220% = 2,2x mais que o CDI. Acima de 100% supera renda fixa.'],
-    ['Posso reabrir operação encerrada?', 'Sim! Na aba Histórico, operações encerradas possuem o botão "Reabrir".'],
-    ['É recomendação de investimento?', 'Não. É uma ferramenta de simulação baseada nas regras da B3. Consulte um profissional antes de operar.'],
-    ['Como a IA funciona?', 'Utiliza IA (OpenAI) para avaliar risco/retorno, cenários favoráveis/desfavoráveis e sugerir ajustes.'],
-    ['Diferença Free vs PRO?', 'Free: acesso básico com limites. PRO: simulações ilimitadas, IA, CDI, diversificador e todos os recursos.'],
-  ];
 
   y = addTable(doc, {
     startY: y,
     head: [['Pergunta', 'Resposta']],
-    body: faqs,
-    theme: 'grid',
-    headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontStyle: 'bold', fontSize: 9 },
-    bodyStyles: { fontSize: 8, textColor: COLORS.dark },
-    alternateRowStyles: { fillColor: COLORS.bg },
-    columnStyles: { 0: { cellWidth: 45, fontStyle: 'bold' } },
-    margin: { left: 14, right: 14 },
+    body: [
+      ['Preciso ter conta em corretora?', 'O Opções PRO X é uma ferramenta de simulação. Você precisa de corretora apenas para executar operações reais.'],
+      ['Como funciona o OCR?', 'Faça um print da tela de opções da sua corretora e faça upload. A IA extrai automaticamente os dados das opções.'],
+      ['O que é "Eficiência CDI"?', 'Indica quanto a estratégia rende em relação ao CDI. Ex: 220% = 2,2x mais que o CDI. Acima de 100% supera renda fixa.'],
+      ['Posso reabrir operação encerrada?', 'Sim! Na aba Histórico, operações encerradas possuem o botão "Reabrir".'],
+      ['É recomendação de investimento?', 'Não. É uma ferramenta de simulação baseada nas regras da B3. Consulte um profissional antes de operar.'],
+      ['Como a IA funciona?', 'Utiliza IA (OpenAI) para avaliar risco/retorno, cenários favoráveis/desfavoráveis e sugerir ajustes.'],
+      ['Diferença Free vs PRO?', 'Free: acesso básico com limites. PRO: simulações ilimitadas, IA, CDI, diversificador e todos os recursos.'],
+    ],
+    ...TABLE_STYLES,
+    columnStyles: { 0: { cellWidth: 45, fontStyle: 'bold' as const } },
   });
 
-  // Add footers to all pages
-  const totalPages = doc.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
-    addFooter(doc, i, totalPages);
-  }
-
+  addAllFooters(doc);
   doc.save('OpçõesPROX_Manual.pdf');
 };
 
@@ -309,6 +274,7 @@ interface HistoryAnalysis {
   closed_at: string | null;
   expiry_date: string | null;
   days_to_expiry: number | null;
+  cdi_rate?: number | null;
 }
 
 interface LegData {
@@ -334,7 +300,7 @@ export const generateHistoryPdf = async (
 
   for (let i = 0; i < analyses.length; i++) {
     const a = analyses[i];
-    y = checkPageBreak(doc, y, 60);
+    y = checkPageBreak(doc, y, 80);
 
     // Operation header
     doc.setFillColor(...COLORS.bg);
@@ -362,10 +328,81 @@ export const generateHistoryPdf = async (
 
     y += 20;
 
-    // Fetch legs
+    // Fetch legs and calculate metrics
     try {
       const legs = await fetchLegs(a.id);
       if (legs.length > 0) {
+        // Calculate metrics from legs
+        const typedLegs: Leg[] = legs.map(l => ({
+          side: l.side as 'buy' | 'sell',
+          option_type: l.option_type as 'call' | 'put' | 'stock',
+          asset: l.asset,
+          strike: l.strike,
+          price: l.price,
+          quantity: l.quantity,
+          expiry_date: l.expiry_date || undefined,
+        }));
+
+        const metrics = calculateMetrics(typedLegs);
+        const cdiRate = a.cdi_rate || 15;
+        const daysToExpiry = a.days_to_expiry || 0;
+        const investedCapital = Math.max(Math.abs(metrics.montageTotal || metrics.netCost || 0), 1);
+        const cdiReturn = daysToExpiry > 0 ? calculateCDIOpportunityCost(investedCapital, cdiRate, daysToExpiry) : 0;
+        const cdiEfficiency = cdiReturn > 0 && typeof metrics.maxGain === 'number' ? Math.round((metrics.maxGain / cdiReturn) * 100) : null;
+
+        // Metrics table
+        y = addTable(doc, {
+          startY: y,
+          head: [['Métrica', 'Valor']],
+          body: [
+            ['Estratégia', metrics.strategyLabel || 'Personalizada'],
+            ['Custo da Montagem / PM', formatMetricValue(Math.abs(metrics.montageTotal || metrics.netCost))],
+            ['Lucro Máximo', formatMetricValue(metrics.maxGain)],
+            ['Risco Máximo', metrics.isRiskFree ? 'R$ 0,00 (Risco Zero)' : formatMetricValue(metrics.maxLoss)],
+            ['Breakeven(s)', metrics.breakevens.length > 0 ? metrics.breakevens.map(b => `R$ ${b.toFixed(2)}`).join(' / ') : '—'],
+            ['Dias Úteis (DU)', daysToExpiry > 0 ? `${daysToExpiry} du` : '—'],
+            ['Retorno CDI no Período', cdiReturn > 0 ? `R$ ${cdiReturn.toFixed(2)}` : '—'],
+            ['Eficiência vs CDI', cdiEfficiency != null ? `${cdiEfficiency}%` : '—'],
+            ['Lucro Acima do CDI (R$)', cdiReturn > 0 && typeof metrics.maxGain === 'number' ? `R$ ${(metrics.maxGain - cdiReturn).toFixed(2)}` : '—'],
+          ],
+          theme: 'grid',
+          headStyles: { fillColor: COLORS.darkSlate, textColor: COLORS.white, fontStyle: 'bold' as const, fontSize: 8 },
+          bodyStyles: { fontSize: 8, textColor: COLORS.dark },
+          alternateRowStyles: { fillColor: COLORS.bg },
+          columnStyles: { 0: { fontStyle: 'bold' as const, cellWidth: 50 } },
+          margin: { left: 14, right: 14 },
+          didParseCell: (data: any) => {
+            if (data.section === 'body') {
+              const label = data.row.cells[0]?.raw;
+              const val = data.row.cells[1]?.raw;
+              if (data.column.index === 1) {
+                if (label === 'Lucro Máximo' && val !== '—' && val !== 'Ilimitado') {
+                  const n = parseFloat(val.replace('R$ ', ''));
+                  if (n > 0) data.cell.styles.textColor = COLORS.success;
+                }
+                if (label === 'Risco Máximo' && !val.includes('Risco Zero')) {
+                  data.cell.styles.textColor = COLORS.destructive;
+                }
+                if (label === 'Risco Máximo' && val.includes('Risco Zero')) {
+                  data.cell.styles.textColor = COLORS.success;
+                }
+                if (label === 'Eficiência vs CDI') {
+                  const n = parseFloat(val);
+                  if (n > 100) data.cell.styles.textColor = COLORS.success;
+                }
+              }
+            }
+          },
+        }, 6);
+
+        // Legs table
+        y = checkPageBreak(doc, y, 30);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(...COLORS.gray);
+        doc.text('Pernas da Estrutura:', 14, y);
+        y += 4;
+
         y = addTable(doc, {
           startY: y,
           head: [['Ativo', 'Tipo', 'Lado', 'Strike', 'Preço', 'Qtd', 'Vencimento']],
@@ -379,7 +416,7 @@ export const generateHistoryPdf = async (
             l.expiry_date ? (() => { const [yr, m, d] = l.expiry_date.split('-').map(Number); return new Date(yr, m-1, d).toLocaleDateString('pt-BR'); })() : '-',
           ]),
           theme: 'grid',
-          headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontStyle: 'bold', fontSize: 8 },
+          headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontStyle: 'bold' as const, fontSize: 8 },
           bodyStyles: { fontSize: 8, textColor: COLORS.dark },
           alternateRowStyles: { fillColor: COLORS.bg },
           margin: { left: 14, right: 14 },
@@ -390,15 +427,17 @@ export const generateHistoryPdf = async (
     } catch {
       y = addParagraph(doc, 'Erro ao carregar pernas da operação.', y);
     }
+
+    // Separator line between operations
+    if (i < analyses.length - 1) {
+      y = checkPageBreak(doc, y, 10);
+      doc.setDrawColor(...COLORS.lightGray);
+      doc.line(14, y, 196, y);
+      y += 8;
+    }
   }
 
-  // Footers
-  const totalPages = doc.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
-    addFooter(doc, i, totalPages);
-  }
-
+  addAllFooters(doc);
   doc.save('OpçõesPROX_Histórico.pdf');
 };
 
@@ -451,15 +490,10 @@ export const generatePortfolioPdf = (
       ['Operações W/L', `${stats.wins}W / ${stats.losses}L`],
       ['Total de Operações', analyses.length.toString()],
     ],
-    theme: 'grid',
-    headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontStyle: 'bold', fontSize: 9 },
-    bodyStyles: { fontSize: 9, textColor: COLORS.dark },
-    alternateRowStyles: { fillColor: COLORS.bg },
-    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 } },
-    margin: { left: 14, right: 14 },
+    ...TABLE_STYLES,
+    columnStyles: { 0: { fontStyle: 'bold' as const, cellWidth: 60 } },
   });
 
-  // Operations detail
   y = checkPageBreak(doc, y, 40);
   y = addSectionTitle(doc, 'Detalhamento por Operação', y);
 
@@ -492,7 +526,7 @@ export const generatePortfolioPdf = (
     head: [['Nome', 'Ativo', 'Entrada', 'Saída', 'Investido', 'Resultado', 'ROI']],
     body: rows,
     theme: 'grid',
-    headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontStyle: 'bold', fontSize: 8 },
+    headStyles: { fillColor: COLORS.primary, textColor: COLORS.white, fontStyle: 'bold' as const, fontSize: 8 },
     bodyStyles: { fontSize: 8, textColor: COLORS.dark },
     alternateRowStyles: { fillColor: COLORS.bg },
     margin: { left: 14, right: 14 },
@@ -540,7 +574,7 @@ export const generatePortfolioPdf = (
         ];
       }),
       theme: 'grid',
-      headStyles: { fillColor: COLORS.darkSlate, textColor: COLORS.white, fontStyle: 'bold', fontSize: 7 },
+      headStyles: { fillColor: COLORS.darkSlate, textColor: COLORS.white, fontStyle: 'bold' as const, fontSize: 7 },
       bodyStyles: { fontSize: 7, textColor: COLORS.dark },
       alternateRowStyles: { fillColor: COLORS.bg },
       margin: { left: 14, right: 14 },
@@ -553,12 +587,6 @@ export const generatePortfolioPdf = (
     });
   }
 
-  // Footers
-  const totalPages = doc.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
-    addFooter(doc, i, totalPages);
-  }
-
+  addAllFooters(doc);
   doc.save('OpçõesPROX_Portfólio.pdf');
 };
