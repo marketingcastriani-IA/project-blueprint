@@ -15,6 +15,7 @@ import Settings from "./pages/Settings";
 import Diversificador from "./pages/Diversificador";
 import AdminLogin from "./pages/AdminLogin";
 import AdminPanel from "./pages/AdminPanel";
+import FAQ from "./pages/FAQ";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
