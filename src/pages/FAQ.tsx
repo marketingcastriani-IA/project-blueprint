@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { generateFAQPdf } from '@/lib/pdf-generator';
 
 import faqPayoff from '@/assets/faq-payoff.png';
 import faqCdi from '@/assets/faq-cdi.png';
@@ -82,7 +83,7 @@ export default function FAQ() {
           />
           <Button 
             variant="outline" 
-            onClick={() => window.print()} 
+            onClick={() => generateFAQPdf()} 
             className="h-12 px-5 font-bold border-primary/30 text-primary hover:bg-primary/10 shrink-0"
           >
             <Download className="mr-2 h-5 w-5" /> Baixar PDF

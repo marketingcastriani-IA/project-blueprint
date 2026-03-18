@@ -114,29 +114,3 @@
     @apply bg-gradient-to-br from-primary to-success bg-clip-text text-transparent;
   }
 }
-
-@media print {
-  header, nav, .no-print {
-    display: none !important;
-  }
-  
-  body {
-    background: white !important;
-    color: black !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-  main {
-    padding: 0 !important;
-    max-width: 100% !important;
-  }
-
-  .min-h-screen {
-    min-height: auto !important;
-  }
-
-  * {
-    box-shadow: none !important;
-  }
-}
