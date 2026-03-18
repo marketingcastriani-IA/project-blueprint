@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { 
   Loader2, TrendingUp, TrendingDown, Calendar, Edit2, 
-  RotateCcw, Trash2, Briefcase, Wallet, Target, CalendarDays, Percent, BarChart3 
+  RotateCcw, Trash2, Briefcase, Wallet, Target, CalendarDays, Percent, BarChart3, Download 
 } from 'lucide-react';
 import { countBusinessDays } from '@/lib/b3-calendar';
 import { calculateCDIReturn } from '@/lib/payoff';
