@@ -238,7 +238,17 @@ export default function History() {
           <div className="flex items-center gap-3">
             <Button 
               variant="outline" 
-              onClick={() => window.print()} 
+              onClick={async () => {
+                const fetchLegs = async (analysisId: string) => {
+                  const { data } = await supabase
+                    .from('legs')
+                    .select('asset, option_type, side, strike, price, quantity, expiry_date')
+                    .eq('analysis_id', analysisId);
+                  return (data || []) as any[];
+                };
+                await generateHistoryPdf(filteredAnalyses, fetchLegs);
+                toast.success('PDF gerado com sucesso!');
+              }} 
               className="h-12 px-5 font-bold border-primary/30 text-primary hover:bg-primary/10"
             >
               <Download className="mr-2 h-5 w-5" /> Baixar PDF

@@ -219,7 +219,17 @@ export default function Portfolio() {
           />
           <Button 
             variant="outline" 
-            onClick={() => window.print()} 
+            onClick={() => {
+              generatePortfolioPdf(filteredAnalyses, legsMap, {
+                totalPL: stats.totalPL,
+                totalInvested: stats.totalInvested,
+                avgPL: stats.avgProfit,
+                winRate: parseFloat(stats.winRate as string),
+                wins: stats.wins,
+                losses: stats.losses,
+              });
+              toast.success('PDF gerado com sucesso!');
+            }} 
             className="h-12 px-5 font-bold border-primary/30 text-primary hover:bg-primary/10"
           >
             <Download className="mr-2 h-5 w-5" /> Baixar PDF
