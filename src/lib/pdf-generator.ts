@@ -132,7 +132,6 @@ export const generateFAQPdf = () => {
     alternateRowStyles: { fillColor: COLORS.bg },
     margin: { left: 14, right: 14 },
   });
-  y = addTable(doc, PLACEHOLDER_REMOVE + 10;
 
   // How to create analysis
   y = checkPageBreak(doc, y, 80);
@@ -157,7 +156,6 @@ export const generateFAQPdf = () => {
     columnStyles: { 0: { cellWidth: 12, halign: 'center', fontStyle: 'bold' }, 1: { cellWidth: 40, fontStyle: 'bold' } },
     margin: { left: 14, right: 14 },
   });
-  y = addTable(doc, PLACEHOLDER_REMOVE + 10;
 
   // Payoff
   y = checkPageBreak(doc, y, 50);
@@ -180,7 +178,6 @@ export const generateFAQPdf = () => {
     alternateRowStyles: { fillColor: COLORS.bg },
     margin: { left: 14, right: 14 },
   });
-  y = addTable(doc, PLACEHOLDER_REMOVE + 10;
 
   // CDI Comparison
   y = checkPageBreak(doc, y, 60);
@@ -205,7 +202,6 @@ export const generateFAQPdf = () => {
     columnStyles: { 0: { cellWidth: 40, fontStyle: 'bold' } },
     margin: { left: 14, right: 14 },
   });
-  y = addTable(doc, PLACEHOLDER_REMOVE + 6;
   y = addParagraph(doc, 'Dica: Estratégias com risco limitado e eficiência CDI acima de 100% são consideradas atrativas, pois oferecem retorno superior à renda fixa com risco controlado.', y);
 
   // Monitoring active ops
@@ -229,7 +225,6 @@ export const generateFAQPdf = () => {
     columnStyles: { 0: { cellWidth: 45, fontStyle: 'bold' } },
     margin: { left: 14, right: 14 },
   });
-  y = addTable(doc, PLACEHOLDER_REMOVE + 10;
 
   // History
   y = checkPageBreak(doc, y, 50);
@@ -255,7 +250,6 @@ export const generateFAQPdf = () => {
     alternateRowStyles: { fillColor: COLORS.bg },
     margin: { left: 14, right: 14 },
   });
-  y = addTable(doc, PLACEHOLDER_REMOVE + 6;
 
   y = addParagraph(doc, 'Como encerrar: Acesse Histórico → Localize a operação Ativa → Clique em "Encerrar" → Confirme → A operação muda para "Encerrada" e aparece no Portfólio.', y);
 
@@ -390,7 +384,6 @@ export const generateHistoryPdf = async (
           alternateRowStyles: { fillColor: COLORS.bg },
           margin: { left: 14, right: 14 },
         });
-        y = addTable(doc, PLACEHOLDER_REMOVE + 10;
       } else {
         y = addParagraph(doc, 'Nenhuma perna registrada.', y);
       }
@@ -465,7 +458,6 @@ export const generatePortfolioPdf = (
     columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 } },
     margin: { left: 14, right: 14 },
   });
-  y = addTable(doc, PLACEHOLDER_REMOVE + 10;
 
   // Operations detail
   y = checkPageBreak(doc, y, 40);
@@ -517,7 +509,6 @@ export const generatePortfolioPdf = (
       }
     },
   });
-  y = addTable(doc, PLACEHOLDER_REMOVE + 10;
 
   // Legs detail per operation
   for (const a of analyses) {
@@ -560,7 +551,6 @@ export const generatePortfolioPdf = (
         }
       },
     });
-    y = addTable(doc, PLACEHOLDER_REMOVE + 8;
   }
 
   // Footers
