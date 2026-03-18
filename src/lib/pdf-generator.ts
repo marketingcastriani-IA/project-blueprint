@@ -1,10 +1,10 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-// Helper to call autoTable and return finalY
-const addTable = (doc: jsPDF, options: any): number => {
+// Helper to call autoTable and return finalY + spacing
+const addTable = (doc: jsPDF, options: any, spacing = 10): number => {
   autoTable(doc, options);
-  return (doc as any).lastAutoTable.finalY;
+  return (doc as any).lastAutoTable.finalY + spacing;
 };
 
 const COLORS = {
