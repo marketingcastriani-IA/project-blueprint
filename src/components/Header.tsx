@@ -21,6 +21,7 @@ export default function Header() {
     { label: 'Histórico', path: '/history', icon: History },
     { label: 'Portfólio', path: '/portfolio', icon: Briefcase },
     { label: 'Diversificador', path: '/diversificador', icon: PieChart },
+    { label: 'FAQ', path: '/faq', icon: HelpCircle },
     { label: 'Configurações', path: '/settings', icon: Settings },
     ...(access.isAdmin ? [{ label: 'Admin', path: '/admin', icon: Shield }] : []),
   ];
