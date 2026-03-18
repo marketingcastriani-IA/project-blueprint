@@ -5,9 +5,15 @@ import { Badge } from '@/components/ui/badge';
 import { 
   BookOpen, Upload, BarChart3, History, Briefcase, TrendingUp, 
   Zap, Target, ArrowRight, CheckCircle2, AlertTriangle, HelpCircle,
-  Camera, Brain, PieChart, Calculator, Shield
+  Camera, Brain, PieChart, Calculator, Shield, Eye
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+import faqPayoff from '@/assets/faq-payoff.png';
+import faqCdi from '@/assets/faq-cdi.png';
+import faqHistorico from '@/assets/faq-historico.png';
+import faqPortfolio from '@/assets/faq-portfolio.png';
+import faqAnaliseDetalhe from '@/assets/faq-analise-detalhe.png';
 
 const StepCard = ({ step, title, description, icon: Icon }: { step: number; title: string; description: string; icon: React.ComponentType<{ className?: string }> }) => (
   <div className="flex gap-4 items-start">
@@ -45,6 +51,12 @@ const FeatureSection = ({ icon: Icon, title, children, badge }: { icon: React.Co
       {children}
     </div>
   </ProfessionalCard>
+);
+
+const ScreenshotImage = ({ src, alt }: { src: string; alt: string }) => (
+  <div className="rounded-xl overflow-hidden border border-border/50 shadow-lg">
+    <img src={src} alt={alt} className="w-full h-auto" loading="lazy" />
+  </div>
 );
 
 const FlowStep = ({ from, to, description }: { from: string; to: string; description: string }) => (
@@ -121,6 +133,27 @@ export default function FAQ() {
           </div>
         </FeatureSection>
 
+        {/* Gráfico de Payoff & Métricas */}
+        <FeatureSection icon={BarChart3} title="Gráfico de Payoff & Métricas" badge="Simulação">
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              O gráfico de payoff mostra visualmente o lucro ou prejuízo da sua estrutura para cada cenário de preço do ativo-objeto no vencimento. 
+              As métricas resumem os dados mais importantes: <strong className="text-foreground">Lucro Máximo</strong>, <strong className="text-foreground">Risco Máximo</strong>, 
+              <strong className="text-foreground">Breakeven</strong>, <strong className="text-foreground">Custo Líquido</strong> e <strong className="text-foreground">Eficiência vs CDI</strong>.
+            </p>
+            <ScreenshotImage src={faqPayoff} alt="Gráfico de Payoff e Métricas do Opções PRO X" />
+            <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+              <div className="flex items-start gap-2">
+                <Eye className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  <strong className="text-foreground">Dica:</strong> Use os botões <strong className="text-foreground">VALOR</strong> e <strong className="text-foreground">% ROI</strong> para 
+                  alternar entre visualização em reais e em percentual de retorno. A linha tracejada amarela representa o retorno do CDI para comparação direta.
+                </p>
+              </div>
+            </div>
+          </div>
+        </FeatureSection>
+
         {/* Comparação com CDI */}
         <FeatureSection icon={TrendingUp} title="Comparação com CDI" badge="Recurso PRO">
           <div className="space-y-4">
@@ -130,6 +163,8 @@ export default function FAQ() {
               para investimentos de renda fixa no Brasil.
             </p>
             
+            <ScreenshotImage src={faqCdi} alt="Comparação com CDI - Opções PRO X" />
+
             <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 space-y-3">
               <h4 className="text-sm font-black flex items-center gap-2">
                 <Zap className="h-4 w-4 text-primary" /> Como Funciona
@@ -141,15 +176,19 @@ export default function FAQ() {
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" />
-                  <span><strong className="text-foreground">Dias até o Vencimento:</strong> Utiliza os dias úteis até o vencimento da opção para projetar o retorno proporcional do CDI.</span>
+                  <span><strong className="text-foreground">Data de Vencimento:</strong> Informe a data de vencimento correta da sua estrutura para que o cálculo reflita exatamente o período restante em dias úteis.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" />
-                  <span><strong className="text-foreground">Eficiência CDI:</strong> Mostra o percentual do CDI que a sua estratégia entrega. Exemplo: se a eficiência é 180%, significa que sua operação rende 1,8x mais que o CDI no mesmo período.</span>
+                  <span><strong className="text-foreground">Capital Investido:</strong> Informe o valor total investido na operação para calcular o retorno do CDI proporcional.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" />
-                  <span><strong className="text-foreground">Gráfico Comparativo:</strong> No gráfico de payoff, uma linha horizontal representa o retorno do CDI, permitindo visualizar em quais cenários de preço a sua estratégia supera ou fica abaixo da renda fixa.</span>
+                  <span><strong className="text-foreground">Eficiência CDI:</strong> Mostra o percentual do CDI que a sua estratégia entrega. Exemplo: 220% significa que sua operação rende 2,2x mais que o CDI no mesmo período.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" />
+                  <span><strong className="text-foreground">IR no CDI / IR Opções:</strong> Ative ou desative o cálculo de imposto de renda para uma comparação mais realista entre os investimentos.</span>
                 </li>
               </ul>
             </div>
@@ -167,6 +206,42 @@ export default function FAQ() {
           </div>
         </FeatureSection>
 
+        {/* Acompanhamento de Operações Ativas */}
+        <FeatureSection icon={Eye} title="Acompanhamento de Operações Ativas" badge="Monitoramento">
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Ao abrir uma operação ativa no Histórico, você acessa a tela de <strong className="text-foreground">Detalhes da Análise</strong>. 
+              Nela, é possível monitorar o P&L em tempo real, comparar com o custo de oportunidade do CDI e solicitar um 
+              <strong className="text-foreground"> Veredito de Saída da IA</strong> para decidir o melhor momento de encerrar a operação.
+            </p>
+
+            <ScreenshotImage src={faqAnaliseDetalhe} alt="Detalhes da análise ativa - Opções PRO X" />
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { label: 'Lucro Atual (PNL)', desc: 'Resultado atual baseado nos preços de saída informados' },
+                { label: 'Custo Oportunidade', desc: 'Quanto seu capital teria rendido no CDI no mesmo período' },
+                { label: 'Eficiência vs CDI', desc: 'Percentual de rendimento comparado ao CDI' },
+              ].map(item => (
+                <div key={item.label} className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                  <p className="text-xs font-bold">{item.label}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 space-y-2">
+              <h4 className="text-sm font-black flex items-center gap-2">
+                <Brain className="h-4 w-4 text-primary" /> IA: Veredito de Saída
+              </h4>
+              <p className="text-xs text-muted-foreground">
+                Clique em <strong className="text-foreground">"Analisar Momento de Saída"</strong> para que a IA avalie se é hora de encerrar a operação. 
+                Ela compara seu lucro atual contra o CDI do período e o risco residual, oferecendo uma recomendação objetiva de saída.
+              </p>
+            </div>
+          </div>
+        </FeatureSection>
+
         {/* Aba Histórico */}
         <FeatureSection icon={History} title="Aba Histórico" badge="Gestão">
           <div className="space-y-4">
@@ -174,6 +249,8 @@ export default function FAQ() {
               A aba <strong className="text-foreground">Histórico</strong> é o centro de controle das suas análises. 
               Todas as operações salvas aparecem aqui, organizadas por status (Ativas e Encerradas) com filtros por mês e ano.
             </p>
+
+            <ScreenshotImage src={faqHistorico} alt="Aba Histórico - Opções PRO X" />
 
             <div className="grid gap-3">
               <div className="p-4 rounded-xl bg-muted/30 border border-border/50 space-y-2">
@@ -244,18 +321,25 @@ export default function FAQ() {
               A aba <strong className="text-foreground">Portfólio</strong> consolida todas as operações que foram encerradas. 
               É o seu registro histórico de trades finalizados, permitindo acompanhar a evolução e performance ao longo do tempo.
             </p>
+
+            <ScreenshotImage src={faqPortfolio} alt="Aba Portfólio - Opções PRO X" />
+
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" />
-                <span>Visualize todas as operações encerradas em um só lugar</span>
+                <span><strong className="text-foreground">Resultado Total:</strong> Veja o lucro/prejuízo acumulado de todas as operações encerradas</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" />
-                <span>Acompanhe datas de criação e encerramento de cada trade</span>
+                <span><strong className="text-foreground">Capital Alocado:</strong> Total desembolsado nas operações</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" />
-                <span>Acesse os detalhes completos clicando em qualquer operação</span>
+                <span><strong className="text-foreground">VS CDI:</strong> Compare seu desempenho geral contra a renda fixa</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" />
+                <span><strong className="text-foreground">Taxa de Acerto:</strong> Percentual de operações vencedoras vs perdedoras</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" />
@@ -295,7 +379,7 @@ export default function FAQ() {
               <AccordionTrigger className="text-sm font-bold">O que significa "Eficiência CDI"?</AccordionTrigger>
               <AccordionContent className="text-sm text-muted-foreground">
                 É o percentual que indica quanto a sua estratégia rende em relação ao CDI no mesmo período. 
-                Por exemplo, 150% de eficiência CDI significa que sua operação rende 1,5 vezes mais que o CDI. 
+                Por exemplo, 220% de eficiência CDI significa que sua operação rende 2,2 vezes mais que o CDI. 
                 Valores acima de 100% indicam que a estratégia supera a renda fixa.
               </AccordionContent>
             </AccordionItem>
