@@ -352,11 +352,29 @@ export default function FAQ() {
 
         {/* Diversificador */}
         <FeatureSection icon={PieChart} title="Diversificador de Estratégias" badge="Avançado">
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            O módulo <strong className="text-foreground">Diversificador</strong> permite criar planos de alocação para distribuir 
-            seu patrimônio entre diferentes estratégias de opções. Defina percentuais, frequências, nível de risco e alavancagem 
-            para cada estratégia, mantendo um controle disciplinado da sua exposição ao mercado.
-          </p>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              O módulo <strong className="text-foreground">Diversificador</strong> permite criar planos de alocação para distribuir 
+              seu patrimônio entre diferentes estratégias de opções. Defina percentuais, frequências, nível de risco e alavancagem 
+              para cada estratégia, mantendo um controle disciplinado da sua exposição ao mercado.
+            </p>
+
+            <ScreenshotImage src={faqDiversificador} alt="Diversificador de Estratégias - Opções PRO X" />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { label: 'Patrimônio', desc: 'Defina o valor total do capital disponível para alocação' },
+                { label: 'Estratégias', desc: 'Crie e gerencie suas estratégias com percentual, risco e alavancagem' },
+                { label: 'Alocação', desc: 'Visualize a distribuição do seu patrimônio entre as estratégias' },
+                { label: 'Resumo', desc: 'Acompanhe o saldo livre, total alocado e percentual utilizado' },
+              ].map(item => (
+                <div key={item.label} className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                  <p className="text-xs font-bold">{item.label}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </FeatureSection>
 
         {/* FAQ Perguntas Frequentes */}
