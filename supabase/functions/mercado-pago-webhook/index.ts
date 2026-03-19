@@ -130,21 +130,66 @@ serve(async (req) => {
         .single()
 
       if (profile?.email) {
-        console.log(`[mercado-pago-webhook] ENVIANDO E-MAIL DE BOAS-VINDAS PARA: ${profile.email}`);
+        console.log(`[mercado-pago-webhook] Enviando e-mail de boas-vindas PRO para: ${profile.email}`);
         
-        /* 
-           LOGICA DE ENVIO DE E-MAIL (Exemplo com Resend ou similar):
-           await fetch('https://api.resend.com/emails', {
-             method: 'POST',
-             headers: { 'Authorization': 'Bearer YOUR_API_KEY', 'Content-Type': 'application/json' },
-             body: JSON.stringify({
-               from: 'OpçõesX <contato@opcoesx.com.br>',
-               to: profile.email,
-               subject: 'Bem-vindo ao OPÇÕES PRO X!',
-               html: `<h1>Olá ${profile.display_name || 'Investidor'}!</h1><p>Seu acesso PRO foi liberado...</p>`
-             })
-           })
-        */
+        const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+        if (RESEND_API_KEY) {
+          try {
+            const emailRes = await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                from: 'Opções PRO X <contato@opcoesprox.com.br>',
+                to: profile.email,
+                subject: '🎉 Bem-vindo ao Opções PRO X!',
+                html: `
+                  <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a0f;border-radius:16px;overflow:hidden;border:1px solid #1a1a2e">
+                    <div style="background:linear-gradient(135deg,#6d28d9,#4f46e5);padding:40px 30px;text-align:center">
+                      <h1 style="color:#fff;margin:0;font-size:28px">🚀 Acesso PRO Ativado!</h1>
+                      <p style="color:#e0d4ff;margin:10px 0 0;font-size:15px">Seu pagamento foi confirmado com sucesso</p>
+                    </div>
+                    <div style="padding:30px">
+                      <p style="color:#e2e8f0;font-size:16px;line-height:1.7">
+                        Olá <strong style="color:#a78bfa">${profile.display_name || 'Investidor'}</strong>! 👋
+                      </p>
+                      <p style="color:#94a3b8;font-size:14px;line-height:1.7">
+                        Seu plano <strong style="color:#22c55e">PRO</strong> está ativo e você agora tem acesso completo a todas as funcionalidades:
+                      </p>
+                      <div style="background:#111827;border-radius:12px;padding:20px;margin:20px 0;border:1px solid #1e293b">
+                        <ul style="list-style:none;padding:0;margin:0;color:#cbd5e1;font-size:14px;line-height:2.2">
+                          <li>✅ Análise por IA ilimitada</li>
+                          <li>✅ OCR — Leitura de imagens de opções</li>
+                          <li>✅ Histórico completo de estruturas</li>
+                          <li>✅ Portfólio de operações</li>
+                          <li>✅ Simulações ilimitadas</li>
+                          <li>✅ Comparação com CDI</li>
+                        </ul>
+                      </div>
+                      <p style="color:#94a3b8;font-size:13px;line-height:1.7">
+                        📅 <strong style="color:#e2e8f0">Válido até:</strong> ${expiresAt.toLocaleDateString('pt-BR')}<br>
+                        💳 <strong style="color:#e2e8f0">Data da compra:</strong> ${now.toLocaleDateString('pt-BR')}
+                      </p>
+                      <div style="text-align:center;margin:30px 0 10px">
+                        <a href="https://www.opcoesprox.com.br/dashboard" style="display:inline-block;background:linear-gradient(135deg,#6d28d9,#4f46e5);color:#fff;text-decoration:none;padding:14px 40px;border-radius:10px;font-weight:bold;font-size:15px">
+                          Acessar Plataforma →
+                        </a>
+                      </div>
+                    </div>
+                    <div style="background:#060609;padding:20px;text-align:center;border-top:1px solid #1a1a2e">
+                      <p style="color:#475569;font-size:11px;margin:0">Opções PRO X © ${now.getFullYear()} — Todos os direitos reservados</p>
+                    </div>
+                  </div>
+                `
+              })
+            });
+            const emailResult = await emailRes.json();
+            console.log(`[mercado-pago-webhook] ✅ E-mail enviado:`, emailResult);
+          } catch (emailErr: any) {
+            console.error(`[mercado-pago-webhook] ⚠️ Erro ao enviar e-mail:`, emailErr.message);
+          }
+        } else {
+          console.warn("[mercado-pago-webhook] RESEND_API_KEY não configurada, e-mail não enviado");
+        }
       }
     }
 
