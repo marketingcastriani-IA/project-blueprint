@@ -316,10 +316,7 @@ export default function Dashboard() {
         .update({ simulations_count: (currentAccess?.simulations_count || 0) + 1 })
         .eq('user_id', user.id);
 
-      toast.success('Análise salva! Redirecionando para o Histórico...', {
-        action: { label: 'Ver Histórico', onClick: () => navigate('/history') },
-      });
-      navigate('/history');
+      setShowSaveDialog(true);
     } catch (err: any) {
       toast.error('Erro ao salvar');
     } finally { setSaving(false); }
