@@ -102,19 +102,25 @@ serve(async (req) => {
     if (isApproved && userId) {
       console.log(`[mercado-pago-webhook] Liberando acesso PRO para: ${userId}`)
 
-      // 1. Atualizar acesso no banco
+      // 1. Atualizar acesso no banco (upsert para garantir que funcione mesmo sem registro prévio)
       const now = new Date();
       const expiresAt = new Date(now.getTime() + 31 * 24 * 60 * 60 * 1000);
       
-      await supabaseAdmin
+      const { error: upsertError } = await supabaseAdmin
         .from('user_access')
-        .update({ 
+        .upsert({ 
+          user_id: userId,
           plan_type: 'pro', 
           status: 'approved',
           purchased_at: now.toISOString(),
           expires_at: expiresAt.toISOString()
-        } as any)
-        .eq('user_id', userId)
+        }, { onConflict: 'user_id' })
+
+      if (upsertError) {
+        console.error(`[mercado-pago-webhook] Erro ao atualizar acesso:`, upsertError);
+      } else {
+        console.log(`[mercado-pago-webhook] ✅ Acesso PRO ativado com sucesso! Expira em: ${expiresAt.toISOString()}`);
+      }
 
       // 2. Buscar dados do perfil para o e-mail
       const { data: profile } = await supabaseAdmin
