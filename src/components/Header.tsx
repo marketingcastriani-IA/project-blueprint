@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 
 export default function Header() {
   const { signOut, user } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const access = useAccessControl();
   const navigate = useNavigate();
   const location = useLocation();
