@@ -116,27 +116,53 @@ export default function Header() {
             {isFree && (
               <button
                 onClick={() => { navigate('/settings'); setMobileOpen(false); }}
-                className="flex items-center justify-center gap-2 w-full px-4 py-3 mb-2 rounded-lg bg-warning text-warning-foreground font-black text-xs animate-pulse"
+                className="flex items-center justify-center gap-2 w-full px-4 py-2.5 mb-1 rounded-lg bg-warning text-warning-foreground font-black text-xs animate-pulse"
               >
                 <Zap className="h-4 w-4 fill-current" /> ASSINE PRO AGORA
               </button>
             )}
-            {navItems.map(item => {
-              const isActive = location.pathname === item.path;
-              return (
+            <div className="grid grid-cols-2 gap-1">
+              {navItems.map(item => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => { navigate(item.path); setMobileOpen(false); }}
+                    className={cn(
+                      'flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-xs font-medium transition-all',
+                      isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    )}
+                  >
+                    <item.icon className="h-3.5 w-3.5" />
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+            {/* Theme selector mobile */}
+            <div className="flex items-center gap-1 pt-2 mt-1 border-t border-border/30">
+              <Palette className="h-3 w-3 text-muted-foreground ml-1" />
+              <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground mr-1">Tema:</span>
+              {([
+                { key: 'light' as const, label: 'Branco', icon: Sun },
+                { key: 'dark' as const, label: 'Dark', icon: Moon },
+                { key: 'destaque' as const, label: 'Destaque', icon: Sparkles },
+              ]).map(item => (
                 <button
-                  key={item.path}
-                  onClick={() => { navigate(item.path); setMobileOpen(false); }}
+                  key={item.key}
+                  onClick={() => setTheme(item.key)}
                   className={cn(
-                    'flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium transition-all',
-                    isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    'flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-semibold transition-all',
+                    theme === item.key
+                      ? 'bg-primary/15 text-primary ring-1 ring-primary/30'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   )}
                 >
-                  <item.icon className="h-4 w-4" />
+                  <item.icon className="h-3 w-3" />
                   {item.label}
                 </button>
-              );
-            })}
+              ))}
+            </div>
           </nav>
         </div>
       )}
