@@ -71,7 +71,12 @@ export default function Header() {
             </Button>
           )}
           
-          <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-9 w-9">
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={toggleTheme} 
+            className="h-9 w-9 border-foreground/30 bg-foreground/10 hover:bg-foreground/20 text-foreground shadow-sm"
+          >
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
           {user && (

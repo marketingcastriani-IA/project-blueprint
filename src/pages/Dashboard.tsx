@@ -24,7 +24,8 @@ import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2, Info, AlertTriangle, Calendar, Percent, Trash2 } from 'lucide-react';
+import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2, Info, AlertTriangle, Calendar, Percent, Trash2, CheckCircle2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, SectionDivider } from '@/components/ProfessionalLayout';
 import AIInsights from '@/components/AIInsights';
@@ -135,7 +136,8 @@ export default function Dashboard() {
   const [analysisName, setAnalysisName] = useState('');
   const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
   const [hasManuallyNamed, setHasManuallyNamed] = useState(false);
-  const [cdiRate, setCdiRate] = useState(15.00);
+  const [cdiRate, setCdiRate] = useState(14.65);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [daysToExpiry, setDaysToExpiry] = useState(0);
   const [expiryDate, setExpiryDate] = useState<Date | undefined>(undefined);
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
@@ -315,10 +317,7 @@ export default function Dashboard() {
         .update({ simulations_count: (currentAccess?.simulations_count || 0) + 1 })
         .eq('user_id', user.id);
 
-      toast.success('Análise salva! Redirecionando para o Histórico...', {
-        action: { label: 'Ver Histórico', onClick: () => navigate('/history') },
-      });
-      navigate('/history');
+      setShowSaveDialog(true);
     } catch (err: any) {
       toast.error('Erro ao salvar');
     } finally { setSaving(false); }
@@ -659,6 +658,29 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Dialog de sucesso ao salvar */}
+      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="items-center text-center">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-success/10">
+              <CheckCircle2 className="h-8 w-8 text-success" />
+            </div>
+            <DialogTitle className="text-xl">Estrutura Salva com Sucesso!</DialogTitle>
+            <DialogDescription className="text-base pt-2">
+              Sua estratégia foi salva. Acompanhe o resultado na aba <strong>Histórico</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col gap-2 sm:flex-col">
+            <Button onClick={() => { setShowSaveDialog(false); navigate('/history'); }} className="w-full font-bold">
+              Ir para o Histórico
+            </Button>
+            <Button variant="outline" onClick={() => setShowSaveDialog(false)} className="w-full">
+              Continuar Analisando
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
