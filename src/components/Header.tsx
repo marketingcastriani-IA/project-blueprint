@@ -2,7 +2,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
 import { TrendingUp, Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, Briefcase, Settings, Crown, Zap, PieChart, HelpCircle, Sparkles, Palette } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
@@ -72,47 +72,6 @@ export default function Header() {
             </Button>
           )}
           
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                className="h-9 w-9 border-foreground/30 bg-foreground/10 hover:bg-foreground/20 text-foreground shadow-sm"
-              >
-                {theme === 'dark' ? <Moon className="h-4 w-4" /> : theme === 'destaque' ? <Sparkles className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-44 p-2" align="end">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-2">Escala de Cor do Painel</p>
-              <button
-                onClick={() => setTheme('light')}
-                className={cn(
-                  'flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                  theme === 'light' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:bg-muted'
-                )}
-              >
-                <Sun className="h-4 w-4" /> Branco
-              </button>
-              <button
-                onClick={() => setTheme('dark')}
-                className={cn(
-                  'flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                  theme === 'dark' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:bg-muted'
-                )}
-              >
-                <Moon className="h-4 w-4" /> Dark
-              </button>
-              <button
-                onClick={() => setTheme('destaque')}
-                className={cn(
-                  'flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm font-medium transition-colors',
-                  theme === 'destaque' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:bg-muted'
-                )}
-              >
-                <Sparkles className="h-4 w-4" /> Destaque
-              </button>
-            </PopoverContent>
-          </Popover>
           {user && (
             <Button variant="ghost" size="icon" onClick={signOut} className="h-9 w-9">
               <LogOut className="h-4 w-4" />
@@ -121,6 +80,33 @@ export default function Header() {
           <Button variant="ghost" size="icon" className="h-9 w-9 md:hidden" onClick={() => setMobileOpen(!mobileOpen)}>
             {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </Button>
+        </div>
+      </div>
+
+      {/* Theme selector strip */}
+      <div className="hidden md:flex border-t border-border/30 bg-card/50 backdrop-blur-sm">
+        <div className="container flex items-center gap-1 py-1">
+          <Palette className="h-3 w-3 text-muted-foreground mr-1" />
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mr-2">Tema:</span>
+          {([
+            { key: 'light' as const, label: 'Branco', icon: Sun },
+            { key: 'dark' as const, label: 'Dark', icon: Moon },
+            { key: 'destaque' as const, label: 'Destaque', icon: Sparkles },
+          ]).map(item => (
+            <button
+              key={item.key}
+              onClick={() => setTheme(item.key)}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold transition-all',
+                theme === item.key
+                  ? 'bg-primary/15 text-primary ring-1 ring-primary/30'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              )}
+            >
+              <item.icon className="h-3 w-3" />
+              {item.label}
+            </button>
+          ))}
         </div>
       </div>
 
