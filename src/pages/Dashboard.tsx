@@ -135,7 +135,8 @@ export default function Dashboard() {
   const [analysisName, setAnalysisName] = useState('');
   const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
   const [hasManuallyNamed, setHasManuallyNamed] = useState(false);
-  const [cdiRate, setCdiRate] = useState(15.00);
+  const [cdiRate, setCdiRate] = useState(14.65);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [daysToExpiry, setDaysToExpiry] = useState(0);
   const [expiryDate, setExpiryDate] = useState<Date | undefined>(undefined);
   const [aiAnalysis, setAiAnalysis] = useState<any>(null);
