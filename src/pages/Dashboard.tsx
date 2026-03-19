@@ -658,6 +658,29 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* Dialog de sucesso ao salvar */}
+      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="items-center text-center">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-success/10">
+              <CheckCircle2 className="h-8 w-8 text-success" />
+            </div>
+            <DialogTitle className="text-xl">Estrutura Salva com Sucesso!</DialogTitle>
+            <DialogDescription className="text-base pt-2">
+              Sua estratégia foi salva. Acompanhe o resultado na aba <strong>Histórico</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col gap-2 sm:flex-col">
+            <Button onClick={() => { setShowSaveDialog(false); navigate('/history'); }} className="w-full font-bold">
+              Ir para o Histórico
+            </Button>
+            <Button variant="outline" onClick={() => setShowSaveDialog(false)} className="w-full">
+              Continuar Analisando
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
