@@ -2,7 +2,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, Briefcase, Settings, Crown, Zap, PieChart, HelpCircle } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { TrendingUp, Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, Briefcase, Settings, Crown, Zap, PieChart, HelpCircle, Sparkles, Palette } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
@@ -10,7 +11,7 @@ import { cn } from '@/lib/utils';
 
 export default function Header() {
   const { signOut, user } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const access = useAccessControl();
   const navigate = useNavigate();
   const location = useLocation();
@@ -71,14 +72,47 @@ export default function Header() {
             </Button>
           )}
           
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={toggleTheme} 
-            className="h-9 w-9 border-foreground/30 bg-foreground/10 hover:bg-foreground/20 text-foreground shadow-sm"
-          >
-            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="h-9 w-9 border-foreground/30 bg-foreground/10 hover:bg-foreground/20 text-foreground shadow-sm"
+              >
+                {theme === 'dark' ? <Moon className="h-4 w-4" /> : theme === 'destaque' ? <Sparkles className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-44 p-2" align="end">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-2 px-2">Escala de Cor do Painel</p>
+              <button
+                onClick={() => setTheme('light')}
+                className={cn(
+                  'flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                  theme === 'light' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:bg-muted'
+                )}
+              >
+                <Sun className="h-4 w-4" /> Branco
+              </button>
+              <button
+                onClick={() => setTheme('dark')}
+                className={cn(
+                  'flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                  theme === 'dark' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:bg-muted'
+                )}
+              >
+                <Moon className="h-4 w-4" /> Dark
+              </button>
+              <button
+                onClick={() => setTheme('destaque')}
+                className={cn(
+                  'flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                  theme === 'destaque' ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:bg-muted'
+                )}
+              >
+                <Sparkles className="h-4 w-4" /> Destaque
+              </button>
+            </PopoverContent>
+          </Popover>
           {user && (
             <Button variant="ghost" size="icon" onClick={signOut} className="h-9 w-9">
               <LogOut className="h-4 w-4" />
