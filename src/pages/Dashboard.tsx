@@ -125,7 +125,7 @@ function PortfolioSummary({ userId }: { userId: string }) {
   if (loading || !stats) return null;
   if (stats.totalPL === 0 && stats.openCount === 0 && stats.closedCount === 0) return null;
 
-  const { LineChart, Line, ResponsiveContainer, Tooltip: RTooltip, XAxis, YAxis, ReferenceLine, Area, AreaChart } = require('recharts');
+  
 
   return (
     <div className="mb-6 space-y-4">
