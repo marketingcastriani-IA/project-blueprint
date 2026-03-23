@@ -19,7 +19,7 @@ export default function Header() {
 
   const navItems = [
     { label: 'Nova Análise', path: '/dashboard', icon: PlusCircle },
-    { label: 'Histórico', path: '/history', icon: History },
+    { label: 'Operações em Aberto', path: '/history', icon: History },
     { label: 'Portfólio', path: '/portfolio', icon: Briefcase },
     { label: 'Diversificador', path: '/diversificador', icon: PieChart },
     { label: 'FAQ', path: '/faq', icon: HelpCircle },

@@ -359,8 +359,8 @@ export default function History() {
       <main className="container py-8 space-y-8 animate-fade-in">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <ProfessionalHeader 
-            title="Histórico" 
-            subtitle="Gerencie e acompanhe todas as suas análises salvas"
+            title="Operações em Aberto" 
+            subtitle="Gerencie e acompanhe todas as suas operações ativas e salvas"
           />
           <div className="flex items-center gap-3">
             <Button 

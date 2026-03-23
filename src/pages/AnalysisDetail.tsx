@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import PayoffChart from '@/components/PayoffChart';
 import MetricsCards from '@/components/MetricsCards';
 import CDIComparison from '@/components/CDIComparison';
+import LegForm from '@/components/LegForm';
 import { supabase } from '@/integrations/supabase/client';
 import { Leg } from '@/lib/types';
 import { generatePayoffCurve, calculateMetrics, calculateCDIOpportunityCost, calculateCDIReturn } from '@/lib/payoff';
@@ -17,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
-  Loader2, ArrowLeft, Save, XCircle, Layers, Brain, TrendingUp, Clock, Target, Zap, AlertTriangle, Percent
+  Loader2, ArrowLeft, Save, XCircle, Layers, Brain, TrendingUp, Clock, Target, Zap, AlertTriangle, Percent, PlusCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SectionDivider } from '@/components/ProfessionalLayout';
@@ -31,6 +32,7 @@ interface DbLeg {
   price: number;
   quantity: number;
   current_price?: number | null;
+  expiry_date?: string | null;
 }
 
 interface DbAnalysis {
@@ -56,15 +58,45 @@ export default function AnalysisDetail() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [closing, setClosing] = useState(false);
-  const [cdiRate, setCdiRate] = useState(14.90);
+  const [cdiRate, setCdiRate] = useState(14.65);
   const [daysToExpiry, setDaysToExpiry] = useState(0);
   const [expiryDate, setExpiryDate] = useState<Date | undefined>(undefined);
+  const [showAddLeg, setShowAddLeg] = useState(false);
+  const [addingLeg, setAddingLeg] = useState(false);
   
   const [isSimulating, setIsSimulating] = useState(false);
   const [simLegs, setSimLegs] = useState<Leg[]>([]);
   
   const [exitAnalysis, setExitAnalysis] = useState<any>(null);
   const [loadingExitAI, setLoadingExitAI] = useState(false);
+
+  // Auto-save prices on unmount or navigation
+  const currentPricesRef = useRef(currentPrices);
+  const dbLegsRef = useRef(dbLegs);
+  const idRef = useRef(id);
+  currentPricesRef.current = currentPrices;
+  dbLegsRef.current = dbLegs;
+  idRef.current = id;
+
+  const autoSavePrices = useCallback(async () => {
+    const prices = currentPricesRef.current;
+    const legs = dbLegsRef.current;
+    if (!legs.length) return;
+    
+    for (const leg of legs) {
+      const cp = parseFloat(prices[leg.id] || '');
+      if (!isNaN(cp)) {
+        await supabase.from('legs').update({ current_price: cp } as any).eq('id', leg.id);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      // Auto-save prices when leaving the page
+      autoSavePrices();
+    };
+  }, [autoSavePrices]);
 
   useEffect(() => {
     if (!user || !id) return;
@@ -77,7 +109,7 @@ export default function AnalysisDetail() {
       if (aRes.data) {
         const a = aRes.data as unknown as DbAnalysis;
         setAnalysis(a);
-        setCdiRate(a.cdi_rate ?? 14.90);
+        setCdiRate(a.cdi_rate ?? 14.65);
         setDaysToExpiry(a.days_to_expiry ?? 0);
         if (a.expiry_date) {
           const [y, m, d] = a.expiry_date.split('-').map(Number);
@@ -101,11 +133,12 @@ export default function AnalysisDetail() {
   const legs: Leg[] = useMemo(() => dbLegs.map(l => ({
     id: l.id, side: l.side as 'buy' | 'sell', option_type: l.option_type as 'call' | 'put' | 'stock',
     asset: l.asset, strike: l.strike, price: l.price, quantity: l.quantity,
+    expiry_date: l.expiry_date ?? undefined,
   })), [dbLegs]);
 
   const metrics = useMemo(() => calculateMetrics(legs), [legs]);
-  const payoffData = useMemo(() => generatePayoffCurve(legs), [legs]);
-  const simPayoffData = useMemo(() => isSimulating ? generatePayoffCurve(simLegs) : null, [isSimulating, simLegs]);
+  const payoffData = useMemo(() => generatePayoffCurve(legs, daysToExpiry, cdiRate), [legs, daysToExpiry, cdiRate]);
+  const simPayoffData = useMemo(() => isSimulating ? generatePayoffCurve(simLegs, daysToExpiry, cdiRate) : null, [isSimulating, simLegs, daysToExpiry, cdiRate]);
 
   const entrySpotPrice = useMemo(() => {
     const stockLeg = dbLegs.find(l => l.option_type === 'stock');
@@ -163,16 +196,43 @@ export default function AnalysisDetail() {
     }
   };
 
+  const handleAddLeg = async (newLeg: Leg) => {
+    if (!id) return;
+    setAddingLeg(true);
+    try {
+      const { data, error } = await supabase.from('legs').insert({
+        analysis_id: id,
+        side: newLeg.side,
+        option_type: newLeg.option_type,
+        asset: newLeg.asset,
+        strike: newLeg.strike,
+        price: newLeg.price,
+        quantity: newLeg.quantity,
+        expiry_date: newLeg.expiry_date || null,
+      } as any).select().single();
+
+      if (error) throw error;
+      
+      const insertedLeg = data as unknown as DbLeg;
+      setDbLegs(prev => [...prev, insertedLeg]);
+      setCurrentPrices(prev => ({ ...prev, [insertedLeg.id]: '' }));
+      setShowAddLeg(false);
+      toast.success('Perna adicionada! Gráfico recalculado com CDI atualizado.');
+    } catch (err: any) {
+      toast.error('Erro ao adicionar perna: ' + err.message);
+    } finally {
+      setAddingLeg(false);
+    }
+  };
+
   const saveAnalysisSettings = async () => {
     setSaving(true);
     try {
-      // Salvar preços atuais das pernas
       for (const leg of dbLegs) {
         const cp = parseFloat(currentPrices[leg.id] || '');
         await supabase.from('legs').update({ current_price: isNaN(cp) ? null : cp } as any).eq('id', leg.id);
       }
       
-      // Salvar taxa CDI e dias para vencimento na análise
       await supabase.from('analyses').update({ 
         cdi_rate: cdiRate,
         days_to_expiry: daysToExpiry,
@@ -248,6 +308,16 @@ export default function AnalysisDetail() {
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
+            {analysis?.status === 'active' && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowAddLeg(!showAddLeg)}
+                className={cn("gap-2 border-success/50 text-success hover:bg-success/10", showAddLeg && "bg-success/10 ring-2 ring-success/30")}
+              >
+                <PlusCircle className="h-4 w-4" /> {showAddLeg ? 'Fechar' : 'Adicionar Perna'}
+              </Button>
+            )}
             <Button variant={isSimulating ? "secondary" : "outline"} size="sm" onClick={() => isSimulating ? setIsSimulating(false) : startSimulation()}>
               <Layers className="mr-2 h-4 w-4" /> {isSimulating ? "Sair da Simulação" : "Simular Remontagem"}
             </Button>
@@ -258,6 +328,23 @@ export default function AnalysisDetail() {
             )}
           </div>
         </div>
+
+        {/* Formulário para adicionar nova perna */}
+        {showAddLeg && analysis?.status === 'active' && (
+          <Card className="border-2 border-success/30 bg-success/[0.03] shadow-[0_0_30px_-10px_hsl(var(--success)/0.3)] animate-fade-in">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <PlusCircle className="h-5 w-5 text-success" /> 
+                Adicionar Nova Perna à Estrutura
+                {addingLeg && <Loader2 className="h-4 w-4 animate-spin" />}
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">A nova perna será incluída em todos os cálculos de payoff, CDI e métricas automaticamente.</p>
+            </CardHeader>
+            <CardContent>
+              <LegForm onAdd={handleAddLeg} />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Painel de Performance vs CDI do Período */}
         {periodMetrics && analysis?.status === 'active' && (
@@ -404,7 +491,10 @@ export default function AnalysisDetail() {
         <Card className={cn(isSimulating && "border-primary ring-2 ring-primary/20")}>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">{isSimulating ? "SIMULANDO NOVA ESTRUTURA" : "Pernas da Estratégia — Simulação de Saída"}</CardTitle>
-            {isSimulating && <Badge className="bg-primary animate-pulse">MODO SIMULAÇÃO</Badge>}
+            <div className="flex items-center gap-2">
+              {isSimulating && <Badge className="bg-primary animate-pulse">MODO SIMULAÇÃO</Badge>}
+              <Badge variant="outline" className="text-[10px]">{legs.length} perna{legs.length !== 1 ? 's' : ''}</Badge>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
