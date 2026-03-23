@@ -170,7 +170,7 @@ export default function Index() {
           </div>
         </div>
 
-        {/* Portfólio row */}
+        {/* Portfólio, Diversificador, Manual row */}
         <div className="grid md:grid-cols-2 gap-10 mt-10">
 
           <div className="space-y-6">
@@ -184,6 +184,45 @@ export default function Index() {
             </div>
             <div className="rounded-2xl overflow-hidden border border-primary/20 shadow-xl">
               <img src="/assets/screenshot-portfolio.png" alt="Portfólio" className="w-full h-auto" loading="lazy" />
+            </div>
+          </div>
+
+          {/* Diversificador */}
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><PieChart className="h-5 w-5 text-primary" /></div>
+                <h3 className="text-2xl font-black tracking-tight">Diversificador</h3>
+                <Badge className="bg-primary/20 text-primary border-0 text-[10px] font-black">PRO</Badge>
+              </div>
+              <p className="text-muted-foreground">Gerencie a alocação do seu patrimônio entre estratégias com balanceamento automático e controle de risco.</p>
+            </div>
+            <div className="rounded-2xl overflow-hidden border border-primary/20 shadow-xl">
+              <img src="/assets/screenshot-diversificador.png" alt="Diversificador de Portfólio" className="w-full h-auto" loading="lazy" />
+            </div>
+          </div>
+        </div>
+
+        {/* Manual row */}
+        <div className="grid md:grid-cols-2 gap-10 mt-10">
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><Brain className="h-5 w-5 text-primary" /></div>
+                <h3 className="text-2xl font-black tracking-tight">Manual de Estratégias</h3>
+                <Badge className="bg-muted text-muted-foreground border-0 text-[10px] font-black">FREE</Badge>
+              </div>
+              <p className="text-muted-foreground">Aprenda 9+ estratégias de opções com exemplos reais, gráficos de payoff, gregas e tabela comparativa completa.</p>
+            </div>
+            <div className="rounded-2xl overflow-hidden border border-primary/20 shadow-xl bg-card p-6 space-y-3">
+              <div className="grid grid-cols-3 gap-2">
+                {['Covered Call', 'Iron Condor', 'Box Spread', 'Straddle', 'Bull Call', 'Collar'].map(s => (
+                  <div key={s} className="rounded-lg bg-primary/10 border border-primary/20 p-3 text-center">
+                    <p className="text-xs font-black text-primary">{s}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground text-center font-bold">+ Ratio Spread, Calendar Spread, Backspread e mais</p>
             </div>
           </div>
         </div>
