@@ -22,6 +22,7 @@ export default function Header() {
     { label: 'Operações em Aberto', path: '/history', icon: History },
     { label: 'Portfólio', path: '/portfolio', icon: Briefcase },
     { label: 'Diversificador', path: '/diversificador', icon: PieChart },
+    { label: 'Manual', path: '/manual', icon: BookOpen },
     { label: 'FAQ', path: '/faq', icon: HelpCircle },
     { label: 'Configurações', path: '/settings', icon: Settings },
     ...(access.isAdmin ? [{ label: 'Admin', path: '/admin', icon: Shield }] : []),
