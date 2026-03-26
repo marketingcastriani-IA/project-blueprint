@@ -1,8 +1,8 @@
 /*
- * ProfitRTDBridge.cs  v3.1
+ * ProfitRTDBridge.cs  v3.2
  * ═══════════════════════════════════════════════════════════════════════════
- * CORREÇÃO v3.0: Late binding via "dynamic" — sem cast de interface COM
- * CORREÇÃO v3.1: callback COM com IID real de IRTDUpdateEvent (ServerStart)
+ * CORREÇÃO v3.2: ParseDouble extrai valor numérico direto do COM Variant,
+ *                evitando corrupção de locale (vírgula/ponto) via ToString()
  *
  * HISTÓRICO DE ERROS E CORREÇÕES:
  *   v2.0 — REGDB_E_CLASSNOTREG (0x80040154)
