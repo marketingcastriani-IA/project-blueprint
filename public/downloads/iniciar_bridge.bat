@@ -1,5 +1,5 @@
 @echo off
-title ProfitRTD Bridge v2.1 (32-bit) - OpcoesProx
+title ProfitRTD Bridge v2.2 (32-bit IDispatch) - OpcoesProx
 color 0B
 
 cd /d "%~dp0"
