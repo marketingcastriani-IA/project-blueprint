@@ -311,9 +311,9 @@ export default function DadosAoVivo() {
               <div className="p-3 rounded bg-info/10 border border-info/20 text-xs text-info flex items-start gap-2">
                 <Info className="w-3 h-3 shrink-0 mt-0.5" />
                 <span>
-                  O RTD é tecnologia COM/OLE exclusiva do Windows. O bridge roda <strong>localmente na sua máquina</strong> e
-                  transmite dados do Profit via WebSocket para este app. <strong>Nenhum dado sai da sua rede local.</strong>
-                </span>
+                   O bridge v2.0 acessa o RTD do Profit <strong>diretamente via COM — sem precisar de Excel</strong>. Roda{' '}
+                   <strong>localmente na sua máquina</strong> e transmite via WebSocket. <strong>Nenhum dado sai da sua rede local.</strong>
+                 </span>
               </div>
             </CardContent>
           </Card>
