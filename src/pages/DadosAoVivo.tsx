@@ -70,6 +70,7 @@ export default function DadosAoVivo() {
   const [showFormulas, setShowFormulas] = useState(false);
   const [underlyingPrice, setUnderlyingPrice] = useState<number>(0);
 
+  // Redirect after hooks
   if (!user) {
     navigate('/auth');
     return null;
