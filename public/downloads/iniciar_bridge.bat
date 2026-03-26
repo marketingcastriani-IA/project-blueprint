@@ -6,9 +6,9 @@ cd /d "%~dp0"
 
 echo.
 echo  ====================================================
-echo   ProfitRTD Bridge v2.1 - OpcoesProx.com.br
-echo   Profit Pro (32-bit) - COM direto - WebSocket
-echo   CORRECAO: compilado como 32-bit (win-x86)
+echo   ProfitRTD Bridge v2.2 - OpcoesProx.com.br
+echo   Profit Pro (32-bit) - COM IDispatch - WebSocket
+echo   CORRECAO: IDispatch + DispId (resolve 0x80131506)
 echo  ====================================================
 echo.
 echo  [INFO] Diretorio: %CD%

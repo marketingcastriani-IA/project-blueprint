@@ -418,13 +418,14 @@ namespace ProfitRTDBridge
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine(@"
 ╔══════════════════════════════════════════════════╗
-║   ProfitRTD Bridge v2.1  —  32-bit  —  sem Excel ║
-║   Profit Pro (x86) → COM → WebSocket             ║
+║   ProfitRTD Bridge v2.2  —  32-bit  —  sem Excel ║
+║   Profit Pro (x86) → COM IDispatch → WebSocket    ║
 ╚══════════════════════════════════════════════════╝");
             Console.ResetColor();
             Console.WriteLine($"  Plataforma : x86 (32-bit) — compatível com Profit Pro");
             Console.WriteLine($"  WebSocket  : ws://localhost:{port}");
             Console.WriteLine($"  RTD ProgID : {string.Join(" | ", RTD_PROGIDS)}");
+            Console.WriteLine($"  COM Type   : IDispatch (corrigido v2.2)");
             Console.WriteLine($"  Ctrl+C para encerrar\n");
         }
     }

@@ -26,8 +26,8 @@
     <AssemblyTitle>ProfitRTD Bridge</AssemblyTitle>
     <Company>OpçõesPROX</Company>
     <Product>ProfitRTD Bridge</Product>
-    <Description>Profit Pro RTD → WebSocket bridge 32-bit (sem Excel)</Description>
-    <Version>2.1.0</Version>
+    <Description>Profit Pro RTD → WebSocket bridge 32-bit IDispatch (sem Excel)</Description>
+    <Version>2.2.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
