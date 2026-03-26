@@ -39,8 +39,7 @@ namespace ProfitRTDBridge
         object ConnectData(int topicId, [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] ref Array strings, ref bool newValues);
 
         [DispId(12)]
-        [return: MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)]
-        Array RefreshData(ref int topicCount);
+        object RefreshData(ref int topicCount);
 
         [DispId(13)]
         void DisconnectData(int topicId);
@@ -262,28 +261,53 @@ namespace ProfitRTDBridge
                     // ── Lê dados novos via RefreshData ───────────────────────
                     cb!.HasUpdate = false;
                     int topicCount = 0;
-                    Array? updated = null;
+                    object? rawResult = null;
 
-                    try { updated = rtd!.RefreshData(ref topicCount); }
+                    try { rawResult = rtd!.RefreshData(ref topicCount); }
                     catch (COMException ex)
                     {
-                        Log("ERR", $"RefreshData: {ex.Message}");
+                        Log("ERR", $"RefreshData COM: {ex.Message}");
                         rtd = null;
                         Thread.Sleep(2000);
                         continue;
                     }
-
-                    if (updated != null && topicCount > 0)
+                    catch (InvalidCastException ex)
                     {
-                        for (int i = 0; i < topicCount; i++)
+                        Log("WARN", $"RefreshData cast: {ex.Message} — ignorando ciclo");
+                        Thread.Sleep(800);
+                        continue;
+                    }
+
+                    if (rawResult != null && topicCount > 0)
+                    {
+                        try
                         {
-                            int topicId = Convert.ToInt32(updated.GetValue(0, i));
-                            object? value = updated.GetValue(1, i);
-                            if (topics.TryGetValue(topicId, out RtdTopic? topic))
+                            Array updated;
+                            if (rawResult is Array arr)
+                                updated = arr;
+                            else if (rawResult is object[,] arr2d)
+                                updated = arr2d;
+                            else
                             {
-                                var tc = _cache.GetOrAdd(topic.Ticker, _ => new Dictionary<string, object?>());
-                                lock (tc) tc[ProfitFields.ToJsonKey(topic.Field)] = ParseDouble(value);
+                                // Tenta converter via runtime
+                                updated = (Array)rawResult;
                             }
+
+                            int cols = Math.Min(topicCount, updated.GetLength(1));
+                            for (int i = 0; i < cols; i++)
+                            {
+                                int topicId = Convert.ToInt32(updated.GetValue(0, i));
+                                object? value = updated.GetValue(1, i);
+                                if (topics.TryGetValue(topicId, out RtdTopic? topic))
+                                {
+                                    var tc = _cache.GetOrAdd(topic.Ticker, _ => new Dictionary<string, object?>());
+                                    lock (tc) tc[ProfitFields.ToJsonKey(topic.Field)] = ParseDouble(value);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log("WARN", $"RefreshData parse: {ex.Message}");
                         }
                     }
 
