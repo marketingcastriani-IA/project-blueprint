@@ -1,14 +1,14 @@
 @echo off
-title ProfitRTD Bridge v2.2 (32-bit IDispatch) - OpcoesProx
+title ProfitRTD Bridge v3.0 - OpcoesProx
 color 0B
 
 cd /d "%~dp0"
 
 echo.
 echo  ====================================================
-echo   ProfitRTD Bridge v2.2 - OpcoesProx.com.br
-echo   Profit Pro (32-bit) - COM IDispatch - WebSocket
-echo   CORRECAO: IDispatch + DispId (resolve 0x80131506)
+echo   ProfitRTD Bridge v3.0 - OpcoesProx.com.br
+echo   Profit Pro (32-bit) - dynamic COM - WebSocket
+echo   CORRECAO: dynamic late binding (resolve cast error)
 echo  ====================================================
 echo.
 echo  [INFO] Diretorio: %CD%
@@ -40,23 +40,23 @@ echo.
 
 set PORT=8765
 
-:: Se já existe o .exe publicado, usa direto
-if exist "publish\ProfitRTDBridge.exe" (
-    echo  [OK] Executavel 32-bit encontrado. Iniciando...
-    goto run_exe
+:: IMPORTANTE: apaga publish antiga (versão 64-bit ou com cast errado)
+:: para forçar nova compilação 32-bit com dynamic
+if exist "publish\" (
+    echo  [INFO] Removendo publish anterior para recompilar v3.0...
+    rmdir /s /q "publish"
 )
 
-echo  [INFO] Baixando dependencias NuGet...
+echo  [INFO] Restaurando pacotes NuGet (Fleck + Newtonsoft + Microsoft.CSharp)...
 dotnet restore ProfitRTDBridge.csproj --verbosity quiet
 if %errorlevel% neq 0 (
     echo  [ERRO] Falha ao baixar dependencias. Verifique internet.
     pause & exit /b 1
 )
-
-echo  [INFO] Publicando como .exe unico 32-bit (win-x86)...
-echo  (Primeira vez - aguarde ~60 segundos)
+echo  [OK] Dependencias prontas.
 echo.
 
+echo  [INFO] Publicando como .exe 32-bit unico (aguarde ~60s)...
 dotnet publish ProfitRTDBridge.csproj ^
     -c Release ^
     -r win-x86 ^
@@ -68,35 +68,40 @@ dotnet publish ProfitRTDBridge.csproj ^
 
 if %errorlevel% neq 0 (
     echo.
-    echo  [ERRO] Falha ao publicar.
-    echo  Tentando rodar com dotnet run...
+    echo  [ERRO] Falha ao publicar. Tentando dotnet run...
     goto run_dotnet
 )
 
 echo.
 echo  [OK] Publicado: %CD%\publish\ProfitRTDBridge.exe
-echo  [INFO] Proximas vezes inicia instantaneamente!
+echo.
 
 :run_exe
-echo.
 echo  ====================================================
-echo   INICIANDO BRIDGE (porta %PORT%)
+echo   CHECKLIST - confirme antes de prosseguir:
 echo  ====================================================
 echo.
-echo  ANTES DE CONTINUAR, confirme:
-echo  [1] Profit Pro esta aberto e logado
-echo  [2] RTD/DDE habilitado no Profit (Ferramentas ^> Configuracoes)
-echo  [3] Profit e este Bridge rodando com o mesmo nivel
-echo      (ambos como Admin OU ambos como usuario normal)
+echo  [1] Profit Pro esta ABERTO e LOGADO?
 echo.
-echo  Apos iniciar, acesse:
+echo  [2] RTD esta HABILITADO no Profit?
+echo      Ferramentas ^> Configuracoes ^>
+echo      Exportacao em Tempo Real (RTD/DDE) ^> Habilitar
+echo      (Reinicie o Profit apos habilitar pela 1a vez)
+echo.
+echo  [3] Profit e Bridge com MESMO nivel de permissao?
+echo      Se Profit esta como Admin, rode este bat como Admin.
+echo      Se Profit esta como usuario normal, rode normal.
+echo.
+echo  Apos confirmar, acesse:
 echo  https://opcoesprox.com.br/dados-ao-vivo
 echo.
+echo  [Pressione qualquer tecla para iniciar o bridge]
+pause >nul
+
 "publish\ProfitRTDBridge.exe" --port %PORT%
 goto end
 
 :run_dotnet
-echo.
 dotnet run --project ProfitRTDBridge.csproj -c Release -- --port %PORT%
 
 :end

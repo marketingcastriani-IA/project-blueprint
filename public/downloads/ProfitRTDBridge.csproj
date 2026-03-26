@@ -3,22 +3,19 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <!--
-      CRÍTICO: net6.0-windows + win-x86
-      O Profit Pro é 32-bit. Seu servidor COM (rtdtrading.rtdserver) está
-      registrado APENAS no registro COM de 32-bit do Windows.
-      Um processo 64-bit NÃO consegue instanciar um COM server 32-bit
-      — gera REGDB_E_CLASSNOTREG (0x80040154).
-      Solução: compilar como 32-bit (win-x86).
+      win-x86 OBRIGATÓRIO: Profit Pro é 32-bit, seu COM server só existe
+      no registro WOW64. Processo 64-bit não consegue instanciá-lo.
     -->
     <TargetFramework>net6.0-windows</TargetFramework>
     <PlatformTarget>x86</PlatformTarget>
     <RuntimeIdentifier>win-x86</RuntimeIdentifier>
+
     <AssemblyName>ProfitRTDBridge</AssemblyName>
     <RootNamespace>ProfitRTDBridge</RootNamespace>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
 
-    <!-- Gera .exe único sem precisar instalar .NET no PC -->
+    <!-- Gera .exe único, sem precisar do .NET instalado -->
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
@@ -26,13 +23,20 @@
     <AssemblyTitle>ProfitRTD Bridge</AssemblyTitle>
     <Company>OpçõesPROX</Company>
     <Product>ProfitRTD Bridge</Product>
-    <Description>Profit Pro RTD → WebSocket bridge 32-bit IDispatch (sem Excel)</Description>
-    <Version>2.2.0</Version>
+    <Description>Profit Pro RTD → WebSocket bridge v3.0 (dynamic COM, sem Excel)</Description>
+    <Version>3.0.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- WebSocket server -->
     <PackageReference Include="Fleck" Version="1.2.0" />
+    <!-- JSON -->
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <!--
+      Microsoft.CSharp OBRIGATÓRIO para "dynamic" funcionar em .NET 6+
+      Sem isso o compilador gera erro: "dynamic não suportado"
+    -->
+    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
   </ItemGroup>
 
 </Project>
