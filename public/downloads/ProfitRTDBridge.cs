@@ -1,14 +1,15 @@
 /*
- * ProfitRTDBridge.cs  v2.1
+ * ProfitRTDBridge.cs  v2.2
  * ─────────────────────────────────────────────────────────────────────────────
- * CORREÇÃO v2.1: Compilado como 32-bit (win-x86)
+ * CORREÇÃO v2.2: Interfaces COM corrigidas para IDispatch + DispId
  *
- * Por que 32-bit?
- *   O Profit Pro (Nelogica) é um aplicativo 32-bit. Seu servidor COM
- *   (ProgID: RTDTrading.RTDServer) fica registrado APENAS no hive 32-bit
- *   do registro do Windows (HKCR no WOW64). Um processo 64-bit não consegue
- *   instanciar esse COM server — resulta em REGDB_E_CLASSNOTREG (0x80040154).
- *   Compilando como x86 o problema é resolvido completamente.
+ *   O erro 0x80131506 (ExecutionEngineException em InterfaceMarshaler)
+ *   ocorria porque as interfaces IRtdServer e IRTDUpdateEvent estavam
+ *   declaradas como InterfaceIsIUnknown, mas o Profit Pro (RTDTrading)
+ *   expõe IDispatch. A correção usa InterfaceIsIDispatch com os DispIds
+ *   corretos do protocolo RTD (compatível com Excel).
+ *
+ *   Compilar obrigatoriamente como x86 (32-bit).
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -25,33 +26,50 @@ using Newtonsoft.Json;
 
 namespace ProfitRTDBridge
 {
-    // ── IRtdServer — interface COM exata do protocolo RTD (Excel-compatible) ──
+    // ── IRtdServer — interface COM IDispatch do protocolo RTD ────────────────
     [ComImport]
     [Guid("EC0E6191-DB51-11D3-8F3E-00C04F3651B8")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
     interface IRtdServer
     {
-        int ServerStart(IRTDUpdateEvent callback);
-        object ConnectData(int topicId, ref Array strings, ref bool newValues);
+        [DispId(10)]
+        int ServerStart([MarshalAs(UnmanagedType.Interface)] IRTDUpdateEvent callback);
+
+        [DispId(11)]
+        object ConnectData(int topicId, [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] ref Array strings, ref bool newValues);
+
+        [DispId(12)]
+        [return: MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)]
         Array RefreshData(ref int topicCount);
+
+        [DispId(13)]
         void DisconnectData(int topicId);
+
+        [DispId(14)]
         int Heartbeat();
+
+        [DispId(15)]
         void ServerTerminate();
     }
 
-    // ── IRTDUpdateEvent — callback chamado pelo Profit quando há novos dados ──
+    // ── IRTDUpdateEvent — callback IDispatch chamado pelo Profit ─────────────
     [ComImport]
     [Guid("A43788C1-D91B-11D3-8F39-00C04F3651B8")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
     interface IRTDUpdateEvent
     {
+        [DispId(10)]
         void UpdateNotify();
+
+        [DispId(11)]
         int HeartbeatInterval { get; set; }
+
+        [DispId(12)]
         void Disconnect();
     }
 
     [ComVisible(true)]
-    [ClassInterface(ClassInterfaceType.None)]
+    [ClassInterface(ClassInterfaceType.AutoDispatch)]
     class RtdUpdateCallback : IRTDUpdateEvent
     {
         public volatile bool HasUpdate = false;
