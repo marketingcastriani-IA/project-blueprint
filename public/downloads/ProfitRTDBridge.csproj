@@ -23,8 +23,8 @@
     <AssemblyTitle>ProfitRTD Bridge</AssemblyTitle>
     <Company>OpçõesPROX</Company>
     <Product>ProfitRTD Bridge</Product>
-    <Description>Profit Pro RTD → WebSocket bridge v3.0 (dynamic COM, sem Excel)</Description>
-    <Version>3.0.0</Version>
+    <Description>Profit Pro RTD → WebSocket bridge v3.1 (dynamic COM + callback IID fix, sem Excel)</Description>
+    <Version>3.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
