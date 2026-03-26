@@ -271,7 +271,7 @@ export default function DadosAoVivo() {
                 {[
                   { n: "1", text: "Abra o Profit Pro (Nelogica) e faça login" },
                   { n: "2", text: "Baixe o ProfitRTD Bridge (botão abaixo) e descompacte em qualquer pasta" },
-                  { n: "3", text: 'Execute "iniciar_bridge.bat" como Administrador — exige .NET 6 e Excel instalados' },
+                  { n: "3", text: 'Execute "iniciar_bridge.bat" como Administrador — exige .NET 6 (sem Excel!)' },
                   { n: "4", text: 'Aguarde a janela exibir "WebSocket rodando na porta 8765"' },
                   { n: "5", text: "Este app detecta e conecta automaticamente. Pronto!" },
                 ].map((s) => (
@@ -311,9 +311,9 @@ export default function DadosAoVivo() {
               <div className="p-3 rounded bg-info/10 border border-info/20 text-xs text-info flex items-start gap-2">
                 <Info className="w-3 h-3 shrink-0 mt-0.5" />
                 <span>
-                  O RTD é tecnologia COM/OLE exclusiva do Windows. O bridge roda <strong>localmente na sua máquina</strong> e
-                  transmite dados do Profit via WebSocket para este app. <strong>Nenhum dado sai da sua rede local.</strong>
-                </span>
+                   O bridge v2.0 acessa o RTD do Profit <strong>diretamente via COM — sem precisar de Excel</strong>. Roda{' '}
+                   <strong>localmente na sua máquina</strong> e transmite via WebSocket. <strong>Nenhum dado sai da sua rede local.</strong>
+                 </span>
               </div>
             </CardContent>
           </Card>

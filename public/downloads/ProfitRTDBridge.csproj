@@ -2,41 +2,33 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <!-- net6.0-windows é obrigatório para COM Interop no Windows -->
     <TargetFramework>net6.0-windows</TargetFramework>
     <AssemblyName>ProfitRTDBridge</AssemblyName>
     <RootNamespace>ProfitRTDBridge</RootNamespace>
     <Nullable>enable</Nullable>
-    <UseWindowsForms>false</UseWindowsForms>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+
+    <!-- Gera .exe único sem precisar instalar .NET no PC do usuário -->
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <ApplicationIcon />
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+
     <AssemblyTitle>ProfitRTD Bridge</AssemblyTitle>
     <Company>OpçõesPROX</Company>
     <Product>ProfitRTD Bridge</Product>
-    <Description>Bridge entre o RTD do Profit Pro (Nelogica) e apps web via WebSocket</Description>
-    <Version>1.0.0</Version>
+    <Description>Profit Pro RTD → WebSocket bridge (sem Excel)</Description>
+    <Version>2.0.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- WebSocket server leve -->
+    <!-- WebSocket server leve (~50KB) -->
     <PackageReference Include="Fleck" Version="1.2.0" />
     <!-- JSON serialization -->
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
-  <!-- COM Reference para Excel Interop -->
-  <ItemGroup>
-    <COMReference Include="Microsoft.Office.Interop.Excel">
-      <Guid>{00020813-0000-0000-C000-000000000046}</Guid>
-      <VersionMajor>1</VersionMajor>
-      <VersionMinor>9</VersionMinor>
-      <Lcid>0</Lcid>
-      <WrapperTool>tlbimp</WrapperTool>
-      <Isolated>false</Isolated>
-      <EmbedInteropTypes>true</EmbedInteropTypes>
-    </COMReference>
-  </ItemGroup>
+  <!-- SEM nenhum COMReference — não precisa de Excel -->
 
 </Project>
