@@ -1,123 +1,93 @@
-# ProfitRTD Bridge — OpçõesPROX
+# ProfitRTD Bridge v2.0 — sem Excel
 
-Bridge local que conecta o **Profit Pro (Nelogica)** ao app web **opcoesprox.com.br** via WebSocket,
-transmitindo dados RTD em tempo real sem necessidade de copiar/colar.
+Bridge local que conecta o **Profit Pro (Nelogica)** ao app **opcoesprox.com.br**
+via WebSocket, acessando o RTD **diretamente via COM** — sem precisar de Excel.
 
-## Arquitetura
+## Como funciona
 
 ```
-Profit Pro (RTD Server)
-        ↓  COM/OLE
-    Excel Interop  ←── ProfitRTDBridge.exe (Windows)
-        ↓  WebSocket ws://localhost:8765
-    opcoesprox.com.br  (navegador)
+Profit Pro
+  └─ Registra COM server: "rtdtrading.rtdserver"
+          ↓  COM/OLE direto (sem Excel)
+  ProfitRTDBridge.exe (roda na sua máquina)
+          ↓  WebSocket  ws://localhost:8765
+  opcoesprox.com.br  (seu navegador)
 ```
 
 ## Requisitos
 
-| Componente | Versão |
-|-----------|--------|
-| Windows | 10 ou 11 (64-bit) |
-| .NET SDK | 6.0+ |
-| Microsoft Excel | qualquer versão (2013+) |
-| Profit Pro | qualquer versão com RTD ativo |
+| O que precisa        | Observação                          |
+|----------------------|-------------------------------------|
+| Windows 10/11 64-bit | Obrigatório (COM é Windows-only)    |
+| Profit Pro aberto    | Registra o servidor RTD no Windows  |
+| .NET 6 SDK           | Só para compilar (gratuito)         |
+| Excel                | ❌ NÃO precisa                      |
 
-## Instalação
+## Instalação rápida
 
-### 1. Instale o .NET 6 SDK
-Baixe em: https://dotnet.microsoft.com/download/dotnet/6.0
+### 1. Instale o .NET 6 SDK (se não tiver)
+https://dotnet.microsoft.com/download/dotnet/6.0
 
-### 2. Compile o bridge
-```bash
-dotnet build ProfitRTDBridge.csproj -c Release
+### 2. Abra o Profit Pro e faça login
+
+### 3. Execute o bridge
+Clique com botão direito em `iniciar_bridge.bat` → **Executar como administrador**
+
+Na primeira execução ele pergunta se quer gerar um `.exe` único.
+Escolha **S** — nas próximas vezes inicia instantaneamente sem precisar do SDK.
+
+## Estrutura de arquivos
+
+```
+ProfitRTDBridge\
+  ├── iniciar_bridge.bat      ← execute este
+  ├── ProfitRTDBridge.cs      ← código fonte
+  ├── ProfitRTDBridge.csproj  ← projeto .NET
+  └── README.md
+  
+  (criado automaticamente após publicar)
+  └── publish\
+      └── ProfitRTDBridge.exe ← executável único
 ```
 
-Ou simplesmente execute `iniciar_bridge.bat` que compila e roda automaticamente.
+## Protocolo WebSocket (ws://localhost:8765)
 
-### 3. Execute como Administrador
-```
-iniciar_bridge.bat
-```
-
-## Uso
-
-1. Abra o **Profit Pro** e faça login
-2. Execute o bridge (`iniciar_bridge.bat`)
-3. Acesse **opcoesprox.com.br → Dados ao Vivo**
-4. O app conecta automaticamente em `ws://localhost:8765`
-5. Adicione tickers pelo app — o bridge começa a monitorar imediatamente
-
-## Protocolo WebSocket
-
-### Bridge → App (mensagens enviadas)
-
-```json
-// Dados RTD em tempo real (a cada ~800ms)
+### Bridge → App
+```jsonc
+// Dados RTD (~1.2x por segundo)
 { "type": "rtd_data", "data": [
-    {
-      "ticker": "PETRG345",
-      "ultimo": 2.45,
-      "strike": 34.50,
-      "negocios": 1230,
-      "ofCompra": 2.40,
-      "ofVenda": 2.50,
-      "vInt": 1.20,
-      "vExt": 1.25,
-      "timestamp": 1711234567890
-    }
+  { "ticker": "PETRG345", "ultimo": 2.45, "strike": 34.50,
+    "negocios": 1230, "ofCompra": 2.40, "ofVenda": 2.50,
+    "vInt": 1.20, "vExt": 1.25, "timestamp": 1711234567890 }
 ]}
 
-// Lista de tickers monitorados
-{ "type": "tickers", "data": ["PETRG345", "PETRG340"] }
+// Bridge pronto
+{ "type": "bridge_ready" }
 
 // Erro
-{ "type": "error", "message": "Falha ao conectar com Excel/RTD" }
+{ "type": "error", "message": "Profit Pro não encontrado." }
 ```
 
-### App → Bridge (comandos recebidos)
-
-```json
-// Adicionar ticker
-{ "type": "add_ticker", "ticker": "PETRG345" }
-
-// Remover ticker
+### App → Bridge
+```jsonc
+{ "type": "add_ticker",    "ticker": "PETRG345" }
 { "type": "remove_ticker", "ticker": "PETRG345" }
-
-// Ping/Pong
 { "type": "ping" }
 ```
 
-## Campos RTD mapeados
-
-| Campo App | Código RTD | Descrição |
-|-----------|-----------|-----------|
-| `ultimo`  | `ULT`     | Último preço negociado |
-| `strike`  | `PEX`     | Strike/preço de exercício |
-| `negocios`| `NEG`     | Número de negócios |
-| `ofCompra`| `OCP`     | Oferta de compra |
-| `ofVenda` | `OVD`     | Oferta de venda |
-| `vInt`    | `VINT`    | Valor intrínseco |
-| `vExt`    | `VEXT`    | Valor extrínseco |
-
-## Segurança
-
-- O bridge escuta **apenas em localhost (127.0.0.1)**
-- Nenhum dado é enviado para a internet
-- O app web só acessa `ws://localhost:8765`
-
 ## Troubleshooting
 
-**"Falha ao iniciar Excel/RTD"**
-- Verifique se o Excel está instalado (não basta o Office Web)
-- Verifique se o Profit Pro está aberto e logado
-- Execute como Administrador
+**"Servidor RTD não encontrado"**
+→ O Profit Pro não está aberto ou não está logado. Abra o Profit, faça login e tente novamente.
 
 **App não conecta**
-- Verifique se o bridge está rodando (janela do console aberta)
-- Verifique se a porta 8765 não está bloqueada pelo firewall
-- No Windows Defender Firewall: permita o `ProfitRTDBridge.exe`
+→ Verifique se a janela do bridge está aberta e mostra "WebSocket rodando".
+→ No Windows Defender Firewall: permita `ProfitRTDBridge.exe` na rede privada.
 
 **Dados aparecem como "—"**
-- O RTD pode demorar alguns segundos para inicializar
-- Verifique se o ticker está correto (ex: `PETRG345` e não `PETRG 345`)
-- Certifique-se que o papel está sendo monitorado no Profit Pro
+→ RTD pode demorar alguns segundos na primeira subscrição.
+→ Confirme que o ticker existe no Profit (ex: `PETRG345` sem espaços).
+
+## Segurança
+- Escuta **somente em localhost** — dados ficam na sua máquina
+- Nenhum dado é enviado para servidores externos

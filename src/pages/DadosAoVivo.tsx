@@ -271,7 +271,7 @@ export default function DadosAoVivo() {
                 {[
                   { n: "1", text: "Abra o Profit Pro (Nelogica) e faça login" },
                   { n: "2", text: "Baixe o ProfitRTD Bridge (botão abaixo) e descompacte em qualquer pasta" },
-                  { n: "3", text: 'Execute "iniciar_bridge.bat" como Administrador — exige .NET 6 e Excel instalados' },
+                  { n: "3", text: 'Execute "iniciar_bridge.bat" como Administrador — exige .NET 6 (sem Excel!)' },
                   { n: "4", text: 'Aguarde a janela exibir "WebSocket rodando na porta 8765"' },
                   { n: "5", text: "Este app detecta e conecta automaticamente. Pronto!" },
                 ].map((s) => (
