@@ -78,7 +78,9 @@ ProfitRTDBridge\
 ## Troubleshooting
 
 **"Servidor RTD não encontrado"**
-→ O Profit Pro não está aberto ou não está logado. Abra o Profit, faça login e tente novamente.
+→ No Profit, habilite: **Ferramentas > Configuracoes > Exportacao em Tempo Real (RTD/DDE)**.
+→ Feche e abra o Profit apos habilitar.
+→ Execute Profit e Bridge com a mesma permissao (ambos como admin ou ambos normal).
 
 **App não conecta**
 → Verifique se a janela do bridge está aberta e mostra "WebSocket rodando".

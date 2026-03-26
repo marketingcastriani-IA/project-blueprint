@@ -27,6 +27,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Win32;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -93,7 +94,7 @@ namespace ProfitRTDBridge
     // ─────────────────────────────────────────────────────────────────────────
     class Program
     {
-        const string RTD_PROGID = "rtdtrading.rtdserver";
+        static readonly string[] RTD_PROGIDS = { "RTDTrading.RTDServer", "rtdtrading.rtdserver" };
 
         static volatile bool _running = true;
         static readonly List<IWebSocketConnection> _clients = new();
@@ -198,18 +199,32 @@ namespace ProfitRTDBridge
                     // ── Instancia o COM server do Profit ──
                     if (rtd == null)
                     {
-                        Log("RTD", $"Conectando ao servidor COM: {RTD_PROGID}");
-                        Type? comType = Type.GetTypeFromProgID(RTD_PROGID, throwOnError: false);
+                        Log("RTD", $"Tentando localizar servidor COM: {string.Join(" | ", RTD_PROGIDS)}");
+                        Type? comType = ResolveRtdComType(out string diagnostic);
 
                         if (comType == null)
                         {
-                            Log("ERR", "Servidor RTD não encontrado. Profit Pro está aberto e logado?");
-                            Broadcast(new { type = "error", message = "Profit Pro não encontrado. Abra o Profit Pro e tente novamente." });
+                            string checklist = BuildRtdNotFoundChecklist();
+                            Log("ERR", $"{checklist} ({diagnostic})");
+                            Broadcast(new { type = "error", message = "RTD do Profit nao registrado. No Profit, habilite Exportacao em Tempo Real (RTD/DDE), reinicie o Profit e tente novamente." });
                             Thread.Sleep(5000);
                             continue;
                         }
 
-                        rtd = (IRtdServer)Activator.CreateInstance(comType)!;
+                        Log("RTD", diagnostic);
+
+                        try
+                        {
+                            rtd = (IRtdServer)Activator.CreateInstance(comType)!;
+                        }
+                        catch (Exception ex)
+                        {
+                            Log("ERR", $"Falha ao instanciar COM RTD: {ex.Message}");
+                            Broadcast(new { type = "error", message = "Falha ao instanciar COM do Profit. Execute Profit e Bridge com o mesmo usuario/permissao (ambos admin ou ambos normal)." });
+                            Thread.Sleep(5000);
+                            continue;
+                        }
+
                         callback = new RtdUpdateCallback();
                         int result = rtd.ServerStart(callback);
 
@@ -417,6 +432,70 @@ namespace ProfitRTDBridge
             foreach (var c in copy) try { c.Send(json); } catch { }
         }
 
+        static Type? ResolveRtdComType(out string diagnostic)
+        {
+            foreach (var progId in RTD_PROGIDS)
+            {
+                Type? directType = Type.GetTypeFromProgID(progId, throwOnError: false);
+                if (directType != null)
+                {
+                    diagnostic = $"ProgID resolvido diretamente: {progId}";
+                    return directType;
+                }
+            }
+
+            foreach (var progId in RTD_PROGIDS)
+            {
+                if (TryResolveTypeFromRegistry(progId, RegistryView.Registry64, out Type? type64, out string clsid64))
+                {
+                    diagnostic = $"ProgID resolvido via registro 64-bit: {progId} -> {clsid64}";
+                    return type64;
+                }
+
+                if (TryResolveTypeFromRegistry(progId, RegistryView.Registry32, out Type? type32, out string clsid32))
+                {
+                    diagnostic = $"ProgID resolvido via registro 32-bit: {progId} -> {clsid32}";
+                    return type32;
+                }
+            }
+
+            diagnostic = "ProgID RTDTrading.RTDServer nao registrado no Windows (32/64).";
+            return null;
+        }
+
+        static bool TryResolveTypeFromRegistry(
+            string progId,
+            RegistryView view,
+            out Type? comType,
+            out string clsidText)
+        {
+            comType = null;
+            clsidText = string.Empty;
+
+            try
+            {
+                using RegistryKey classesRoot = RegistryKey.OpenBaseKey(RegistryHive.ClassesRoot, view);
+                using RegistryKey? clsidKey = classesRoot.OpenSubKey($@"{progId}\CLSID");
+
+                clsidText = clsidKey?.GetValue(null)?.ToString() ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(clsidText)) return false;
+                if (!Guid.TryParse(clsidText, out Guid clsid)) return false;
+
+                comType = Type.GetTypeFromCLSID(clsid, throwOnError: false);
+                return comType != null;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        static string BuildRtdNotFoundChecklist()
+        {
+            return "RTD nao encontrado no registro. No Profit, habilite Exportacao em Tempo Real (RTD/DDE), " +
+                   "reinicie o Profit e execute o bridge no mesmo usuario do Windows.";
+        }
+
         static void Log(string tag, string msg)
         {
             Console.ForegroundColor = tag switch
@@ -442,7 +521,7 @@ namespace ProfitRTDBridge
 ╚══════════════════════════════════════════════╝");
             Console.ResetColor();
             Console.WriteLine($"  WebSocket : ws://localhost:{port}");
-            Console.WriteLine($"  RTD ProgID: {RTD_PROGID}");
+            Console.WriteLine($"  RTD ProgIDs: {string.Join(", ", RTD_PROGIDS)}");
             Console.WriteLine($"  Pressione Ctrl+C para encerrar\n");
         }
     }
