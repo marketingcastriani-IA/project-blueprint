@@ -1,43 +1,48 @@
 
 
-## Plano de Implementação
+## Limitacao Tecnica Importante
 
-### 1. Admin Panel — Campo editável de data de vencimento + mais informações
+O RTD (Real-Time Data) do Profit Pro e uma tecnologia **COM/OLE do Windows** que funciona exclusivamente dentro do Excel via `RTD("rtdtrading.rtdserver"...)`. **Nao e possivel acessar o servidor RTD diretamente de um navegador web** -- ele so funciona em aplicacoes Windows nativas.
 
-**Arquivo:** `src/pages/AdminPanel.tsx`
+## Solucao Proposta: Aba "Dados ao Vivo" com Integracao Indireta
 
-- Adicionar um **input de data** editável no card de cada usuário para o admin definir/alterar a `expires_at`
-- Ao alterar a data, fazer `UPDATE` na tabela `user_access` com a nova `expires_at`
-- Adicionar mais informações úteis no card:
-  - **Plano atual** destacado visualmente
-  - **Dias restantes** até o vencimento (calculado automaticamente)
-  - **Última atualização** do registro
-  - **Notas** (campo editável para o admin adicionar observações sobre o cliente)
+Como alternativa viavel, criarei uma nova aba que permite ao usuario:
+1. **Importar dados do Profit via copiar/colar** de uma planilha Excel que ja usa as formulas RTD
+2. **Digitar tickers manualmente** e montar pernas com os campos equivalentes aos do RTD
+3. **Gerar o grafico Payoff automaticamente** com as pernas montadas
 
-### 2. Toggles "Aplicar IR" — Destaque amarelo
+### Campos por ticker (equivalentes ao RTD)
+- Ticker (input manual)
+- Ultimo (ULT)
+- Strike (PEX)
+- Negocios (NEG)
+- Of. Compra (OCP)
+- Of. Venda (OVD)
+- Valor Intrinseco (VINT)
+- Valor Extrinseco (VEXT)
 
-**Arquivo:** `src/components/CDIComparison.tsx`
+### Arquivos a criar/modificar
 
-- Estilizar os dois `Switch` ("Aplicar IR no CDI" e "Aplicar IR nas opções") com cor amarela/warning
-- Adicionar background amarelo nos labels e um badge visual para que fiquem mais visíveis
-- Usar classes como `bg-warning/20 border-warning/40 text-warning` para destacar
+1. **`src/pages/DadosAoVivo.tsx`** (novo)
+   - Campo para digitar ticker e tipo (call/put/stock) + lado (compra/venda)
+   - Tabela com colunas: Ticker, Ultimo, Strike, Negocios, Of.Compra, Of.Venda, V.Intrinseco, V.Extrinseco
+   - Botao "Colar do Excel" que parseia dados tabulares copiados da planilha com RTD
+   - Botao para converter linhas selecionadas em pernas
+   - Grafico Payoff integrado usando os componentes existentes (PayoffChart, MetricsCards)
+   - Instrucoes visuais mostrando as formulas RTD para o usuario configurar no Excel/Profit
 
-### 3. Botão "Analisar a Estrutura por IA" — Sticky no Header + Pulsando
+2. **`src/App.tsx`** -- adicionar rota `/dados-ao-vivo`
 
-**Arquivo:** `src/components/Header.tsx` e `src/pages/Dashboard.tsx`
+3. **`src/components/Header.tsx`** -- adicionar item de navegacao "Dados ao Vivo" com icone `Radio`
 
-- No **Header**, adicionar um botão fixo "Analisar a Estrutura por IA" que só aparece quando o usuário está na rota `/dashboard` e tem pernas adicionadas
-- O botão terá animação `animate-pulse` e estilo destacado (cor primária com glow)
-- Renomear o texto de "Sugestão IA" para **"Analisar a Estrutura por IA"** em todos os locais
-- Para comunicação entre Dashboard e Header, usar um estado via **callback prop** ou um pequeno contexto/store
+### Fluxo do usuario
+1. Usuario abre o Profit Pro e Excel lado a lado
+2. Configura as formulas RTD no Excel (instrucoes na tela)
+3. Copia as celulas com dados atualizados
+4. Cola na aba "Dados ao Vivo" do app
+5. Seleciona lado (compra/venda) e converte em pernas
+6. Grafico Payoff e metricas sao gerados automaticamente
 
-**Abordagem técnica para o botão sticky:** Em vez de modificar o Header (que não tem acesso ao estado de legs), criar uma **barra flutuante fixa** (`fixed bottom-0` ou `sticky top-14`) dentro do próprio Dashboard que aparece quando `legs.length > 0`, contendo o botão "Analisar a Estrutura por IA" pulsando. Isso é mais simples e evita prop drilling.
-
-### Resumo das alterações
-
-| Arquivo | Mudança |
-|---|---|
-| `src/pages/AdminPanel.tsx` | Input de data editável para vencimento, dias restantes, campo de notas |
-| `src/components/CDIComparison.tsx` | Switches IR com destaque amarelo/warning |
-| `src/pages/Dashboard.tsx` | Renomear botão IA, adicionar barra flutuante sticky com botão pulsando |
+### Alternativa futura
+Incluirei uma nota na interface sobre a possibilidade futura de usar um **servidor local bridge** (um pequeno executavel Windows que le o RTD e envia via WebSocket para o app), mas isso requer desenvolvimento nativo separado.
 
