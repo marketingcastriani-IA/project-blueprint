@@ -117,7 +117,7 @@ namespace ProfitRTDBridge
             for (int i = 0; i < args.Length - 1; i++)
                 if (args[i] == "--port") int.TryParse(args[i + 1], out port);
 
-            Console.Title = "ProfitRTD Bridge v3.1";
+            Console.Title = "ProfitRTD Bridge v3.2";
             PrintBanner(port);
 
             // WebSocket server (thread-safe, não-STA)
