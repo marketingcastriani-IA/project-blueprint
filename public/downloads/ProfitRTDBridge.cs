@@ -472,11 +472,29 @@ namespace ProfitRTDBridge
 
         static double? ParseDouble(object? v)
         {
-            if (v == null) return null;
+            if (v == null || v is DBNull) return null;
+
+            // ── Se o COM já retornou um tipo numérico, converte direto ──
+            // Isso evita problemas de locale (vírgula vs ponto) ao chamar ToString()
+            if (v is double dv) return dv;
+            if (v is float fv)  return fv;
+            if (v is decimal mv) return (double)mv;
+            if (v is int iv)    return iv;
+            if (v is long lv)   return lv;
+            if (v is short sv)  return sv;
+            if (v is byte bv)   return bv;
+            if (v is uint uv)   return uv;
+            if (v is ulong ulv) return ulv;
+
+            // ── Fallback: string → parse com pt-BR primeiro (Profit é brasileiro) ──
             string s = v.ToString()?.Trim() ?? "";
             if (string.IsNullOrEmpty(s)) return null;
-            if (double.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out double d1)) return d1;
+
+            // Tenta pt-BR primeiro (vírgula = decimal, ponto = milhar)
             if (double.TryParse(s, NumberStyles.Any, new CultureInfo("pt-BR"), out double d2)) return d2;
+            // Fallback InvariantCulture (ponto = decimal)
+            if (double.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out double d1)) return d1;
+
             return null;
         }
 
