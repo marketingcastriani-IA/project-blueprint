@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Leg, PayoffPoint, AnalysisMetrics } from '@/lib/types';
+import { Leg, PayoffPoint } from '@/lib/types';
 import { calculatePayoffAtExpiry, calculatePayoffToday, calculateMetrics } from '@/lib/payoff';
 import { cn } from '@/lib/utils';
 import { Radio, Plus, Trash2, ClipboardPaste, ArrowRight, Info, Zap, BookOpen } from 'lucide-react';
@@ -70,16 +70,12 @@ export default function DadosAoVivo() {
   const [showFormulas, setShowFormulas] = useState(false);
   const [underlyingPrice, setUnderlyingPrice] = useState<number>(0);
 
-  // Redirect after hooks
-  if (!user) {
-    navigate('/auth');
-    return null;
-  }
+  useEffect(() => {
+    if (!user) navigate('/auth');
+  }, [user, navigate]);
 
   const addRow = () => setRows(prev => [...prev, emptyRow()]);
-
   const removeRow = (id: string) => setRows(prev => prev.filter(r => r.id !== id));
-
   const updateRow = (id: string, field: keyof RTDRow, value: any) => {
     setRows(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
   };
@@ -91,18 +87,13 @@ export default function DadosAoVivo() {
         toast.error('Clipboard vazio. Copie os dados do Excel primeiro.');
         return;
       }
-
       const lines = text.trim().split('\n').filter(l => l.trim());
       const newRows: RTDRow[] = [];
-
       for (const line of lines) {
         const cols = line.split('\t');
         if (cols.length < 2) continue;
-
         const ticker = cols[0]?.trim() || '';
         if (!ticker) continue;
-
-        // Expected columns: Ticker, Último, Strike, Negócios, Of.Compra, Of.Venda, V.Intrínseco, V.Extrínseco
         const row = emptyRow();
         row.ticker = ticker;
         row.ultimo = parseNumber(cols[1] || '');
@@ -112,23 +103,15 @@ export default function DadosAoVivo() {
         row.ofVenda = parseNumber(cols[5] || '');
         row.valorIntrinseco = parseNumber(cols[6] || '');
         row.valorExtrinseco = parseNumber(cols[7] || '');
-
-        // Auto-detect type from ticker suffix
         const lastChar = ticker.slice(-1).toUpperCase();
-        if (['A','B','C','D','E','F','G','H','I','J','K','L'].includes(lastChar)) {
-          row.optionType = 'call';
-        } else if (['M','N','O','P','Q','R','S','T','U','V','W','X'].includes(lastChar)) {
-          row.optionType = 'put';
-        }
-
+        if ('ABCDEFGHIJKL'.includes(lastChar)) row.optionType = 'call';
+        else if ('MNOPQRSTUVWX'.includes(lastChar)) row.optionType = 'put';
         newRows.push(row);
       }
-
       if (newRows.length === 0) {
         toast.error('Nenhum dado válido encontrado. Verifique o formato.');
         return;
       }
-
       setRows(newRows);
       toast.success(`${newRows.length} ticker(s) importado(s) do Excel!`);
     } catch {
@@ -136,7 +119,6 @@ export default function DadosAoVivo() {
     }
   }, []);
 
-  // Convert selected rows to legs for payoff calculation
   const legs: Leg[] = useMemo(() => {
     return rows
       .filter(r => r.selected && r.ticker && (r.ultimo > 0 || r.strike > 0))
@@ -150,13 +132,15 @@ export default function DadosAoVivo() {
       }));
   }, [rows]);
 
-  // Build payoff curve data
+  const spotPrice = useMemo(() => {
+    if (underlyingPrice > 0) return underlyingPrice;
+    const stockLeg = rows.find(r => r.optionType === 'stock' && r.ultimo > 0);
+    return stockLeg?.ultimo || 0;
+  }, [rows, underlyingPrice]);
+
   const { payoffData, metrics } = useMemo(() => {
     if (legs.length === 0) return { payoffData: [] as PayoffPoint[], metrics: null };
-
     const m = calculateMetrics(legs);
-
-    // Generate price range around strikes
     const strikes = legs.map(l => l.strike || l.price).filter(Boolean);
     const prices = legs.map(l => l.price);
     const allVals = [...strikes, ...prices, spotPrice].filter(v => v > 0);
@@ -166,7 +150,6 @@ export default function DadosAoVivo() {
     const lower = Math.max(0, minVal - margin);
     const upper = maxVal + margin;
     const step = (upper - lower) / 200;
-
     const data: PayoffPoint[] = [];
     for (let p = lower; p <= upper; p += step) {
       const price = Math.round(p * 100) / 100;
@@ -176,13 +159,10 @@ export default function DadosAoVivo() {
         profitToday: calculatePayoffToday(legs, price, 21, 0.1375),
       });
     }
-
     return { payoffData: data, metrics: m };
   }, [legs, spotPrice]);
-    if (underlyingPrice > 0) return underlyingPrice;
-    const stockLeg = rows.find(r => r.optionType === 'stock' && r.ultimo > 0);
-    return stockLeg?.ultimo || 0;
-  }, [rows, underlyingPrice]);
+
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -298,9 +278,7 @@ export default function DadosAoVivo() {
                       </TableCell>
                       <TableCell>
                         <Select value={row.optionType} onValueChange={v => updateRow(row.id, 'optionType', v)}>
-                          <SelectTrigger className="h-8 w-20 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
+                          <SelectTrigger className="h-8 w-20 text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="call">Call</SelectItem>
                             <SelectItem value="put">Put</SelectItem>
@@ -310,9 +288,7 @@ export default function DadosAoVivo() {
                       </TableCell>
                       <TableCell>
                         <Select value={row.side} onValueChange={v => updateRow(row.id, 'side', v)}>
-                          <SelectTrigger className="h-8 w-24 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
+                          <SelectTrigger className="h-8 w-24 text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="buy">Compra</SelectItem>
                             <SelectItem value="sell">Venda</SelectItem>
@@ -351,7 +327,7 @@ export default function DadosAoVivo() {
           </CardContent>
         </Card>
 
-        {/* Summary of selected legs */}
+        {/* Summary */}
         {legs.length > 0 && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Zap className="h-4 w-4 text-primary" />
