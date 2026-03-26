@@ -39,8 +39,7 @@ namespace ProfitRTDBridge
         object ConnectData(int topicId, [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] ref Array strings, ref bool newValues);
 
         [DispId(12)]
-        [return: MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)]
-        Array RefreshData(ref int topicCount);
+        object RefreshData(ref int topicCount);
 
         [DispId(13)]
         void DisconnectData(int topicId);
