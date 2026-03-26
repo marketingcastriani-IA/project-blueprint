@@ -150,16 +150,35 @@ export default function DadosAoVivo() {
       }));
   }, [rows]);
 
-  // Calculate payoff data
+  // Build payoff curve data
   const { payoffData, metrics } = useMemo(() => {
     if (legs.length === 0) return { payoffData: [] as PayoffPoint[], metrics: null };
 
-    const data = calculatePayoffData(legs);
     const m = calculateMetrics(legs);
-    return { payoffData: data, metrics: m };
-  }, [legs]);
 
-  const spotPrice = useMemo(() => {
+    // Generate price range around strikes
+    const strikes = legs.map(l => l.strike || l.price).filter(Boolean);
+    const prices = legs.map(l => l.price);
+    const allVals = [...strikes, ...prices, spotPrice].filter(v => v > 0);
+    const minVal = Math.min(...allVals);
+    const maxVal = Math.max(...allVals);
+    const margin = Math.max((maxVal - minVal) * 0.5, maxVal * 0.15, 5);
+    const lower = Math.max(0, minVal - margin);
+    const upper = maxVal + margin;
+    const step = (upper - lower) / 200;
+
+    const data: PayoffPoint[] = [];
+    for (let p = lower; p <= upper; p += step) {
+      const price = Math.round(p * 100) / 100;
+      data.push({
+        price,
+        profitAtExpiry: calculatePayoffAtExpiry(legs, price),
+        profitToday: calculatePayoffToday(legs, price, 21, 0.1375),
+      });
+    }
+
+    return { payoffData: data, metrics: m };
+  }, [legs, spotPrice]);
     if (underlyingPrice > 0) return underlyingPrice;
     const stockLeg = rows.find(r => r.optionType === 'stock' && r.ultimo > 0);
     return stockLeg?.ultimo || 0;
