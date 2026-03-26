@@ -518,7 +518,7 @@ namespace ProfitRTDBridge
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine(@"
 ╔══════════════════════════════════════════════════╗
-║  ProfitRTD Bridge v3.1 — 32-bit — dynamic COM   ║
+║  ProfitRTD Bridge v3.2 — 32-bit — dynamic COM   ║
 ║  Profit Pro → IDispatch late binding → WebSocket ║
 ╚══════════════════════════════════════════════════╝");
             Console.ResetColor();
