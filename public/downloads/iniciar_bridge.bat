@@ -1,14 +1,14 @@
 @echo off
-title ProfitRTD Bridge v3.0 - OpcoesProx
+title ProfitRTD Bridge v3.1 - OpcoesProx
 color 0B
 
 cd /d "%~dp0"
 
 echo.
 echo  ====================================================
-echo   ProfitRTD Bridge v3.0 - OpcoesProx.com.br
+echo   ProfitRTD Bridge v3.1 - OpcoesProx.com.br
 echo   Profit Pro (32-bit) - dynamic COM - WebSocket
-echo   CORRECAO: dynamic late binding (resolve cast error)
+echo   CORRECAO: dynamic late binding + callback IID fix (ServerStart)
 echo  ====================================================
 echo.
 echo  [INFO] Diretorio: %CD%
@@ -43,7 +43,7 @@ set PORT=8765
 :: IMPORTANTE: apaga publish antiga (versão 64-bit ou com cast errado)
 :: para forçar nova compilação 32-bit com dynamic
 if exist "publish\" (
-    echo  [INFO] Removendo publish anterior para recompilar v3.0...
+    echo  [INFO] Removendo publish anterior para recompilar v3.1...
     rmdir /s /q "publish"
 )
 
@@ -83,10 +83,11 @@ echo  ====================================================
 echo.
 echo  [1] Profit Pro esta ABERTO e LOGADO?
 echo.
-echo  [2] RTD esta HABILITADO no Profit?
-echo      Ferramentas ^> Configuracoes ^>
-echo      Exportacao em Tempo Real (RTD/DDE) ^> Habilitar
-echo      (Reinicie o Profit apos habilitar pela 1a vez)
+echo  [2] RTD esta ATIVO no Profit?
+echo      Profit ^> Exportar em Tempo Real (RTD/DDE)
+echo      ^> Tipo: RTD
+echo      ^> Marque: Ativar transferencia de dados
+echo      ^> Clique OK (ou Copiar) e reinicie o Profit na 1a vez
 echo.
 echo  [3] Profit e Bridge com MESMO nivel de permissao?
 echo      Se Profit esta como Admin, rode este bat como Admin.
