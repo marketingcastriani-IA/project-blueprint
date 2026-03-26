@@ -1,4 +1,4 @@
-# ProfitRTD Bridge v3.0 — dynamic COM, sem Excel
+# ProfitRTD Bridge v3.1 — dynamic COM, sem Excel
 
 Bridge local que conecta o **Profit Pro (Nelogica)** ao app **opcoesprox.com.br**
 via WebSocket, acessando o RTD **diretamente via COM** — sem precisar de Excel.
@@ -10,6 +10,13 @@ via WebSocket, acessando o RTD **diretamente via COM** — sem precisar de Excel
 | v2.0 | REGDB_E_CLASSNOTREG | Bridge era 64-bit, COM do Profit é 32-bit | win-x86 |
 | v2.1/2.2 | Specified cast is not valid | `(IRtdServer)instance` falha — Profit não expõe vtable padrão | Tentar IDispatch |
 | v3.0 | Specified cast is not valid | Cast para qualquer interface falha — Profit usa wrapper COM nativo | **dynamic late binding** |
+| v3.1 | Could not convert argument 0 for call to ServerStart | Callback COM sem IID esperado para `IRTDUpdateEvent` | **Interface COM explícita + callback tipado** |
+
+## O que mudou na v3.1
+
+- **Callback COM com IID oficial do RTD** (`A43788C1-D91B-11D3-8F39-00C04F3651B8`) para o `ServerStart` aceitar o argumento sem erro de conversão.
+- **Fallback de inicialização**: tenta callback tipado e, se necessário, fallback como `object`.
+- Mensagens de erro atualizadas para o fluxo real do Profit (tela **Exportar em Tempo Real (RTD/DDE)**).
 
 ## O que mudou na v3.0
 
@@ -72,7 +79,7 @@ O bat apaga qualquer compilação anterior, recompila em 32-bit e gera o `.exe`.
 ## Troubleshooting
 
 **"Servidor RTD não encontrado"**
-→ Habilite RTD/DDE em **Ferramentas > Configurações** no Profit. Reinicie o Profit após habilitar.
+→ No Profit, abra **Exportar em Tempo Real (RTD/DDE)**, selecione **RTD** e marque **Ativar transferência de dados**. Clique **OK** (ou **Copiar**) e reinicie o Profit.
 → Execute Profit e Bridge com a mesma permissão (ambos Admin ou ambos normal).
 
 **App não conecta**
