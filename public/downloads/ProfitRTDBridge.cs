@@ -26,6 +26,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Microsoft.Win32;
 using System.Runtime.InteropServices;
@@ -39,29 +40,31 @@ namespace ProfitRTDBridge
     // ── IRtdServer COM interface (idêntica à usada pelo Excel internamente) ──
     [ComImport]
     [Guid("EC0E6191-DB51-11D3-8F3E-00C04F3651B8")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     interface IRtdServer
     {
-        [DispId(10)] int ServerStart(IRTDUpdateEvent callback);
-        [DispId(11)] object ConnectData(int topicId, ref Array strings, ref bool newValues);
-        [DispId(12)] Array RefreshData(ref int topicCount);
-        [DispId(13)] void DisconnectData(int topicId);
-        [DispId(14)] int Heartbeat();
-        [DispId(15)] void ServerTerminate();
+        int ServerStart(IRTDUpdateEvent callback);
+        object ConnectData(int topicId, ref Array strings, ref bool newValues);
+        Array RefreshData(ref int topicCount);
+        void DisconnectData(int topicId);
+        int Heartbeat();
+        void ServerTerminate();
     }
 
     // ── Callback que o RTD server chama quando há dados novos ──
     [ComImport]
     [Guid("A43788C1-D91B-11D3-8F39-00C04F3651B8")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     interface IRTDUpdateEvent
     {
-        [DispId(10)] void UpdateNotify();
-        [DispId(11)] int HeartbeatInterval { get; set; }
-        [DispId(12)] void Disconnect();
+        void UpdateNotify();
+        int HeartbeatInterval { get; set; }
+        void Disconnect();
     }
 
     // ── Implementação do callback ──
+    [ComVisible(true)]
+    [ClassInterface(ClassInterfaceType.None)]
     class RtdUpdateCallback : IRTDUpdateEvent
     {
         public volatile bool HasUpdate = false;
@@ -300,7 +303,7 @@ namespace ProfitRTDBridge
                         {
                             for (int i = 0; i < topicCount; i++)
                             {
-                                int topicId = (int)updated.GetValue(0, i)!;
+                                int topicId = ConvertToInt(updated.GetValue(0, i));
                                 object? value = updated.GetValue(1, i);
 
                                 if (topics.TryGetValue(topicId, out RtdTopic? topic))
@@ -308,9 +311,7 @@ namespace ProfitRTDBridge
                                     var tickerCache = _cache.GetOrAdd(topic.Ticker, _ => new Dictionary<string, object?>());
                                     string jsonKey = ProfitFields.ToJsonKey(topic.Field);
 
-                                    double? numVal = null;
-                                    if (value != null && double.TryParse(value.ToString()?.Replace(",", "."), out double d))
-                                        numVal = d;
+                                    double? numVal = TryParseNumericValue(value);
 
                                     lock (tickerCache) tickerCache[jsonKey] = numVal;
                                 }
@@ -392,9 +393,7 @@ namespace ProfitRTDBridge
 
                     // Valor inicial
                     string jsonKey = ProfitFields.ToJsonKey(field);
-                    double? numVal = null;
-                    if (val != null && double.TryParse(val.ToString()?.Replace(",", "."), out double d))
-                        numVal = d;
+                    double? numVal = TryParseNumericValue(val);
 
                     var tickerCache = _cache.GetOrAdd(ticker, _ => new Dictionary<string, object?>());
                     lock (tickerCache) tickerCache[jsonKey] = numVal;
@@ -494,6 +493,29 @@ namespace ProfitRTDBridge
         {
             return "RTD nao encontrado no registro. No Profit, habilite Exportacao em Tempo Real (RTD/DDE), " +
                    "reinicie o Profit e execute o bridge no mesmo usuario do Windows.";
+        }
+
+        static int ConvertToInt(object? value)
+        {
+            if (value == null) return 0;
+            try { return Convert.ToInt32(value, CultureInfo.InvariantCulture); }
+            catch { return 0; }
+        }
+
+        static double? TryParseNumericValue(object? value)
+        {
+            if (value == null) return null;
+
+            string raw = value.ToString()?.Trim() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(raw)) return null;
+
+            if (double.TryParse(raw, NumberStyles.Any, CultureInfo.InvariantCulture, out double inv))
+                return inv;
+
+            if (double.TryParse(raw, NumberStyles.Any, new CultureInfo("pt-BR"), out double ptbr))
+                return ptbr;
+
+            return null;
         }
 
         static void Log(string tag, string msg)
