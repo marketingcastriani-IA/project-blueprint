@@ -1,15 +1,29 @@
-# ProfitRTD Bridge v2.0 — sem Excel
+# ProfitRTD Bridge v3.0 — dynamic COM, sem Excel
 
 Bridge local que conecta o **Profit Pro (Nelogica)** ao app **opcoesprox.com.br**
 via WebSocket, acessando o RTD **diretamente via COM** — sem precisar de Excel.
 
+## Histórico de versões
+
+| Versão | Erro | Causa | Fix |
+|--------|------|-------|-----|
+| v2.0 | REGDB_E_CLASSNOTREG | Bridge era 64-bit, COM do Profit é 32-bit | win-x86 |
+| v2.1/2.2 | Specified cast is not valid | `(IRtdServer)instance` falha — Profit não expõe vtable padrão | Tentar IDispatch |
+| v3.0 | Specified cast is not valid | Cast para qualquer interface falha — Profit usa wrapper COM nativo | **dynamic late binding** |
+
+## O que mudou na v3.0
+
+- **`dynamic rtd`** — em vez de `(IRtdServer)instance`, o objeto fica como `dynamic`. O CLR chama `rtd.ServerStart()`, `rtd.ConnectData()` etc. diretamente pelo nome via IDispatch, sem nenhum cast de interface.
+- **`Microsoft.CSharp`** no `.csproj` — necessário para `dynamic` funcionar em .NET 6+.
+- **`.bat` apaga `publish\`** automaticamente — garante recompilação do zero em 32-bit com as correções.
+
 ## Como funciona
 
 ```
-Profit Pro
-  └─ Registra COM server: "rtdtrading.rtdserver"
-          ↓  COM/OLE direto (sem Excel)
-  ProfitRTDBridge.exe (roda na sua máquina)
+Profit Pro (32-bit)
+  └─ COM ProgID: RTDTrading.RTDServer
+          ↓  dynamic late binding (IDispatch)
+  ProfitRTDBridge.exe (win-x86, STA thread)
           ↓  WebSocket  ws://localhost:8765
   opcoesprox.com.br  (seu navegador)
 ```
@@ -33,38 +47,18 @@ https://dotnet.microsoft.com/download/dotnet/6.0
 ### 3. Execute o bridge
 Clique com botão direito em `iniciar_bridge.bat` → **Executar como administrador**
 
-Na primeira execução ele pergunta se quer gerar um `.exe` único.
-Escolha **S** — nas próximas vezes inicia instantaneamente sem precisar do SDK.
-
-## Estrutura de arquivos
-
-```
-ProfitRTDBridge\
-  ├── iniciar_bridge.bat      ← execute este
-  ├── ProfitRTDBridge.cs      ← código fonte
-  ├── ProfitRTDBridge.csproj  ← projeto .NET
-  └── README.md
-  
-  (criado automaticamente após publicar)
-  └── publish\
-      └── ProfitRTDBridge.exe ← executável único
-```
+O bat apaga qualquer compilação anterior, recompila em 32-bit e gera o `.exe`.
 
 ## Protocolo WebSocket (ws://localhost:8765)
 
 ### Bridge → App
 ```jsonc
-// Dados RTD (~1.2x por segundo)
 { "type": "rtd_data", "data": [
   { "ticker": "PETRG345", "ultimo": 2.45, "strike": 34.50,
     "negocios": 1230, "ofCompra": 2.40, "ofVenda": 2.50,
     "vInt": 1.20, "vExt": 1.25, "timestamp": 1711234567890 }
 ]}
-
-// Bridge pronto
 { "type": "bridge_ready" }
-
-// Erro
 { "type": "error", "message": "Profit Pro não encontrado." }
 ```
 
@@ -78,13 +72,12 @@ ProfitRTDBridge\
 ## Troubleshooting
 
 **"Servidor RTD não encontrado"**
-→ No Profit, habilite: **Ferramentas > Configuracoes > Exportacao em Tempo Real (RTD/DDE)**.
-→ Feche e abra o Profit apos habilitar.
-→ Execute Profit e Bridge com a mesma permissao (ambos como admin ou ambos normal).
+→ Habilite RTD/DDE em **Ferramentas > Configurações** no Profit. Reinicie o Profit após habilitar.
+→ Execute Profit e Bridge com a mesma permissão (ambos Admin ou ambos normal).
 
 **App não conecta**
-→ Verifique se a janela do bridge está aberta e mostra "WebSocket rodando".
-→ No Windows Defender Firewall: permita `ProfitRTDBridge.exe` na rede privada.
+→ Verifique se a janela do bridge mostra "WebSocket rodando".
+→ Permita `ProfitRTDBridge.exe` no Windows Defender Firewall.
 
 **Dados aparecem como "—"**
 → RTD pode demorar alguns segundos na primeira subscrição.

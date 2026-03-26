@@ -1,16 +1,31 @@
 /*
- * ProfitRTDBridge.cs  v2.2
- * ─────────────────────────────────────────────────────────────────────────────
- * CORREÇÃO v2.2: Interfaces COM corrigidas para IDispatch + DispId
+ * ProfitRTDBridge.cs  v3.0
+ * ═══════════════════════════════════════════════════════════════════════════
+ * CORREÇÃO v3.0: Late binding via "dynamic" — sem cast de interface COM
  *
- *   O erro 0x80131506 (ExecutionEngineException em InterfaceMarshaler)
- *   ocorria porque as interfaces IRtdServer e IRTDUpdateEvent estavam
- *   declaradas como InterfaceIsIUnknown, mas o Profit Pro (RTDTrading)
- *   expõe IDispatch. A correção usa InterfaceIsIDispatch com os DispIds
- *   corretos do protocolo RTD (compatível com Excel).
+ * HISTÓRICO DE ERROS E CORREÇÕES:
+ *   v2.0 — REGDB_E_CLASSNOTREG (0x80040154)
+ *          Causa:  Bridge era 64-bit, COM do Profit é 32-bit
+ *          Fix:    Compilar como win-x86
  *
- *   Compilar obrigatoriamente como x86 (32-bit).
- * ─────────────────────────────────────────────────────────────────────────────
+ *   v2.1 — "Specified cast is not valid"
+ *          Causa:  (IRtdServer)instance falha — Profit não expõe vtable IUnknown
+ *          Fix:    Trocar interface para IDispatch
+ *
+ *   v2.2 — "Specified cast is not valid" (mesmo erro com IDispatch)
+ *          Causa:  Cast explícito para IRtdServer ainda falha porque o Profit
+ *                  usa uma implementação COM não-padrão (wrapper nativo)
+ *          Fix:    Usar "dynamic" — late binding puro via IDispatch.
+ *                  O CLR chama os métodos pelo nome sem nenhum cast de interface.
+ *                  Também usar RtdUpdateCallback como "object" sem ComImport.
+ *
+ * ARQUITETURA:
+ *   Profit Pro (32-bit) → COM ProgID RTDTrading.RTDServer
+ *        ↓  dynamic late binding (IDispatch)
+ *   ProfitRTDBridge.exe (win-x86, STA thread)
+ *        ↓  WebSocket ws://localhost:8765
+ *   opcoesprox.com.br (navegador)
+ * ═══════════════════════════════════════════════════════════════════════════
  */
 
 using System;
@@ -26,62 +41,34 @@ using Newtonsoft.Json;
 
 namespace ProfitRTDBridge
 {
-    // ── IRtdServer — interface COM IDispatch do protocolo RTD ────────────────
-    [ComImport]
-    [Guid("EC0E6191-DB51-11D3-8F3E-00C04F3651B8")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
-    interface IRtdServer
-    {
-        [DispId(10)]
-        int ServerStart([MarshalAs(UnmanagedType.Interface)] IRTDUpdateEvent callback);
-
-        [DispId(11)]
-        object ConnectData(int topicId, [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] ref Array strings, ref bool newValues);
-
-        [DispId(12)]
-        object RefreshData(ref int topicCount);
-
-        [DispId(13)]
-        void DisconnectData(int topicId);
-
-        [DispId(14)]
-        int Heartbeat();
-
-        [DispId(15)]
-        void ServerTerminate();
-    }
-
-    // ── IRTDUpdateEvent — callback IDispatch chamado pelo Profit ─────────────
-    [ComImport]
-    [Guid("A43788C1-D91B-11D3-8F39-00C04F3651B8")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
-    interface IRTDUpdateEvent
-    {
-        [DispId(10)]
-        void UpdateNotify();
-
-        [DispId(11)]
-        int HeartbeatInterval { get; set; }
-
-        [DispId(12)]
-        void Disconnect();
-    }
-
+    // ── Callback implementado como classe COM visível via IDispatch ──────────
+    // NÃO usamos ComImport nem cast de interface — apenas ComVisible para que
+    // o Profit consiga chamar UpdateNotify() de volta.
     [ComVisible(true)]
-    [ClassInterface(ClassInterfaceType.AutoDispatch)]
-    class RtdUpdateCallback : IRTDUpdateEvent
+    [ClassInterface(ClassInterfaceType.AutoDual)]
+    public class RtdCallback
     {
         public volatile bool HasUpdate = false;
+
+        // Método que o Profit chama quando há novos dados
         public void UpdateNotify() => HasUpdate = true;
-        public int HeartbeatInterval { get => 30000; set { } }
+
+        // Intervalo de heartbeat em milissegundos
+        public int HeartbeatInterval
+        {
+            get => 30000;
+            set { /* ignorado */ }
+        }
+
+        // Chamado quando o servidor encerra
         public void Disconnect() { }
     }
 
-    record RtdTopic(int Id, string Ticker, string Field);
-
+    // ── Mapeamento dos campos RTD ─────────────────────────────────────────────
     static class ProfitFields
     {
         public static readonly string[] All = { "ULT", "PEX", "NEG", "OCP", "OVD", "VINT", "VEXT" };
+
         public static string ToJsonKey(string f) => f switch
         {
             "ULT"  => "ultimo",
@@ -95,27 +82,31 @@ namespace ProfitRTDBridge
         };
     }
 
+    record RtdTopic(int Id, string Ticker, string Field);
+
+    // ═════════════════════════════════════════════════════════════════════════
     class Program
     {
-        // Ambos os ProgIDs usados pelo Profit em diferentes versões
         static readonly string[] RTD_PROGIDS = { "RTDTrading.RTDServer", "rtdtrading.rtdserver" };
 
         static volatile bool _running = true;
-        static readonly List<IWebSocketConnection> _clients = new();
-        static readonly object _clientLock = new();
+        static readonly List<IWebSocketConnection> _clients   = new();
+        static readonly object                     _clientLock = new();
         static readonly ConcurrentDictionary<string, Dictionary<string, object?>> _cache = new();
         static readonly ConcurrentQueue<string> _pendingAdd    = new();
         static readonly ConcurrentQueue<string> _pendingRemove = new();
 
+        // ── Main ──────────────────────────────────────────────────────────────
         static void Main(string[] args)
         {
             int port = 8765;
             for (int i = 0; i < args.Length - 1; i++)
                 if (args[i] == "--port") int.TryParse(args[i + 1], out port);
 
-            Console.Title = "ProfitRTD Bridge v2.2 (32-bit)";
+            Console.Title = "ProfitRTD Bridge v3.0";
             PrintBanner(port);
 
+            // WebSocket server (thread-safe, não-STA)
             var wsServer = new WebSocketServer($"ws://0.0.0.0:{port}");
             wsServer.Start(socket =>
             {
@@ -134,18 +125,23 @@ namespace ProfitRTDBridge
                 {
                     try
                     {
-                        dynamic? cmd = JsonConvert.DeserializeObject(raw);
-                        string type = cmd?.type?.ToString() ?? "";
+                        dynamic? msg = JsonConvert.DeserializeObject(raw);
+                        string type = msg?.type?.ToString() ?? "";
                         if (type == "add_ticker")
                         {
-                            string t = (cmd?.ticker?.ToString() ?? "").ToUpper().Trim();
-                            if (!string.IsNullOrEmpty(t)) { _pendingAdd.Enqueue(t); Log("CMD", $"Ticker: {t}"); }
+                            string t = (msg?.ticker?.ToString() ?? "").ToUpper().Trim();
+                            if (!string.IsNullOrEmpty(t))
+                            {
+                                _pendingAdd.Enqueue(t);
+                                Log("CMD", $"Add ticker: {t}");
+                            }
                         }
                         else if (type == "remove_ticker")
                         {
-                            string t = (cmd?.ticker?.ToString() ?? "").ToUpper().Trim();
+                            string t = (msg?.ticker?.ToString() ?? "").ToUpper().Trim();
                             _pendingRemove.Enqueue(t);
                             _cache.TryRemove(t, out _);
+                            Log("CMD", $"Remove ticker: {t}");
                         }
                         else if (type == "ping")
                             socket.Send(JsonConvert.SerializeObject(new { type = "pong" }));
@@ -156,7 +152,7 @@ namespace ProfitRTDBridge
 
             Console.CancelKeyPress += (_, e) => { e.Cancel = true; _running = false; };
 
-            // OBRIGATÓRIO: thread STA para COM
+            // RTD loop DEVE rodar em thread STA (exigência do COM)
             var rtdThread = new Thread(RtdLoop) { IsBackground = true };
             rtdThread.SetApartmentState(ApartmentState.STA);
             rtdThread.Start();
@@ -166,64 +162,72 @@ namespace ProfitRTDBridge
             Log("INFO", "Bridge encerrado.");
         }
 
+        // ── RTD Loop (STA Thread) ─────────────────────────────────────────────
         static void RtdLoop()
         {
-            IRtdServer? rtd = null;
-            RtdUpdateCallback? cb = null;
-            var topics   = new Dictionary<int, RtdTopic>();
-            var tickers  = new HashSet<string>();
-            int nextId   = 1;
-            int errCount = 0;
+            dynamic? rtd     = null;   // <-- dynamic: sem cast de interface!
+            RtdCallback? cb  = null;
+            var topics       = new Dictionary<int, RtdTopic>();
+            var tickers      = new HashSet<string>();
+            int nextId       = 1;
+            int errCount     = 0;
 
             while (_running)
             {
                 try
                 {
-                    // ── Conecta ao COM server do Profit ──────────────────────
+                    // ── 1. Instancia o COM server do Profit ──────────────────
                     if (rtd == null)
                     {
-                        Log("RTD", "Localizando servidor RTD do Profit Pro (32-bit)...");
+                        Log("RTD", "Localizando servidor RTD do Profit Pro...");
 
                         Guid? clsid = FindRtdClsid();
-
                         if (clsid == null)
                         {
-                            Log("ERR", "Servidor RTD não encontrado.\n" +
-                                "  → Abra o Profit Pro e faça login\n" +
-                                "  → No Profit: Ferramentas > Configurações > Exportação em Tempo Real (RTD/DDE) → HABILITAR\n" +
-                                "  → Feche e reabra o Profit após habilitar\n" +
-                                "  → Execute Profit e Bridge com o mesmo nível (ambos Admin ou ambos Normal)");
-                            Broadcast(new { type = "error", message = "Profit Pro não encontrado. Abra o Profit, habilite RTD/DDE em Ferramentas > Configurações e tente novamente." });
-                            Thread.Sleep(6000);
+                            LogRtdNotFound();
+                            Thread.Sleep(7000);
                             continue;
                         }
 
-                        Log("RTD", $"CLSID encontrado: {clsid}");
+                        Log("RTD", $"CLSID: {clsid}");
 
-                        object? instance = null;
-                        try
+                        // Cria instância como "object" e usa dynamic — sem cast
+                        Type? comType = Type.GetTypeFromCLSID(clsid.Value, throwOnError: false);
+                        if (comType == null)
                         {
-                            // Instancia via CLSID — como já estamos em 32-bit, resolve direto
-                            Type? t = Type.GetTypeFromCLSID(clsid.Value, throwOnError: false);
-                            if (t == null) throw new InvalidOperationException("Type.GetTypeFromCLSID retornou null");
-                            instance = Activator.CreateInstance(t);
-                        }
-                        catch (Exception ex)
-                        {
-                            Log("ERR", $"Falha ao instanciar COM RTD: {ex.Message}\n" +
-                                "  → Execute Profit e Bridge com o mesmo usuario/permissao (ambos admin ou ambos normal).");
-                            Broadcast(new { type = "error", message = "Falha ao instanciar COM do Profit. Execute Profit e Bridge com o mesmo usuario/permissao (ambos admin ou ambos normal)." });
+                            Log("ERR", "Type.GetTypeFromCLSID retornou null. Profit está rodando?");
                             Thread.Sleep(5000);
                             continue;
                         }
 
-                        rtd = (IRtdServer)instance!;
-                        cb  = new RtdUpdateCallback();
-                        int startResult = rtd.ServerStart(cb);
+                        object rawInstance = Activator.CreateInstance(comType)
+                            ?? throw new InvalidOperationException("Activator retornou null");
+
+                        // ← CHAVE DA CORREÇÃO: dynamic evita qualquer cast de interface
+                        rtd = rawInstance;
+                        cb  = new RtdCallback();
+
+                        // ServerStart via dynamic — chama pelo nome do método (IDispatch)
+                        int startResult;
+                        try
+                        {
+                            startResult = (int)rtd.ServerStart(cb);
+                        }
+                        catch (Exception ex)
+                        {
+                            Log("ERR", $"ServerStart falhou: {ex.Message}\n" +
+                                "  → Execute Profit e Bridge com o MESMO nível de permissão\n" +
+                                "    (ambos Admin, ou ambos usuário normal)\n" +
+                                "  → Habilite RTD/DDE em Ferramentas > Configurações no Profit");
+                            Broadcast(new { type = "error", message = "Falha em ServerStart. Execute Profit e Bridge com o mesmo nível de permissão (ambos Admin ou ambos Normal)." });
+                            rtd = null;
+                            Thread.Sleep(6000);
+                            continue;
+                        }
 
                         if (startResult != 1)
                         {
-                            Log("ERR", $"ServerStart retornou {startResult} — Profit não está pronto. Aguardando...");
+                            Log("WARN", $"ServerStart retornou {startResult} — Profit não está pronto ainda.");
                             rtd = null;
                             Thread.Sleep(3000);
                             continue;
@@ -233,20 +237,21 @@ namespace ProfitRTDBridge
                         Broadcast(new { type = "bridge_ready" });
                         errCount = 0;
 
-                        // Restaura subscrições após reconexão
+                        // Restaura subscrições existentes após reconexão
                         foreach (var tk in tickers.ToList())
-                            SubscribeTicker(rtd, tk, topics, ref nextId);
+                            SubscribeTicker(rtd, cb, tk, topics, ref nextId);
                     }
 
-                    // ── Processa filas de add/remove ─────────────────────────
+                    // ── 2. Processa add/remove de tickers ────────────────────
                     while (_pendingAdd.TryDequeue(out string? addTk))
                         if (tickers.Add(addTk))
-                            SubscribeTicker(rtd!, addTk, topics, ref nextId);
+                            SubscribeTicker(rtd!, cb!, addTk, topics, ref nextId);
 
                     while (_pendingRemove.TryDequeue(out string? remTk))
                     {
                         tickers.Remove(remTk);
-                        foreach (var id in topics.Where(kv => kv.Value.Ticker == remTk).Select(kv => kv.Key).ToList())
+                        foreach (var id in topics.Where(kv => kv.Value.Ticker == remTk)
+                                                 .Select(kv => kv.Key).ToList())
                         {
                             try { rtd!.DisconnectData(id); } catch { }
                             topics.Remove(id);
@@ -255,49 +260,43 @@ namespace ProfitRTDBridge
 
                     if (tickers.Count == 0) { Thread.Sleep(500); continue; }
 
-                    // ── Heartbeat ────────────────────────────────────────────
+                    // ── 3. Heartbeat ─────────────────────────────────────────
                     try { rtd!.Heartbeat(); } catch { }
 
-                    // ── Lê dados novos via RefreshData ───────────────────────
+                    // ── 4. Lê dados novos via RefreshData ────────────────────
                     cb!.HasUpdate = false;
-                    int topicCount = 0;
-                    object? rawResult = null;
 
-                    try { rawResult = rtd!.RefreshData(ref topicCount); }
-                    catch (COMException ex)
+                    object? rawRefresh = null;
+                    int topicCount = 0;
+
+                    try
                     {
-                        Log("ERR", $"RefreshData COM: {ex.Message}");
+                        // RefreshData retorna SAFEARRAY 2D via dynamic
+                        rawRefresh = rtd!.RefreshData(ref topicCount);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log("ERR", $"RefreshData: {ex.Message}");
                         rtd = null;
                         Thread.Sleep(2000);
                         continue;
                     }
-                    catch (InvalidCastException ex)
-                    {
-                        Log("WARN", $"RefreshData cast: {ex.Message} — ignorando ciclo");
-                        Thread.Sleep(800);
-                        continue;
-                    }
 
-                    if (rawResult != null && topicCount > 0)
+                    // ── 5. Processa resultado ─────────────────────────────────
+                    if (rawRefresh != null && topicCount > 0)
                     {
                         try
                         {
-                            Array updated;
-                            if (rawResult is Array arr)
-                                updated = arr;
-                            else if (rawResult is object[,] arr2d)
-                                updated = arr2d;
-                            else
-                            {
-                                // Tenta converter via runtime
-                                updated = (Array)rawResult;
-                            }
+                            // O SAFEARRAY do RTD é sempre object[2, N]:
+                            // linha 0 = topicIds, linha 1 = valores
+                            Array arr = (Array)rawRefresh;
+                            int cols = arr.GetLength(1); // N tópicos atualizados
 
-                            int cols = Math.Min(topicCount, updated.GetLength(1));
-                            for (int i = 0; i < cols; i++)
+                            for (int i = 0; i < Math.Min(cols, topicCount); i++)
                             {
-                                int topicId = Convert.ToInt32(updated.GetValue(0, i));
-                                object? value = updated.GetValue(1, i);
+                                int    topicId = Convert.ToInt32(arr.GetValue(0, i));
+                                object? value  = arr.GetValue(1, i);
+
                                 if (topics.TryGetValue(topicId, out RtdTopic? topic))
                                 {
                                     var tc = _cache.GetOrAdd(topic.Ticker, _ => new Dictionary<string, object?>());
@@ -307,11 +306,11 @@ namespace ProfitRTDBridge
                         }
                         catch (Exception ex)
                         {
-                            Log("WARN", $"RefreshData parse: {ex.Message}");
+                            Log("WARN", $"Parse RefreshData: {ex.GetType().Name}: {ex.Message}");
                         }
                     }
 
-                    // ── Envia payload para clientes WS ───────────────────────
+                    // ── 6. Broadcast para clientes WebSocket ─────────────────
                     if (_cache.Count > 0)
                     {
                         var payload = _cache
@@ -327,7 +326,7 @@ namespace ProfitRTDBridge
                         if (payload.Count > 0)
                         {
                             Broadcast(new { type = "rtd_data", data = payload });
-                            Console.Write($"\r[RTD] {DateTime.Now:HH:mm:ss} | {tickers.Count} ticker(s) | {_clients.Count} cliente(s)    ");
+                            Console.Write($"\r[RTD] {DateTime.Now:HH:mm:ss} | {tickers.Count} tickers | {_clients.Count} cliente(s)    ");
                         }
                     }
 
@@ -337,20 +336,56 @@ namespace ProfitRTDBridge
                 catch (Exception ex)
                 {
                     errCount++;
-                    Log("ERR", $"Loop RTD ({errCount}): {ex.Message}");
+                    Log("ERR", $"Loop RTD ({errCount}): {ex.GetType().Name}: {ex.Message}");
                     rtd = null;
-                    Thread.Sleep(errCount > 5 ? 6000 : 2000);
-                    if (errCount > 5) errCount = 0;
+                    Thread.Sleep(errCount > 5 ? 7000 : 2000);
+                    if (errCount > 5) { errCount = 0; }
                 }
             }
 
             // Cleanup
-            try { if (rtd != null) { foreach (var id in topics.Keys) try { rtd.DisconnectData(id); } catch { } rtd.ServerTerminate(); } } catch { }
+            try
+            {
+                if (rtd != null)
+                {
+                    foreach (var id in topics.Keys) try { rtd.DisconnectData(id); } catch { }
+                    rtd.ServerTerminate();
+                }
+            }
+            catch { }
         }
 
-        // ── Localiza o CLSID do RTD do Profit no registro 32-bit ──────────────
-        // Como o processo JÁ é 32-bit, Registry32 e Registry64 apontam para o
-        // mesmo hive, mas deixamos ambos para compatibilidade máxima.
+        // ── Subscreve todos os campos de um ticker ────────────────────────────
+        static void SubscribeTicker(dynamic rtd, RtdCallback cb, string ticker,
+                                    Dictionary<int, RtdTopic> topics, ref int nextId)
+        {
+            int subscribed = 0;
+            foreach (var field in ProfitFields.All)
+            {
+                int id = nextId++;
+                try
+                {
+                    // ConnectData(topicId, topics[], newValues)
+                    // topics[] deve ser SAFEARRAY de strings
+                    object[] topicStrings = { ticker, field };
+                    bool newValues = true;
+
+                    object? val = rtd.ConnectData(id, ref topicStrings, ref newValues);
+                    topics[id] = new RtdTopic(id, ticker, field);
+
+                    var tc = _cache.GetOrAdd(ticker, _ => new Dictionary<string, object?>());
+                    lock (tc) tc[ProfitFields.ToJsonKey(field)] = ParseDouble(val);
+                    subscribed++;
+                }
+                catch (Exception ex)
+                {
+                    Log("WARN", $"ConnectData {ticker}/{field}: {ex.GetType().Name}: {ex.Message}");
+                }
+            }
+            Log("RTD", $"Subscrito: {ticker} ({subscribed}/{ProfitFields.All.Length} campos OK)");
+        }
+
+        // ── Localiza CLSID do RTD no registro 32-bit ─────────────────────────
         static Guid? FindRtdClsid()
         {
             foreach (var progId in RTD_PROGIDS)
@@ -359,10 +394,10 @@ namespace ProfitRTDBridge
                 {
                     try
                     {
-                        using var cr   = RegistryKey.OpenBaseKey(RegistryHive.ClassesRoot, view);
-                        using var key  = cr.OpenSubKey($@"{progId}\CLSID");
-                        string? clsidStr = key?.GetValue(null)?.ToString();
-                        if (!string.IsNullOrEmpty(clsidStr) && Guid.TryParse(clsidStr, out Guid g))
+                        using var cr  = RegistryKey.OpenBaseKey(RegistryHive.ClassesRoot, view);
+                        using var key = cr.OpenSubKey($@"{progId}\CLSID");
+                        string? raw   = key?.GetValue(null)?.ToString();
+                        if (!string.IsNullOrEmpty(raw) && Guid.TryParse(raw, out Guid g))
                         {
                             Log("RTD", $"ProgID resolvido ({view}): {progId} → {g}");
                             return g;
@@ -374,25 +409,23 @@ namespace ProfitRTDBridge
             return null;
         }
 
-        static void SubscribeTicker(IRtdServer rtd, string ticker, Dictionary<int, RtdTopic> topics, ref int nextId)
+        static void LogRtdNotFound()
         {
-            foreach (var field in ProfitFields.All)
+            Log("ERR",
+                "Servidor RTD não encontrado no registro Windows.\n" +
+                "  → Abra o Profit Pro e faça login\n" +
+                "  → No Profit: Ferramentas > Configurações\n" +
+                "               > Exportação em Tempo Real (RTD/DDE) → Habilitar\n" +
+                "  → Feche e reabra o Profit após habilitar\n" +
+                "  → Execute Bridge com o mesmo nível de permissão do Profit");
+            Broadcast(new
             {
-                int id = nextId++;
-                Array strings = new string[] { ticker, field };
-                bool newValues = true;
-                try
-                {
-                    object? val = rtd.ConnectData(id, ref strings, ref newValues);
-                    topics[id] = new RtdTopic(id, ticker, field);
-                    var tc = _cache.GetOrAdd(ticker, _ => new Dictionary<string, object?>());
-                    lock (tc) tc[ProfitFields.ToJsonKey(field)] = ParseDouble(val);
-                }
-                catch (Exception ex) { Log("WARN", $"ConnectData {ticker}/{field}: {ex.Message}"); }
-            }
-            Log("RTD", $"Subscrito: {ticker} ({ProfitFields.All.Length} campos)");
+                type = "error",
+                message = "RTD do Profit não encontrado. Habilite em Ferramentas > Configurações > RTD/DDE, reinicie o Profit e tente novamente."
+            });
         }
 
+        // ── Helpers ───────────────────────────────────────────────────────────
         static void SendSnapshot(IWebSocketConnection socket)
         {
             var payload = _cache.Select(kv =>
@@ -417,6 +450,7 @@ namespace ProfitRTDBridge
         {
             if (v == null) return null;
             string s = v.ToString()?.Trim() ?? "";
+            if (string.IsNullOrEmpty(s)) return null;
             if (double.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out double d1)) return d1;
             if (double.TryParse(s, NumberStyles.Any, new CultureInfo("pt-BR"), out double d2)) return d2;
             return null;
@@ -442,14 +476,14 @@ namespace ProfitRTDBridge
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine(@"
 ╔══════════════════════════════════════════════════╗
-║   ProfitRTD Bridge v2.2  —  32-bit  —  sem Excel ║
-║   Profit Pro (x86) → COM IDispatch → WebSocket    ║
+║  ProfitRTD Bridge v3.0 — 32-bit — dynamic COM   ║
+║  Profit Pro → IDispatch late binding → WebSocket ║
 ╚══════════════════════════════════════════════════╝");
             Console.ResetColor();
-            Console.WriteLine($"  Plataforma : x86 (32-bit) — compatível com Profit Pro");
+            Console.WriteLine($"  Plataforma : win-x86 (32-bit)");
             Console.WriteLine($"  WebSocket  : ws://localhost:{port}");
-            Console.WriteLine($"  RTD ProgID : {string.Join(" | ", RTD_PROGIDS)}");
-            Console.WriteLine($"  COM Type   : IDispatch (corrigido v2.2)");
+            Console.WriteLine($"  Modo COM   : dynamic late binding (sem cast de interface)");
+            Console.WriteLine($"  ProgIDs    : {string.Join(" | ", RTD_PROGIDS)}");
             Console.WriteLine($"  Ctrl+C para encerrar\n");
         }
     }
