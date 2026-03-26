@@ -1,7 +1,8 @@
 /*
- * ProfitRTDBridge.cs  v3.0
+ * ProfitRTDBridge.cs  v3.1
  * ═══════════════════════════════════════════════════════════════════════════
  * CORREÇÃO v3.0: Late binding via "dynamic" — sem cast de interface COM
+ * CORREÇÃO v3.1: callback COM com IID real de IRTDUpdateEvent (ServerStart)
  *
  * HISTÓRICO DE ERROS E CORREÇÕES:
  *   v2.0 — REGDB_E_CLASSNOTREG (0x80040154)
@@ -41,12 +42,29 @@ using Newtonsoft.Json;
 
 namespace ProfitRTDBridge
 {
-    // ── Callback implementado como classe COM visível via IDispatch ──────────
-    // NÃO usamos ComImport nem cast de interface — apenas ComVisible para que
-    // o Profit consiga chamar UpdateNotify() de volta.
+    // ── Callback COM com IID oficial do Excel RTD ─────────────────────────────
+    // O Profit/RTD pode validar o IID esperado em ServerStart(IRTDUpdateEvent).
+    // Por isso expomos explicitamente a interface com GUID oficial.
     [ComVisible(true)]
-    [ClassInterface(ClassInterfaceType.AutoDual)]
-    public class RtdCallback
+    [Guid("A43788C1-D91B-11D3-8F39-00C04F3651B8")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
+    public interface IRTDUpdateEvent
+    {
+        [DispId(10)]
+        void UpdateNotify();
+
+        [DispId(11)]
+        int HeartbeatInterval { get; set; }
+
+        [DispId(12)]
+        void Disconnect();
+    }
+
+    [ComVisible(true)]
+    [Guid("B5C5A2A7-3D6F-4F73-A4A4-CC1B204BFD22")]
+    [ClassInterface(ClassInterfaceType.None)]
+    [ComDefaultInterface(typeof(IRTDUpdateEvent))]
+    public class RtdCallback : IRTDUpdateEvent
     {
         public volatile bool HasUpdate = false;
 
@@ -54,11 +72,7 @@ namespace ProfitRTDBridge
         public void UpdateNotify() => HasUpdate = true;
 
         // Intervalo de heartbeat em milissegundos
-        public int HeartbeatInterval
-        {
-            get => 30000;
-            set { /* ignorado */ }
-        }
+        public int HeartbeatInterval { get; set; } = 30000;
 
         // Chamado quando o servidor encerra
         public void Disconnect() { }
@@ -103,7 +117,7 @@ namespace ProfitRTDBridge
             for (int i = 0; i < args.Length - 1; i++)
                 if (args[i] == "--port") int.TryParse(args[i + 1], out port);
 
-            Console.Title = "ProfitRTD Bridge v3.0";
+            Console.Title = "ProfitRTD Bridge v3.1";
             PrintBanner(port);
 
             // WebSocket server (thread-safe, não-STA)
@@ -207,22 +221,32 @@ namespace ProfitRTDBridge
                         rtd = rawInstance;
                         cb  = new RtdCallback();
 
-                        // ServerStart via dynamic — chama pelo nome do método (IDispatch)
+                        // ServerStart via dynamic — passando callback com IID correto
                         int startResult;
                         try
                         {
-                            startResult = (int)rtd.ServerStart(cb);
+                            startResult = Convert.ToInt32(rtd.ServerStart((IRTDUpdateEvent)cb));
                         }
-                        catch (Exception ex)
+                        catch (Exception exTyped)
                         {
-                            Log("ERR", $"ServerStart falhou: {ex.Message}\n" +
-                                "  → Execute Profit e Bridge com o MESMO nível de permissão\n" +
-                                "    (ambos Admin, ou ambos usuário normal)\n" +
-                                "  → Habilite RTD/DDE em Ferramentas > Configurações no Profit");
+                            try
+                            {
+                                startResult = Convert.ToInt32(rtd.ServerStart((object)cb));
+                                Log("WARN", "ServerStart com callback tipado falhou; fallback object aplicado.");
+                            }
+                            catch (Exception exObj)
+                            {
+                                Log("ERR", $"ServerStart falhou: {exObj.Message}\n" +
+                                    $"  → Detalhe callback tipado: {exTyped.Message}\n" +
+                                    "  → Execute Profit e Bridge com o MESMO nível de permissão\n" +
+                                    "    (ambos Admin, ou ambos usuário normal)\n" +
+                                    "  → No Profit: Exportar em Tempo Real (RTD/DDE)\n" +
+                                    "    selecione RTD, marque 'Ativar transferência de dados' e clique OK");
                             Broadcast(new { type = "error", message = "Falha em ServerStart. Execute Profit e Bridge com o mesmo nível de permissão (ambos Admin ou ambos Normal)." });
                             rtd = null;
                             Thread.Sleep(6000);
                             continue;
+                            }
                         }
 
                         if (startResult != 1)
@@ -414,14 +438,14 @@ namespace ProfitRTDBridge
             Log("ERR",
                 "Servidor RTD não encontrado no registro Windows.\n" +
                 "  → Abra o Profit Pro e faça login\n" +
-                "  → No Profit: Ferramentas > Configurações\n" +
-                "               > Exportação em Tempo Real (RTD/DDE) → Habilitar\n" +
-                "  → Feche e reabra o Profit após habilitar\n" +
+                "  → No Profit: Exportar em Tempo Real (RTD/DDE)\n" +
+                "               > Selecione RTD + marque 'Ativar transferência de dados'\n" +
+                "               > Clique OK (ou Copiar) e feche/abra o Profit\n" +
                 "  → Execute Bridge com o mesmo nível de permissão do Profit");
             Broadcast(new
             {
                 type = "error",
-                message = "RTD do Profit não encontrado. Habilite em Ferramentas > Configurações > RTD/DDE, reinicie o Profit e tente novamente."
+                message = "RTD do Profit não encontrado. No Profit, abra Exportar em Tempo Real (RTD/DDE), selecione RTD e ative transferência de dados; depois reinicie o Profit."
             });
         }
 
@@ -476,7 +500,7 @@ namespace ProfitRTDBridge
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine(@"
 ╔══════════════════════════════════════════════════╗
-║  ProfitRTD Bridge v3.0 — 32-bit — dynamic COM   ║
+║  ProfitRTD Bridge v3.1 — 32-bit — dynamic COM   ║
 ║  Profit Pro → IDispatch late binding → WebSocket ║
 ╚══════════════════════════════════════════════════╝");
             Console.ResetColor();
