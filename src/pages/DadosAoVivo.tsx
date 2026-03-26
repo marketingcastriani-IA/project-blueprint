@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Leg, PayoffPoint, AnalysisMetrics } from '@/lib/types';
-import { calculatePayoffAtExpiry, calculatePayoffData, calculateMetrics } from '@/lib/payoff';
+import { calculatePayoffAtExpiry, calculatePayoffToday, calculateMetrics } from '@/lib/payoff';
 import { cn } from '@/lib/utils';
 import { Radio, Plus, Trash2, ClipboardPaste, ArrowRight, Info, Zap, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
