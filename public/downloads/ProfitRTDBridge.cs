@@ -1,8 +1,8 @@
 /*
- * ProfitRTDBridge.cs  v3.1
+ * ProfitRTDBridge.cs  v3.2
  * ═══════════════════════════════════════════════════════════════════════════
- * CORREÇÃO v3.0: Late binding via "dynamic" — sem cast de interface COM
- * CORREÇÃO v3.1: callback COM com IID real de IRTDUpdateEvent (ServerStart)
+ * CORREÇÃO v3.2: ParseDouble extrai valor numérico direto do COM Variant,
+ *                evitando corrupção de locale (vírgula/ponto) via ToString()
  *
  * HISTÓRICO DE ERROS E CORREÇÕES:
  *   v2.0 — REGDB_E_CLASSNOTREG (0x80040154)
@@ -117,7 +117,7 @@ namespace ProfitRTDBridge
             for (int i = 0; i < args.Length - 1; i++)
                 if (args[i] == "--port") int.TryParse(args[i + 1], out port);
 
-            Console.Title = "ProfitRTD Bridge v3.1";
+            Console.Title = "ProfitRTD Bridge v3.2";
             PrintBanner(port);
 
             // WebSocket server (thread-safe, não-STA)
@@ -472,11 +472,29 @@ namespace ProfitRTDBridge
 
         static double? ParseDouble(object? v)
         {
-            if (v == null) return null;
+            if (v == null || v is DBNull) return null;
+
+            // ── Se o COM já retornou um tipo numérico, converte direto ──
+            // Isso evita problemas de locale (vírgula vs ponto) ao chamar ToString()
+            if (v is double dv) return dv;
+            if (v is float fv)  return fv;
+            if (v is decimal mv) return (double)mv;
+            if (v is int iv)    return iv;
+            if (v is long lv)   return lv;
+            if (v is short sv)  return sv;
+            if (v is byte bv)   return bv;
+            if (v is uint uv)   return uv;
+            if (v is ulong ulv) return ulv;
+
+            // ── Fallback: string → parse com pt-BR primeiro (Profit é brasileiro) ──
             string s = v.ToString()?.Trim() ?? "";
             if (string.IsNullOrEmpty(s)) return null;
-            if (double.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out double d1)) return d1;
+
+            // Tenta pt-BR primeiro (vírgula = decimal, ponto = milhar)
             if (double.TryParse(s, NumberStyles.Any, new CultureInfo("pt-BR"), out double d2)) return d2;
+            // Fallback InvariantCulture (ponto = decimal)
+            if (double.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out double d1)) return d1;
+
             return null;
         }
 
@@ -500,7 +518,7 @@ namespace ProfitRTDBridge
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine(@"
 ╔══════════════════════════════════════════════════╗
-║  ProfitRTD Bridge v3.1 — 32-bit — dynamic COM   ║
+║  ProfitRTD Bridge v3.2 — 32-bit — dynamic COM   ║
 ║  Profit Pro → IDispatch late binding → WebSocket ║
 ╚══════════════════════════════════════════════════╝");
             Console.ResetColor();
