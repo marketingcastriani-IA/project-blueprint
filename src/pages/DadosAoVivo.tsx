@@ -229,6 +229,9 @@ export default function DadosAoVivo() {
   const [showNameDialog, setShowNameDialog] = useState(false);
   const [pendingSaveName, setPendingSaveName] = useState("");
 
+  // Track which tickers were manually added by user (vs auto-subscribed from operations)
+  const [manualTickers, setManualTickers] = useState<Set<string>>(new Set());
+
   // Open operations state
   const [openOps, setOpenOps] = useState<any[]>([]);
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
@@ -237,6 +240,8 @@ export default function DadosAoVivo() {
   const cfg = statusConfig[status];
   const StatusIcon = cfg.icon;
   const rowsArr = Array.from(rows.values());
+  // Only show manually added tickers in the table
+  const manualRowsArr = rowsArr.filter(r => manualTickers.has(r.ticker));
 
   // Fetch open operations
   useEffect(() => {
