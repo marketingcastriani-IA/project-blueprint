@@ -218,6 +218,7 @@ export default function DadosAoVivo() {
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const accessControl = useAccessControl();
   const { status, rows, errorMsg, reconnectCount, connect, addTicker, removeTicker, updateRow } = useRtdBridge();
 
   const [newTicker, setNewTicker] = useState("");
