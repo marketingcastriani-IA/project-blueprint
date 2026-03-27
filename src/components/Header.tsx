@@ -32,7 +32,7 @@ export default function Header() {
   const isFree = access.planType === 'free';
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/60 bg-card/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-primary/30 bg-primary shadow-lg">
       <div className="container flex h-14 items-center justify-between">
         <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 font-bold text-lg shrink-0">
           <img src="/assets/logo.png" alt="Opções PRO X" className="h-8 w-8 object-contain" />
