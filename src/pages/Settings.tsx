@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Lock, Mail, LogOut, Shield, CheckCircle2, Crown, CreditCard, Sparkles, Zap, Camera, Bot, History, Briefcase, MessageSquare, ExternalLink } from 'lucide-react';
+import { Loader2, Lock, Mail, LogOut, Shield, CheckCircle2, Crown, CreditCard, Sparkles, Zap, Camera, Bot, History, Briefcase, MessageSquare, ExternalLink, Radio } from 'lucide-react';
 import { useAccessControl } from '@/hooks/useAccessControl';
 
 export default function Settings() {
@@ -115,6 +115,7 @@ export default function Settings() {
     { icon: Bot, title: "Análise Profunda com IA", desc: "Relatórios quantitativos e vereditos profissionais." },
     { icon: Briefcase, title: "Portfólio e P&L", desc: "Acompanhe o lucro real de todas as suas operações." },
     { icon: History, title: "Histórico Completo", desc: "Salve e revise suas estratégias a qualquer momento." },
+    { icon: Radio, title: "Estrutura em Tempo Real", desc: "Conexão direta ao Profit RTD — acompanhe preços ao vivo." },
     { icon: Shield, title: "Suporte Prioritário", desc: "Atendimento exclusivo para assinantes PRO." },
   ];
 
@@ -173,48 +174,36 @@ export default function Settings() {
         </Card>
 
         <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
-          <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-2 border-primary/30 bg-card">
-            <div className="bg-primary p-8 text-primary-foreground relative">
-              <div className="absolute top-0 right-0 p-4 opacity-20"><Crown className="h-20 w-20" /></div>
-              <DialogHeader>
-                <DialogTitle className="text-3xl font-black tracking-tighter mb-2 text-primary-foreground">TORNE-SE PRO X</DialogTitle>
-                <DialogDescription className="text-primary-foreground/90 font-bold text-base">
-                  A ferramenta definitiva para quem opera opções na B3.
+          <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-2 border-[hsl(190,90%,50%)]/30 bg-[hsl(222,47%,11%)] shadow-[0_0_40px_hsl(190,90%,50%,0.15)]">
+            <div className="flex flex-col items-center pt-8 pb-4 px-6">
+              <Crown className="h-12 w-12 text-[hsl(190,90%,50%)] mb-4" />
+              <DialogHeader className="text-center">
+                <DialogTitle className="text-2xl font-black tracking-tight text-white">
+                  {access.trialExpired ? 'Renovar Plano PRO' : 'TORNE-SE PRO X'}
+                </DialogTitle>
+                <DialogDescription className="text-[hsl(190,90%,50%)] font-black text-3xl tracking-tighter mt-2">
+                  R$ {proPrice.toFixed(2).replace('.', ',')}<span className="text-base font-medium text-[hsl(220,15%,60%)]">/mês</span>
                 </DialogDescription>
               </DialogHeader>
             </div>
-            <div className="p-6 space-y-6">
-              <div className="grid gap-4">
+            <div className="px-6 pb-6 space-y-5">
+              <div className="space-y-3">
                 {proFeatures.map((f, i) => (
-                  <div key={i} className="flex items-start gap-4">
-                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                      <f.icon className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-black text-sm uppercase tracking-tight">{f.title}</p>
-                      <p className="text-xs text-muted-foreground font-medium">{f.desc}</p>
-                    </div>
+                  <div key={i} className="flex items-center gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-[hsl(190,90%,50%)] shrink-0" />
+                    <span className="text-sm font-bold text-[hsl(220,15%,85%)]">{f.title}</span>
                   </div>
                 ))}
               </div>
               
-              <div className="pt-4 border-t border-border/50">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <p className="text-[10px] font-black uppercase text-muted-foreground">Investimento Mensal</p>
-                    <p className="text-3xl font-black text-primary tracking-tighter">R$ {proPrice.toFixed(2)}<span className="text-sm text-muted-foreground font-medium">/mês</span></p>
-                  </div>
-                  <Badge className="bg-success text-success-foreground font-black px-4 py-1">MELHOR VALOR</Badge>
-                </div>
-                <Button 
-                  onClick={handleUpgrade} 
-                  disabled={upgrading} 
-                  className="w-full h-14 text-lg font-black shadow-lg"
-                >
-                  {upgrading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <CreditCard className="mr-2 h-6 w-6" />}
-                  ASSINAR AGORA
-                </Button>
-              </div>
+              <Button 
+                onClick={handleUpgrade} 
+                disabled={upgrading} 
+                className="w-full h-14 text-lg font-black bg-[hsl(190,90%,50%)] hover:bg-[hsl(190,90%,45%)] text-[hsl(222,47%,11%)] shadow-[0_0_20px_hsl(190,90%,50%,0.4)] rounded-xl"
+              >
+                {upgrading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <Crown className="mr-2 h-6 w-6" />}
+                Assinar Agora
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
