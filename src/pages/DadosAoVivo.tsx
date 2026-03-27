@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { format } from "date-fns";
 import {
   Radio, Plus, Trash2, Wifi, WifiOff, RefreshCw,
   TrendingUp, TrendingDown, Activity, AlertTriangle, CheckCircle2,
-  Terminal, Download, ExternalLink, Info
+  Terminal, Download, ExternalLink, Info, Save, CalendarIcon, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,12 +15,18 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import PayoffChart from "@/components/PayoffChart";
 import MetricsCards from "@/components/MetricsCards";
 import { Leg, PayoffPoint } from "@/lib/types";
 import { calculatePayoffAtExpiry, calculatePayoffToday, calculateMetrics } from "@/lib/payoff";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -33,12 +40,14 @@ interface RtdRow {
   negocios: number | null;
   ofCompra: number | null;
   ofVenda: number | null;
-  vInt: number | null;
-  vExt: number | null;
   tipo: "call" | "put" | "stock";
   lado: "buy" | "sell";
   selecionado: boolean;
   lastUpdate: number | null;
+  // User-editable fields
+  precoEntrada: number | null;
+  quantidade: number;
+  expiryDate?: string; // YYYY-MM-DD
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -116,12 +125,13 @@ function useRtdBridge() {
                 negocios: item.negocios ?? null,
                 ofCompra: item.ofCompra ?? null,
                 ofVenda: item.ofVenda ?? null,
-                vInt: item.vInt ?? null,
-                vExt: item.vExt ?? null,
                 tipo: existing?.tipo ?? "call",
                 lado: existing?.lado ?? "buy",
                 selecionado: existing?.selecionado ?? false,
                 lastUpdate: item.timestamp ?? Date.now(),
+                precoEntrada: existing?.precoEntrada ?? null,
+                quantidade: existing?.quantidade ?? 1,
+                expiryDate: existing?.expiryDate,
               });
             }
             return next;
@@ -155,11 +165,11 @@ function useRtdBridge() {
     setRows((prev) => { const n = new Map(prev); n.delete(ticker); return n; });
   };
 
-  const updateRow = (ticker: string, field: "tipo" | "lado" | "selecionado", value: unknown) => {
+  const updateRow = (ticker: string, updates: Partial<RtdRow>) => {
     setRows((prev) => {
       const next = new Map(prev);
       const row = next.get(ticker);
-      if (row) next.set(ticker, { ...row, [field]: value });
+      if (row) next.set(ticker, { ...row, ...updates });
       return next;
     });
   };
@@ -167,13 +177,52 @@ function useRtdBridge() {
   return { status, rows, errorMsg, reconnectCount, connect, addTicker, removeTicker, updateRow };
 }
 
+// ─── Date Picker ─────────────────────────────────────────────────────────────
+
+function InlineDatePicker({ date, onChange }: { date?: Date; onChange: (date?: Date) => void }) {
+  const [open, setOpen] = useState(false);
+  const isEmpty = !date;
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            "h-7 w-full justify-center text-[10px] px-1.5",
+            isEmpty
+              ? "border border-muted-foreground/30 text-muted-foreground"
+              : "border-success/50 text-success font-bold bg-success/10",
+          )}
+        >
+          <CalendarIcon className={cn("mr-0.5 h-3 w-3", isEmpty ? "text-muted-foreground" : "text-success")} />
+          {date ? format(date, "dd/MM/yy") : "Venc."}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={(d) => { onChange(d); setOpen(false); }}
+          initialFocus
+          className="p-3 pointer-events-auto"
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function DadosAoVivo() {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const { status, rows, errorMsg, reconnectCount, connect, addTicker, removeTicker, updateRow } = useRtdBridge();
 
   const [newTicker, setNewTicker] = useState("");
+  const [analysisName, setAnalysisName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
 
   const cfg = statusConfig[status];
   const StatusIcon = cfg.icon;
@@ -191,20 +240,21 @@ export default function DadosAoVivo() {
 
   const toggleSelect = (ticker: string) => {
     const row = rows.get(ticker);
-    if (row) updateRow(ticker, "selecionado", !row.selecionado);
+    if (row) updateRow(ticker, { selecionado: !row.selecionado });
   };
 
-  // Convert selected rows to Leg[] for payoff
+  // Convert selected rows to Leg[] for payoff — using precoEntrada when available
   const legs: Leg[] = useMemo(() => {
     return rowsArr
-      .filter(r => r.selecionado && (r.ultimo || r.strike))
+      .filter(r => r.selecionado && (r.ultimo || r.strike || r.precoEntrada))
       .map(r => ({
         side: r.lado,
         option_type: r.tipo,
         asset: r.ticker,
         strike: r.tipo === 'stock' ? 0 : (r.strike ?? 0),
-        price: r.ultimo ?? r.ofCompra ?? r.ofVenda ?? 0,
-        quantity: 1,
+        price: r.precoEntrada ?? r.ultimo ?? r.ofCompra ?? r.ofVenda ?? 0,
+        quantity: r.quantidade,
+        expiry_date: r.expiryDate,
       }));
   }, [rowsArr]);
 
@@ -233,6 +283,53 @@ export default function DadosAoVivo() {
     }
     return { payoffData: data, metrics: m };
   }, [legs]);
+
+  // Save analysis
+  const saveAnalysis = async () => {
+    if (!user) {
+      toast({ title: "Faça login para salvar", variant: "destructive" });
+      return;
+    }
+    if (legs.length === 0) {
+      toast({ title: "Selecione ao menos uma perna", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    try {
+      const name = analysisName || `Estrutura Tempo Real ${new Date().toLocaleDateString('pt-BR')}`;
+      
+      // Find earliest expiry
+      const expiryDates = legs.filter(l => l.expiry_date).map(l => l.expiry_date!).sort();
+      const expiryDate = expiryDates[0] || null;
+
+      const { data: analysis, error: aError } = await supabase
+        .from('analyses').insert({
+          user_id: user.id,
+          name,
+          underlying_asset: legs[0]?.asset || null,
+          expiry_date: expiryDate,
+        }).select().single();
+      if (aError) throw aError;
+
+      const legsToInsert = legs.map(l => ({
+        analysis_id: analysis.id,
+        side: l.side,
+        option_type: l.option_type,
+        asset: l.asset,
+        strike: l.strike,
+        price: l.price,
+        quantity: l.quantity,
+        expiry_date: l.expiry_date || null,
+      }));
+      await supabase.from('legs').insert(legsToInsert);
+
+      setShowSaveDialog(true);
+    } catch (err: any) {
+      toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -311,7 +408,7 @@ export default function DadosAoVivo() {
               <div className="p-3 rounded bg-info/10 border border-info/20 text-xs text-info flex items-start gap-2">
                 <Info className="w-3 h-3 shrink-0 mt-0.5" />
                 <span>
-                   O bridge v2.0 acessa o RTD do Profit <strong>diretamente via COM — sem precisar de Excel</strong>. Roda{' '}
+                   O bridge v3.2 acessa o RTD do Profit <strong>diretamente via COM — sem precisar de Excel</strong>. Roda{' '}
                    <strong>localmente na sua máquina</strong> e transmite via WebSocket. <strong>Nenhum dado sai da sua rede local.</strong>
                  </span>
               </div>
@@ -356,19 +453,28 @@ export default function DadosAoVivo() {
                 Cotações em Tempo Real
                 <Badge variant="secondary">{rowsArr.length}</Badge>
               </CardTitle>
-              <Button
-                onClick={() => {
-                  const selected = rowsArr.filter(r => r.selecionado);
-                  if (selected.length === 0) {
-                    toast({ title: "Selecione ao menos uma linha", variant: "destructive" });
-                  }
-                }}
-                disabled={!rowsArr.some((r) => r.selecionado)}
-                className="gap-2"
-              >
-                <TrendingUp className="w-4 h-4" />
-                {legs.length > 0 ? `${legs.length} perna(s) no Payoff` : 'Selecione para Payoff'}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => {
+                    const selected = rowsArr.filter(r => r.selecionado);
+                    if (selected.length === 0) {
+                      toast({ title: "Selecione ao menos uma linha", variant: "destructive" });
+                    }
+                  }}
+                  disabled={!rowsArr.some((r) => r.selecionado)}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  {legs.length > 0 ? `${legs.length} perna(s) no Payoff` : 'Selecione para Payoff'}
+                </Button>
+                {legs.length > 0 && (
+                  <Button onClick={saveAnalysis} disabled={saving} className="gap-2">
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Salvar Análise
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
@@ -384,14 +490,16 @@ export default function DadosAoVivo() {
                       <TableHead className="text-right">Negócios</TableHead>
                       <TableHead className="text-right">Of. Compra</TableHead>
                       <TableHead className="text-right">Of. Venda</TableHead>
-                      <TableHead className="text-right">V. Intrínseco</TableHead>
-                      <TableHead className="text-right">V. Extrínseco</TableHead>
+                      <TableHead className="text-right">Preço Entrada</TableHead>
+                      <TableHead className="text-right">Qtd</TableHead>
+                      <TableHead className="text-center">Vencimento</TableHead>
                       <TableHead className="w-8"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {rowsArr.map((row) => {
                       const isStale = row.lastUpdate ? (Date.now() - row.lastUpdate) > 5000 : false;
+                      const expiryDateObj = row.expiryDate ? new Date(row.expiryDate + 'T12:00:00') : undefined;
                       return (
                         <TableRow
                           key={row.ticker}
@@ -418,7 +526,7 @@ export default function DadosAoVivo() {
                             </div>
                           </TableCell>
                           <TableCell onClick={(e) => e.stopPropagation()}>
-                            <Select value={row.tipo} onValueChange={(v) => updateRow(row.ticker, "tipo", v)}>
+                            <Select value={row.tipo} onValueChange={(v) => updateRow(row.ticker, { tipo: v as any })}>
                               <SelectTrigger className="h-7 w-20 text-xs"><SelectValue /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="call">Call</SelectItem>
@@ -428,7 +536,7 @@ export default function DadosAoVivo() {
                             </Select>
                           </TableCell>
                           <TableCell onClick={(e) => e.stopPropagation()}>
-                            <Select value={row.lado} onValueChange={(v) => updateRow(row.ticker, "lado", v)}>
+                            <Select value={row.lado} onValueChange={(v) => updateRow(row.ticker, { lado: v as any })}>
                               <SelectTrigger className="h-7 w-28 text-xs"><SelectValue /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="buy">
@@ -445,8 +553,40 @@ export default function DadosAoVivo() {
                           <TableCell className="text-right font-mono">{fmt(row.negocios, 0)}</TableCell>
                           <TableCell className="text-right font-mono">{fmt(row.ofCompra)}</TableCell>
                           <TableCell className="text-right font-mono">{fmt(row.ofVenda)}</TableCell>
-                          <TableCell className="text-right font-mono">{fmt(row.vInt)}</TableCell>
-                          <TableCell className="text-right font-mono">{fmt(row.vExt)}</TableCell>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={row.precoEntrada ?? ""}
+                              onChange={(e) => updateRow(row.ticker, { precoEntrada: parseFloat(e.target.value) || null })}
+                              placeholder={fmt(row.ultimo)}
+                              className="h-7 w-24 text-right text-xs font-bold border-primary/30 bg-primary/5"
+                            />
+                          </TableCell>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <Input
+                              type="number"
+                              min={1}
+                              value={row.quantidade}
+                              onChange={(e) => updateRow(row.ticker, { quantidade: parseInt(e.target.value) || 1 })}
+                              className="h-7 w-16 text-right text-xs font-semibold"
+                            />
+                          </TableCell>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            {row.tipo !== 'stock' ? (
+                              <InlineDatePicker
+                                date={expiryDateObj}
+                                onChange={(d) => {
+                                  const expiryDate = d
+                                    ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+                                    : undefined;
+                                  updateRow(row.ticker, { expiryDate });
+                                }}
+                              />
+                            ) : (
+                              <span className="text-xs text-muted-foreground text-center block">—</span>
+                            )}
+                          </TableCell>
                           <TableCell onClick={(e) => e.stopPropagation()}>
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
                               onClick={() => removeTicker(row.ticker)}>
@@ -498,6 +638,29 @@ export default function DadosAoVivo() {
             <p className="text-sm">Bridge conectado! Adicione tickers para monitorar.</p>
           </div>
         )}
+
+        {/* Save success dialog */}
+        <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-success" />
+                Análise Salva!
+              </DialogTitle>
+              <DialogDescription>
+                Sua estrutura foi salva com sucesso em Operações em Aberto.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setShowSaveDialog(false)}>
+                Continuar Monitorando
+              </Button>
+              <Button onClick={() => navigate('/history')}>
+                Ver Operações em Aberto
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
