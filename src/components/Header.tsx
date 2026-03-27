@@ -72,7 +72,7 @@ export default function Header() {
           {isFree && (
             <Button 
               onClick={() => navigate('/settings')}
-              className="hidden sm:flex h-9 px-4 bg-warning hover:bg-warning/90 text-warning-foreground font-black text-[10px] uppercase tracking-widest animate-pulse shadow-[0_0_15px_-3px_hsl(var(--warning)/0.6)] border-b-2 border-black/20"
+              className="hidden sm:flex h-9 px-4 bg-yellow-400 hover:bg-yellow-300 text-black font-black text-[10px] uppercase tracking-widest animate-pulse shadow-[0_0_15px_rgba(250,204,21,0.6)] border-b-2 border-black/20"
             >
               <Zap className="h-3 w-3 mr-1.5 fill-current" /> ASSINE PRO
             </Button>
