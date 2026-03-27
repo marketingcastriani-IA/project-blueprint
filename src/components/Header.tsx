@@ -117,12 +117,12 @@ export default function Header() {
       </div>
 
       {mobileOpen && (
-        <div className="md:hidden border-t border-border/40 bg-card/95 backdrop-blur-md animate-fade-in">
+        <div className="md:hidden border-t border-primary-foreground/10 bg-primary/95 backdrop-blur-md animate-fade-in">
           <nav className="container py-2 space-y-1">
             {isFree && (
               <button
                 onClick={() => { navigate('/settings'); setMobileOpen(false); }}
-                className="flex items-center justify-center gap-2 w-full px-4 py-2.5 mb-1 rounded-lg bg-warning text-warning-foreground font-black text-xs animate-pulse"
+                className="flex items-center justify-center gap-2 w-full px-4 py-2.5 mb-1 rounded-lg bg-yellow-400 text-black font-black text-xs animate-pulse"
               >
                 <Zap className="h-4 w-4 fill-current" /> ASSINE PRO AGORA
               </button>
@@ -137,10 +137,10 @@ export default function Header() {
                     onClick={() => { navigate(item.path); setMobileOpen(false); }}
                     className={cn(
                       'flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all',
-                      isRealtime && !isActive && 'text-warning animate-pulse border border-warning/30 bg-warning/5',
-                      isRealtime && isActive && 'bg-warning/20 text-warning border border-warning/40',
-                      !isRealtime && isActive && 'bg-primary/15 text-primary border border-primary/30',
-                      !isRealtime && !isActive && 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                      isRealtime && 'text-red-100 bg-red-600 animate-pulse',
+                      isRealtime && isActive && 'ring-2 ring-red-300',
+                      !isRealtime && isActive && 'bg-primary-foreground/20 text-primary-foreground',
+                      !isRealtime && !isActive && 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
                     )}
                   >
                     <item.icon className={cn("h-3.5 w-3.5", isRealtime && "animate-pulse")} />
@@ -150,9 +150,9 @@ export default function Header() {
               })}
             </div>
             {/* Theme selector mobile */}
-            <div className="flex items-center gap-1 pt-2 mt-1 border-t border-border/30">
-              <Palette className="h-3 w-3 text-muted-foreground ml-1" />
-              <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground mr-1">Tema:</span>
+            <div className="flex items-center gap-1 pt-2 mt-1 border-t border-primary-foreground/10">
+              <Palette className="h-3 w-3 text-primary-foreground/60 ml-1" />
+              <span className="text-[9px] font-semibold uppercase tracking-widest text-primary-foreground/60 mr-1">Tema:</span>
               {([
                 { key: 'light' as const, label: 'Branco', icon: Sun },
                 { key: 'dark' as const, label: 'Dark', icon: Moon },
@@ -164,8 +164,8 @@ export default function Header() {
                   className={cn(
                     'flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-semibold transition-all',
                     theme === item.key
-                      ? 'bg-primary/15 text-primary ring-1 ring-primary/30'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      ? 'bg-primary-foreground/20 text-primary-foreground ring-1 ring-primary-foreground/30'
+                      : 'text-primary-foreground/60 hover:bg-primary-foreground/10 hover:text-primary-foreground'
                   )}
                 >
                   <item.icon className="h-3 w-3" />
