@@ -730,6 +730,19 @@ export default function Dashboard() {
               {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
               Salvar
             </Button>
+            <Button
+              onClick={() => generateAnalysisPdf(
+                analysisName || 'Análise',
+                legs,
+                metrics,
+                { cdiRate, daysToExpiry, aiSuggestion: aiAnalysis ? JSON.stringify(aiAnalysis) : undefined }
+              )}
+              variant="outline"
+              className="font-black text-base h-12 px-6 border-primary/30 text-primary"
+            >
+              <Download className="mr-2 h-5 w-5" />
+              PDF
+            </Button>
           </div>
         </div>
       )}
