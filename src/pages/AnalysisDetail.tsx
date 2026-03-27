@@ -177,6 +177,10 @@ export default function AnalysisDetail() {
     fetchData();
   }, [user, id]);
 
+  // Live RTD prices
+  const legTickers = useMemo(() => [...new Set(dbLegs.map(l => l.asset))], [dbLegs]);
+  const { prices: livePrices, connected: rtdConnected } = useLivePrices(legTickers);
+
   const legs: Leg[] = useMemo(() => dbLegs.map(l => ({
     id: l.id, side: l.side as 'buy' | 'sell', option_type: l.option_type as 'call' | 'put' | 'stock',
     asset: l.asset, strike: l.strike, price: l.price, quantity: l.quantity,
