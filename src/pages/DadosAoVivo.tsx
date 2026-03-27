@@ -923,7 +923,7 @@ export default function DadosAoVivo() {
         )}
 
         {/* Empty connected state */}
-        {rowsArr.length === 0 && status === "connected" && openOps.length === 0 && (
+        {manualRowsArr.length === 0 && status === "connected" && openOps.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground space-y-3">
             <Wifi className="w-12 h-12 opacity-20" />
             <p className="text-sm">Bridge conectado! Adicione tickers para monitorar.</p>
