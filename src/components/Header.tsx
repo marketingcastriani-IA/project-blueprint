@@ -130,16 +130,20 @@ export default function Header() {
             <div className="grid grid-cols-2 gap-1">
               {navItems.map(item => {
                 const isActive = location.pathname === item.path;
+                const isRealtime = item.path === '/dados-ao-vivo';
                 return (
                   <button
                     key={item.path}
                     onClick={() => { navigate(item.path); setMobileOpen(false); }}
                     className={cn(
-                      'flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-xs font-medium transition-all',
-                      isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                      'flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all',
+                      isRealtime && !isActive && 'text-warning animate-pulse border border-warning/30 bg-warning/5',
+                      isRealtime && isActive && 'bg-warning/20 text-warning border border-warning/40',
+                      !isRealtime && isActive && 'bg-primary/15 text-primary border border-primary/30',
+                      !isRealtime && !isActive && 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                     )}
                   >
-                    <item.icon className="h-3.5 w-3.5" />
+                    <item.icon className={cn("h-3.5 w-3.5", isRealtime && "animate-pulse")} />
                     {item.label}
                   </button>
                 );
