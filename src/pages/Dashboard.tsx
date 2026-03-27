@@ -25,11 +25,12 @@ import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2, Info, AlertTriangle, Calendar, Percent, Trash2, CheckCircle2 } from 'lucide-react';
+import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2, Info, AlertTriangle, Calendar, Percent, Trash2, CheckCircle2, Download } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, SectionDivider } from '@/components/ProfessionalLayout';
 import AIInsights from '@/components/AIInsights';
+import { generateAnalysisPdf } from '@/lib/pdf-generator';
 
 type InputMode = null | 'manual' | 'image';
 
@@ -728,6 +729,19 @@ export default function Dashboard() {
             >
               {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
               Salvar
+            </Button>
+            <Button
+              onClick={() => generateAnalysisPdf(
+                analysisName || 'Análise',
+                legs,
+                metrics,
+                { cdiRate, daysToExpiry, aiSuggestion: aiAnalysis ? JSON.stringify(aiAnalysis) : undefined }
+              )}
+              variant="outline"
+              className="font-black text-base h-12 px-6 border-primary/30 text-primary"
+            >
+              <Download className="mr-2 h-5 w-5" />
+              PDF
             </Button>
           </div>
         </div>

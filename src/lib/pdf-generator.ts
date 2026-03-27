@@ -590,3 +590,101 @@ export const generatePortfolioPdf = (
   addAllFooters(doc);
   doc.save('OpçõesPROX_Portfólio.pdf');
 };
+
+// ==================== DASHBOARD / ANALYSIS PDF ====================
+
+export const generateAnalysisPdf = (
+  name: string,
+  legs: Leg[],
+  metrics: AnalysisMetrics,
+  options?: {
+    cdiRate?: number;
+    daysToExpiry?: number;
+    aiSuggestion?: string;
+  }
+) => {
+  const doc = new jsPDF();
+  addHeader(doc, 'Relatório de Análise — Simulação');
+  let y = 36;
+
+  y = addSectionTitle(doc, name || 'Análise', y);
+  y = addParagraph(doc, `Relatório gerado em ${new Date().toLocaleDateString('pt-BR')}`, y);
+
+  const cdiRate = options?.cdiRate || 15;
+  const daysToExpiry = options?.daysToExpiry || 0;
+  const investedCapital = Math.max(Math.abs(metrics.montageTotal || metrics.netCost || 0), 1);
+  const cdiReturn = daysToExpiry > 0 ? calculateCDIOpportunityCost(investedCapital, cdiRate, daysToExpiry) : 0;
+  const cdiEfficiency = cdiReturn > 0 && typeof metrics.maxGain === 'number' ? Math.round((metrics.maxGain / cdiReturn) * 100) : null;
+
+  // Metrics table
+  y = addTable(doc, {
+    startY: y,
+    head: [['Métrica', 'Valor']],
+    body: [
+      ['Estratégia', metrics.strategyLabel || 'Personalizada'],
+      ['Custo da Montagem / PM', formatMetricValue(Math.abs(metrics.montageTotal || metrics.netCost))],
+      ['Lucro Máximo', formatMetricValue(metrics.maxGain)],
+      ['Risco Máximo', metrics.isRiskFree ? 'R$ 0,00 (Risco Zero)' : formatMetricValue(metrics.maxLoss)],
+      ['Breakeven(s)', metrics.breakevens.length > 0 ? metrics.breakevens.map(b => `R$ ${b.toFixed(2)}`).join(' / ') : '—'],
+      ['Dias Úteis (DU)', daysToExpiry > 0 ? `${daysToExpiry} du` : '—'],
+      ['Retorno CDI no Período', cdiReturn > 0 ? `R$ ${cdiReturn.toFixed(2)}` : '—'],
+      ['Eficiência vs CDI', cdiEfficiency != null ? `${cdiEfficiency}%` : '—'],
+    ],
+    ...TABLE_STYLES,
+    columnStyles: { 0: { fontStyle: 'bold' as const, cellWidth: 50 } },
+    didParseCell: (data: any) => {
+      if (data.section === 'body' && data.column.index === 1) {
+        const label = data.row.cells[0]?.raw;
+        const val = data.row.cells[1]?.raw;
+        if (label === 'Lucro Máximo' && val !== '—' && val !== 'Ilimitado') {
+          const n = parseFloat(val.replace('R$ ', ''));
+          if (n > 0) data.cell.styles.textColor = COLORS.success;
+        }
+        if (label === 'Risco Máximo' && !val.includes('Risco Zero')) {
+          data.cell.styles.textColor = COLORS.destructive;
+        }
+        if (label === 'Risco Máximo' && val.includes('Risco Zero')) {
+          data.cell.styles.textColor = COLORS.success;
+        }
+      }
+    },
+  });
+
+  // Legs table
+  y = checkPageBreak(doc, y, 30);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(...COLORS.dark);
+  doc.text('Pernas da Estrutura', 14, y);
+  y += 5;
+
+  y = addTable(doc, {
+    startY: y,
+    head: [['Ativo', 'Tipo', 'Lado', 'Strike', 'Preço', 'Qtd', 'Vencimento']],
+    body: legs.map(l => [
+      l.asset,
+      l.option_type.toUpperCase(),
+      l.side === 'buy' ? 'COMPRA' : 'VENDA',
+      `R$ ${l.strike.toFixed(2)}`,
+      `R$ ${l.price.toFixed(2)}`,
+      l.quantity.toString(),
+      l.expiry_date ? (() => { const [yr, m, d] = l.expiry_date.split('-').map(Number); return new Date(yr, m-1, d).toLocaleDateString('pt-BR'); })() : '-',
+    ]),
+    ...TABLE_STYLES,
+  });
+
+  // AI suggestion
+  if (options?.aiSuggestion) {
+    y = checkPageBreak(doc, y, 40);
+    y = addSectionTitle(doc, 'Análise da IA', y);
+    try {
+      const ai = typeof options.aiSuggestion === 'string' ? JSON.parse(options.aiSuggestion) : options.aiSuggestion;
+      if (ai.summary) y = addParagraph(doc, ai.summary, y);
+    } catch {
+      y = addParagraph(doc, options.aiSuggestion, y);
+    }
+  }
+
+  addAllFooters(doc);
+  doc.save(`OpçõesPROX_${name.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
+};
