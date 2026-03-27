@@ -229,6 +229,9 @@ export default function DadosAoVivo() {
   const [showNameDialog, setShowNameDialog] = useState(false);
   const [pendingSaveName, setPendingSaveName] = useState("");
 
+  // Track which tickers were manually added by user (vs auto-subscribed from operations)
+  const [manualTickers, setManualTickers] = useState<Set<string>>(new Set());
+
   // Open operations state
   const [openOps, setOpenOps] = useState<any[]>([]);
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
@@ -237,6 +240,8 @@ export default function DadosAoVivo() {
   const cfg = statusConfig[status];
   const StatusIcon = cfg.icon;
   const rowsArr = Array.from(rows.values());
+  // Only show manually added tickers in the table
+  const manualRowsArr = rowsArr.filter(r => manualTickers.has(r.ticker));
 
   // Fetch open operations
   useEffect(() => {
@@ -312,18 +317,38 @@ export default function DadosAoVivo() {
       toast({ title: "Bridge não conectado", description: "Inicie o ProfitRTDBridge primeiro.", variant: "destructive" });
       return;
     }
-    addTicker(newTicker.trim().toUpperCase());
+    const ticker = newTicker.trim().toUpperCase();
+    setManualTickers(prev => new Set(prev).add(ticker));
+    addTicker(ticker);
     setNewTicker("");
   };
+
+  // Auto-subscribe tickers from open operations to RTD bridge
+  const autoSubscribedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (status !== "connected" || openOps.length === 0) return;
+    const opTickers = new Set<string>();
+    for (const op of openOps) {
+      for (const leg of (op.legs || [])) {
+        if (leg.asset) opTickers.add(leg.asset.toUpperCase());
+      }
+    }
+    for (const ticker of opTickers) {
+      if (!autoSubscribedRef.current.has(ticker)) {
+        addTicker(ticker);
+        autoSubscribedRef.current.add(ticker);
+      }
+    }
+  }, [status, openOps, addTicker]);
 
   const toggleSelect = (ticker: string) => {
     const row = rows.get(ticker);
     if (row) updateRow(ticker, { selecionado: !row.selecionado });
   };
 
-  // Convert selected rows to Leg[] for payoff — using precoEntrada when available
+  // Convert selected MANUAL rows to Leg[] for payoff — using precoEntrada when available
   const legs: Leg[] = useMemo(() => {
-    return rowsArr
+    return manualRowsArr
       .filter(r => r.selecionado && (r.ultimo || r.strike || r.precoEntrada))
       .map(r => ({
         side: r.lado,
@@ -334,7 +359,7 @@ export default function DadosAoVivo() {
         quantity: r.quantidade,
         expiry_date: r.expiryDate,
       }));
-  }, [rowsArr]);
+  }, [manualRowsArr]);
 
   // Calculate payoff
   const { payoffData, metrics } = useMemo(() => {
@@ -565,24 +590,24 @@ export default function DadosAoVivo() {
           </Card>
         )}
 
-        {/* Live table */}
-        {rowsArr.length > 0 && (
+        {/* Live table — only manually searched tickers */}
+        {manualRowsArr.length > 0 && (
           <Card>
             <CardHeader className="pb-3 flex flex-row items-center justify-between gap-3 flex-wrap">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Activity className="w-4 h-4 text-chart-profit animate-pulse" />
                 Cotações em Tempo Real
-                <Badge variant="secondary">{rowsArr.length}</Badge>
+                <Badge variant="secondary">{manualRowsArr.length}</Badge>
               </CardTitle>
               <div className="flex items-center gap-2">
                 <Button
                   onClick={() => {
-                    const selected = rowsArr.filter(r => r.selecionado);
+                    const selected = manualRowsArr.filter(r => r.selecionado);
                     if (selected.length === 0) {
                       toast({ title: "Selecione ao menos uma linha", variant: "destructive" });
                     }
                   }}
-                  disabled={!rowsArr.some((r) => r.selecionado)}
+                  disabled={!manualRowsArr.some((r) => r.selecionado)}
                   variant="outline"
                   className="gap-2"
                 >
@@ -618,7 +643,7 @@ export default function DadosAoVivo() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {rowsArr.map((row) => {
+                    {manualRowsArr.map((row) => {
                       const isStale = row.lastUpdate ? (Date.now() - row.lastUpdate) > 5000 : false;
                       const expiryDateObj = row.expiryDate ? new Date(row.expiryDate + 'T12:00:00') : undefined;
                       return (
@@ -710,7 +735,10 @@ export default function DadosAoVivo() {
                           </TableCell>
                           <TableCell onClick={(e) => e.stopPropagation()}>
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
-                              onClick={() => removeTicker(row.ticker)}>
+                              onClick={() => {
+                                setManualTickers(prev => { const n = new Set(prev); n.delete(row.ticker); return n; });
+                                removeTicker(row.ticker);
+                              }}>
                               <Trash2 className="w-3 h-3" />
                             </Button>
                           </TableCell>
@@ -895,7 +923,7 @@ export default function DadosAoVivo() {
         )}
 
         {/* Empty connected state */}
-        {rowsArr.length === 0 && status === "connected" && openOps.length === 0 && (
+        {manualRowsArr.length === 0 && status === "connected" && openOps.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground space-y-3">
             <Wifi className="w-12 h-12 opacity-20" />
             <p className="text-sm">Bridge conectado! Adicione tickers para monitorar.</p>
