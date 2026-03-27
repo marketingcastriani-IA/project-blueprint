@@ -590,24 +590,24 @@ export default function DadosAoVivo() {
           </Card>
         )}
 
-        {/* Live table */}
-        {rowsArr.length > 0 && (
+        {/* Live table — only manually searched tickers */}
+        {manualRowsArr.length > 0 && (
           <Card>
             <CardHeader className="pb-3 flex flex-row items-center justify-between gap-3 flex-wrap">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Activity className="w-4 h-4 text-chart-profit animate-pulse" />
                 Cotações em Tempo Real
-                <Badge variant="secondary">{rowsArr.length}</Badge>
+                <Badge variant="secondary">{manualRowsArr.length}</Badge>
               </CardTitle>
               <div className="flex items-center gap-2">
                 <Button
                   onClick={() => {
-                    const selected = rowsArr.filter(r => r.selecionado);
+                    const selected = manualRowsArr.filter(r => r.selecionado);
                     if (selected.length === 0) {
                       toast({ title: "Selecione ao menos uma linha", variant: "destructive" });
                     }
                   }}
-                  disabled={!rowsArr.some((r) => r.selecionado)}
+                  disabled={!manualRowsArr.some((r) => r.selecionado)}
                   variant="outline"
                   className="gap-2"
                 >
@@ -643,7 +643,7 @@ export default function DadosAoVivo() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {rowsArr.map((row) => {
+                    {manualRowsArr.map((row) => {
                       const isStale = row.lastUpdate ? (Date.now() - row.lastUpdate) > 5000 : false;
                       const expiryDateObj = row.expiryDate ? new Date(row.expiryDate + 'T12:00:00') : undefined;
                       return (
@@ -735,7 +735,10 @@ export default function DadosAoVivo() {
                           </TableCell>
                           <TableCell onClick={(e) => e.stopPropagation()}>
                             <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
-                              onClick={() => removeTicker(row.ticker)}>
+                              onClick={() => {
+                                setManualTickers(prev => { const n = new Set(prev); n.delete(row.ticker); return n; });
+                                removeTicker(row.ticker);
+                              }}>
                               <Trash2 className="w-3 h-3" />
                             </Button>
                           </TableCell>
