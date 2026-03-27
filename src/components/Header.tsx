@@ -90,10 +90,10 @@ export default function Header() {
       </div>
 
       {/* Theme selector strip */}
-      <div className="hidden md:flex border-t border-border/30 bg-card/50 backdrop-blur-sm">
+      <div className="hidden md:flex border-t border-primary-foreground/10 bg-primary/90">
         <div className="container flex items-center gap-1 py-1">
-          <Palette className="h-3 w-3 text-muted-foreground mr-1" />
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mr-2">Tema:</span>
+          <Palette className="h-3 w-3 text-primary-foreground/60 mr-1" />
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-primary-foreground/60 mr-2">Tema:</span>
           {([
             { key: 'light' as const, label: 'Branco', icon: Sun },
             { key: 'dark' as const, label: 'Dark', icon: Moon },
@@ -105,8 +105,8 @@ export default function Header() {
               className={cn(
                 'flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold transition-all',
                 theme === item.key
-                  ? 'bg-primary/15 text-primary ring-1 ring-primary/30'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  ? 'bg-primary-foreground/20 text-primary-foreground ring-1 ring-primary-foreground/30'
+                  : 'text-primary-foreground/60 hover:bg-primary-foreground/10 hover:text-primary-foreground'
               )}
             >
               <item.icon className="h-3 w-3" />
