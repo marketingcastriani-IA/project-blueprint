@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Clock, XCircle, AlertTriangle, LogOut, Crown, Loader2, CheckCircle2, Zap, Camera, Bot, History, Briefcase } from 'lucide-react';
@@ -12,6 +13,7 @@ interface AccessBlockedProps {
 
 export default function AccessBlocked({ status }: AccessBlockedProps) {
   const { signOut } = useAuth();
+  const navigate = useNavigate();
   const [upgrading, setUpgrading] = useState(false);
   const [proPrice, setProPrice] = useState(19.90);
 
@@ -139,7 +141,7 @@ export default function AccessBlocked({ status }: AccessBlockedProps) {
         )}
 
         <div className="text-center">
-          <Button variant="ghost" onClick={signOut} className="text-sm">
+          <Button variant="ghost" onClick={async () => { await signOut(); navigate('/auth'); }} className="text-sm">
             <LogOut className="mr-2 h-4 w-4" />
             Sair da conta
           </Button>

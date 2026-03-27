@@ -75,7 +75,7 @@ export default function Header() {
           )}
           
           {user && (
-            <Button variant="ghost" size="icon" onClick={signOut} className="h-9 w-9">
+            <Button variant="ghost" size="icon" onClick={async () => { await signOut(); navigate('/auth'); }} className="h-9 w-9">
               <LogOut className="h-4 w-4" />
             </Button>
           )}
