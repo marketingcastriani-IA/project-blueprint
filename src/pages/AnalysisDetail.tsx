@@ -611,7 +611,18 @@ export default function AnalysisDetail() {
 
                     return (
                       <tr key={i} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
-                        <td className="py-3 font-bold">{leg.asset}</td>
+                        <td className="py-3">
+                          {isSimulating ? (
+                            <span className="font-bold">{leg.asset}</span>
+                          ) : (
+                            <Input
+                              value={dbLegs.find(l => l.id === leg.id)?.asset || leg.asset}
+                              onChange={e => updateLegAsset(leg.id!, e.target.value)}
+                              className="w-28 h-8 text-xs font-black uppercase border-border/50 bg-muted/30"
+                              placeholder="TICKER"
+                            />
+                          )}
+                        </td>
                         <td className="py-3">
                           <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider">
                             {leg.option_type === 'stock' ? '🏢 ATIVO' : leg.option_type.toUpperCase()}
