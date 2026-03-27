@@ -541,7 +541,19 @@ export default function AnalysisDetail() {
 
         <Card className={cn(isSimulating && "border-primary ring-2 ring-primary/20")}>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">{isSimulating ? "SIMULANDO NOVA ESTRUTURA" : "Pernas da Estratégia — Simulação de Saída"}</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              {isSimulating ? "SIMULANDO NOVA ESTRUTURA" : "Pernas da Estratégia — Saída"}
+              {rtdConnected && (
+                <Badge className="bg-success/15 text-success border-success/30 gap-1">
+                  <Activity className="w-3 h-3 animate-pulse" /> RTD Ao Vivo
+                </Badge>
+              )}
+              {!rtdConnected && (
+                <Badge variant="outline" className="text-muted-foreground gap-1">
+                  <WifiOff className="w-3 h-3" /> RTD Offline
+                </Badge>
+              )}
+            </CardTitle>
             <div className="flex items-center gap-2">
               {isSimulating && <Badge className="bg-primary animate-pulse">MODO SIMULAÇÃO</Badge>}
               <Badge variant="outline" className="text-[10px]">{legs.length} perna{legs.length !== 1 ? 's' : ''}</Badge>
@@ -559,11 +571,19 @@ export default function AnalysisDetail() {
                     <th className="text-right py-2">Preço Entrada</th>
                     <th className="text-right py-2">Qtd</th>
                     <th className="text-center py-2">
-                          <div className="flex flex-col items-center gap-0.5">
-                            <span className="text-[11px] font-black uppercase tracking-widest text-red-500 dark:text-amber-400 animate-pulse dark:drop-shadow-[0_0_8px_rgba(251,191,36,0.6)] drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]">⚡ DIGITE O VALOR ATUAL ⚡</span>
-                            <span className="text-muted-foreground">{isSimulating ? "Novo Preço (Sim)" : "Preço Atual"}</span>
-                          </div>
-                        </th>
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-success flex items-center gap-1">
+                          <Wifi className="w-3 h-3" /> Tempo Real
+                        </span>
+                      </div>
+                    </th>
+                    <th className="text-center py-2">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="text-[11px] font-black uppercase tracking-widest text-destructive animate-pulse">
+                          ⚡ VALOR DE SAÍDA ⚡
+                        </span>
+                      </div>
+                    </th>
                     <th className="text-right py-2">P&L</th>
                   </tr>
                 </thead>
@@ -574,6 +594,7 @@ export default function AnalysisDetail() {
                     
                     const exitAction = leg.side === 'buy' ? 'Venda' : 'Recompra';
                     const exitColor = leg.side === 'buy' ? 'bg-success/10 text-success border-success/20' : 'bg-info/10 text-info border-info/20';
+                    const livePrice = livePrices[leg.asset];
 
                     return (
                       <tr key={i} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
@@ -591,6 +612,20 @@ export default function AnalysisDetail() {
                         <td className="py-3 text-right font-mono">{leg.strike > 0 ? leg.strike.toFixed(2) : '-'}</td>
                         <td className="py-3 text-right font-mono">{isSimulating ? legs[i].price.toFixed(2) : leg.price.toFixed(2)}</td>
                         <td className="py-3 text-right font-bold">{leg.quantity}</td>
+                        {/* Live RTD Price — read-only */}
+                        <td className="py-3 text-center">
+                          {livePrice != null ? (
+                            <div className="flex items-center justify-center gap-1">
+                              <span className="font-mono font-bold text-base text-success">
+                                {livePrice.toFixed(2)}
+                              </span>
+                              <Activity className="w-3 h-3 text-success animate-pulse" />
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
+                        </td>
+                        {/* Exit Price — editable */}
                         <td className="py-3">
                           <div className="relative flex justify-center">
                             <Input 
@@ -601,9 +636,9 @@ export default function AnalysisDetail() {
                                 "w-32 h-10 text-center text-base font-black tabular-nums", 
                                 isSimulating 
                                   ? "border-primary bg-primary/5" 
-                                  : "border-2 border-red-500 dark:border-amber-400 bg-red-500/5 dark:bg-amber-400/5 text-foreground shadow-[0_0_16px_-2px_rgba(239,68,68,0.4)] dark:shadow-[0_0_16px_-2px_rgba(251,191,36,0.5)] focus:shadow-[0_0_24px_-2px_rgba(239,68,68,0.6)] dark:focus:shadow-[0_0_24px_-2px_rgba(251,191,36,0.8)] focus:border-red-400 dark:focus:border-amber-300 transition-all placeholder:text-red-400/50 dark:placeholder:text-amber-400/40"
+                                  : "border-2 border-destructive bg-destructive/5 text-foreground shadow-[0_0_16px_-2px_hsl(var(--destructive)/0.4)] focus:shadow-[0_0_24px_-2px_hsl(var(--destructive)/0.6)] transition-all placeholder:text-destructive/40"
                               )}
-                              placeholder="0.00"
+                              placeholder={livePrice != null ? livePrice.toFixed(2) : "0.00"}
                             />
                           </div>
                         </td>
@@ -616,7 +651,7 @@ export default function AnalysisDetail() {
                               {pnl >= 0 ? '+' : ''}{pnl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </div>
                           ) : (
-                            <span className="text-muted-foreground text-xs">Aguardando preço</span>
+                            <span className="text-muted-foreground text-xs">Aguardando</span>
                           )}
                         </td>
                       </tr>
