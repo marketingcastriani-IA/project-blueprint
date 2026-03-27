@@ -317,9 +317,29 @@ export default function DadosAoVivo() {
       toast({ title: "Bridge não conectado", description: "Inicie o ProfitRTDBridge primeiro.", variant: "destructive" });
       return;
     }
-    addTicker(newTicker.trim().toUpperCase());
+    const ticker = newTicker.trim().toUpperCase();
+    setManualTickers(prev => new Set(prev).add(ticker));
+    addTicker(ticker);
     setNewTicker("");
   };
+
+  // Auto-subscribe tickers from open operations to RTD bridge
+  const autoSubscribedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (status !== "connected" || openOps.length === 0) return;
+    const opTickers = new Set<string>();
+    for (const op of openOps) {
+      for (const leg of (op.legs || [])) {
+        if (leg.asset) opTickers.add(leg.asset.toUpperCase());
+      }
+    }
+    for (const ticker of opTickers) {
+      if (!autoSubscribedRef.current.has(ticker)) {
+        addTicker(ticker);
+        autoSubscribedRef.current.add(ticker);
+      }
+    }
+  }, [status, openOps, addTicker]);
 
   const toggleSelect = (ticker: string) => {
     const row = rows.get(ticker);
