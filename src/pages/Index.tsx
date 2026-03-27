@@ -225,6 +225,34 @@ export default function Index() {
               <p className="text-xs text-muted-foreground text-center font-bold">+ Ratio Spread, Calendar Spread, Backspread e mais</p>
             </div>
           </div>
+
+          {/* Tempo Real com Profit */}
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><Radio className="h-5 w-5 text-primary" /></div>
+                <h3 className="text-2xl font-black tracking-tight">Estrutura em Tempo Real</h3>
+                <Badge className="bg-primary/20 text-primary border-0 text-[10px] font-black">PRO</Badge>
+              </div>
+              <p className="text-muted-foreground">Conecte ao Profit Pro via RTD Bridge e acompanhe suas operações com preços ao vivo, P&L em tempo real e encerramento direto pelo app.</p>
+            </div>
+            <div className="rounded-2xl overflow-hidden border border-primary/20 shadow-xl bg-card p-6 space-y-4">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-success/10 border border-success/20">
+                <Radio className="h-5 w-5 text-success animate-pulse" />
+                <div>
+                  <p className="text-xs font-black text-success">CONEXÃO AO VIVO</p>
+                  <p className="text-[10px] text-muted-foreground">Profit Pro → RTD Bridge → WebSocket → App</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {['Preços em Tempo Real', 'P&L Automático', 'Multi-Tickers', 'Auto-Save'].map(f => (
+                  <div key={f} className="rounded-lg bg-primary/10 border border-primary/20 p-2.5 text-center">
+                    <p className="text-[10px] font-black text-primary">{f}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
