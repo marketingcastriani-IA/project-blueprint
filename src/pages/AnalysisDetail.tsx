@@ -655,7 +655,7 @@ export default function AnalysisDetail() {
                             <Input 
                               type="number" step="0.01" 
                               value={isSimulating ? leg.price : (currentPrices[leg.id!] || '')} 
-                              onChange={e => isSimulating ? updateSimLeg(i, 'price', parseFloat(e.target.value) || 0) : setCurrentPrices(p => ({...p, [leg.id!]: e.target.value}))}
+                              onChange={e => isSimulating ? updateSimLeg(i, 'price', parseFloat(e.target.value) || 0) : updateExitPrice(leg.id!, e.target.value)}
                               className={cn(
                                 "w-32 h-10 text-center text-base font-black tabular-nums", 
                                 isSimulating 
