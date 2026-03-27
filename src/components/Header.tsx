@@ -55,10 +55,10 @@ export default function Header() {
                 onClick={() => navigate(item.path)}
                 className={cn(
                   'flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all',
-                  isRealtime && !isActive && 'text-warning animate-glow-pulse border border-warning/30 bg-warning/5 hover:bg-warning/10',
-                  isRealtime && isActive && 'bg-warning/20 text-warning border border-warning/40 shadow-[0_0_12px_hsl(var(--warning)/0.4)]',
-                  !isRealtime && isActive && 'bg-primary/15 text-primary border border-primary/30',
-                  !isRealtime && !isActive && 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                  isRealtime && 'text-red-100 bg-red-600 hover:bg-red-500 animate-pulse shadow-[0_0_16px_rgba(239,68,68,0.5)] border border-red-400/50',
+                  isRealtime && isActive && 'ring-2 ring-red-300',
+                  !isRealtime && isActive && 'bg-primary-foreground/20 text-primary-foreground',
+                  !isRealtime && !isActive && 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
                 )}
               >
                 <item.icon className={cn("h-3.5 w-3.5", isRealtime && "animate-pulse")} />
