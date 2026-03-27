@@ -224,10 +224,85 @@ export default function DadosAoVivo() {
   const [analysisName, setAnalysisName] = useState("");
   const [saving, setSaving] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [showNameDialog, setShowNameDialog] = useState(false);
+  const [pendingSaveName, setPendingSaveName] = useState("");
+
+  // Open operations state
+  const [openOps, setOpenOps] = useState<any[]>([]);
+  const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  const [editNameValue, setEditNameValue] = useState("");
 
   const cfg = statusConfig[status];
   const StatusIcon = cfg.icon;
   const rowsArr = Array.from(rows.values());
+
+  // Fetch open operations
+  useEffect(() => {
+    if (!user) return;
+    const fetchOps = async () => {
+      const { data: analyses } = await supabase
+        .from('analyses')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+      if (!analyses) return;
+
+      const ops = await Promise.all(analyses.map(async (a) => {
+        const { data: aLegs } = await supabase
+          .from('legs')
+          .select('*')
+          .eq('analysis_id', a.id);
+        const legsList: Leg[] = (aLegs || []).map((l: any) => ({
+          side: l.side as 'buy' | 'sell',
+          option_type: l.option_type as 'call' | 'put' | 'stock',
+          asset: l.asset,
+          strike: l.strike,
+          price: l.price,
+          quantity: l.quantity,
+          expiry_date: l.expiry_date,
+        }));
+        const m = legsList.length > 0 ? calculateMetrics(legsList) : null;
+        const investido = legsList.reduce((acc, l) => {
+          const cost = l.price * l.quantity * (l.option_type === 'stock' ? 1 : 100);
+          return acc + (l.side === 'buy' ? cost : -cost);
+        }, 0);
+
+        // Check if any leg ticker is live in rows
+        let lucroAtual = 0;
+        let temDadoVivo = false;
+        for (const leg of legsList) {
+          const liveRow = rows.get(leg.asset);
+          if (liveRow?.ultimo) {
+            temDadoVivo = true;
+            const precoAtual = liveRow.ultimo;
+            let pnl = 0;
+            if (leg.option_type === 'stock') {
+              pnl = (precoAtual - leg.price) * leg.quantity;
+            } else {
+              pnl = (precoAtual - leg.price) * leg.quantity * 100;
+            }
+            if (leg.side === 'sell') pnl = -pnl;
+            lucroAtual += pnl;
+          }
+        }
+
+        return {
+          ...a,
+          legs: legsList,
+          metrics: m,
+          investido,
+          lucroAtual,
+          temDadoVivo,
+          pctLucro: investido !== 0 ? (lucroAtual / Math.abs(investido)) * 100 : 0,
+        };
+      }));
+      setOpenOps(ops);
+    };
+    fetchOps();
+    const interval = setInterval(fetchOps, 10000);
+    return () => clearInterval(interval);
+  }, [user, rows]);
 
   const handleAddTicker = () => {
     if (!newTicker.trim()) return;
@@ -285,8 +360,14 @@ export default function DadosAoVivo() {
     return { payoffData: data, metrics: m };
   }, [legs]);
 
-  // Save analysis
-  const saveAnalysis = async () => {
+  // Open name dialog before saving
+  const handleSaveClick = () => {
+    setPendingSaveName(analysisName || `Estrutura ${new Date().toLocaleDateString('pt-BR')}`);
+    setShowNameDialog(true);
+  };
+
+  // Save analysis with name
+  const saveAnalysis = async (name: string) => {
     if (!user) {
       toast({ title: "Faça login para salvar", variant: "destructive" });
       return;
@@ -297,16 +378,13 @@ export default function DadosAoVivo() {
     }
     setSaving(true);
     try {
-      const name = analysisName || `Estrutura Tempo Real ${new Date().toLocaleDateString('pt-BR')}`;
-      
-      // Find earliest expiry
       const expiryDates = legs.filter(l => l.expiry_date).map(l => l.expiry_date!).sort();
       const expiryDate = expiryDates[0] || null;
 
       const { data: analysis, error: aError } = await supabase
         .from('analyses').insert({
           user_id: user.id,
-          name,
+          name: name || `Estrutura ${new Date().toLocaleDateString('pt-BR')}`,
           underlying_asset: legs[0]?.asset || null,
           expiry_date: expiryDate,
         }).select().single();
@@ -324,12 +402,30 @@ export default function DadosAoVivo() {
       }));
       await supabase.from('legs').insert(legsToInsert);
 
+      setShowNameDialog(false);
       setShowSaveDialog(true);
+      setAnalysisName("");
     } catch (err: any) {
       toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
+  };
+
+  // Rename analysis
+  const handleRename = async (id: string) => {
+    if (!editNameValue.trim()) return;
+    const { error } = await supabase
+      .from('analyses')
+      .update({ name: editNameValue.trim() })
+      .eq('id', id);
+    if (error) {
+      toast({ title: "Erro ao renomear", variant: "destructive" });
+    } else {
+      toast({ title: "Nome atualizado!" });
+      setOpenOps(prev => prev.map(op => op.id === id ? { ...op, name: editNameValue.trim() } : op));
+    }
+    setEditingNameId(null);
   };
 
   return (
