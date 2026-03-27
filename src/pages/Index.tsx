@@ -93,10 +93,20 @@ export default function Index() {
         </div>
       </section>
 
-      {/* MAIN PREVIEW */}
-      <section className="container -mt-8 mb-20">
+      {/* MAIN PREVIEW — Analysis screenshot */}
+      <section className="container -mt-8 mb-10">
         <div className="relative rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_40px_100px_-20px_hsl(var(--primary)/0.3)] bg-card">
-          <img src="/assets/screenshot-dashboard.png" alt="Dashboard OpçõesX" className="w-full h-auto" loading="lazy" />
+          <img src="/assets/screenshot-analysis.png" alt="Análise de Estrutura com P&L em Tempo Real" className="w-full h-auto" loading="lazy" />
+        </div>
+      </section>
+
+      {/* Realtime screenshot */}
+      <section className="container mb-20">
+        <div className="relative rounded-2xl overflow-hidden border-2 border-red-500/30 shadow-[0_40px_100px_-20px_rgba(239,68,68,0.2)] bg-card">
+          <div className="absolute top-4 right-4 z-10">
+            <Badge className="bg-red-600 text-white font-black text-xs animate-pulse shadow-lg">🔴 TEMPO REAL</Badge>
+          </div>
+          <img src="/assets/screenshot-realtime.png" alt="Operações em Tempo Real com Profit RTD" className="w-full h-auto" loading="lazy" />
         </div>
       </section>
 
