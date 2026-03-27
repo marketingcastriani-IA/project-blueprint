@@ -3,7 +3,8 @@ import { format } from "date-fns";
 import {
   Radio, Plus, Trash2, Wifi, WifiOff, RefreshCw,
   TrendingUp, TrendingDown, Activity, AlertTriangle, CheckCircle2,
-  Terminal, Download, ExternalLink, Info, Save, CalendarIcon, Loader2
+  Terminal, Download, ExternalLink, Info, Save, CalendarIcon, Loader2,
+  Edit, DollarSign, Percent, Briefcase
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
