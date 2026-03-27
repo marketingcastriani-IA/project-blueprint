@@ -93,10 +93,20 @@ export default function Index() {
         </div>
       </section>
 
-      {/* MAIN PREVIEW */}
-      <section className="container -mt-8 mb-20">
+      {/* MAIN PREVIEW — Analysis screenshot */}
+      <section className="container -mt-8 mb-10">
         <div className="relative rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_40px_100px_-20px_hsl(var(--primary)/0.3)] bg-card">
-          <img src="/assets/screenshot-dashboard.png" alt="Dashboard OpçõesX" className="w-full h-auto" loading="lazy" />
+          <img src="/assets/screenshot-analysis.png" alt="Análise de Estrutura com P&L em Tempo Real" className="w-full h-auto" loading="lazy" />
+        </div>
+      </section>
+
+      {/* Realtime screenshot */}
+      <section className="container mb-20">
+        <div className="relative rounded-2xl overflow-hidden border-2 border-red-500/30 shadow-[0_40px_100px_-20px_rgba(239,68,68,0.2)] bg-card">
+          <div className="absolute top-4 right-4 z-10">
+            <Badge className="bg-red-600 text-white font-black text-xs animate-pulse shadow-lg">🔴 TEMPO REAL</Badge>
+          </div>
+          <img src="/assets/screenshot-realtime.png" alt="Operações em Tempo Real com Profit RTD" className="w-full h-auto" loading="lazy" />
         </div>
       </section>
 
@@ -230,27 +240,14 @@ export default function Index() {
           <div className="space-y-6">
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><Radio className="h-5 w-5 text-primary" /></div>
+                <div className="h-10 w-10 rounded-lg bg-red-500/20 flex items-center justify-center"><Radio className="h-5 w-5 text-red-500" /></div>
                 <h3 className="text-2xl font-black tracking-tight">Estrutura em Tempo Real</h3>
-                <Badge className="bg-primary/20 text-primary border-0 text-[10px] font-black">PRO</Badge>
+                <Badge className="bg-red-500/20 text-red-500 border-0 text-[10px] font-black animate-pulse">🔴 AO VIVO</Badge>
               </div>
               <p className="text-muted-foreground">Conecte ao Profit Pro via RTD Bridge e acompanhe suas operações com preços ao vivo, P&L em tempo real e encerramento direto pelo app.</p>
             </div>
-            <div className="rounded-2xl overflow-hidden border border-primary/20 shadow-xl bg-card p-6 space-y-4">
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-success/10 border border-success/20">
-                <Radio className="h-5 w-5 text-success animate-pulse" />
-                <div>
-                  <p className="text-xs font-black text-success">CONEXÃO AO VIVO</p>
-                  <p className="text-[10px] text-muted-foreground">Profit Pro → RTD Bridge → WebSocket → App</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {['Preços em Tempo Real', 'P&L Automático', 'Multi-Tickers', 'Auto-Save'].map(f => (
-                  <div key={f} className="rounded-lg bg-primary/10 border border-primary/20 p-2.5 text-center">
-                    <p className="text-[10px] font-black text-primary">{f}</p>
-                  </div>
-                ))}
-              </div>
+            <div className="rounded-2xl overflow-hidden border-2 border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+              <img src="/assets/screenshot-realtime.png" alt="Tempo Real — Operações ao Vivo" className="w-full h-auto" loading="lazy" />
             </div>
           </div>
         </div>
