@@ -13,6 +13,7 @@ interface AccessBlockedProps {
 
 export default function AccessBlocked({ status }: AccessBlockedProps) {
   const { signOut } = useAuth();
+  const navigate = useNavigate();
   const [upgrading, setUpgrading] = useState(false);
   const [proPrice, setProPrice] = useState(19.90);
 
