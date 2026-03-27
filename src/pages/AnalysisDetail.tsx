@@ -117,33 +117,46 @@ export default function AnalysisDetail() {
   const [exitAnalysis, setExitAnalysis] = useState<any>(null);
   const [loadingExitAI, setLoadingExitAI] = useState(false);
 
-  // Auto-save prices on unmount or navigation
-  const currentPricesRef = useRef(currentPrices);
-  const dbLegsRef = useRef(dbLegs);
-  const idRef = useRef(id);
-  currentPricesRef.current = currentPrices;
-  dbLegsRef.current = dbLegs;
-  idRef.current = id;
+  // Debounced auto-save for individual leg fields
+  const saveTimerRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
-  const autoSavePrices = useCallback(async () => {
-    const prices = currentPricesRef.current;
-    const legs = dbLegsRef.current;
-    if (!legs.length) return;
+  const autoSaveLegField = useCallback((legId: string, field: string, value: any) => {
+    // Clear previous timer for this leg+field
+    const key = `${legId}_${field}`;
+    if (saveTimerRef.current[key]) clearTimeout(saveTimerRef.current[key]);
     
-    for (const leg of legs) {
-      const cp = parseFloat(prices[leg.id] || '');
-      if (!isNaN(cp)) {
-        await supabase.from('legs').update({ current_price: cp } as any).eq('id', leg.id);
+    saveTimerRef.current[key] = setTimeout(async () => {
+      try {
+        await supabase.from('legs').update({ [field]: value } as any).eq('id', legId);
+      } catch (err) {
+        console.error('Auto-save error:', err);
       }
-    }
+    }, 800);
   }, []);
 
+  // Update exit price with auto-save
+  const updateExitPrice = useCallback((legId: string, value: string) => {
+    setCurrentPrices(p => ({ ...p, [legId]: value }));
+    const numVal = parseFloat(value);
+    if (!isNaN(numVal)) {
+      autoSaveLegField(legId, 'current_price', numVal);
+    }
+  }, [autoSaveLegField]);
+
+  // Update asset ticker with auto-save
+  const updateLegAsset = useCallback((legId: string, value: string) => {
+    setDbLegs(prev => prev.map(l => l.id === legId ? { ...l, asset: value } : l));
+    if (value.trim()) {
+      autoSaveLegField(legId, 'asset', value.trim().toUpperCase());
+    }
+  }, [autoSaveLegField]);
+
+  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
-      // Auto-save prices when leaving the page
-      autoSavePrices();
+      Object.values(saveTimerRef.current).forEach(t => clearTimeout(t));
     };
-  }, [autoSavePrices]);
+  }, []);
 
   useEffect(() => {
     if (!user || !id) return;
@@ -598,7 +611,18 @@ export default function AnalysisDetail() {
 
                     return (
                       <tr key={i} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
-                        <td className="py-3 font-bold">{leg.asset}</td>
+                        <td className="py-3">
+                          {isSimulating ? (
+                            <span className="font-bold">{leg.asset}</span>
+                          ) : (
+                            <Input
+                              value={dbLegs.find(l => l.id === leg.id)?.asset || leg.asset}
+                              onChange={e => updateLegAsset(leg.id!, e.target.value)}
+                              className="w-28 h-8 text-xs font-black uppercase border-border/50 bg-muted/30"
+                              placeholder="TICKER"
+                            />
+                          )}
+                        </td>
                         <td className="py-3">
                           <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider">
                             {leg.option_type === 'stock' ? '🏢 ATIVO' : leg.option_type.toUpperCase()}
@@ -631,7 +655,7 @@ export default function AnalysisDetail() {
                             <Input 
                               type="number" step="0.01" 
                               value={isSimulating ? leg.price : (currentPrices[leg.id!] || '')} 
-                              onChange={e => isSimulating ? updateSimLeg(i, 'price', parseFloat(e.target.value) || 0) : setCurrentPrices(p => ({...p, [leg.id!]: e.target.value}))}
+                              onChange={e => isSimulating ? updateSimLeg(i, 'price', parseFloat(e.target.value) || 0) : updateExitPrice(leg.id!, e.target.value)}
                               className={cn(
                                 "w-32 h-10 text-center text-base font-black tabular-nums", 
                                 isSimulating 

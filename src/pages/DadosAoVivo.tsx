@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useAccessControl } from "@/hooks/useAccessControl";
 import { format } from "date-fns";
 import {
   Radio, Plus, Trash2, Wifi, WifiOff, RefreshCw,
   TrendingUp, TrendingDown, Activity, AlertTriangle, CheckCircle2,
   Terminal, Download, ExternalLink, Info, Save, CalendarIcon, Loader2,
-  Edit, DollarSign, Percent, Briefcase
+  Edit, DollarSign, Percent, Briefcase, Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -218,6 +219,7 @@ export default function DadosAoVivo() {
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const accessControl = useAccessControl();
   const { status, rows, errorMsg, reconnectCount, connect, addTicker, removeTicker, updateRow } = useRtdBridge();
 
   const [newTicker, setNewTicker] = useState("");
@@ -427,6 +429,28 @@ export default function DadosAoVivo() {
     }
     setEditingNameId(null);
   };
+
+  const isPro = accessControl.planType === 'pro' || accessControl.isAdmin || (!accessControl.trialExpired && accessControl.status === 'approved');
+
+  if (!isPro) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container py-20 text-center space-y-6">
+          <div className="p-4 rounded-2xl bg-primary/10 inline-flex">
+            <Radio className="w-12 h-12 text-primary" />
+          </div>
+          <h1 className="text-3xl font-black tracking-tight">Tempo Real — Recurso PRO</h1>
+          <p className="text-muted-foreground max-w-md mx-auto">
+            A conexão em tempo real com o Profit via RTD Bridge é exclusiva para assinantes do plano PRO.
+          </p>
+          <Button size="lg" className="font-black shadow-lg shadow-primary/20" onClick={() => navigate('/settings')}>
+            Assinar PRO <Zap className="ml-2 h-5 w-5" />
+          </Button>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
