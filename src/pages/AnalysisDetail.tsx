@@ -117,33 +117,46 @@ export default function AnalysisDetail() {
   const [exitAnalysis, setExitAnalysis] = useState<any>(null);
   const [loadingExitAI, setLoadingExitAI] = useState(false);
 
-  // Auto-save prices on unmount or navigation
-  const currentPricesRef = useRef(currentPrices);
-  const dbLegsRef = useRef(dbLegs);
-  const idRef = useRef(id);
-  currentPricesRef.current = currentPrices;
-  dbLegsRef.current = dbLegs;
-  idRef.current = id;
+  // Debounced auto-save for individual leg fields
+  const saveTimerRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
-  const autoSavePrices = useCallback(async () => {
-    const prices = currentPricesRef.current;
-    const legs = dbLegsRef.current;
-    if (!legs.length) return;
+  const autoSaveLegField = useCallback((legId: string, field: string, value: any) => {
+    // Clear previous timer for this leg+field
+    const key = `${legId}_${field}`;
+    if (saveTimerRef.current[key]) clearTimeout(saveTimerRef.current[key]);
     
-    for (const leg of legs) {
-      const cp = parseFloat(prices[leg.id] || '');
-      if (!isNaN(cp)) {
-        await supabase.from('legs').update({ current_price: cp } as any).eq('id', leg.id);
+    saveTimerRef.current[key] = setTimeout(async () => {
+      try {
+        await supabase.from('legs').update({ [field]: value } as any).eq('id', legId);
+      } catch (err) {
+        console.error('Auto-save error:', err);
       }
-    }
+    }, 800);
   }, []);
 
+  // Update exit price with auto-save
+  const updateExitPrice = useCallback((legId: string, value: string) => {
+    setCurrentPrices(p => ({ ...p, [legId]: value }));
+    const numVal = parseFloat(value);
+    if (!isNaN(numVal)) {
+      autoSaveLegField(legId, 'current_price', numVal);
+    }
+  }, [autoSaveLegField]);
+
+  // Update asset ticker with auto-save
+  const updateLegAsset = useCallback((legId: string, value: string) => {
+    setDbLegs(prev => prev.map(l => l.id === legId ? { ...l, asset: value } : l));
+    if (value.trim()) {
+      autoSaveLegField(legId, 'asset', value.trim().toUpperCase());
+    }
+  }, [autoSaveLegField]);
+
+  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
-      // Auto-save prices when leaving the page
-      autoSavePrices();
+      Object.values(saveTimerRef.current).forEach(t => clearTimeout(t));
     };
-  }, [autoSavePrices]);
+  }, []);
 
   useEffect(() => {
     if (!user || !id) return;
