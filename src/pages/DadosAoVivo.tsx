@@ -728,13 +728,142 @@ export default function DadosAoVivo() {
           </div>
         )}
 
+        {/* ── Open Operations Cards ─────────────────────────────────── */}
+        {openOps.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-primary" />
+              Operações em Aberto
+              <Badge variant="secondary">{openOps.length}</Badge>
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {openOps.map((op) => (
+                <Card key={op.id} className="border-border/50 hover:border-primary/30 transition-colors">
+                  <CardContent className="pt-4 pb-3 space-y-3">
+                    {/* Name — editable */}
+                    <div className="flex items-center justify-between gap-2">
+                      {editingNameId === op.id ? (
+                        <div className="flex items-center gap-1 flex-1">
+                          <Input
+                            value={editNameValue}
+                            onChange={(e) => setEditNameValue(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleRename(op.id)}
+                            className="h-7 text-xs flex-1"
+                            autoFocus
+                          />
+                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs"
+                            onClick={() => handleRename(op.id)}>OK</Button>
+                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-muted-foreground"
+                            onClick={() => setEditingNameId(null)}>✕</Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                          <span className="font-bold text-sm truncate">{op.name}</span>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-5 w-5 shrink-0 text-muted-foreground hover:text-primary"
+                            onClick={() => { setEditingNameId(op.id); setEditNameValue(op.name); }}
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
+                      <Badge variant="outline" className="text-[10px] shrink-0">
+                        {op.legs?.length || 0} perna{(op.legs?.length || 0) > 1 ? 's' : ''}
+                      </Badge>
+                    </div>
+
+                    {/* Metrics row */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="text-center p-2 rounded bg-muted/50">
+                        <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-0.5">
+                          <DollarSign className="w-3 h-3" /> Lucro
+                        </div>
+                        <div className={cn(
+                          "text-sm font-bold font-mono",
+                          op.lucroAtual > 0 ? "text-chart-profit" : op.lucroAtual < 0 ? "text-destructive" : "text-foreground"
+                        )}>
+                          {op.temDadoVivo ? `R$ ${op.lucroAtual.toFixed(2)}` : '—'}
+                        </div>
+                      </div>
+                      <div className="text-center p-2 rounded bg-muted/50">
+                        <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-0.5">
+                          <Percent className="w-3 h-3" /> % Lucro
+                        </div>
+                        <div className={cn(
+                          "text-sm font-bold font-mono",
+                          op.pctLucro > 0 ? "text-chart-profit" : op.pctLucro < 0 ? "text-destructive" : "text-foreground"
+                        )}>
+                          {op.temDadoVivo ? `${op.pctLucro.toFixed(1)}%` : '—'}
+                        </div>
+                      </div>
+                      <div className="text-center p-2 rounded bg-muted/50">
+                        <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-0.5">
+                          <Briefcase className="w-3 h-3" /> Investido
+                        </div>
+                        <div className="text-sm font-bold font-mono text-foreground">
+                          R$ {Math.abs(op.investido).toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Live indicator + edit button */}
+                    <div className="flex items-center justify-between">
+                      {op.temDadoVivo ? (
+                        <span className="flex items-center gap-1 text-[10px] text-chart-profit">
+                          <Activity className="w-3 h-3 animate-pulse" /> Dados ao vivo
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">Sem dados ao vivo</span>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs gap-1"
+                        onClick={() => navigate(`/analysis/${op.id}`)}
+                      >
+                        <Edit className="w-3 h-3" /> Editar Estrutura
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Empty connected state */}
-        {rowsArr.length === 0 && status === "connected" && (
+        {rowsArr.length === 0 && status === "connected" && openOps.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground space-y-3">
             <Wifi className="w-12 h-12 opacity-20" />
             <p className="text-sm">Bridge conectado! Adicione tickers para monitorar.</p>
           </div>
         )}
+
+        {/* Name dialog — shown before saving */}
+        <Dialog open={showNameDialog} onOpenChange={setShowNameDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Nome da Estrutura</DialogTitle>
+              <DialogDescription>Dê um nome para identificar esta estrutura nas Operações em Aberto.</DialogDescription>
+            </DialogHeader>
+            <Input
+              value={pendingSaveName}
+              onChange={(e) => setPendingSaveName(e.target.value)}
+              placeholder="Ex: Trava de Alta PETR4"
+              className="mt-2"
+              onKeyDown={(e) => e.key === 'Enter' && saveAnalysis(pendingSaveName)}
+            />
+            <DialogFooter className="gap-2 mt-2">
+              <Button variant="outline" onClick={() => setShowNameDialog(false)}>Cancelar</Button>
+              <Button onClick={() => saveAnalysis(pendingSaveName)} disabled={saving} className="gap-2">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Salvar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Save success dialog */}
         <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
