@@ -298,7 +298,7 @@ export default function Settings() {
           </CardContent>
         </Card>
 
-        <Button onClick={signOut} variant="destructive" className="w-full h-12 font-black">
+        <Button onClick={async () => { await signOut(); navigate('/auth'); }} variant="destructive" className="w-full h-12 font-black">
           <LogOut className="mr-2 h-5 w-5" /> DESCONECTAR
         </Button>
       </main>

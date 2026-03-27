@@ -387,7 +387,7 @@ export default function AdminPanel() {
             <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-9 w-9">
               {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
-            <Button variant="ghost" size="icon" onClick={signOut} className="h-9 w-9"><LogOut className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" onClick={async () => { await signOut(); navigate('/auth'); }} className="h-9 w-9"><LogOut className="h-4 w-4" /></Button>
           </div>
         </div>
       </header>
