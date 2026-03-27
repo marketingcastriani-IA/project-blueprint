@@ -18,10 +18,12 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
-  Loader2, ArrowLeft, Save, XCircle, Layers, Brain, TrendingUp, Clock, Target, Zap, AlertTriangle, Percent, PlusCircle
+  Loader2, ArrowLeft, Save, XCircle, Layers, Brain, TrendingUp, Clock, Target, Zap, AlertTriangle, Percent, PlusCircle, Wifi, WifiOff, Activity
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SectionDivider } from '@/components/ProfessionalLayout';
+
+const WS_URL = "ws://localhost:8765";
 
 interface DbLeg {
   id: string;
@@ -33,6 +35,51 @@ interface DbLeg {
   quantity: number;
   current_price?: number | null;
   expiry_date?: string | null;
+}
+
+// Lightweight RTD hook for live prices
+function useLivePrices(tickers: string[]) {
+  const [prices, setPrices] = useState<Record<string, number>>({});
+  const [connected, setConnected] = useState(false);
+  const wsRef = useRef<WebSocket | null>(null);
+  const tickersRef = useRef(tickers);
+  tickersRef.current = tickers;
+
+  useEffect(() => {
+    if (tickers.length === 0) return;
+
+    const ws = new WebSocket(WS_URL);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      setConnected(true);
+      tickers.forEach(t => ws.send(JSON.stringify({ type: "add_ticker", ticker: t })));
+    };
+
+    ws.onclose = () => setConnected(false);
+    ws.onerror = () => setConnected(false);
+
+    ws.onmessage = (evt) => {
+      try {
+        const msg = JSON.parse(evt.data);
+        if (msg.type === "rtd_data") {
+          setPrices(prev => {
+            const next = { ...prev };
+            for (const item of msg.data) {
+              if (item.ultimo != null && tickersRef.current.includes(item.ticker)) {
+                next[item.ticker] = item.ultimo;
+              }
+            }
+            return next;
+          });
+        }
+      } catch { /* ignore */ }
+    };
+
+    return () => { ws.close(); };
+  }, [tickers.join(',')]);
+
+  return { prices, connected };
 }
 
 interface DbAnalysis {
