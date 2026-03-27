@@ -34,12 +34,12 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-primary/30 bg-primary shadow-lg">
       <div className="container flex h-14 items-center justify-between">
-        <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 font-bold text-lg shrink-0">
+        <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 font-black text-lg shrink-0">
           <img src="/assets/logo.png" alt="Opções PRO X" className="h-8 w-8 object-contain" />
-          <span className="hidden sm:inline tracking-tight">Opções PRO X</span>
+          <span className="hidden sm:inline tracking-tight text-primary-foreground">Opções PRO X</span>
           <Badge variant="outline" className={cn(
-            "text-[8px] hidden sm:inline-flex",
-            isFree ? "border-warning/50 text-warning" : "border-primary/30 text-primary"
+            "text-[8px] hidden sm:inline-flex border-primary-foreground/40",
+            isFree ? "text-yellow-300" : "text-primary-foreground"
           )}>
             {access.planType === 'pro' ? 'PRO' : 'FREE'}
           </Badge>
