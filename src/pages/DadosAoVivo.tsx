@@ -3,7 +3,8 @@ import { format } from "date-fns";
 import {
   Radio, Plus, Trash2, Wifi, WifiOff, RefreshCw,
   TrendingUp, TrendingDown, Activity, AlertTriangle, CheckCircle2,
-  Terminal, Download, ExternalLink, Info, Save, CalendarIcon, Loader2
+  Terminal, Download, ExternalLink, Info, Save, CalendarIcon, Loader2,
+  Edit, DollarSign, Percent, Briefcase
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -223,10 +224,85 @@ export default function DadosAoVivo() {
   const [analysisName, setAnalysisName] = useState("");
   const [saving, setSaving] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [showNameDialog, setShowNameDialog] = useState(false);
+  const [pendingSaveName, setPendingSaveName] = useState("");
+
+  // Open operations state
+  const [openOps, setOpenOps] = useState<any[]>([]);
+  const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  const [editNameValue, setEditNameValue] = useState("");
 
   const cfg = statusConfig[status];
   const StatusIcon = cfg.icon;
   const rowsArr = Array.from(rows.values());
+
+  // Fetch open operations
+  useEffect(() => {
+    if (!user) return;
+    const fetchOps = async () => {
+      const { data: analyses } = await supabase
+        .from('analyses')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+      if (!analyses) return;
+
+      const ops = await Promise.all(analyses.map(async (a) => {
+        const { data: aLegs } = await supabase
+          .from('legs')
+          .select('*')
+          .eq('analysis_id', a.id);
+        const legsList: Leg[] = (aLegs || []).map((l: any) => ({
+          side: l.side as 'buy' | 'sell',
+          option_type: l.option_type as 'call' | 'put' | 'stock',
+          asset: l.asset,
+          strike: l.strike,
+          price: l.price,
+          quantity: l.quantity,
+          expiry_date: l.expiry_date,
+        }));
+        const m = legsList.length > 0 ? calculateMetrics(legsList) : null;
+        const investido = legsList.reduce((acc, l) => {
+          const cost = l.price * l.quantity * (l.option_type === 'stock' ? 1 : 100);
+          return acc + (l.side === 'buy' ? cost : -cost);
+        }, 0);
+
+        // Check if any leg ticker is live in rows
+        let lucroAtual = 0;
+        let temDadoVivo = false;
+        for (const leg of legsList) {
+          const liveRow = rows.get(leg.asset);
+          if (liveRow?.ultimo) {
+            temDadoVivo = true;
+            const precoAtual = liveRow.ultimo;
+            let pnl = 0;
+            if (leg.option_type === 'stock') {
+              pnl = (precoAtual - leg.price) * leg.quantity;
+            } else {
+              pnl = (precoAtual - leg.price) * leg.quantity * 100;
+            }
+            if (leg.side === 'sell') pnl = -pnl;
+            lucroAtual += pnl;
+          }
+        }
+
+        return {
+          ...a,
+          legs: legsList,
+          metrics: m,
+          investido,
+          lucroAtual,
+          temDadoVivo,
+          pctLucro: investido !== 0 ? (lucroAtual / Math.abs(investido)) * 100 : 0,
+        };
+      }));
+      setOpenOps(ops);
+    };
+    fetchOps();
+    const interval = setInterval(fetchOps, 10000);
+    return () => clearInterval(interval);
+  }, [user, rows]);
 
   const handleAddTicker = () => {
     if (!newTicker.trim()) return;
@@ -284,8 +360,14 @@ export default function DadosAoVivo() {
     return { payoffData: data, metrics: m };
   }, [legs]);
 
-  // Save analysis
-  const saveAnalysis = async () => {
+  // Open name dialog before saving
+  const handleSaveClick = () => {
+    setPendingSaveName(analysisName || `Estrutura ${new Date().toLocaleDateString('pt-BR')}`);
+    setShowNameDialog(true);
+  };
+
+  // Save analysis with name
+  const saveAnalysis = async (name: string) => {
     if (!user) {
       toast({ title: "Faça login para salvar", variant: "destructive" });
       return;
@@ -296,16 +378,13 @@ export default function DadosAoVivo() {
     }
     setSaving(true);
     try {
-      const name = analysisName || `Estrutura Tempo Real ${new Date().toLocaleDateString('pt-BR')}`;
-      
-      // Find earliest expiry
       const expiryDates = legs.filter(l => l.expiry_date).map(l => l.expiry_date!).sort();
       const expiryDate = expiryDates[0] || null;
 
       const { data: analysis, error: aError } = await supabase
         .from('analyses').insert({
           user_id: user.id,
-          name,
+          name: name || `Estrutura ${new Date().toLocaleDateString('pt-BR')}`,
           underlying_asset: legs[0]?.asset || null,
           expiry_date: expiryDate,
         }).select().single();
@@ -323,12 +402,30 @@ export default function DadosAoVivo() {
       }));
       await supabase.from('legs').insert(legsToInsert);
 
+      setShowNameDialog(false);
       setShowSaveDialog(true);
+      setAnalysisName("");
     } catch (err: any) {
       toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });
     } finally {
       setSaving(false);
     }
+  };
+
+  // Rename analysis
+  const handleRename = async (id: string) => {
+    if (!editNameValue.trim()) return;
+    const { error } = await supabase
+      .from('analyses')
+      .update({ name: editNameValue.trim() })
+      .eq('id', id);
+    if (error) {
+      toast({ title: "Erro ao renomear", variant: "destructive" });
+    } else {
+      toast({ title: "Nome atualizado!" });
+      setOpenOps(prev => prev.map(op => op.id === id ? { ...op, name: editNameValue.trim() } : op));
+    }
+    setEditingNameId(null);
   };
 
   return (
@@ -469,7 +566,7 @@ export default function DadosAoVivo() {
                   {legs.length > 0 ? `${legs.length} perna(s) no Payoff` : 'Selecione para Payoff'}
                 </Button>
                 {legs.length > 0 && (
-                  <Button onClick={saveAnalysis} disabled={saving} className="gap-2">
+                  <Button onClick={handleSaveClick} disabled={saving} className="gap-2">
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     Salvar Análise
                   </Button>
@@ -631,13 +728,142 @@ export default function DadosAoVivo() {
           </div>
         )}
 
+        {/* ── Open Operations Cards ─────────────────────────────────── */}
+        {openOps.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-primary" />
+              Operações em Aberto
+              <Badge variant="secondary">{openOps.length}</Badge>
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {openOps.map((op) => (
+                <Card key={op.id} className="border-border/50 hover:border-primary/30 transition-colors">
+                  <CardContent className="pt-4 pb-3 space-y-3">
+                    {/* Name — editable */}
+                    <div className="flex items-center justify-between gap-2">
+                      {editingNameId === op.id ? (
+                        <div className="flex items-center gap-1 flex-1">
+                          <Input
+                            value={editNameValue}
+                            onChange={(e) => setEditNameValue(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleRename(op.id)}
+                            className="h-7 text-xs flex-1"
+                            autoFocus
+                          />
+                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs"
+                            onClick={() => handleRename(op.id)}>OK</Button>
+                          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-muted-foreground"
+                            onClick={() => setEditingNameId(null)}>✕</Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                          <span className="font-bold text-sm truncate">{op.name}</span>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-5 w-5 shrink-0 text-muted-foreground hover:text-primary"
+                            onClick={() => { setEditingNameId(op.id); setEditNameValue(op.name); }}
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
+                      <Badge variant="outline" className="text-[10px] shrink-0">
+                        {op.legs?.length || 0} perna{(op.legs?.length || 0) > 1 ? 's' : ''}
+                      </Badge>
+                    </div>
+
+                    {/* Metrics row */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="text-center p-2 rounded bg-muted/50">
+                        <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-0.5">
+                          <DollarSign className="w-3 h-3" /> Lucro
+                        </div>
+                        <div className={cn(
+                          "text-sm font-bold font-mono",
+                          op.lucroAtual > 0 ? "text-chart-profit" : op.lucroAtual < 0 ? "text-destructive" : "text-foreground"
+                        )}>
+                          {op.temDadoVivo ? `R$ ${op.lucroAtual.toFixed(2)}` : '—'}
+                        </div>
+                      </div>
+                      <div className="text-center p-2 rounded bg-muted/50">
+                        <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-0.5">
+                          <Percent className="w-3 h-3" /> % Lucro
+                        </div>
+                        <div className={cn(
+                          "text-sm font-bold font-mono",
+                          op.pctLucro > 0 ? "text-chart-profit" : op.pctLucro < 0 ? "text-destructive" : "text-foreground"
+                        )}>
+                          {op.temDadoVivo ? `${op.pctLucro.toFixed(1)}%` : '—'}
+                        </div>
+                      </div>
+                      <div className="text-center p-2 rounded bg-muted/50">
+                        <div className="flex items-center justify-center gap-1 text-[10px] text-muted-foreground mb-0.5">
+                          <Briefcase className="w-3 h-3" /> Investido
+                        </div>
+                        <div className="text-sm font-bold font-mono text-foreground">
+                          R$ {Math.abs(op.investido).toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Live indicator + edit button */}
+                    <div className="flex items-center justify-between">
+                      {op.temDadoVivo ? (
+                        <span className="flex items-center gap-1 text-[10px] text-chart-profit">
+                          <Activity className="w-3 h-3 animate-pulse" /> Dados ao vivo
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground">Sem dados ao vivo</span>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs gap-1"
+                        onClick={() => navigate(`/analysis/${op.id}`)}
+                      >
+                        <Edit className="w-3 h-3" /> Editar Estrutura
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Empty connected state */}
-        {rowsArr.length === 0 && status === "connected" && (
+        {rowsArr.length === 0 && status === "connected" && openOps.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground space-y-3">
             <Wifi className="w-12 h-12 opacity-20" />
             <p className="text-sm">Bridge conectado! Adicione tickers para monitorar.</p>
           </div>
         )}
+
+        {/* Name dialog — shown before saving */}
+        <Dialog open={showNameDialog} onOpenChange={setShowNameDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Nome da Estrutura</DialogTitle>
+              <DialogDescription>Dê um nome para identificar esta estrutura nas Operações em Aberto.</DialogDescription>
+            </DialogHeader>
+            <Input
+              value={pendingSaveName}
+              onChange={(e) => setPendingSaveName(e.target.value)}
+              placeholder="Ex: Trava de Alta PETR4"
+              className="mt-2"
+              onKeyDown={(e) => e.key === 'Enter' && saveAnalysis(pendingSaveName)}
+            />
+            <DialogFooter className="gap-2 mt-2">
+              <Button variant="outline" onClick={() => setShowNameDialog(false)}>Cancelar</Button>
+              <Button onClick={() => saveAnalysis(pendingSaveName)} disabled={saving} className="gap-2">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Salvar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Save success dialog */}
         <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
