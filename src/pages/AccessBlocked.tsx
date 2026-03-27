@@ -141,7 +141,7 @@ export default function AccessBlocked({ status }: AccessBlockedProps) {
         )}
 
         <div className="text-center">
-          <Button variant="ghost" onClick={signOut} className="text-sm">
+          <Button variant="ghost" onClick={async () => { await signOut(); navigate('/auth'); }} className="text-sm">
             <LogOut className="mr-2 h-4 w-4" />
             Sair da conta
           </Button>
