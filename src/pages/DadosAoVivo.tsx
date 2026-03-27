@@ -566,7 +566,7 @@ export default function DadosAoVivo() {
                   {legs.length > 0 ? `${legs.length} perna(s) no Payoff` : 'Selecione para Payoff'}
                 </Button>
                 {legs.length > 0 && (
-                  <Button onClick={saveAnalysis} disabled={saving} className="gap-2">
+                  <Button onClick={handleSaveClick} disabled={saving} className="gap-2">
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     Salvar Análise
                   </Button>
