@@ -115,6 +115,7 @@ export default function Settings() {
     { icon: Bot, title: "Análise Profunda com IA", desc: "Relatórios quantitativos e vereditos profissionais." },
     { icon: Briefcase, title: "Portfólio e P&L", desc: "Acompanhe o lucro real de todas as suas operações." },
     { icon: History, title: "Histórico Completo", desc: "Salve e revise suas estratégias a qualquer momento." },
+    { icon: Radio, title: "Estrutura em Tempo Real", desc: "Conexão direta ao Profit RTD — acompanhe preços ao vivo." },
     { icon: Shield, title: "Suporte Prioritário", desc: "Atendimento exclusivo para assinantes PRO." },
   ];
 
