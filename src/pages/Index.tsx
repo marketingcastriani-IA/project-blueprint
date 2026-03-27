@@ -5,7 +5,7 @@ import {
   TrendingUp, ArrowRight, Brain, CheckCircle2,
   Lock, Sparkles, XCircle,
   Zap, Camera, FileSpreadsheet, Cpu, Star,
-  BarChart3, PieChart, Bot
+  BarChart3, PieChart, Bot, Radio
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Sun, Moon } from 'lucide-react';
