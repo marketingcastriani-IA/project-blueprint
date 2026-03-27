@@ -346,9 +346,9 @@ export default function DadosAoVivo() {
     if (row) updateRow(ticker, { selecionado: !row.selecionado });
   };
 
-  // Convert selected rows to Leg[] for payoff — using precoEntrada when available
+  // Convert selected MANUAL rows to Leg[] for payoff — using precoEntrada when available
   const legs: Leg[] = useMemo(() => {
-    return rowsArr
+    return manualRowsArr
       .filter(r => r.selecionado && (r.ultimo || r.strike || r.precoEntrada))
       .map(r => ({
         side: r.lado,
@@ -359,7 +359,7 @@ export default function DadosAoVivo() {
         quantity: r.quantidade,
         expiry_date: r.expiryDate,
       }));
-  }, [rowsArr]);
+  }, [manualRowsArr]);
 
   // Calculate payoff
   const { payoffData, metrics } = useMemo(() => {
