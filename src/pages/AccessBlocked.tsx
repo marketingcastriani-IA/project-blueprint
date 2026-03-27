@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Clock, XCircle, AlertTriangle, LogOut, Crown, Loader2, CheckCircle2, Zap, Camera, Bot, History, Briefcase } from 'lucide-react';
