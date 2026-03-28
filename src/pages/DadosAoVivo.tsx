@@ -79,7 +79,7 @@ export default function DadosAoVivo() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const accessControl = useAccessControl();
-  const { status, rows, errorMsg, reconnectCount, connect, addTicker, removeTicker, updateRow } = useRtdBridge();
+  const { status, rows, errorMsg, reconnectCount, connect, addTicker, removeTicker, updateRow } = useSharedRtdBridge();
 
   const [newTicker, setNewTicker] = useState("");
   const [analysisName, setAnalysisName] = useState("");
