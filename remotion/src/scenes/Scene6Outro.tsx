@@ -1,6 +1,7 @@
 import { AbsoluteFill, useCurrentFrame, interpolate, spring, useVideoConfig } from "remotion";
 import { C } from "../colors";
 import { loadFont } from "@remotion/google-fonts/PlusJakartaSans";
+import { Caption } from "../components/Caption";
 
 const { fontFamily } = loadFont("normal", { weights: ["400", "600", "700", "800"], subsets: ["latin"] });
 
