@@ -435,18 +435,15 @@ export default function BoxTracker() {
     [rows, quantidade, vencimentoManual, descontarIRAcoes, descontarIRRendaFixa, cdiAnual]
   );
 
-  // Global ranking
-  const allPairs: (BoxPair & { familyName: string })[] = [];
+  // Global ranking — only the #1 best box per family
+  const bestPerFamily: (BoxPair & { familyName: string })[] = [];
   families.forEach((f) => {
     const pairs = calculateBoxPairs(f);
-    pairs.forEach((p) => {
-      if (p.lucroPercent !== null && p.lucroPercent > 0) {
-        allPairs.push({ ...p, familyName: f.name });
-      }
-    });
+    const best = pairs.find((p) => p.lucroPercent !== null && p.lucroPercent > 0);
+    if (best) bestPerFamily.push({ ...best, familyName: f.name });
   });
-  allPairs.sort((a, b) => (b.lucroPercent ?? 0) - (a.lucroPercent ?? 0));
-  const topPairs = allPairs.slice(0, 10);
+  bestPerFamily.sort((a, b) => (b.lucroPercent ?? 0) - (a.lucroPercent ?? 0));
+  const topPairs = bestPerFamily.slice(0, 10);
 
   const isConnected = status === "connected";
   const statusCfg = statusConfig[status];
@@ -724,10 +721,10 @@ export default function BoxTracker() {
         </div>
       </div>
 
-      {/* WINNER CARDS - Top 3 */}
+      {/* WINNER CARDS - Top 1 de cada ação */}
       {topPairs.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
-          {topPairs.slice(0, 3).map((pair, i) => {
+        <div className={cn("grid gap-3 mb-5", topPairs.length === 1 ? "grid-cols-1" : topPairs.length === 2 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-3")}>
+          {topPairs.map((pair, i) => {
             const isWinner = i === 0;
             const lucroDisplay = descontarIRAcoes ? pair.lucroLiqAcoes : pair.lucro;
             const lucroTotalDisplay = descontarIRAcoes ? pair.lucroLiqAcoesTotal : pair.lucroTotal;
@@ -820,12 +817,12 @@ export default function BoxTracker() {
         </div>
       )}
 
-      {/* TOP 10 TABLE */}
-      {topPairs.length > 3 && (
+      {/* TOP 10 TABLE — Top 1 de cada ação */}
+      {topPairs.length > 0 && (
         <div className="mb-5 bg-card border border-border rounded-xl p-4">
           <h2 className="text-sm font-bold text-primary mb-3 flex items-center gap-2">
             <Star className="w-4 h-4 text-amber-500" />
-            Top 10 · Melhores Box Spreads
+            🏆 Ranking · Melhor Box por Ação
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
@@ -846,14 +843,15 @@ export default function BoxTracker() {
                 </tr>
               </thead>
               <tbody>
-                {topPairs.slice(3).map((p, i) => {
+                {topPairs.map((p, i) => {
                   const lucroDisplay = descontarIRAcoes ? p.lucroLiqAcoes : p.lucro;
                   const lucroTotalDisplay = descontarIRAcoes ? p.lucroLiqAcoesTotal : p.lucroTotal;
                   const lucroPercentDisplay = descontarIRAcoes ? p.lucroLiqAcoesPercent : p.lucroPercent;
                   const cdiDisplay = descontarIRRendaFixa ? p.cdiPeriodoLiq : p.cdiPeriodo;
+                  const isFirst = i === 0;
                   return (
-                    <tr key={`rank-${i + 3}`} className="border-b border-border/50 hover:bg-muted/50">
-                      <td className="py-2 pr-2 text-muted-foreground">{i + 4}º</td>
+                    <tr key={`rank-${i}`} className={cn("border-b border-border/50 hover:bg-muted/50", isFirst && "bg-emerald-50/50 dark:bg-emerald-950/20")}>
+                      <td className="py-2 pr-2 text-muted-foreground font-bold">{i + 1}º</td>
                       <td className="py-2 pr-2 font-bold text-foreground">{p.familyName}</td>
                       <td className="py-2 pr-2 text-blue-600 dark:text-blue-300">{p.callSymbol}</td>
                       <td className="py-2 pr-2 text-red-600 dark:text-red-300">{p.putSymbol}</td>
