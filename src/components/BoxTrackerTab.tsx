@@ -791,24 +791,35 @@ export default function BoxTracker() {
                     <p className="text-sm font-bold text-emerald-600 dark:text-emerald-300">{formatBRL(lucroTotalDisplay)}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] text-muted-foreground uppercase">CDI Anual</p>
-                    <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{String(cdiAnual).replace(".", ",")}%</p>
-                  </div>
-                  <div>
                     <p className="text-[9px] text-muted-foreground uppercase">CDI Per.{descontarIRRendaFixa ? " líq" : ""}</p>
                     <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}</p>
                   </div>
-                  <div className="text-right">
+                  <div>
                     <p className="text-[9px] text-muted-foreground uppercase">Retorno{descontarIRAcoes ? " líq" : ""}</p>
-                    <p className="text-xl font-black text-emerald-600 dark:text-emerald-300">
-                      {formatPercent(lucroPercentDisplay)}
-                    </p>
-                    {pair.vsCD === "acima" && (
-                      <span className="text-[9px] text-emerald-600 dark:text-emerald-500 font-bold">▲ ACIMA CDI</span>
-                    )}
-                    {pair.vsCD === "abaixo" && (
-                      <span className="text-[9px] text-red-500 font-bold">▼ ABAIXO CDI</span>
-                    )}
+                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-300">{formatPercent(lucroPercentDisplay)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[9px] text-muted-foreground uppercase">vs CDI</p>
+                    {(() => {
+                      const diff = (lucroPercentDisplay ?? 0) - (cdiDisplay ?? 0);
+                      const isAbove = diff > 0;
+                      return (
+                        <>
+                          <p className={cn(
+                            "text-2xl font-black",
+                            isAbove ? "text-emerald-500 dark:text-emerald-300" : "text-red-500"
+                          )}>
+                            {isAbove ? "+" : ""}{diff.toFixed(2).replace(".", ",")}%
+                          </p>
+                          <span className={cn(
+                            "text-[9px] font-bold",
+                            isAbove ? "text-emerald-600 dark:text-emerald-500" : "text-red-500"
+                          )}>
+                            {isAbove ? "▲ ACIMA CDI" : "▼ ABAIXO CDI"}
+                          </span>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
