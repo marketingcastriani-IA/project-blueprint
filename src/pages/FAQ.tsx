@@ -392,6 +392,196 @@ export default function FAQ() {
           </div>
         </FeatureSection>
 
+        {/* ─── PRÉ-REQUISITO: PROFIT RTD BRIDGE ─── */}
+        <FeatureSection icon={Terminal} title="Pré-Requisito: Profit RTD Bridge" badge="Configuração">
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Os módulos <strong className="text-foreground">Tempo Real</strong> e <strong className="text-foreground">Rastreador de Box</strong> dependem 
+              de dados ao vivo vindos do Profit Pro (Nelogica) via o <strong className="text-foreground">ProfitRTD Bridge</strong>. 
+              Antes de usar essas funcionalidades, é necessário instalar e iniciar o Bridge no seu computador.
+            </p>
+
+            <ScreenshotImage src={faqBridgeSetup} alt="Setup do ProfitRTD Bridge" />
+
+            <div className="space-y-4">
+              <StepCard 
+                step={1} icon={Download}
+                title="Baixe o Bridge" 
+                description="Na seção 'Dados ao Vivo', clique no botão 'Download Bridge' para baixar o pacote .zip contendo o executável, o arquivo .bat e o README de instruções."
+              />
+              <StepCard 
+                step={2} icon={Settings}
+                title="Instale o .NET 8 Runtime (x86)" 
+                description="O Bridge requer o .NET 8 Runtime na versão x86. O link para download aparece no README e na própria página. Instale antes de prosseguir."
+              />
+              <StepCard 
+                step={3} icon={Activity}
+                title="Abra o Profit Pro e Inicie o Bridge" 
+                description="Com o Profit Pro aberto e logado, execute o arquivo 'iniciar_bridge.bat'. O terminal mostrará a conexão WebSocket na porta 8765. Mantenha o terminal aberto."
+              />
+              <StepCard 
+                step={4} icon={Wifi}
+                title="Conecte no Opções PRO X" 
+                description="Volte para o Opções PRO X e verifique o badge de status. Quando aparecer 'Conectado' em verde, você está pronto para usar Tempo Real e Rastreador de Box."
+              />
+            </div>
+
+            <div className="p-4 rounded-xl bg-warning/5 border border-warning/20">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  <strong className="text-foreground">Importante:</strong> O Profit Pro deve estar aberto e logado ANTES de iniciar o Bridge. 
+                  Caso a conexão caia, feche o terminal e execute o .bat novamente. O sistema reconecta automaticamente.
+                </p>
+              </div>
+            </div>
+          </div>
+        </FeatureSection>
+
+        {/* ─── TEMPO REAL ─── */}
+        <FeatureSection icon={Radio} title="Tempo Real — Dados ao Vivo" badge="PRO">
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              A aba <strong className="text-foreground">Tempo Real</strong> permite monitorar cotações de opções ao vivo, 
+              acompanhar operações em aberto com P&L atualizado e visualizar o gráfico de payoff com dados reais do mercado. 
+              Todos os dados vêm diretamente do Profit Pro via WebSocket.
+            </p>
+
+            <ScreenshotImage src={faqTempoReal} alt="Aba Tempo Real - Dados ao Vivo" />
+
+            <div className="space-y-4">
+              <StepCard 
+                step={1} icon={Wifi}
+                title="Verifique a Conexão" 
+                description="No topo da tela, o badge de status mostra se o Bridge está conectado (verde), desconectado (vermelho) ou reconectando (amarelo). Certifique-se de que está 'Conectado' antes de adicionar tickers."
+              />
+              <StepCard 
+                step={2} icon={Target}
+                title="Adicione Tickers para Monitorar" 
+                description="Digite o código do ticker (ex: PETR4, PETRA260, VALE3) no campo de pesquisa e clique em Adicionar. Os dados de Último Preço, Strike, Bid, Ask e Negócios aparecem em tempo real na tabela."
+              />
+              <StepCard 
+                step={3} icon={Activity}
+                title="Operações em Aberto (Sincronização Automática)" 
+                description="Se você tem análises ativas salvas no Histórico, os tickers são automaticamente extraídos e sincronizados. O sistema exibe Lucro (R$), Rentabilidade (%) e Capital Investido atualizados em tempo real."
+              />
+              <StepCard 
+                step={4} icon={BarChart3}
+                title="Gráfico de Payoff em Tempo Real" 
+                description="Preencha Preço de Entrada, Quantidade e Vencimento para cada ticker. O gráfico de payoff é gerado automaticamente com as métricas atualizadas conforme os preços mudam."
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { label: 'Cotações ao Vivo', desc: 'Último, BID, ASK, Strike e Volume em tempo real' },
+                { label: 'P&L Automático', desc: 'Lucro/prejuízo calculado com preços de mercado' },
+                { label: 'Payoff Dinâmico', desc: 'Gráfico atualizado conforme o mercado se move' },
+              ].map(item => (
+                <div key={item.label} className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                  <p className="text-xs font-bold">{item.label}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+              <div className="flex items-start gap-2">
+                <Eye className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  <strong className="text-foreground">Dica:</strong> Use a seção "Pesquisa" para monitorar tickers isolados sem vincular 
+                  a nenhuma operação. Ideal para acompanhar opções que você está estudando antes de montar uma estrutura.
+                </p>
+              </div>
+            </div>
+          </div>
+        </FeatureSection>
+
+        {/* ─── RASTREADOR DE BOX ─── */}
+        <FeatureSection icon={Box} title="Rastreador de Box Spread" badge="PRO">
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              O <strong className="text-foreground">Rastreador de Box</strong> monitora automaticamente todas as combinações de Box Spread 
+              para as ações que você configurar, calculando em tempo real o custo, lucro, rentabilidade e comparação com o CDI. 
+              A fórmula é: <strong className="text-foreground">Custo = (Ação + Put) - Call</strong> e <strong className="text-foreground">Lucro = Strike - Custo</strong>.
+            </p>
+
+            <ScreenshotImage src={faqRastreadorBox} alt="Rastreador de Box Spread" />
+
+            <div className="space-y-4">
+              <StepCard 
+                step={1} icon={Target}
+                title="Adicione uma Família de Ações" 
+                description="Clique em 'Adicionar Família' e informe o nome do ativo base (ex: PETR4). Em seguida, cole ou adicione os tickers de CALL e PUT do ativo. O sistema identifica automaticamente o tipo (Call/Put) e o strike de cada ticker."
+              />
+              <StepCard 
+                step={2} icon={Settings}
+                title="Configure CDI e Quantidade" 
+                description="Edite a taxa CDI anual (persistida no navegador) e defina a quantidade de contratos. O CDI é usado para calcular o rendimento de referência do período e comparar com o retorno do box."
+              />
+              <StepCard 
+                step={3} icon={BarChart3}
+                title="Selecione o Vencimento" 
+                description="Use o seletor de data para definir o vencimento das opções. O sistema calcula os dias úteis até o vencimento e o CDI proporcional ao período automaticamente."
+              />
+              <StepCard 
+                step={4} icon={Trophy}
+                title="Analise os Resultados" 
+                description="O sistema exibe cards de destaque com o melhor box de cada ação, mostrando o '% do CDI' (ex: 120% do CDI significa que rende 20% a mais que a renda fixa). A tabela de ranking lista os Top 10 melhores spreads."
+              />
+            </div>
+
+            <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 space-y-3">
+              <h4 className="text-sm font-black flex items-center gap-2">
+                <Zap className="h-4 w-4 text-primary" /> Entendendo o % do CDI
+              </h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" />
+                  <span><strong className="text-foreground">100% do CDI:</strong> O box rende exatamente o mesmo que o CDI no período</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" />
+                  <span><strong className="text-foreground">120% do CDI:</strong> Rende o CDI + 20% de bônus (fórmula: CDI × 1,20)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" />
+                  <span><strong className="text-foreground">200% do CDI:</strong> Rende o dobro do CDI — operação muito atrativa</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+                  <span><strong className="text-foreground">Abaixo de 100%:</strong> O box rende menos que a renda fixa — pode não valer a pena</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { label: 'Simulador de IR Ações', desc: 'Ative para descontar 15% de IR sobre o lucro das ações e ver o retorno líquido' },
+                { label: 'Simulador de IR Renda Fixa', desc: 'Ative para descontar 22,5% de IR sobre o CDI e comparar de forma justa' },
+                { label: 'Cards de Destaque', desc: 'Exibe apenas o melhor box de cada ação, evitando poluição visual' },
+                { label: 'Tabela por Strike', desc: 'Expanda cada família para ver todos os strikes com preços de Call, Put, Ação, custo e lucro detalhados' },
+              ].map(item => (
+                <div key={item.label} className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                  <p className="text-xs font-bold">{item.label}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-4 rounded-xl bg-warning/5 border border-warning/20">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  <strong className="text-foreground">Dica:</strong> Cole os tickers diretamente do Profit Pro usando o botão "Colar Tickers". 
+                  O sistema identifica automaticamente o tipo (Call/Put) e o strike pelo código do ticker da B3. 
+                  Adicione várias ações para comparar qual oferece o melhor retorno relativo ao CDI.
+                </p>
+              </div>
+            </div>
+          </div>
+        </FeatureSection>
+
         {/* FAQ Perguntas Frequentes */}
         <FeatureSection icon={HelpCircle} title="Perguntas Frequentes">
           <Accordion type="single" collapsible className="w-full">
