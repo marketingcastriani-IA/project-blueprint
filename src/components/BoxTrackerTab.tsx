@@ -535,7 +535,8 @@ export default function BoxTracker() {
                   <th className="text-right py-2 pr-3">Strike</th>
                   <th className="text-center py-2 pr-3">Venc.</th>
                   <th className="text-right py-2 pr-3">Compra Box</th>
-                  <th className="text-right py-2 pr-3">Lucro</th>
+                  <th className="text-right py-2 pr-3">Lucro (1)</th>
+                  <th className="text-right py-2 pr-3">Lucro Total</th>
                   <th className="text-right py-2 pr-3">Lucro %</th>
                   <th className="text-right py-2 pr-3 text-amber-400">CDI Per.</th>
                   <th className="text-center py-2">vs CDI</th>
