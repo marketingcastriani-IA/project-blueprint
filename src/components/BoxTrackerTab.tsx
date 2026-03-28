@@ -1286,7 +1286,7 @@ function FamilyCard({
                       </td>
                       {/* CDI */}
                       <td className="px-2 py-2 text-right text-amber-600 dark:text-amber-400 font-bold">
-                        {CDI_ANUAL}%
+                        {String(cdiAnual).replace(".", ",")}%
                       </td>
                       <td className="px-2 py-2 text-right text-amber-600 dark:text-amber-400">
                         {cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}
