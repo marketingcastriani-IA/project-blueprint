@@ -22,7 +22,8 @@ import {
   WifiOff,
   AlertTriangle,
 } from "lucide-react";
-import { useRtdBridge, statusConfig } from "@/hooks/useRtdBridge";
+import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
+import { statusConfig } from "@/hooks/useRtdBridge";
 
 // ─── TIPOS ───────────────────────────────────────────────────
 interface OptionTicker {
@@ -106,7 +107,7 @@ export default function BoxTracker() {
   const [newFamilyName, setNewFamilyName] = useState("");
   
   // Real-time bridge
-  const { status, rows, connect, addTicker: bridgeAddTicker } = useRtdBridge();
+  const { status, rows, connect, addTicker: bridgeAddTicker } = useSharedRtdBridge();
 
   // Load from localStorage
   useEffect(() => {
