@@ -182,6 +182,14 @@ export default function BoxTracker() {
   const [editingVenc, setEditingVenc] = useState(false);
   const [descontarIRAcoes, setDescontarIRAcoes] = useState(false);
   const [descontarIRRendaFixa, setDescontarIRRendaFixa] = useState(false);
+  const [cdiAnual, setCdiAnual] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(CDI_STORAGE_KEY);
+      return saved ? parseFloat(saved) : CDI_ANUAL_DEFAULT;
+    } catch { return CDI_ANUAL_DEFAULT; }
+  });
+  const [editingCdi, setEditingCdi] = useState(false);
+  const [cdiInput, setCdiInput] = useState(String(cdiAnual).replace(".", ","));
 
   const { status, rows, connect, addTicker: bridgeAddTicker } = useSharedRtdBridge();
 
