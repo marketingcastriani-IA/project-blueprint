@@ -229,12 +229,20 @@ export default function BoxTracker() {
     );
   }, []);
 
+  // Helper: get meaningful price (fallback to ultimo if bid/ask is 0 or null)
+  const getPrice = (row: any, field: "ofCompra" | "ofVenda"): number | null => {
+    if (!row) return null;
+    const val = row[field];
+    if (val !== null && val !== undefined && val !== 0) return val;
+    return row.ultimo ?? null;
+  };
+
   // Calculate box pairs using live data from bridge
   const calculateBoxPairs = useCallback(
     (family: StockFamily): BoxPair[] => {
       const stockRow = rows.get(family.name);
-      const stockBid = stockRow?.ofCompra ?? stockRow?.ultimo ?? null;
-      const stockAsk = stockRow?.ofVenda ?? stockRow?.ultimo ?? null;
+      const stockBid = getPrice(stockRow, "ofCompra");
+      const stockAsk = getPrice(stockRow, "ofVenda");
 
       // Group by strike
       const strikeMap = new Map<number, { calls: OptionTicker[]; puts: OptionTicker[] }>();
@@ -255,10 +263,10 @@ export default function BoxTracker() {
         const callRow = call ? rows.get(call.symbol) : null;
         const putRow = put ? rows.get(put.symbol) : null;
 
-        const callBid = callRow?.ofCompra ?? callRow?.ultimo ?? null;
-        const callAsk = callRow?.ofVenda ?? callRow?.ultimo ?? null;
-        const putBid = putRow?.ofCompra ?? putRow?.ultimo ?? null;
-        const putAsk = putRow?.ofVenda ?? putRow?.ultimo ?? null;
+        const callBid = getPrice(callRow, "ofCompra");
+        const callAsk = getPrice(callRow, "ofVenda");
+        const putBid = getPrice(putRow, "ofCompra");
+        const putAsk = getPrice(putRow, "ofVenda");
 
         let compraBox: number | null = null;
         let lucro: number | null = null;
