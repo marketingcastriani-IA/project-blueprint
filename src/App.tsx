@@ -45,6 +45,7 @@ const App = () => (
               <Route path="/faq" element={<FAQ />} />
               <Route path="/manual" element={<Manual />} />
               <Route path="/dados-ao-vivo" element={<DadosAoVivo />} />
+              <Route path="/box-tracker" element={<BoxTracker />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
