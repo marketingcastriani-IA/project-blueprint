@@ -84,7 +84,8 @@ interface SavedFamily {
 // ─── CONSTANTES ──────────────────────────────────────────────
 const STORAGE_KEY = "box-tracker-families";
 const VENC_STORAGE_KEY = "box-tracker-vencimento";
-const CDI_ANUAL = 14.15;
+const CDI_ANUAL_DEFAULT = 14.15;
+const CDI_STORAGE_KEY = "box-tracker-cdi-anual";
 const IR_ACOES = 15;
 const IR_RENDA_FIXA = 22.5;
 
@@ -116,8 +117,8 @@ function calcDiasUteis(vencimentoStr: string | null): number | null {
   return dias;
 }
 
-function calcCdiPeriodo(diasUteis: number): number {
-  return ((1 + CDI_ANUAL / 100) ** (diasUteis / 252) - 1) * 100;
+function calcCdiPeriodo(diasUteis: number, cdiAnual: number): number {
+  return ((1 + cdiAnual / 100) ** (diasUteis / 252) - 1) * 100;
 }
 
 function generateId(): string {
@@ -181,6 +182,14 @@ export default function BoxTracker() {
   const [editingVenc, setEditingVenc] = useState(false);
   const [descontarIRAcoes, setDescontarIRAcoes] = useState(false);
   const [descontarIRRendaFixa, setDescontarIRRendaFixa] = useState(false);
+  const [cdiAnual, setCdiAnual] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(CDI_STORAGE_KEY);
+      return saved ? parseFloat(saved) : CDI_ANUAL_DEFAULT;
+    } catch { return CDI_ANUAL_DEFAULT; }
+  });
+  const [editingCdi, setEditingCdi] = useState(false);
+  const [cdiInput, setCdiInput] = useState(String(cdiAnual).replace(".", ","));
 
   const { status, rows, connect, addTicker: bridgeAddTicker } = useSharedRtdBridge();
 
@@ -394,7 +403,7 @@ export default function BoxTracker() {
 
         const vencParaCalculo = vencimentoManual || vencimento;
         const diasUteis = calcDiasUteis(vencParaCalculo);
-        const cdiPeriodo = diasUteis !== null && diasUteis > 0 ? calcCdiPeriodo(diasUteis) : null;
+        const cdiPeriodo = diasUteis !== null && diasUteis > 0 ? calcCdiPeriodo(diasUteis, cdiAnual) : null;
 
         // CDI líquido com IR renda fixa (22.5%)
         let cdiPeriodoLiq = cdiPeriodo;
@@ -423,7 +432,7 @@ export default function BoxTracker() {
       pairs.sort((a, b) => (b.lucroPercent ?? -999) - (a.lucroPercent ?? -999));
       return pairs;
     },
-    [rows, quantidade, vencimentoManual, descontarIRAcoes, descontarIRRendaFixa]
+    [rows, quantidade, vencimentoManual, descontarIRAcoes, descontarIRRendaFixa, cdiAnual]
   );
 
   // Global ranking
@@ -504,12 +513,64 @@ export default function BoxTracker() {
         </div>
       )}
 
-      {/* IR TOGGLES + CDI ANUAL */}
-      <div className="mb-5 flex flex-col sm:flex-row gap-3">
-        {/* CDI Anual */}
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-amber-400/50 bg-amber-50 dark:bg-amber-950/30">
-          <span className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider">📊 CDI Anual:</span>
-          <span className="text-lg font-black text-amber-600 dark:text-amber-400">{CDI_ANUAL}%</span>
+      {/* IR TOGGLES + CDI ANUAL EDITÁVEL */}
+      <div className="mb-5 flex flex-col sm:flex-row gap-3 flex-wrap">
+        {/* CDI Anual Editável */}
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-amber-300 dark:border-amber-500/50 bg-amber-50 dark:bg-amber-950/30">
+          <span className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider whitespace-nowrap">📊 CDI Anual:</span>
+          {editingCdi ? (
+            <div className="flex items-center gap-1.5">
+              <input
+                type="text"
+                value={cdiInput}
+                onChange={(e) => setCdiInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const val = parseFloat(cdiInput.replace(",", "."));
+                    if (!isNaN(val) && val > 0 && val < 100) {
+                      setCdiAnual(val);
+                      localStorage.setItem(CDI_STORAGE_KEY, String(val));
+                      setEditingCdi(false);
+                    }
+                  } else if (e.key === "Escape") {
+                    setCdiInput(String(cdiAnual).replace(".", ","));
+                    setEditingCdi(false);
+                  }
+                }}
+                className="w-20 bg-card border border-amber-400 dark:border-amber-500 rounded-lg px-2 py-1 text-sm text-center font-black text-amber-700 dark:text-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                autoFocus
+              />
+              <span className="text-sm font-bold text-amber-600 dark:text-amber-400">%</span>
+              <button
+                onClick={() => {
+                  const val = parseFloat(cdiInput.replace(",", "."));
+                  if (!isNaN(val) && val > 0 && val < 100) {
+                    setCdiAnual(val);
+                    localStorage.setItem(CDI_STORAGE_KEY, String(val));
+                    setEditingCdi(false);
+                  }
+                }}
+                className="px-2 py-1 bg-amber-500 hover:bg-amber-400 text-white rounded-lg text-xs font-bold transition-colors"
+              >
+                <Save className="w-3 h-3" />
+              </button>
+              <button
+                onClick={() => { setCdiInput(String(cdiAnual).replace(".", ",")); setEditingCdi(false); }}
+                className="px-2 py-1 bg-muted hover:bg-muted/80 text-muted-foreground rounded-lg text-xs font-bold transition-colors"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => { setCdiInput(String(cdiAnual).replace(".", ",")); setEditingCdi(true); }}
+              className="flex items-center gap-1.5 text-lg font-black text-amber-600 dark:text-amber-400 hover:text-amber-500 dark:hover:text-amber-300 transition-colors cursor-pointer"
+              title="Clique para editar a taxa CDI anual"
+            >
+              {String(cdiAnual).replace(".", ",")}%
+              <Pencil className="w-3.5 h-3.5 opacity-50" />
+            </button>
+          )}
         </div>
 
         {/* IR Ações */}
@@ -593,10 +654,10 @@ export default function BoxTracker() {
                     <span className="text-amber-600 dark:text-amber-400 font-bold">{diasUteisVenc}</span> dias úteis restantes
                     {diasUteisVenc > 0 && (
                       <span className="ml-2">
-                        · CDI do período: <span className="text-amber-600 dark:text-amber-300 font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc))}</span>
+                        · CDI do período: <span className="text-amber-600 dark:text-amber-300 font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc, cdiAnual))}</span>
                         {descontarIRRendaFixa && (
                           <span className="ml-1 text-muted-foreground">
-                            (líq: <span className="text-emerald-600 dark:text-emerald-400 font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc) * (1 - IR_RENDA_FIXA / 100))}</span>)
+                            (líq: <span className="text-emerald-600 dark:text-emerald-400 font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc, cdiAnual) * (1 - IR_RENDA_FIXA / 100))}</span>)
                           </span>
                         )}
                       </span>
@@ -644,7 +705,7 @@ export default function BoxTracker() {
                       <span className="text-amber-600 dark:text-amber-400 font-bold">{diasUteisVenc}</span> dias úteis
                       {diasUteisVenc > 0 && (
                         <span className="ml-2">
-                          · CDI: <span className="text-amber-600 dark:text-amber-300 font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc))}</span>
+                          · CDI: <span className="text-amber-600 dark:text-amber-300 font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc, cdiAnual))}</span>
                         </span>
                       )}
                     </div>
@@ -677,18 +738,24 @@ export default function BoxTracker() {
               <div
                 key={`top-${i}`}
                 className={cn(
-                  "relative overflow-hidden rounded-xl border p-4 transition-all",
+                  "relative overflow-hidden rounded-xl border-2 p-4 transition-all duration-300",
                   isWinner
-                    ? "bg-gradient-to-br from-orange-100 to-amber-50 dark:from-orange-950/50 dark:to-amber-950/30 border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.25)] animate-pulse"
+                    ? "bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30 border-emerald-500 dark:border-emerald-400 shadow-[0_0_30px_-5px_rgba(16,185,129,0.4)] ring-2 ring-emerald-400/30 dark:ring-emerald-400/20 hover:shadow-[0_0_40px_-5px_rgba(16,185,129,0.5)] hover:scale-[1.01]"
                     : i === 1
-                    ? "bg-card border-border"
-                    : "bg-card border-border"
+                    ? "bg-card border-border/80 hover:border-muted-foreground/30 hover:shadow-md"
+                    : "bg-card border-border/80 hover:border-muted-foreground/30 hover:shadow-md"
                 )}
               >
+                {isWinner && (
+                  <span className="absolute top-3 right-3 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+                  </span>
+                )}
                 <div className="flex items-center gap-2 mb-2">
                   <Trophy
                     className={cn("w-5 h-5", 
-                      isWinner ? "text-orange-500" : i === 1 ? "text-gray-400" : "text-amber-600"
+                      isWinner ? "text-emerald-500" : i === 1 ? "text-gray-400" : "text-amber-600"
                     )}
                   />
                   <span className="text-xs text-muted-foreground uppercase tracking-wider font-bold">
@@ -728,7 +795,7 @@ export default function BoxTracker() {
                   </div>
                   <div>
                     <p className="text-[9px] text-muted-foreground uppercase">CDI Anual</p>
-                    <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{CDI_ANUAL}%</p>
+                    <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{String(cdiAnual).replace(".", ",")}%</p>
                   </div>
                   <div>
                     <p className="text-[9px] text-muted-foreground uppercase">CDI Per.{descontarIRRendaFixa ? " líq" : ""}</p>
@@ -795,7 +862,7 @@ export default function BoxTracker() {
                       <td className="py-2 pr-2 text-right text-emerald-600 dark:text-emerald-400">{formatBRL(lucroDisplay)}</td>
                       <td className="py-2 pr-2 text-right text-emerald-600 dark:text-emerald-300 font-semibold">{formatBRL(lucroTotalDisplay)}</td>
                       <td className="py-2 pr-2 text-right font-bold text-emerald-600 dark:text-emerald-300">{formatPercent(lucroPercentDisplay)}</td>
-                      <td className="py-2 pr-2 text-right text-amber-600 dark:text-amber-400 font-bold">{CDI_ANUAL}%</td>
+                      <td className="py-2 pr-2 text-right text-amber-600 dark:text-amber-400 font-bold">{String(cdiAnual).replace(".", ",")}%</td>
                       <td className="py-2 pr-2 text-right text-amber-600 dark:text-amber-400">{cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}</td>
                       <td className="py-2 text-center">
                         {p.vsCD === "acima" ? (
@@ -868,6 +935,7 @@ export default function BoxTracker() {
               descontarIRAcoes={descontarIRAcoes}
               descontarIRRendaFixa={descontarIRRendaFixa}
               winnerKey={winnerKey}
+              cdiAnual={cdiAnual}
             />
           ))}
         </div>
@@ -890,6 +958,7 @@ interface FamilyCardProps {
   descontarIRAcoes: boolean;
   descontarIRRendaFixa: boolean;
   winnerKey: string | null;
+  cdiAnual: number;
 }
 
 function FamilyCard({
@@ -905,6 +974,7 @@ function FamilyCard({
   descontarIRAcoes,
   descontarIRRendaFixa,
   winnerKey,
+  cdiAnual,
 }: FamilyCardProps) {
   const [showPaste, setShowPaste] = useState(false);
   const [pasteText, setPasteText] = useState("");
@@ -1162,13 +1232,13 @@ function FamilyCard({
                       className={cn(
                         "border-b border-border/50 hover:bg-muted/30 transition-colors",
                         isGlobalWinner
-                          ? "bg-gradient-to-r from-orange-100/80 to-amber-50/50 dark:from-orange-950/30 dark:to-amber-950/10 animate-pulse"
-                          : isBest ? "bg-orange-50/50 dark:bg-orange-950/15" : ""
+                          ? "bg-gradient-to-r from-emerald-50/80 to-teal-50/50 dark:from-emerald-950/30 dark:to-teal-950/10 border-l-4 border-l-emerald-500"
+                          : isBest ? "bg-primary/5" : ""
                       )}
                     >
                       <td className="px-3 py-2 font-bold text-foreground flex items-center gap-1">
-                        {isGlobalWinner && <Trophy className="w-3 h-3 text-orange-500 flex-shrink-0" />}
-                        {isBest && !isGlobalWinner && <Star className="w-3 h-3 text-orange-500 flex-shrink-0" />}
+                        {isGlobalWinner && <Trophy className="w-3 h-3 text-emerald-500 flex-shrink-0" />}
+                        {isBest && !isGlobalWinner && <Star className="w-3 h-3 text-amber-500 flex-shrink-0" />}
                         {family.name}
                       </td>
                       <td className="px-2 py-2 text-right text-foreground/80">{formatBRL(pair.stockBid)}</td>
@@ -1225,7 +1295,7 @@ function FamilyCard({
                       </td>
                       {/* CDI */}
                       <td className="px-2 py-2 text-right text-amber-600 dark:text-amber-400 font-bold">
-                        {CDI_ANUAL}%
+                        {String(cdiAnual).replace(".", ",")}%
                       </td>
                       <td className="px-2 py-2 text-right text-amber-600 dark:text-amber-400">
                         {cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}
