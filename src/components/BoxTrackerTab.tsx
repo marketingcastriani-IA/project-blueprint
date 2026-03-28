@@ -569,23 +569,47 @@ export default function BoxTracker() {
         </div>
       )}
 
-      {/* ADD FAMILY */}
-      <div className="flex gap-2 mb-6">
-        <input
-          type="text"
-          value={newFamilyName}
-          onChange={(e) => setNewFamilyName(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && addFamily()}
-          placeholder="Ticker do ativo (ex: PETR4, BBDC4, LREN3...)"
-          className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder-zinc-600"
-        />
-        <button
-          onClick={addFamily}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm font-bold transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Adicionar Família
-        </button>
+      {/* CONTROLES: Quantidade, Vencimento e Adicionar Família */}
+      <div className="flex flex-wrap gap-3 mb-6 items-end">
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] text-zinc-400 uppercase tracking-wider">Quantidade</label>
+          <input
+            type="number"
+            value={quantidade}
+            onChange={(e) => setQuantidade(Math.max(1, parseInt(e.target.value) || 1))}
+            min={1}
+            className="w-24 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-center font-bold focus:outline-none focus:border-emerald-500 transition-colors"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-[10px] text-zinc-400 uppercase tracking-wider flex items-center gap-1">
+            <Calendar className="w-3 h-3" /> Vencimento (dd/mm/aaaa)
+          </label>
+          <input
+            type="text"
+            value={vencimentoManual}
+            onChange={(e) => setVencimentoManual(e.target.value)}
+            placeholder="17/04/2025"
+            className="w-40 bg-zinc-900 border border-amber-700/60 rounded-lg px-3 py-2 text-sm text-center font-bold text-amber-300 focus:outline-none focus:border-amber-400 transition-colors placeholder-zinc-600"
+          />
+        </div>
+        <div className="flex gap-2 flex-1">
+          <input
+            type="text"
+            value={newFamilyName}
+            onChange={(e) => setNewFamilyName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addFamily()}
+            placeholder="Ticker do ativo (ex: PETR4, BBDC4, LREN3...)"
+            className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder-zinc-600"
+          />
+          <button
+            onClick={addFamily}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm font-bold transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Adicionar
+          </button>
+        </div>
       </div>
 
       {/* FAMILIES */}
