@@ -746,10 +746,16 @@ export default function BoxTracker() {
                     : "bg-card border-border/80 hover:border-muted-foreground/30 hover:shadow-md"
                 )}
               >
+                {isWinner && (
+                  <span className="absolute top-3 right-3 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+                  </span>
+                )}
                 <div className="flex items-center gap-2 mb-2">
                   <Trophy
                     className={cn("w-5 h-5", 
-                      isWinner ? "text-orange-500" : i === 1 ? "text-gray-400" : "text-amber-600"
+                      isWinner ? "text-emerald-500" : i === 1 ? "text-gray-400" : "text-amber-600"
                     )}
                   />
                   <span className="text-xs text-muted-foreground uppercase tracking-wider font-bold">
