@@ -592,9 +592,9 @@ function FamilyCard({
 
   // Live stock data
   const stockRow = rows.get(family.name);
-  const stockBid = stockRow?.ofCompra ?? stockRow?.ultimo ?? null;
-  const stockAsk = stockRow?.ofVenda ?? stockRow?.ultimo ?? null;
-  const hasLiveStock = stockRow?.ultimo !== null && stockRow?.ultimo !== undefined;
+  const stockBid = (stockRow?.ofCompra && stockRow.ofCompra !== 0) ? stockRow.ofCompra : stockRow?.ultimo ?? null;
+  const stockAsk = (stockRow?.ofVenda && stockRow.ofVenda !== 0) ? stockRow.ofVenda : stockRow?.ultimo ?? null;
+  const hasLiveStock = stockRow?.ultimo !== null && stockRow?.ultimo !== undefined && stockRow?.ultimo !== 0;
 
   return (
     <div className="bg-zinc-900/70 border border-zinc-700/50 rounded-xl overflow-hidden">
