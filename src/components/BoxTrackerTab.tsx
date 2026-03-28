@@ -957,6 +957,13 @@ function FamilyCard({
                           </span>
                         ) : "—"}
                       </td>
+                      <td className="px-2 py-2 text-right font-bold">
+                        {pair.lucroTotal !== null ? (
+                          <span className={pair.lucroTotal >= 0 ? "text-emerald-300" : "text-red-400"}>
+                            {formatBRL(pair.lucroTotal)}
+                          </span>
+                        ) : "—"}
+                      </td>
                       <td className="px-2 py-2 text-right font-black">
                         {pair.lucroPercent !== null ? (
                           <span className={pair.lucroPercent >= 0 ? "text-emerald-300" : "text-red-400"}>
