@@ -844,7 +844,7 @@ export default function BoxTracker() {
                   <th className="text-left py-2 pr-2">Ativo</th>
                   <th className="text-left py-2 pr-2 text-blue-600 dark:text-blue-400">CALL</th>
                   <th className="text-left py-2 pr-2 text-red-600 dark:text-red-400">PUT</th>
-                  <th className="text-right py-2 pr-2">Strike</th>
+                  <th className="text-right py-2 pr-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm">Strike</th>
                   <th className="text-right py-2 pr-2 text-orange-600 dark:text-orange-400">Custo</th>
                   <th className="text-right py-2 pr-2">Lucro</th>
                   <th className="text-right py-2 pr-2">Total</th>
