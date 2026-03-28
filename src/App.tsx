@@ -18,6 +18,7 @@ import AdminPanel from "./pages/AdminPanel";
 import FAQ from "./pages/FAQ";
 import Manual from "./pages/Manual";
 import DadosAoVivo from "./pages/DadosAoVivo";
+import BoxTracker from "./pages/BoxTracker";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/faq" element={<FAQ />} />
               <Route path="/manual" element={<Manual />} />
               <Route path="/dados-ao-vivo" element={<DadosAoVivo />} />
+              <Route path="/box-tracker" element={<BoxTracker />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
