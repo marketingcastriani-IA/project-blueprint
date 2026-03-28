@@ -705,7 +705,7 @@ export default function BoxTracker() {
                       <span className="text-amber-600 dark:text-amber-400 font-bold">{diasUteisVenc}</span> dias úteis
                       {diasUteisVenc > 0 && (
                         <span className="ml-2">
-                          · CDI: <span className="text-amber-600 dark:text-amber-300 font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc))}</span>
+                          · CDI: <span className="text-amber-600 dark:text-amber-300 font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc, cdiAnual))}</span>
                         </span>
                       )}
                     </div>
