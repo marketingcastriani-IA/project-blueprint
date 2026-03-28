@@ -657,7 +657,7 @@ export default function BoxTracker() {
                         · CDI do período: <span className="text-amber-600 dark:text-amber-300 font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc, cdiAnual))}</span>
                         {descontarIRRendaFixa && (
                           <span className="ml-1 text-muted-foreground">
-                            (líq: <span className="text-emerald-600 dark:text-emerald-400 font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc) * (1 - IR_RENDA_FIXA / 100))}</span>)
+                            (líq: <span className="text-emerald-600 dark:text-emerald-400 font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc, cdiAnual) * (1 - IR_RENDA_FIXA / 100))}</span>)
                           </span>
                         )}
                       </span>
