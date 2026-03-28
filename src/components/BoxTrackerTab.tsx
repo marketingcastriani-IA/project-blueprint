@@ -791,24 +791,35 @@ export default function BoxTracker() {
                     <p className="text-sm font-bold text-emerald-600 dark:text-emerald-300">{formatBRL(lucroTotalDisplay)}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] text-muted-foreground uppercase">CDI Anual</p>
-                    <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{String(cdiAnual).replace(".", ",")}%</p>
-                  </div>
-                  <div>
                     <p className="text-[9px] text-muted-foreground uppercase">CDI Per.{descontarIRRendaFixa ? " líq" : ""}</p>
                     <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}</p>
                   </div>
-                  <div className="text-right">
+                  <div>
                     <p className="text-[9px] text-muted-foreground uppercase">Retorno{descontarIRAcoes ? " líq" : ""}</p>
-                    <p className="text-xl font-black text-emerald-600 dark:text-emerald-300">
-                      {formatPercent(lucroPercentDisplay)}
-                    </p>
-                    {pair.vsCD === "acima" && (
-                      <span className="text-[9px] text-emerald-600 dark:text-emerald-500 font-bold">▲ ACIMA CDI</span>
-                    )}
-                    {pair.vsCD === "abaixo" && (
-                      <span className="text-[9px] text-red-500 font-bold">▼ ABAIXO CDI</span>
-                    )}
+                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-300">{formatPercent(lucroPercentDisplay)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[9px] text-muted-foreground uppercase">vs CDI</p>
+                    {(() => {
+                      const diff = (lucroPercentDisplay ?? 0) - (cdiDisplay ?? 0);
+                      const isAbove = diff > 0;
+                      return (
+                        <>
+                          <p className={cn(
+                            "text-2xl font-black",
+                            isAbove ? "text-emerald-500 dark:text-emerald-300" : "text-red-500"
+                          )}>
+                            {isAbove ? "+" : ""}{diff.toFixed(2).replace(".", ",")}%
+                          </p>
+                          <span className={cn(
+                            "text-[9px] font-bold",
+                            isAbove ? "text-emerald-600 dark:text-emerald-500" : "text-red-500"
+                          )}>
+                            {isAbove ? "▲ ACIMA CDI" : "▼ ABAIXO CDI"}
+                          </span>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -837,9 +848,8 @@ export default function BoxTracker() {
                   <th className="text-right py-2 pr-2">Lucro</th>
                   <th className="text-right py-2 pr-2">Total</th>
                   <th className="text-right py-2 pr-2">Lucro %</th>
-                  <th className="text-right py-2 pr-2 text-amber-600 dark:text-amber-400">CDI Anual</th>
                   <th className="text-right py-2 pr-2 text-amber-600 dark:text-amber-400">CDI Per.</th>
-                  <th className="text-center py-2">vs CDI</th>
+                  <th className="text-center py-2 pr-2 text-emerald-600 dark:text-emerald-400 font-bold">% vs CDI</th>
                 </tr>
               </thead>
               <tbody>
@@ -860,14 +870,17 @@ export default function BoxTracker() {
                       <td className="py-2 pr-2 text-right text-emerald-600 dark:text-emerald-400">{formatBRL(lucroDisplay)}</td>
                       <td className="py-2 pr-2 text-right text-emerald-600 dark:text-emerald-300 font-semibold">{formatBRL(lucroTotalDisplay)}</td>
                       <td className="py-2 pr-2 text-right font-bold text-emerald-600 dark:text-emerald-300">{formatPercent(lucroPercentDisplay)}</td>
-                      <td className="py-2 pr-2 text-right text-amber-600 dark:text-amber-400 font-bold">{String(cdiAnual).replace(".", ",")}%</td>
                       <td className="py-2 pr-2 text-right text-amber-600 dark:text-amber-400">{cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}</td>
-                      <td className="py-2 text-center">
-                        {p.vsCD === "acima" ? (
-                          <span className="text-emerald-600 dark:text-emerald-400 font-bold text-[10px]">▲ ACIMA</span>
-                        ) : p.vsCD === "abaixo" ? (
-                          <span className="text-red-500 font-bold text-[10px]">▼ ABAIXO</span>
-                        ) : "—"}
+                      <td className="py-2 pr-2 text-center">
+                        {(() => {
+                          const diff = (lucroPercentDisplay ?? 0) - (cdiDisplay ?? 0);
+                          const isAbove = diff > 0;
+                          return (
+                            <span className={cn("font-black text-sm", isAbove ? "text-emerald-500 dark:text-emerald-300" : "text-red-500")}>
+                              {isAbove ? "+" : ""}{diff.toFixed(2).replace(".", ",")}%
+                            </span>
+                          );
+                        })()}
                       </td>
                     </tr>
                   );
@@ -1185,7 +1198,7 @@ function FamilyCard({
                   <th colSpan={6} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-orange-100 dark:bg-orange-700/50 text-orange-700 dark:text-orange-200 border-x border-orange-300 dark:border-orange-500/40">
                     💰 BOX SPREAD
                   </th>
-                  <th colSpan={3} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-amber-100 dark:bg-amber-700/50 text-amber-700 dark:text-amber-200 border-x border-amber-300 dark:border-amber-500/40">
+                  <th colSpan={2} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-amber-100 dark:bg-amber-700/50 text-amber-700 dark:text-amber-200 border-x border-amber-300 dark:border-amber-500/40">
                     📊 CDI
                   </th>
                   <th className="px-2 py-1" />
@@ -1207,9 +1220,8 @@ function FamilyCard({
                   <th className="text-right px-2 py-2 text-emerald-600 dark:text-emerald-400">Lucro (1)</th>
                   <th className="text-right px-2 py-2 text-emerald-600 dark:text-emerald-300 font-bold">Total ({quantidade}x)</th>
                   <th className="text-right px-2 py-2 text-emerald-600 dark:text-emerald-200 font-bold">Lucro %</th>
-                  <th className="text-right px-2 py-2 text-amber-600 dark:text-amber-400 font-bold">CDI Anual</th>
                   <th className="text-right px-2 py-2 text-amber-600 dark:text-amber-400">CDI Per.</th>
-                  <th className="text-center px-2 py-2 text-amber-600 dark:text-amber-300">vs CDI</th>
+                  <th className="text-center px-2 py-2 text-emerald-600 dark:text-emerald-400 font-bold">% vs CDI</th>
                   <th className="px-2 py-2"></th>
                 </tr>
               </thead>
@@ -1292,22 +1304,19 @@ function FamilyCard({
                         ) : "—"}
                       </td>
                       {/* CDI */}
-                      <td className="px-2 py-2 text-right text-amber-600 dark:text-amber-400 font-bold">
-                        {String(cdiAnual).replace(".", ",")}%
-                      </td>
                       <td className="px-2 py-2 text-right text-amber-600 dark:text-amber-400">
                         {cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}
                       </td>
                       <td className="px-2 py-2 text-center">
-                        {pair.vsCD === "acima" ? (
-                          <span className="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] bg-emerald-100 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded">
-                            <TrendingUp className="w-3 h-3" /> ACIMA
-                          </span>
-                        ) : pair.vsCD === "abaixo" ? (
-                          <span className="inline-flex items-center gap-0.5 text-red-500 font-bold text-[10px] bg-red-100 dark:bg-red-950/40 px-1.5 py-0.5 rounded">
-                            ABAIXO
-                          </span>
-                        ) : "—"}
+                        {(() => {
+                          const diff = (lucroPercentDisplay ?? 0) - (cdiDisplay ?? 0);
+                          const isAbove = diff > 0;
+                          return cdiDisplay !== null ? (
+                            <span className={cn("font-black text-xs", isAbove ? "text-emerald-500 dark:text-emerald-300" : "text-red-500")}>
+                              {isAbove ? "+" : ""}{diff.toFixed(2).replace(".", ",")}%
+                            </span>
+                          ) : "—";
+                        })()}
                       </td>
                       <td className="px-2 py-2">
                         <div className="flex gap-1">
