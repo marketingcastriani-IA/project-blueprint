@@ -2,6 +2,7 @@ import { AbsoluteFill, useCurrentFrame, interpolate, spring, useVideoConfig, Seq
 import { C } from "../colors";
 import { loadFont } from "@remotion/google-fonts/PlusJakartaSans";
 import { loadFont as loadMono } from "@remotion/google-fonts/JetBrainsMono";
+import { Caption } from "../components/Caption";
 
 const { fontFamily } = loadFont("normal", { weights: ["400", "600", "700"], subsets: ["latin"] });
 const { fontFamily: monoFont } = loadMono("normal", { weights: ["400", "500"], subsets: ["latin"] });
