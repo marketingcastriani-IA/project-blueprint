@@ -1220,9 +1220,8 @@ function FamilyCard({
                   <th className="text-right px-2 py-2 text-emerald-600 dark:text-emerald-400">Lucro (1)</th>
                   <th className="text-right px-2 py-2 text-emerald-600 dark:text-emerald-300 font-bold">Total ({quantidade}x)</th>
                   <th className="text-right px-2 py-2 text-emerald-600 dark:text-emerald-200 font-bold">Lucro %</th>
-                  <th className="text-right px-2 py-2 text-amber-600 dark:text-amber-400 font-bold">CDI Anual</th>
                   <th className="text-right px-2 py-2 text-amber-600 dark:text-amber-400">CDI Per.</th>
-                  <th className="text-center px-2 py-2 text-amber-600 dark:text-amber-300">vs CDI</th>
+                  <th className="text-center px-2 py-2 text-emerald-600 dark:text-emerald-400 font-bold">% vs CDI</th>
                   <th className="px-2 py-2"></th>
                 </tr>
               </thead>
