@@ -311,6 +311,10 @@ export default function BoxTracker() {
         const putBid = getPrice(putRow, "ofCompra");
         const putAsk = getPrice(putRow, "ofVenda");
 
+        // Strike e Vencimento do RTD (PEX / VEN)
+        const strikeRtd = callRow?.strike ?? putRow?.strike ?? null;
+        const vencimento = callRow?.ven ?? putRow?.ven ?? null;
+
         let compraBox: number | null = null;
         let lucro: number | null = null;
         let lucroPercent: number | null = null;
@@ -321,8 +325,17 @@ export default function BoxTracker() {
           lucroPercent = compraBox > 0 ? (lucro / compraBox) * 100 : null;
         }
 
+        // CDI do período
+        const diasUteis = calcDiasUteis(vencimento);
+        const cdiPeriodo = diasUteis !== null && diasUteis > 0 ? calcCdiPeriodo(diasUteis) : null;
+        const vsCD = lucroPercent !== null && cdiPeriodo !== null
+          ? (lucroPercent > cdiPeriodo ? "acima" : "abaixo")
+          : null;
+
         pairs.push({
           strike,
+          strikeRtd,
+          vencimento,
           callSymbol: call?.symbol ?? null,
           putSymbol: put?.symbol ?? null,
           callBid,
@@ -334,6 +347,9 @@ export default function BoxTracker() {
           compraBox,
           lucro,
           lucroPercent,
+          diasUteis,
+          cdiPeriodo,
+          vsCD,
         });
       });
 
