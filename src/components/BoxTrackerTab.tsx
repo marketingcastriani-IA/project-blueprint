@@ -1,11 +1,12 @@
 // ============================================================
 // RASTREADOR DE BOX - Tempo Real via Profit RTD Bridge
-// Compra BOX = Stock ASK + Put ASK - Call BID
-// Lucro = Strike - Compra BOX
-// Lucro % = Lucro / Compra BOX × 100
+// Custo = (Preço_Ação + Preço_Put) - Preço_Call
+// Lucro = Strike - Custo
+// Lucro % = Lucro / Custo × 100
 // ============================================================
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { format } from "date-fns";
 import {
   Plus,
   Trash2,
@@ -22,10 +23,15 @@ import {
   WifiOff,
   AlertTriangle,
   TrendingUp,
-  Calendar,
+  CalendarIcon,
+  Pencil,
+  Save,
 } from "lucide-react";
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 import { statusConfig } from "@/hooks/useRtdBridge";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 // ─── TIPOS ───────────────────────────────────────────────────
 interface OptionTicker {
@@ -37,31 +43,28 @@ interface OptionTicker {
 
 interface BoxPair {
   strike: number;
-  strikeRtd: number | null; // from PEX attribute
-  vencimento: string | null; // from VEN attribute
+  strikeRtd: number | null;
+  vencimento: string | null;
   callSymbol: string | null;
   putSymbol: string | null;
-  // Live data from bridge
   callBid: number | null;
   callAsk: number | null;
   putBid: number | null;
   putAsk: number | null;
   stockBid: number | null;
   stockAsk: number | null;
-  // Calculated
   compraBox: number | null;
   lucro: number | null;
   lucroTotal: number | null;
   lucroPercent: number | null;
-  // CDI comparison
   diasUteis: number | null;
   cdiPeriodo: number | null;
-  vsCD: string | null; // "acima" | "abaixo" | null
+  vsCD: string | null;
 }
 
 interface StockFamily {
   id: string;
-  name: string; // e.g. "PETR4"
+  name: string;
   tickers: OptionTicker[];
   expanded: boolean;
 }
@@ -73,12 +76,11 @@ interface SavedFamily {
 
 // ─── CONSTANTES ──────────────────────────────────────────────
 const STORAGE_KEY = "box-tracker-families";
-const CDI_ANUAL = 14.15; // Taxa CDI anual vigente (%)
+const VENC_STORAGE_KEY = "box-tracker-vencimento";
+const CDI_ANUAL = 14.15;
 
-// Calcula dias úteis entre hoje e uma data de vencimento
 function calcDiasUteis(vencimentoStr: string | null): number | null {
   if (!vencimentoStr) return null;
-  // Parse dd/MM/yyyy or yyyy-MM-dd
   let target: Date | null = null;
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(vencimentoStr)) {
     const [d, m, y] = vencimentoStr.split("/").map(Number);
@@ -105,12 +107,10 @@ function calcDiasUteis(vencimentoStr: string | null): number | null {
   return dias;
 }
 
-// CDI para o período em dias úteis
 function calcCdiPeriodo(diasUteis: number): number {
   return ((1 + CDI_ANUAL / 100) ** (diasUteis / 252) - 1) * 100;
 }
 
-// ─── FUNÇÕES AUXILIARES ──────────────────────────────────────
 function generateId(): string {
   return Math.random().toString(36).substring(2, 9);
 }
@@ -146,17 +146,45 @@ function extractTypeFromTicker(symbol: string): "CALL" | "PUT" {
   return "CALL";
 }
 
+function dateToStr(d: Date): string {
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
+function strToDate(s: string): Date | undefined {
+  if (!s) return undefined;
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
+    const [d, m, y] = s.split("/").map(Number);
+    return new Date(y, m - 1, d);
+  }
+  return undefined;
+}
+
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────
 export default function BoxTracker() {
   const [families, setFamilies] = useState<StockFamily[]>([]);
   const [newFamilyName, setNewFamilyName] = useState("");
   const [quantidade, setQuantidade] = useState<number>(100);
   const [vencimentoManual, setVencimentoManual] = useState<string>("");
-  
-  // Real-time bridge
+  const [vencSaved, setVencSaved] = useState(false);
+  const [editingVenc, setEditingVenc] = useState(false);
+
   const { status, rows, connect, addTicker: bridgeAddTicker } = useSharedRtdBridge();
 
-  // Load from localStorage
+  // Load vencimento from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(VENC_STORAGE_KEY);
+      if (saved) {
+        setVencimentoManual(saved);
+        setVencSaved(true);
+      }
+    } catch {}
+  }, []);
+
+  // Load families from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -178,7 +206,7 @@ export default function BoxTracker() {
     } catch {}
   }, []);
 
-  // Save to localStorage
+  // Save families to localStorage
   useEffect(() => {
     const toSave: SavedFamily[] = families.map((f) => ({
       name: f.name,
@@ -187,29 +215,44 @@ export default function BoxTracker() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
   }, [families]);
 
-  // Auto-subscribe all tickers + stock tickers to bridge when connected
+  // Auto-subscribe tickers
   useEffect(() => {
     if (status !== "connected") return;
     families.forEach((f) => {
-      // Subscribe the underlying stock
       bridgeAddTicker(f.name);
-      // Subscribe each option ticker
       f.tickers.forEach((t) => bridgeAddTicker(t.symbol));
     });
   }, [status, families, bridgeAddTicker]);
+
+  const handleSaveVenc = () => {
+    if (vencimentoManual) {
+      localStorage.setItem(VENC_STORAGE_KEY, vencimentoManual);
+      setVencSaved(true);
+      setEditingVenc(false);
+    }
+  };
+
+  const handleEditVenc = () => {
+    setVencSaved(false);
+    setEditingVenc(true);
+  };
+
+  const handleDeleteVenc = () => {
+    setVencimentoManual("");
+    setVencSaved(false);
+    setEditingVenc(false);
+    localStorage.removeItem(VENC_STORAGE_KEY);
+  };
 
   const addFamily = useCallback(() => {
     const name = newFamilyName.trim().toUpperCase();
     if (!name) return;
     if (families.find((f) => f.name === name)) return;
-
     setFamilies((prev) => [
       ...prev,
       { id: generateId(), name, tickers: [], expanded: true },
     ]);
     setNewFamilyName("");
-
-    // Subscribe stock ticker to bridge
     if (status === "connected") bridgeAddTicker(name);
   }, [newFamilyName, families, status, bridgeAddTicker]);
 
@@ -229,16 +272,13 @@ export default function BoxTracker() {
         .split(/[\n,;\t\s]+/)
         .map((s) => s.trim().toUpperCase())
         .filter((s) => s.length >= 5 && /^[A-Z]{4,5}[A-X]\d+$/.test(s));
-
       if (!symbols.length) return;
-
       const newTickers: OptionTicker[] = symbols.map((symbol) => ({
         id: generateId(),
         symbol,
         type: extractTypeFromTicker(symbol),
         strike: extractStrikeFromTicker(symbol),
       }));
-
       setFamilies((prev) =>
         prev.map((f) => {
           if (f.id !== familyId) return f;
@@ -247,8 +287,6 @@ export default function BoxTracker() {
           return { ...f, tickers: [...f.tickers, ...toAdd] };
         })
       );
-
-      // Subscribe each new ticker to bridge
       if (status === "connected") {
         newTickers.forEach((t) => bridgeAddTicker(t.symbol));
       }
@@ -276,7 +314,6 @@ export default function BoxTracker() {
     );
   }, []);
 
-  // Helper: get meaningful price (fallback to ultimo if bid/ask is 0 or null)
   const getPrice = (row: any, field: "ofCompra" | "ofVenda"): number | null => {
     if (!row) return null;
     const val = row[field];
@@ -284,7 +321,6 @@ export default function BoxTracker() {
     return row.ultimo ?? null;
   };
 
-  // Calculate box pairs using live data from bridge
   const calculateBoxPairs = useCallback(
     (family: StockFamily): BoxPair[] => {
       const stockRow = rows.get(family.name);
@@ -292,7 +328,6 @@ export default function BoxTracker() {
       const stockAsk = getPrice(stockRow, "ofVenda");
       const qty = quantidade;
 
-      // Group by strike
       const strikeMap = new Map<number, { calls: OptionTicker[]; puts: OptionTicker[] }>();
       family.tickers.forEach((t) => {
         if (t.strike <= 0) return;
@@ -307,7 +342,6 @@ export default function BoxTracker() {
       strikeMap.forEach((group, strike) => {
         const call = group.calls[0] || null;
         const put = group.puts[0] || null;
-
         const callRow = call ? rows.get(call.symbol) : null;
         const putRow = put ? rows.get(put.symbol) : null;
 
@@ -316,23 +350,23 @@ export default function BoxTracker() {
         const putBid = getPrice(putRow, "ofCompra");
         const putAsk = getPrice(putRow, "ofVenda");
 
-        // Strike e Vencimento do RTD (PEX / VEN)
         const strikeRtd = callRow?.strike ?? putRow?.strike ?? null;
         const vencimento = callRow?.ven ?? putRow?.ven ?? null;
 
+        // Custo = (Preço_Ação + Preço_Put) - Preço_Call
+        // Using ASK for buys (stock, put) and BID for sells (call)
         let compraBox: number | null = null;
         let lucro: number | null = null;
         let lucroTotal: number | null = null;
         let lucroPercent: number | null = null;
 
         if (stockAsk !== null && callBid !== null && putAsk !== null) {
-          compraBox = stockAsk + putAsk - callBid;
+          compraBox = (stockAsk + putAsk) - callBid;
           lucro = strike - compraBox;
           lucroTotal = lucro * qty;
           lucroPercent = compraBox > 0 ? (lucro / compraBox) * 100 : null;
         }
 
-        // CDI do período - prioriza vencimento manual, depois RTD
         const vencParaCalculo = vencimentoManual || vencimento;
         const diasUteis = calcDiasUteis(vencParaCalculo);
         const cdiPeriodo = diasUteis !== null && diasUteis > 0 ? calcCdiPeriodo(diasUteis) : null;
@@ -341,24 +375,11 @@ export default function BoxTracker() {
           : null;
 
         pairs.push({
-          strike,
-          strikeRtd,
-          vencimento: vencParaCalculo,
-          callSymbol: call?.symbol ?? null,
-          putSymbol: put?.symbol ?? null,
-          callBid,
-          callAsk,
-          putBid,
-          putAsk,
-          stockBid,
-          stockAsk,
-          compraBox,
-          lucro,
-          lucroTotal,
-          lucroPercent,
-          diasUteis,
-          cdiPeriodo,
-          vsCD,
+          strike, strikeRtd, vencimento: vencParaCalculo,
+          callSymbol: call?.symbol ?? null, putSymbol: put?.symbol ?? null,
+          callBid, callAsk, putBid, putAsk, stockBid, stockAsk,
+          compraBox, lucro, lucroTotal, lucroPercent,
+          diasUteis, cdiPeriodo, vsCD,
         });
       });
 
@@ -384,23 +405,24 @@ export default function BoxTracker() {
   const isConnected = status === "connected";
   const statusCfg = statusConfig[status];
 
+  const diasUteisVenc = calcDiasUteis(vencimentoManual);
+
   // ─── RENDER ───────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0a0e1a] text-white font-mono p-4 md:p-6">
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-emerald-400 flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight text-orange-400 flex items-center gap-2">
             <BarChart2 className="w-6 h-6" />
             Rastreador de Box
           </h1>
           <p className="text-xs text-zinc-500 mt-1">
-            Compra de Box · Ativo + Put - Call = Lucro garantido no vencimento
+            Custo = (Ação + Put) - Call · Lucro = Strike - Custo
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Connection status */}
           <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold ${statusCfg.color}`}>
             {status === "connected" ? (
               <Wifi className="w-3.5 h-3.5" />
@@ -420,7 +442,7 @@ export default function BoxTracker() {
           {!isConnected && status !== "connecting" && (
             <button
               onClick={connect}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm font-bold transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-500 rounded-lg text-sm font-bold transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
               Conectar Bridge
@@ -438,10 +460,116 @@ export default function BoxTracker() {
           </div>
           <p className="text-zinc-400 text-xs">
             Inicie o <strong>ProfitRTDBridge.exe</strong> para receber dados em tempo real do Profit Pro.
-            Os mesmos dados do "Tempo Real" serão usados aqui para calcular os Box Spreads.
           </p>
         </div>
       )}
+
+      {/* VENCIMENTO CARD - Calendar picker with save/edit/delete */}
+      <div className="mb-6">
+        <div className={cn(
+          "rounded-xl border p-4 transition-all",
+          vencSaved
+            ? "bg-gradient-to-r from-orange-950/40 to-amber-950/30 border-orange-600/50"
+            : "bg-gradient-to-r from-zinc-900/80 to-zinc-800/50 border-amber-600/40 shadow-[0_0_15px_rgba(245,158,11,0.15)]"
+        )}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-black text-orange-400 flex items-center gap-2 uppercase tracking-wider">
+              <CalendarIcon className="w-4 h-4" />
+              📅 Data de Vencimento
+            </h3>
+            {vencSaved && (
+              <div className="flex gap-2">
+                <button
+                  onClick={handleEditVenc}
+                  className="flex items-center gap-1 px-3 py-1 text-xs bg-amber-700/40 hover:bg-amber-600/50 border border-amber-600/40 rounded-lg text-amber-300 font-bold transition-colors"
+                >
+                  <Pencil className="w-3 h-3" /> Editar
+                </button>
+                <button
+                  onClick={handleDeleteVenc}
+                  className="flex items-center gap-1 px-3 py-1 text-xs bg-red-900/40 hover:bg-red-800/50 border border-red-700/40 rounded-lg text-red-400 font-bold transition-colors"
+                >
+                  <Trash2 className="w-3 h-3" /> Excluir
+                </button>
+              </div>
+            )}
+          </div>
+
+          {vencSaved && !editingVenc ? (
+            /* Saved state - show card */
+            <div className="flex items-center gap-6">
+              <div>
+                <p className="text-3xl font-black text-orange-300">{vencimentoManual}</p>
+                {diasUteisVenc !== null && (
+                  <p className="text-sm text-zinc-400 mt-1">
+                    <span className="text-amber-400 font-bold">{diasUteisVenc}</span> dias úteis restantes
+                    {diasUteisVenc > 0 && (
+                      <span className="ml-2 text-zinc-500">
+                        · CDI do período: <span className="text-amber-300 font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc))}</span>
+                      </span>
+                    )}
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* Editing/Creating state */
+            <div className="flex flex-wrap items-end gap-4">
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] text-zinc-400 uppercase tracking-wider">Selecione a data</label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      className={cn(
+                        "flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-bold transition-all w-[220px] justify-start",
+                        vencimentoManual
+                          ? "bg-zinc-900 border-orange-500/60 text-orange-300"
+                          : "bg-zinc-900 border-amber-600/40 text-zinc-500 animate-pulse"
+                      )}
+                    >
+                      <CalendarIcon className="w-4 h-4" />
+                      {vencimentoManual || "⚠️ Selecionar data"}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 bg-zinc-900 border-zinc-700" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={strToDate(vencimentoManual)}
+                      onSelect={(date) => {
+                        if (date) setVencimentoManual(dateToStr(date));
+                      }}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {vencimentoManual && (
+                <>
+                  {diasUteisVenc !== null && (
+                    <div className="text-sm text-zinc-400">
+                      <span className="text-amber-400 font-bold">{diasUteisVenc}</span> dias úteis
+                      {diasUteisVenc > 0 && (
+                        <span className="ml-2">
+                          · CDI: <span className="text-amber-300 font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc))}</span>
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  <button
+                    onClick={handleSaveVenc}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 rounded-lg text-sm font-black transition-all shadow-lg shadow-orange-900/30"
+                  >
+                    <Save className="w-4 h-4" />
+                    Salvar Vencimento
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* WINNER CARDS - Top 3 */}
       {topPairs.length > 0 && (
@@ -451,7 +579,7 @@ export default function BoxTracker() {
               key={`top-${i}`}
               className={`relative overflow-hidden rounded-xl border p-4 ${
                 i === 0
-                  ? "bg-gradient-to-br from-yellow-900/30 to-yellow-950/20 border-yellow-600/50"
+                  ? "bg-gradient-to-br from-orange-900/40 to-amber-950/30 border-orange-500/60"
                   : i === 1
                   ? "bg-gradient-to-br from-zinc-700/30 to-zinc-800/20 border-zinc-500/50"
                   : "bg-gradient-to-br from-amber-900/20 to-amber-950/10 border-amber-700/40"
@@ -460,7 +588,7 @@ export default function BoxTracker() {
               <div className="flex items-center gap-2 mb-2">
                 <Trophy
                   className={`w-5 h-5 ${
-                    i === 0 ? "text-yellow-400" : i === 1 ? "text-zinc-300" : "text-amber-500"
+                    i === 0 ? "text-orange-400" : i === 1 ? "text-zinc-300" : "text-amber-500"
                   }`}
                 />
                 <span className="text-xs text-zinc-400 uppercase tracking-wider">
@@ -472,7 +600,7 @@ export default function BoxTracker() {
                 <span className="text-lg font-black text-white">{pair.familyName}</span>
                 <span className="text-xs text-zinc-400">Strike {formatBRL(pair.strikeRtd ?? pair.strike)}</span>
                 {pair.vencimento && (
-                  <span className="text-xs text-zinc-500 ml-1">· Venc. {pair.vencimento}</span>
+                  <span className="text-xs text-amber-400/70 ml-1">· {pair.vencimento}</span>
                 )}
               </div>
 
@@ -485,30 +613,33 @@ export default function BoxTracker() {
                 </span>
               </div>
 
-              <div className="mt-3 flex items-end justify-between">
+              <div className="mt-3 grid grid-cols-5 gap-2">
                 <div>
-                  <p className="text-xs text-zinc-500">Compra Box</p>
-                  <p className="text-sm font-bold text-yellow-400">{formatBRL(pair.compraBox)}</p>
+                  <p className="text-[9px] text-zinc-500 uppercase">Custo</p>
+                  <p className="text-sm font-bold text-orange-400">{formatBRL(pair.compraBox)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-zinc-500">Lucro</p>
+                  <p className="text-[9px] text-zinc-500 uppercase">Lucro (1)</p>
                   <p className="text-sm font-bold text-emerald-400">{formatBRL(pair.lucro)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-zinc-500">Total ({quantidade}x)</p>
+                  <p className="text-[9px] text-zinc-500 uppercase">Total ({quantidade}x)</p>
                   <p className="text-sm font-bold text-emerald-300">{formatBRL(pair.lucroTotal)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-zinc-500">CDI Per.</p>
+                  <p className="text-[9px] text-zinc-500 uppercase">CDI Per.</p>
                   <p className="text-sm font-bold text-amber-400">{pair.cdiPeriodo !== null ? formatPercent(pair.cdiPeriodo) : "—"}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-zinc-500">Retorno</p>
+                  <p className="text-[9px] text-zinc-500 uppercase">Retorno</p>
                   <p className="text-xl font-black text-emerald-300">
                     {formatPercent(pair.lucroPercent)}
                   </p>
                   {pair.vsCD === "acima" && (
                     <span className="text-[9px] text-emerald-500 font-bold">▲ ACIMA CDI</span>
+                  )}
+                  {pair.vsCD === "abaixo" && (
+                    <span className="text-[9px] text-red-400 font-bold">▼ ABAIXO CDI</span>
                   )}
                 </div>
               </div>
@@ -519,8 +650,8 @@ export default function BoxTracker() {
 
       {/* TOP 10 TABLE */}
       {topPairs.length > 3 && (
-        <div className="mb-6 bg-zinc-900/60 border border-emerald-900/40 rounded-xl p-4">
-          <h2 className="text-sm font-bold text-emerald-400 mb-3 flex items-center gap-2">
+        <div className="mb-6 bg-zinc-900/60 border border-orange-900/40 rounded-xl p-4">
+          <h2 className="text-sm font-bold text-orange-400 mb-3 flex items-center gap-2">
             <Star className="w-4 h-4 text-yellow-400" />
             Top 10 · Melhores Box Spreads
           </h2>
@@ -534,9 +665,9 @@ export default function BoxTracker() {
                   <th className="text-left py-2 pr-3 text-red-400">PUT</th>
                   <th className="text-right py-2 pr-3">Strike</th>
                   <th className="text-center py-2 pr-3">Venc.</th>
-                  <th className="text-right py-2 pr-3">Compra Box</th>
+                  <th className="text-right py-2 pr-3 text-orange-400">Custo</th>
                   <th className="text-right py-2 pr-3">Lucro (1)</th>
-                  <th className="text-right py-2 pr-3">Lucro Total</th>
+                  <th className="text-right py-2 pr-3">Total ({quantidade}x)</th>
                   <th className="text-right py-2 pr-3">Lucro %</th>
                   <th className="text-right py-2 pr-3 text-amber-400">CDI Per.</th>
                   <th className="text-center py-2">vs CDI</th>
@@ -551,15 +682,11 @@ export default function BoxTracker() {
                     <td className="py-2 pr-3 text-red-300">{p.putSymbol}</td>
                     <td className="py-2 pr-3 text-right">{formatBRL(p.strikeRtd ?? p.strike)}</td>
                     <td className="py-2 pr-3 text-center text-zinc-400 text-[10px]">{p.vencimento ?? "—"}</td>
-                    <td className="py-2 pr-3 text-right text-yellow-400">{formatBRL(p.compraBox)}</td>
+                    <td className="py-2 pr-3 text-right text-orange-400">{formatBRL(p.compraBox)}</td>
                     <td className="py-2 pr-3 text-right text-emerald-400">{formatBRL(p.lucro)}</td>
                     <td className="py-2 pr-3 text-right text-emerald-300 font-semibold">{formatBRL(p.lucroTotal)}</td>
-                    <td className="py-2 pr-3 text-right font-bold text-emerald-300">
-                      {formatPercent(p.lucroPercent)}
-                    </td>
-                    <td className="py-2 pr-3 text-right text-amber-400">
-                      {p.cdiPeriodo !== null ? formatPercent(p.cdiPeriodo) : "—"}
-                    </td>
+                    <td className="py-2 pr-3 text-right font-bold text-emerald-300">{formatPercent(p.lucroPercent)}</td>
+                    <td className="py-2 pr-3 text-right text-amber-400">{p.cdiPeriodo !== null ? formatPercent(p.cdiPeriodo) : "—"}</td>
                     <td className="py-2 text-center">
                       {p.vsCD === "acima" ? (
                         <span className="text-emerald-400 font-bold text-[10px]">▲ ACIMA</span>
@@ -575,28 +702,16 @@ export default function BoxTracker() {
         </div>
       )}
 
-      {/* CONTROLES: Quantidade, Vencimento e Adicionar Família */}
+      {/* CONTROLES: Quantidade e Adicionar Família */}
       <div className="flex flex-wrap gap-3 mb-6 items-end">
         <div className="flex flex-col gap-1">
-          <label className="text-[10px] text-zinc-400 uppercase tracking-wider">Quantidade</label>
+          <label className="text-[10px] text-orange-400/70 uppercase tracking-wider font-bold">Quantidade</label>
           <input
             type="number"
             value={quantidade}
             onChange={(e) => setQuantidade(Math.max(1, parseInt(e.target.value) || 1))}
             min={1}
-            className="w-24 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-center font-bold focus:outline-none focus:border-emerald-500 transition-colors"
-          />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-[10px] text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-            <Calendar className="w-3 h-3" /> Vencimento (dd/mm/aaaa)
-          </label>
-          <input
-            type="text"
-            value={vencimentoManual}
-            onChange={(e) => setVencimentoManual(e.target.value)}
-            placeholder="17/04/2025"
-            className="w-40 bg-zinc-900 border border-amber-700/60 rounded-lg px-3 py-2 text-sm text-center font-bold text-amber-300 focus:outline-none focus:border-amber-400 transition-colors placeholder-zinc-600"
+            className="w-24 bg-zinc-900 border border-orange-700/40 rounded-lg px-3 py-2 text-sm text-center font-bold text-orange-300 focus:outline-none focus:border-orange-500 transition-colors"
           />
         </div>
         <div className="flex gap-2 flex-1">
@@ -606,11 +721,11 @@ export default function BoxTracker() {
             onChange={(e) => setNewFamilyName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addFamily()}
             placeholder="Ticker do ativo (ex: PETR4, BBDC4, LREN3...)"
-            className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder-zinc-600"
+            className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-orange-500 transition-colors placeholder-zinc-600"
           />
           <button
             onClick={addFamily}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm font-bold transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-500 rounded-lg text-sm font-bold transition-colors"
           >
             <Plus className="w-4 h-4" />
             Adicionar
@@ -632,6 +747,7 @@ export default function BoxTracker() {
               key={family.id}
               family={family}
               rows={rows}
+              quantidade={quantidade}
               calculateBoxPairs={calculateBoxPairs}
               onRemoveFamily={removeFamily}
               onToggleExpand={toggleExpand}
@@ -650,6 +766,7 @@ export default function BoxTracker() {
 interface FamilyCardProps {
   family: StockFamily;
   rows: Map<string, any>;
+  quantidade: number;
   calculateBoxPairs: (family: StockFamily) => BoxPair[];
   onRemoveFamily: (id: string) => void;
   onToggleExpand: (id: string) => void;
@@ -661,6 +778,7 @@ interface FamilyCardProps {
 function FamilyCard({
   family,
   rows,
+  quantidade,
   calculateBoxPairs,
   onRemoveFamily,
   onToggleExpand,
@@ -677,9 +795,7 @@ function FamilyCard({
   const handlePasteFromClipboard = async () => {
     try {
       const text = await navigator.clipboard.readText();
-      if (text.trim()) {
-        onAddTickers(family.id, text);
-      }
+      if (text.trim()) onAddTickers(family.id, text);
     } catch {
       setShowPaste(true);
       setTimeout(() => pasteRef.current?.focus(), 100);
@@ -712,7 +828,6 @@ function FamilyCard({
   const boxPairs = calculateBoxPairs(family);
   const bestPair = boxPairs.find((p) => p.lucroPercent !== null && p.lucroPercent > 0);
 
-  // Live stock data
   const stockRow = rows.get(family.name);
   const stockBid = (stockRow?.ofCompra && stockRow.ofCompra !== 0) ? stockRow.ofCompra : stockRow?.ultimo ?? null;
   const stockAsk = (stockRow?.ofVenda && stockRow.ofVenda !== 0) ? stockRow.ofVenda : stockRow?.ultimo ?? null;
@@ -721,7 +836,7 @@ function FamilyCard({
   return (
     <div className="bg-zinc-900/70 border border-zinc-700/50 rounded-xl overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-zinc-800/50">
+      <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-zinc-800/80 to-zinc-800/50 border-b border-orange-900/30">
         <div className="flex items-center gap-3">
           <button
             onClick={() => onToggleExpand(family.id)}
@@ -730,7 +845,7 @@ function FamilyCard({
             {family.expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
           <div>
-            <span className="font-bold text-white text-base">{family.name}</span>
+            <span className="font-bold text-orange-300 text-base">{family.name}</span>
             {hasLiveStock ? (
               <span className="text-xs ml-2">
                 <span className="text-zinc-400">BID</span>{" "}
@@ -746,7 +861,7 @@ function FamilyCard({
           </div>
           <span className="text-xs text-zinc-500">{family.tickers.length} tickers</span>
           {bestPair && (
-            <span className="hidden md:flex items-center gap-1 text-xs bg-emerald-950 border border-emerald-800 text-emerald-400 px-2 py-0.5 rounded-full">
+            <span className="hidden md:flex items-center gap-1 text-xs bg-orange-950/50 border border-orange-800/50 text-orange-400 px-2 py-0.5 rounded-full">
               <Star className="w-3 h-3 text-yellow-400" />
               Melhor: Strike {formatBRL(bestPair.strike)} · {formatPercent(bestPair.lucroPercent)}
             </span>
@@ -774,8 +889,8 @@ function FamilyCard({
           </button>
           <button
             onClick={handlePasteFromClipboard}
-            title="Colar tickers da área de transferência"
-            className="flex items-center gap-1 px-2 py-1 text-xs bg-emerald-700 hover:bg-emerald-600 rounded transition-colors"
+            title="Colar tickers"
+            className="flex items-center gap-1 px-2 py-1 text-xs bg-orange-700/60 hover:bg-orange-600/70 rounded transition-colors"
           >
             <ClipboardPaste className="w-3 h-3" /> Colar
           </button>
@@ -802,12 +917,12 @@ function FamilyCard({
               onPaste={handleTextAreaPaste}
               placeholder="BBDCD194, BBDCP194, BBDCD209, BBDCP209..."
               rows={3}
-              className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-xs font-mono focus:outline-none focus:border-emerald-500 resize-none"
+              className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-xs font-mono focus:outline-none focus:border-orange-500 resize-none"
             />
             <div className="flex flex-col gap-2">
               <button
                 onClick={handlePasteSubmit}
-                className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 rounded text-xs font-bold transition-colors"
+                className="px-3 py-1 bg-orange-600 hover:bg-orange-500 rounded text-xs font-bold transition-colors"
               >
                 Adicionar
               </button>
@@ -839,7 +954,7 @@ function FamilyCard({
                 }
               }}
               placeholder="Adicionar ticker (ex: BBDCD194) ou colar vários (Ctrl+V)"
-              className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-emerald-500 transition-colors placeholder-zinc-600"
+              className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-orange-500 transition-colors placeholder-zinc-600"
             />
             <button
               onClick={handleManualAdd}
@@ -867,22 +982,22 @@ function FamilyCard({
           ) : (
             <table className="w-full text-xs">
               <thead>
-                {/* Group headers */}
+                {/* Group headers with vibrant orange tones */}
                 <tr className="border-b border-zinc-700">
                   <th className="px-4 py-1" />
                   <th colSpan={2} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-zinc-600/80 text-zinc-100 border-x border-zinc-500/60">
                     ATIVO
                   </th>
-                  <th colSpan={3} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-blue-800/70 text-blue-100 border-x border-blue-600/50">
+                  <th colSpan={3} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-blue-700/50 text-blue-200 border-x border-blue-500/40">
                     📘 CALL
                   </th>
-                  <th colSpan={3} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-red-800/60 text-red-100 border-x border-red-600/50">
+                  <th colSpan={3} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-red-700/50 text-red-200 border-x border-red-500/40">
                     📕 PUT
                   </th>
-                  <th colSpan={6} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-emerald-800/60 text-emerald-100 border-x border-emerald-600/50">
+                  <th colSpan={6} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-orange-700/50 text-orange-200 border-x border-orange-500/40">
                     💰 BOX SPREAD
                   </th>
-                  <th colSpan={2} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-amber-700/60 text-amber-100 border-x border-amber-500/50">
+                  <th colSpan={2} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-amber-700/50 text-amber-200 border-x border-amber-500/40">
                     📊 CDI
                   </th>
                   <th className="px-2 py-1" />
@@ -898,11 +1013,11 @@ function FamilyCard({
                   <th className="text-left px-2 py-2 text-red-300">Ticker</th>
                   <th className="text-right px-2 py-2 text-red-300">BID</th>
                   <th className="text-right px-2 py-2 text-red-300">ASK</th>
-                  <th className="text-right px-2 py-2">Strike</th>
-                  <th className="text-center px-2 py-2">Venc.</th>
-                  <th className="text-right px-2 py-2 text-yellow-400">Compra BOX</th>
+                  <th className="text-right px-2 py-2 text-orange-300">Strike</th>
+                  <th className="text-center px-2 py-2 text-orange-300">Venc.</th>
+                  <th className="text-right px-2 py-2 text-orange-400 font-bold">Custo</th>
                   <th className="text-right px-2 py-2 text-emerald-400">Lucro (1)</th>
-                  <th className="text-right px-2 py-2 text-emerald-300 font-bold">Lucro Total</th>
+                  <th className="text-right px-2 py-2 text-emerald-300 font-bold">Total ({quantidade}x)</th>
                   <th className="text-right px-2 py-2 text-emerald-200 font-bold">Lucro %</th>
                   <th className="text-right px-2 py-2 text-amber-400">CDI Per.</th>
                   <th className="text-center px-2 py-2 text-amber-300">vs CDI</th>
@@ -918,16 +1033,16 @@ function FamilyCard({
                     <tr
                       key={`pair-${pair.strike}-${idx}`}
                       className={`border-b border-zinc-800/30 hover:bg-zinc-800/20 transition-colors ${
-                        isBest ? "bg-emerald-950/20" : ""
+                        isBest ? "bg-orange-950/15" : ""
                       }`}
                     >
                       <td className="px-4 py-2 font-bold text-white flex items-center gap-1">
-                        {isBest && <Star className="w-3 h-3 text-yellow-400 flex-shrink-0" />}
+                        {isBest && <Star className="w-3 h-3 text-orange-400 flex-shrink-0" />}
                         {family.name}
                       </td>
                       <td className="px-2 py-2 text-right text-zinc-300">{formatBRL(pair.stockBid)}</td>
                       <td className="px-2 py-2 text-right text-zinc-300">{formatBRL(pair.stockAsk)}</td>
-                      {/* CALL section */}
+                      {/* CALL */}
                       <td className="px-2 py-2 bg-blue-950/10">
                         {pair.callSymbol ? (
                           <span className="text-blue-300 font-semibold">{pair.callSymbol}</span>
@@ -937,7 +1052,7 @@ function FamilyCard({
                       </td>
                       <td className="px-2 py-2 text-right text-blue-300 bg-blue-950/10">{formatBRL(pair.callBid)}</td>
                       <td className="px-2 py-2 text-right text-blue-200 bg-blue-950/10">{formatBRL(pair.callAsk)}</td>
-                      {/* PUT section */}
+                      {/* PUT */}
                       <td className="px-2 py-2 bg-red-950/10">
                         {pair.putSymbol ? (
                           <span className="text-red-300 font-semibold">{pair.putSymbol}</span>
@@ -947,15 +1062,15 @@ function FamilyCard({
                       </td>
                       <td className="px-2 py-2 text-right text-red-300 bg-red-950/10">{formatBRL(pair.putBid)}</td>
                       <td className="px-2 py-2 text-right text-red-200 bg-red-950/10">{formatBRL(pair.putAsk)}</td>
-                      {/* Box Spread section */}
-                      <td className="px-2 py-2 text-right font-semibold text-white">{formatBRL(displayStrike)}</td>
+                      {/* Box Spread */}
+                      <td className="px-2 py-2 text-right font-semibold text-orange-300">{formatBRL(displayStrike)}</td>
                       <td className="px-2 py-2 text-center text-zinc-400 text-[10px]">
                         {pair.vencimento ?? "—"}
                         {pair.diasUteis !== null && (
-                          <span className="block text-zinc-600">{pair.diasUteis}du</span>
+                          <span className="block text-amber-500/70 font-bold">{pair.diasUteis}du</span>
                         )}
                       </td>
-                      <td className="px-2 py-2 text-right font-bold text-yellow-400">{formatBRL(pair.compraBox)}</td>
+                      <td className="px-2 py-2 text-right font-bold text-orange-400">{formatBRL(pair.compraBox)}</td>
                       <td className="px-2 py-2 text-right font-bold">
                         {pair.lucro !== null ? (
                           <span className={pair.lucro >= 0 ? "text-emerald-400" : "text-red-400"}>
@@ -977,7 +1092,7 @@ function FamilyCard({
                           </span>
                         ) : "—"}
                       </td>
-                      {/* CDI comparison */}
+                      {/* CDI */}
                       <td className="px-2 py-2 text-right text-amber-400">
                         {pair.cdiPeriodo !== null ? formatPercent(pair.cdiPeriodo) : "—"}
                       </td>
