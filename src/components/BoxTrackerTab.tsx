@@ -799,23 +799,24 @@ export default function BoxTracker() {
                     <p className="text-sm font-bold text-emerald-600 dark:text-emerald-300">{formatPercent(lucroPercentDisplay)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[9px] text-muted-foreground uppercase">vs CDI</p>
+                    <p className="text-[9px] text-muted-foreground uppercase">% do CDI</p>
                     {(() => {
-                      const diff = (lucroPercentDisplay ?? 0) - (cdiDisplay ?? 0);
-                      const isAbove = diff > 0;
+                      const pctCdi = cdiDisplay && cdiDisplay > 0 ? ((lucroPercentDisplay ?? 0) / cdiDisplay) * 100 : null;
+                      if (pctCdi === null) return <p className="text-sm text-muted-foreground">—</p>;
+                      const isAbove = pctCdi >= 100;
                       return (
                         <>
                           <p className={cn(
                             "text-2xl font-black",
                             isAbove ? "text-emerald-500 dark:text-emerald-300" : "text-red-500"
                           )}>
-                            {isAbove ? "+" : ""}{diff.toFixed(2).replace(".", ",")}%
+                            {pctCdi.toFixed(0).replace(".", ",")}%
                           </p>
                           <span className={cn(
                             "text-[9px] font-bold",
                             isAbove ? "text-emerald-600 dark:text-emerald-500" : "text-red-500"
                           )}>
-                            {isAbove ? "▲ ACIMA CDI" : "▼ ABAIXO CDI"}
+                            {isAbove ? `▲ ${(pctCdi - 100).toFixed(0)}% acima` : `▼ ${(100 - pctCdi).toFixed(0)}% abaixo`} do CDI
                           </span>
                         </>
                       );
@@ -849,7 +850,7 @@ export default function BoxTracker() {
                   <th className="text-right py-2 pr-2">Total</th>
                   <th className="text-right py-2 pr-2">Lucro %</th>
                   <th className="text-right py-2 pr-2 text-amber-600 dark:text-amber-400">CDI Per.</th>
-                  <th className="text-center py-2 pr-2 text-emerald-600 dark:text-emerald-400 font-bold">% vs CDI</th>
+                  <th className="text-center py-2 pr-2 text-emerald-600 dark:text-emerald-400 font-bold">% do CDI</th>
                 </tr>
               </thead>
               <tbody>
@@ -873,11 +874,12 @@ export default function BoxTracker() {
                       <td className="py-2 pr-2 text-right text-amber-600 dark:text-amber-400">{cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}</td>
                       <td className="py-2 pr-2 text-center">
                         {(() => {
-                          const diff = (lucroPercentDisplay ?? 0) - (cdiDisplay ?? 0);
-                          const isAbove = diff > 0;
+                          const pctCdi = cdiDisplay && cdiDisplay > 0 ? ((lucroPercentDisplay ?? 0) / cdiDisplay) * 100 : null;
+                          if (pctCdi === null) return "—";
+                          const isAbove = pctCdi >= 100;
                           return (
                             <span className={cn("font-black text-sm", isAbove ? "text-emerald-500 dark:text-emerald-300" : "text-red-500")}>
-                              {isAbove ? "+" : ""}{diff.toFixed(2).replace(".", ",")}%
+                              {pctCdi.toFixed(0)}%
                             </span>
                           );
                         })()}
@@ -1221,7 +1223,7 @@ function FamilyCard({
                   <th className="text-right px-2 py-2 text-emerald-600 dark:text-emerald-300 font-bold">Total ({quantidade}x)</th>
                   <th className="text-right px-2 py-2 text-emerald-600 dark:text-emerald-200 font-bold">Lucro %</th>
                   <th className="text-right px-2 py-2 text-amber-600 dark:text-amber-400">CDI Per.</th>
-                  <th className="text-center px-2 py-2 text-emerald-600 dark:text-emerald-400 font-bold">% vs CDI</th>
+                  <th className="text-center px-2 py-2 text-emerald-600 dark:text-emerald-400 font-bold">% do CDI</th>
                   <th className="px-2 py-2"></th>
                 </tr>
               </thead>
@@ -1309,13 +1311,14 @@ function FamilyCard({
                       </td>
                       <td className="px-2 py-2 text-center">
                         {(() => {
-                          const diff = (lucroPercentDisplay ?? 0) - (cdiDisplay ?? 0);
-                          const isAbove = diff > 0;
-                          return cdiDisplay !== null ? (
+                          const pctCdi = cdiDisplay && cdiDisplay > 0 ? ((lucroPercentDisplay ?? 0) / cdiDisplay) * 100 : null;
+                          if (pctCdi === null) return "—";
+                          const isAbove = pctCdi >= 100;
+                          return (
                             <span className={cn("font-black text-xs", isAbove ? "text-emerald-500 dark:text-emerald-300" : "text-red-500")}>
-                              {isAbove ? "+" : ""}{diff.toFixed(2).replace(".", ",")}%
+                              {pctCdi.toFixed(0)}%
                             </span>
-                          ) : "—";
+                          );
                         })()}
                       </td>
                       <td className="px-2 py-2">
