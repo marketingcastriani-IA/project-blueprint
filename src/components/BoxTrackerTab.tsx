@@ -721,10 +721,10 @@ export default function BoxTracker() {
         </div>
       </div>
 
-      {/* WINNER CARDS - Top 3 */}
+      {/* WINNER CARDS - Top 1 de cada ação */}
       {topPairs.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
-          {topPairs.slice(0, 3).map((pair, i) => {
+        <div className={cn("grid gap-3 mb-5", topPairs.length === 1 ? "grid-cols-1" : topPairs.length === 2 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-3")}>
+          {topPairs.map((pair, i) => {
             const isWinner = i === 0;
             const lucroDisplay = descontarIRAcoes ? pair.lucroLiqAcoes : pair.lucro;
             const lucroTotalDisplay = descontarIRAcoes ? pair.lucroLiqAcoesTotal : pair.lucroTotal;
