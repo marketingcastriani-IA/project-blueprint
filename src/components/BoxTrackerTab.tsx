@@ -929,6 +929,7 @@ export default function BoxTracker() {
               descontarIRAcoes={descontarIRAcoes}
               descontarIRRendaFixa={descontarIRRendaFixa}
               winnerKey={winnerKey}
+              cdiAnual={cdiAnual}
             />
           ))}
         </div>
