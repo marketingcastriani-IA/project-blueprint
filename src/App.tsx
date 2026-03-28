@@ -57,6 +57,7 @@ const App = () => (
             </div>
           </footer>
         </TooltipProvider>
+        </RtdBridgeProvider>
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
