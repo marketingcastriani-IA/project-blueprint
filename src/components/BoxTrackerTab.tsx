@@ -921,7 +921,6 @@ function FamilyCard({
                           </span>
                         ) : "—"}
                       </td>
-                      </td>
                       <td className="px-2 py-2">
                         <div className="flex gap-1">
                           {pair.callSymbol && (
@@ -974,15 +973,13 @@ function FamilyCard({
                             (sem par {ticker.type === "CALL" ? "PUT" : "CALL"} no strike {formatBRL(ticker.strike)})
                           </span>
                         </td>
-                        <td className="px-2 py-2 text-right text-zinc-500" colSpan={2}>
-                          {formatBRL(stockBid)} / {formatBRL(stockAsk)}
-                        </td>
-                        <td className="px-2 py-2 text-right text-zinc-500" colSpan={2}>
+                        <td className="px-2 py-2 text-right text-zinc-500" colSpan={3}>
                           {liveRow ? `${formatBRL(liveRow.ofCompra)} / ${formatBRL(liveRow.ofVenda)}` : "—"}
                         </td>
-                        <td className="px-2 py-2 text-zinc-600 text-center" colSpan={5}>
+                        <td className="px-2 py-2 text-zinc-600 text-center" colSpan={8}>
                           Aguardando par...
                         </td>
+                        <td className="px-2 py-2" colSpan={2} />
                         <td className="px-2 py-2">
                           <button
                             onClick={() => onRemoveTicker(family.id, ticker.id)}
