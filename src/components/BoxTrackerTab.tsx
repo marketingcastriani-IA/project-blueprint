@@ -1,11 +1,8 @@
 // ============================================================
-// RASTREADOR DE BOX - Aba completa para seu app Lovable
-// Cole este componente em: src/components/BoxTracker.tsx
-// ============================================================
-// DEPENDÊNCIAS necessárias no seu projeto Lovable:
-//   - lucide-react (já incluso no Lovable)
-//   - shadcn/ui components (já incluso no Lovable)
-//   - tailwindcss (já incluso no Lovable)
+// RASTREADOR DE BOX - Compra de Box (Stock + Put - Call)
+// Lógica: Compra BOX = Stock ASK + Put ASK - Call BID
+//         Lucro = Strike - Compra BOX
+//         Lucro % = Lucro / Compra BOX × 100
 // ============================================================
 
 import { useState, useRef, useCallback, useEffect } from "react";
@@ -14,213 +11,304 @@ import {
   Trash2,
   Upload,
   TrendingUp,
-  TrendingDown,
   RefreshCw,
   ChevronDown,
   ChevronUp,
   Star,
   AlertCircle,
-  Copy,
+  ClipboardPaste,
   X,
   BarChart2,
+  Trophy,
+  Save,
+  Download,
 } from "lucide-react";
 
 // ─── TIPOS ───────────────────────────────────────────────────
-interface Ticker {
+interface OptionTicker {
   id: string;
-  symbol: string;        // ex: "PETRK350"
+  symbol: string;
   type: "CALL" | "PUT";
   strike: number;
-  expiry: string;        // "YYYY-MM-DD"
-  lastPrice: number | null;
   bidPrice: number | null;
   askPrice: number | null;
   volume: number | null;
-  openInterest: number | null;
   updatedAt: string | null;
   loading: boolean;
   error: string | null;
 }
 
+interface BoxPair {
+  strike: number;
+  call: OptionTicker | null;
+  put: OptionTicker | null;
+  // Calculated
+  compraBox: number | null;
+  lucro: number | null;
+  lucroPercent: number | null;
+}
+
 interface StockFamily {
   id: string;
-  name: string;          // ex: "PETR4"
-  underlyingPrice: number | null;
-  tickers: Ticker[];
+  name: string;
+  stockBid: number | null;
+  stockAsk: number | null;
+  tickers: OptionTicker[];
   expanded: boolean;
   loadingStock: boolean;
 }
 
-interface BoxResult {
-  tickerId: string;
-  symbol: string;
-  type: "CALL" | "PUT";
-  strike: number;
-  expiry: string;
-  stockPrice: number;
-  optionPrice: number;
-  periodDays: number;
-  // Cálculos
-  boxReturn: number;       // retorno % do box
-  annualReturn: number;    // retorno anualizado %
-  premium: number;         // prêmio recebido/pago
-  breakeven: number;       // ponto de equilíbrio
-  isProfit: boolean;
+interface SavedFamily {
+  name: string;
+  tickers: string[]; // symbols only
 }
 
 // ─── CONSTANTES ──────────────────────────────────────────────
-const OPCOESPROX_BASE = "https://opcoesprox.com.br";
-
-// Períodos disponíveis para cálculo
-const PERIODS = [
-  { label: "7 dias", value: 7 },
-  { label: "15 dias", value: 15 },
-  { label: "21 dias", value: 21 },
-  { label: "30 dias", value: 30 },
-  { label: "45 dias", value: 45 },
-  { label: "60 dias", value: 60 },
-];
+const STORAGE_KEY = "box-tracker-families";
 
 // ─── FUNÇÕES AUXILIARES ──────────────────────────────────────
 function generateId(): string {
   return Math.random().toString(36).substring(2, 9);
 }
 
-function formatCurrency(val: number | null): string {
-  if (val === null) return "—";
-  return val.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+function formatBRL(val: number | null): string {
+  if (val === null || val === undefined) return "—";
+  return `R$ ${val.toFixed(2).replace(".", ",")}`;
 }
 
-function formatPercent(val: number): string {
-  return `${val >= 0 ? "+" : ""}${val.toFixed(2)}%`;
+function formatPercent(val: number | null): string {
+  if (val === null) return "—";
+  return `${val.toFixed(2).replace(".", ",")}%`;
 }
 
 function extractStrikeFromTicker(symbol: string): number {
-  // Extrai strike de tickers como PETRK350 → 35.00, VALED220 → 22.00
-  const match = symbol.match(/([A-Z]{4}[A-Z]\d*)(\d{2,4})$/);
+  // BBDCD194 → strike chars after the type letter
+  const clean = symbol.toUpperCase().replace(/\s/g, "");
+  // Match: 4 letters (asset) + 1 letter (type/month) + digits (strike)
+  const match = clean.match(/^[A-Z]{4,5}[A-X](\d+)$/);
   if (match) {
-    const raw = parseInt(match[2]);
-    // Convenção B3: últimos 2 dígitos são decimais se > 2 dígitos
-    return raw > 999 ? raw / 100 : raw;
+    const raw = parseInt(match[1]);
+    // B3: if 3+ digits, last 2 are decimals → divide by 100
+    if (raw >= 100) return raw / 100;
+    return raw;
   }
   return 0;
 }
 
 function extractTypeFromTicker(symbol: string): "CALL" | "PUT" {
-  // Letras A-L = CALL, M-X = PUT (convenção B3)
-  const match = symbol.match(/[A-Z]{4}([A-X])/);
+  const clean = symbol.toUpperCase().replace(/\s/g, "");
+  // Find the type letter: 5th character for 4-letter assets, 6th for 5-letter
+  const match = clean.match(/^[A-Z]{4,5}([A-X])/);
   if (match) {
-    const letter = match[1].charCodeAt(0) - 65; // A=0, L=11
-    return letter <= 11 ? "CALL" : "PUT";
+    const code = match[1].charCodeAt(0) - 65;
+    return code <= 11 ? "CALL" : "PUT"; // A-L = CALL, M-X = PUT
   }
   return "CALL";
 }
 
-// ─── MOCK DE API (substituir pela API real opcoesprox.com.br) ──
-// A opcoesprox.com.br não expõe API pública REST documentada.
-// Este mock simula os dados — você pode substituir pela integração real
-// via fetch quando tiver a chave/endpoint da plataforma.
-async function fetchOptionData(symbol: string): Promise<Partial<Ticker>> {
-  // Simula latência de rede
-  await new Promise((r) => setTimeout(r, 600 + Math.random() * 800));
-
-  // Simula erro ocasional
-  if (Math.random() < 0.05) throw new Error("Timeout na requisição");
+// ─── MOCK API (substituir por API real) ──────────────────────
+async function fetchOptionData(symbol: string): Promise<Partial<OptionTicker>> {
+  await new Promise((r) => setTimeout(r, 300 + Math.random() * 500));
+  if (Math.random() < 0.03) throw new Error("Timeout");
 
   const strike = extractStrikeFromTicker(symbol);
-  const base = strike > 0 ? strike : 30 + Math.random() * 20;
+  const type = extractTypeFromTicker(symbol);
+  const base = strike > 0 ? strike : 20;
+
+  // Simulate bid/ask based on type and how far from ATM
+  let bid: number, ask: number;
+  if (type === "CALL") {
+    bid = parseFloat((base * (0.02 + Math.random() * 0.06)).toFixed(2));
+    ask = parseFloat((bid + 0.01 + Math.random() * 0.04).toFixed(2));
+  } else {
+    bid = parseFloat((base * (0.015 + Math.random() * 0.08)).toFixed(2));
+    ask = parseFloat((bid + 0.01 + Math.random() * 0.05).toFixed(2));
+  }
 
   return {
-    lastPrice: parseFloat((base * (0.02 + Math.random() * 0.08)).toFixed(2)),
-    bidPrice: parseFloat((base * (0.018 + Math.random() * 0.075)).toFixed(2)),
-    askPrice: parseFloat((base * (0.022 + Math.random() * 0.085)).toFixed(2)),
+    bidPrice: bid,
+    askPrice: ask,
     volume: Math.floor(Math.random() * 50000),
-    openInterest: Math.floor(Math.random() * 200000),
     updatedAt: new Date().toLocaleTimeString("pt-BR"),
   };
 }
 
-async function fetchStockPrice(ticker: string): Promise<number> {
-  await new Promise((r) => setTimeout(r, 400));
-  // Mock: preços aproximados de ações populares
+async function fetchStockPrice(ticker: string): Promise<{ bid: number; ask: number }> {
+  await new Promise((r) => setTimeout(r, 300));
   const prices: Record<string, number> = {
-    PETR4: 38.5, VALE3: 62.3, ITUB4: 34.8, BBDC4: 14.2,
+    PETR4: 38.5, VALE3: 62.3, ITUB4: 34.8, BBDC4: 19.30,
     ABEV3: 12.9, MGLU3: 8.4, WEGE3: 52.1, RENT3: 58.7,
     B3SA3: 11.3, EGIE3: 42.0, BBAS3: 28.6, SUZB3: 55.4,
+    LREN3: 15.63,
   };
-  return prices[ticker] ?? 30 + Math.random() * 50;
+  const mid = prices[ticker] ?? 30 + Math.random() * 50;
+  return { bid: mid, ask: parseFloat((mid + 0.02).toFixed(2)) };
 }
 
 // ─── CÁLCULO DO BOX ──────────────────────────────────────────
-function calculateBoxReturn(
-  ticker: Ticker,
-  stockPrice: number,
-  periodDays: number
-): BoxResult | null {
-  if (!ticker.lastPrice || stockPrice <= 0) return null;
+// Compra de Box = Compra do Ativo (ASK) + Compra da PUT (ASK) - Venda da CALL (BID)
+// No vencimento recebe o Strike
+// Lucro = Strike - Compra Box
+// Lucro% = Lucro / Compra Box × 100
+function calculateBoxPairs(family: StockFamily): BoxPair[] {
+  const { tickers, stockAsk } = family;
+  if (!stockAsk || stockAsk <= 0) return [];
 
-  const optionPrice = ticker.lastPrice;
-  const strike = ticker.strike;
+  // Group by strike
+  const strikeMap = new Map<number, { calls: OptionTicker[]; puts: OptionTicker[] }>();
 
-  let premium = 0;
-  let breakeven = 0;
+  tickers.forEach((t) => {
+    if (t.loading || t.error || t.strike <= 0) return;
+    const key = t.strike;
+    if (!strikeMap.has(key)) strikeMap.set(key, { calls: [], puts: [] });
+    const group = strikeMap.get(key)!;
+    if (t.type === "CALL") group.calls.push(t);
+    else group.puts.push(t);
+  });
 
-  if (ticker.type === "CALL") {
-    // Venda de CALL coberta: recebe prêmio, limita upside no strike
-    premium = optionPrice;
-    breakeven = stockPrice - premium;
-  } else {
-    // Compra de PUT protetora: paga prêmio, protege abaixo do strike
-    premium = -optionPrice;
-    breakeven = stockPrice + optionPrice;
-  }
+  const pairs: BoxPair[] = [];
 
-  // Retorno do box no período
-  const periodReturn = (premium / stockPrice) * 100;
+  strikeMap.forEach((group, strike) => {
+    // For each call+put pair at this strike
+    const call = group.calls[0] || null;
+    const put = group.puts[0] || null;
 
-  // Anualizado
-  const annualReturn = (periodReturn / periodDays) * 252;
+    if (call && put && call.bidPrice !== null && put.askPrice !== null) {
+      const compraBox = stockAsk + put.askPrice - call.bidPrice;
+      const lucro = strike - compraBox;
+      const lucroPercent = compraBox > 0 ? (lucro / compraBox) * 100 : null;
 
-  return {
-    tickerId: ticker.id,
-    symbol: ticker.symbol,
-    type: ticker.type,
-    strike,
-    expiry: ticker.expiry,
-    stockPrice,
-    optionPrice,
-    periodDays,
-    boxReturn: periodReturn,
-    annualReturn,
-    premium,
-    breakeven,
-    isProfit: periodReturn > 0,
-  };
+      pairs.push({ strike, call, put, compraBox, lucro, lucroPercent });
+    } else {
+      // Incomplete pair
+      pairs.push({ strike, call, put, compraBox: null, lucro: null, lucroPercent: null });
+    }
+  });
+
+  pairs.sort((a, b) => (b.lucroPercent ?? -999) - (a.lucroPercent ?? -999));
+  return pairs;
 }
 
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────
 export default function BoxTracker() {
   const [families, setFamilies] = useState<StockFamily[]>([]);
-  const [selectedPeriod, setSelectedPeriod] = useState<number>(30);
   const [newFamilyName, setNewFamilyName] = useState("");
   const [refreshing, setRefreshing] = useState(false);
-  const [bestResults, setBestResults] = useState<BoxResult[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const pasteAreaRef = useRef<HTMLTextAreaElement>(null);
 
-  // ── Adicionar família de ações ────────────────────────────
+  // Load from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed: SavedFamily[] = JSON.parse(saved);
+        parsed.forEach((sf) => {
+          addFamilyFromSaved(sf.name, sf.tickers);
+        });
+      }
+    } catch {}
+  }, []);
+
+  // Save to localStorage whenever families change
+  useEffect(() => {
+    const toSave: SavedFamily[] = families.map((f) => ({
+      name: f.name,
+      tickers: f.tickers.map((t) => t.symbol),
+    }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+  }, [families]);
+
+  const addFamilyFromSaved = (name: string, symbols: string[]) => {
+    const familyId = generateId();
+    const newFamily: StockFamily = {
+      id: familyId,
+      name,
+      stockBid: null,
+      stockAsk: null,
+      tickers: [],
+      expanded: true,
+      loadingStock: true,
+    };
+
+    setFamilies((prev) => {
+      if (prev.find((f) => f.name === name)) return prev;
+      return [...prev, newFamily];
+    });
+
+    fetchStockPrice(name).then((price) => {
+      setFamilies((prev) =>
+        prev.map((f) =>
+          f.id === familyId
+            ? { ...f, stockBid: price.bid, stockAsk: price.ask, loadingStock: false }
+            : f
+        )
+      );
+    });
+
+    if (symbols.length > 0) {
+      const newTickers: OptionTicker[] = symbols.map((symbol) => ({
+        id: generateId(),
+        symbol: symbol.toUpperCase(),
+        type: extractTypeFromTicker(symbol),
+        strike: extractStrikeFromTicker(symbol),
+        bidPrice: null,
+        askPrice: null,
+        volume: null,
+        updatedAt: null,
+        loading: true,
+        error: null,
+      }));
+
+      setFamilies((prev) =>
+        prev.map((f) =>
+          f.id === familyId ? { ...f, tickers: [...f.tickers, ...newTickers] } : f
+        )
+      );
+
+      newTickers.forEach((ticker) => {
+        fetchOptionData(ticker.symbol)
+          .then((data) => {
+            setFamilies((prev) =>
+              prev.map((f) =>
+                f.id !== familyId
+                  ? f
+                  : {
+                      ...f,
+                      tickers: f.tickers.map((t) =>
+                        t.id === ticker.id ? { ...t, ...data, loading: false } : t
+                      ),
+                    }
+              )
+            );
+          })
+          .catch((err) => {
+            setFamilies((prev) =>
+              prev.map((f) =>
+                f.id !== familyId
+                  ? f
+                  : {
+                      ...f,
+                      tickers: f.tickers.map((t) =>
+                        t.id === ticker.id ? { ...t, loading: false, error: err.message } : t
+                      ),
+                    }
+              )
+            );
+          });
+      });
+    }
+  };
+
   const addFamily = useCallback(() => {
     const name = newFamilyName.trim().toUpperCase();
     if (!name) return;
-    if (families.find((f) => f.name === name)) {
-      alert(`Família ${name} já existe.`);
-      return;
-    }
+    if (families.find((f) => f.name === name)) return;
 
+    const familyId = generateId();
     const newFamily: StockFamily = {
-      id: generateId(),
+      id: familyId,
       name,
-      underlyingPrice: null,
+      stockBid: null,
+      stockAsk: null,
       tickers: [],
       expanded: true,
       loadingStock: true,
@@ -229,107 +317,90 @@ export default function BoxTracker() {
     setFamilies((prev) => [...prev, newFamily]);
     setNewFamilyName("");
 
-    // Busca preço do ativo
     fetchStockPrice(name).then((price) => {
       setFamilies((prev) =>
         prev.map((f) =>
-          f.id === newFamily.id
-            ? { ...f, underlyingPrice: price, loadingStock: false }
+          f.id === familyId
+            ? { ...f, stockBid: price.bid, stockAsk: price.ask, loadingStock: false }
             : f
         )
       );
     });
   }, [newFamilyName, families]);
 
-  // ── Remover família ───────────────────────────────────────
   const removeFamily = useCallback((familyId: string) => {
     setFamilies((prev) => prev.filter((f) => f.id !== familyId));
   }, []);
 
-  // ── Toggle expand ─────────────────────────────────────────
   const toggleExpand = useCallback((familyId: string) => {
     setFamilies((prev) =>
-      prev.map((f) =>
-        f.id === familyId ? { ...f, expanded: !f.expanded } : f
-      )
+      prev.map((f) => (f.id === familyId ? { ...f, expanded: !f.expanded } : f))
     );
   }, []);
 
-  // ── Processar tickers (lista de symbols) ──────────────────
-  const processTickerSymbols = useCallback(
-    (familyId: string, rawText: string) => {
-      const symbols = rawText
-        .split(/[\n,;\t ]+/)
-        .map((s) => s.trim().toUpperCase())
-        .filter((s) => s.length >= 5);
+  const processTickerSymbols = useCallback((familyId: string, rawText: string) => {
+    const symbols = rawText
+      .split(/[\n,;\t\s]+/)
+      .map((s) => s.trim().toUpperCase())
+      .filter((s) => s.length >= 5 && /^[A-Z]{4,5}[A-X]\d+$/.test(s));
 
-      if (!symbols.length) return;
+    if (!symbols.length) return;
 
-      const newTickers: Ticker[] = symbols.map((symbol) => ({
-        id: generateId(),
-        symbol,
-        type: extractTypeFromTicker(symbol),
-        strike: extractStrikeFromTicker(symbol),
-        expiry: "",
-        lastPrice: null,
-        bidPrice: null,
-        askPrice: null,
-        volume: null,
-        openInterest: null,
-        updatedAt: null,
-        loading: true,
-        error: null,
-      }));
+    const newTickers: OptionTicker[] = symbols.map((symbol) => ({
+      id: generateId(),
+      symbol,
+      type: extractTypeFromTicker(symbol),
+      strike: extractStrikeFromTicker(symbol),
+      bidPrice: null,
+      askPrice: null,
+      volume: null,
+      updatedAt: null,
+      loading: true,
+      error: null,
+    }));
 
-      setFamilies((prev) =>
-        prev.map((f) => {
-          if (f.id !== familyId) return f;
-          // Evita duplicatas
-          const existingSymbols = new Set(f.tickers.map((t) => t.symbol));
-          const toAdd = newTickers.filter((t) => !existingSymbols.has(t.symbol));
-          return { ...f, tickers: [...f.tickers, ...toAdd] };
+    setFamilies((prev) =>
+      prev.map((f) => {
+        if (f.id !== familyId) return f;
+        const existing = new Set(f.tickers.map((t) => t.symbol));
+        const toAdd = newTickers.filter((t) => !existing.has(t.symbol));
+        return { ...f, tickers: [...f.tickers, ...toAdd] };
+      })
+    );
+
+    newTickers.forEach((ticker) => {
+      fetchOptionData(ticker.symbol)
+        .then((data) => {
+          setFamilies((prev) =>
+            prev.map((f) =>
+              f.id !== familyId
+                ? f
+                : {
+                    ...f,
+                    tickers: f.tickers.map((t) =>
+                      t.id === ticker.id ? { ...t, ...data, loading: false } : t
+                    ),
+                  }
+            )
+          );
         })
-      );
+        .catch((err) => {
+          setFamilies((prev) =>
+            prev.map((f) =>
+              f.id !== familyId
+                ? f
+                : {
+                    ...f,
+                    tickers: f.tickers.map((t) =>
+                      t.id === ticker.id ? { ...t, loading: false, error: err.message } : t
+                    ),
+                  }
+            )
+          );
+        });
+    });
+  }, []);
 
-      // Busca dados de cada ticker
-      newTickers.forEach((ticker) => {
-        fetchOptionData(ticker.symbol)
-          .then((data) => {
-            setFamilies((prev) =>
-              prev.map((f) => {
-                if (f.id !== familyId) return f;
-                return {
-                  ...f,
-                  tickers: f.tickers.map((t) =>
-                    t.id === ticker.id
-                      ? { ...t, ...data, loading: false, error: null }
-                      : t
-                  ),
-                };
-              })
-            );
-          })
-          .catch((err) => {
-            setFamilies((prev) =>
-              prev.map((f) => {
-                if (f.id !== familyId) return f;
-                return {
-                  ...f,
-                  tickers: f.tickers.map((t) =>
-                    t.id === ticker.id
-                      ? { ...t, loading: false, error: err.message }
-                      : t
-                  ),
-                };
-              })
-            );
-          });
-      });
-    },
-    []
-  );
-
-  // ── Upload de arquivo CSV/TXT ─────────────────────────────
   const handleFileUpload = useCallback(
     (familyId: string, file: File) => {
       const reader = new FileReader();
@@ -342,35 +413,29 @@ export default function BoxTracker() {
     [processTickerSymbols]
   );
 
-  // ── Remover ticker ────────────────────────────────────────
   const removeTicker = useCallback((familyId: string, tickerId: string) => {
     setFamilies((prev) =>
       prev.map((f) =>
-        f.id !== familyId
-          ? f
-          : { ...f, tickers: f.tickers.filter((t) => t.id !== tickerId) }
+        f.id !== familyId ? f : { ...f, tickers: f.tickers.filter((t) => t.id !== tickerId) }
       )
     );
   }, []);
 
-  // ── Refresh geral ─────────────────────────────────────────
   const refreshAll = useCallback(async () => {
     setRefreshing(true);
     const updates: Promise<void>[] = [];
 
     families.forEach((family) => {
-      // Atualiza preço do ativo
       updates.push(
         fetchStockPrice(family.name).then((price) => {
           setFamilies((prev) =>
             prev.map((f) =>
-              f.id === family.id ? { ...f, underlyingPrice: price } : f
+              f.id === family.id ? { ...f, stockBid: price.bid, stockAsk: price.ask } : f
             )
           );
         })
       );
 
-      // Atualiza cada ticker
       family.tickers.forEach((ticker) => {
         updates.push(
           fetchOptionData(ticker.symbol)
@@ -382,9 +447,7 @@ export default function BoxTracker() {
                     : {
                         ...f,
                         tickers: f.tickers.map((t) =>
-                          t.id === ticker.id
-                            ? { ...t, ...data, loading: false, error: null }
-                            : t
+                          t.id === ticker.id ? { ...t, ...data, loading: false, error: null } : t
                         ),
                       }
                 )
@@ -399,54 +462,35 @@ export default function BoxTracker() {
     setRefreshing(false);
   }, [families]);
 
-  // ── Calcular melhores strikes ─────────────────────────────
-  useEffect(() => {
-    const results: BoxResult[] = [];
-    families.forEach((family) => {
-      if (!family.underlyingPrice) return;
-      family.tickers.forEach((ticker) => {
-        const r = calculateBoxReturn(ticker, family.underlyingPrice!, selectedPeriod);
-        if (r) results.push(r);
-      });
+  // Collect all box pairs across families for global ranking
+  const allPairs: (BoxPair & { familyName: string })[] = [];
+  families.forEach((f) => {
+    const pairs = calculateBoxPairs(f);
+    pairs.forEach((p) => {
+      if (p.lucroPercent !== null && p.lucroPercent > 0) {
+        allPairs.push({ ...p, familyName: f.name });
+      }
     });
-    results.sort((a, b) => b.annualReturn - a.annualReturn);
-    setBestResults(results.slice(0, 10));
-  }, [families, selectedPeriod]);
+  });
+  allPairs.sort((a, b) => (b.lucroPercent ?? 0) - (a.lucroPercent ?? 0));
+  const topPairs = allPairs.slice(0, 10);
 
   // ─── RENDER ───────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#0a0e1a] text-white font-mono p-4 md:p-6">
-      {/* ── HEADER ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-emerald-400 flex items-center gap-2">
             <BarChart2 className="w-6 h-6" />
             Rastreador de Box
           </h1>
           <p className="text-xs text-zinc-500 mt-1">
-            Monitoramento de opções · opcoesprox.com.br
+            Compra de Box · Ativo + Put - Call = Lucro garantido no vencimento
           </p>
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
-          {/* Seletor de período */}
-          <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-700 rounded-lg p-1">
-            {PERIODS.map((p) => (
-              <button
-                key={p.value}
-                onClick={() => setSelectedPeriod(p.value)}
-                className={`px-3 py-1 rounded text-xs font-semibold transition-all ${
-                  selectedPeriod === p.value
-                    ? "bg-emerald-500 text-black"
-                    : "text-zinc-400 hover:text-white"
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Botão refresh */}
+        <div className="flex items-center gap-3">
           <button
             onClick={refreshAll}
             disabled={refreshing}
@@ -458,62 +502,99 @@ export default function BoxTracker() {
         </div>
       </div>
 
-      {/* ── MELHORES STRIKES (TOP 10) ── */}
-      {bestResults.length > 0 && (
-        <div className="mb-8 bg-zinc-900/60 border border-emerald-900/40 rounded-xl p-4">
+      {/* WINNER CARDS - Top 3 */}
+      {topPairs.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {topPairs.slice(0, 3).map((pair, i) => (
+            <div
+              key={`top-${i}`}
+              className={`relative overflow-hidden rounded-xl border p-4 ${
+                i === 0
+                  ? "bg-gradient-to-br from-yellow-900/30 to-yellow-950/20 border-yellow-600/50"
+                  : i === 1
+                  ? "bg-gradient-to-br from-zinc-700/30 to-zinc-800/20 border-zinc-500/50"
+                  : "bg-gradient-to-br from-amber-900/20 to-amber-950/10 border-amber-700/40"
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <Trophy
+                  className={`w-5 h-5 ${
+                    i === 0 ? "text-yellow-400" : i === 1 ? "text-zinc-300" : "text-amber-500"
+                  }`}
+                />
+                <span className="text-xs text-zinc-400 uppercase tracking-wider">
+                  {i === 0 ? "🥇 Melhor Box" : i === 1 ? "🥈 2º Melhor" : "🥉 3º Melhor"}
+                </span>
+              </div>
+
+              <div className="flex items-baseline gap-2 mb-1">
+                <span className="text-lg font-black text-white">{pair.familyName}</span>
+                <span className="text-xs text-zinc-400">Strike {formatBRL(pair.strike)}</span>
+              </div>
+
+              <div className="flex items-center gap-3 text-sm">
+                <span className="text-zinc-400">
+                  Call: <span className="text-blue-300 font-bold">{pair.call?.symbol}</span>
+                </span>
+                <span className="text-zinc-400">
+                  Put: <span className="text-red-300 font-bold">{pair.put?.symbol}</span>
+                </span>
+              </div>
+
+              <div className="mt-3 flex items-end justify-between">
+                <div>
+                  <p className="text-xs text-zinc-500">Compra Box</p>
+                  <p className="text-sm font-bold text-yellow-400">{formatBRL(pair.compraBox)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-zinc-500">Lucro</p>
+                  <p className="text-sm font-bold text-emerald-400">{formatBRL(pair.lucro)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-zinc-500">Retorno</p>
+                  <p className="text-xl font-black text-emerald-300">
+                    {formatPercent(pair.lucroPercent)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* TOP 10 TABLE */}
+      {topPairs.length > 3 && (
+        <div className="mb-6 bg-zinc-900/60 border border-emerald-900/40 rounded-xl p-4">
           <h2 className="text-sm font-bold text-emerald-400 mb-3 flex items-center gap-2">
             <Star className="w-4 h-4 text-yellow-400" />
-            Top Strikes · Maior Retorno ({selectedPeriod} dias)
+            Top 10 · Melhores Box Spreads
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="text-zinc-500 border-b border-zinc-800">
-                  <th className="text-left py-2 pr-4">#</th>
-                  <th className="text-left py-2 pr-4">Ticker</th>
-                  <th className="text-left py-2 pr-4">Tipo</th>
-                  <th className="text-right py-2 pr-4">Strike</th>
-                  <th className="text-right py-2 pr-4">Prêmio</th>
-                  <th className="text-right py-2 pr-4">Retorno Box</th>
-                  <th className="text-right py-2">Ret. Anual.</th>
+                  <th className="text-left py-2 pr-3">#</th>
+                  <th className="text-left py-2 pr-3">Ativo</th>
+                  <th className="text-left py-2 pr-3">CALL</th>
+                  <th className="text-left py-2 pr-3">PUT</th>
+                  <th className="text-right py-2 pr-3">Strike</th>
+                  <th className="text-right py-2 pr-3">Compra Box</th>
+                  <th className="text-right py-2 pr-3">Lucro</th>
+                  <th className="text-right py-2">Lucro %</th>
                 </tr>
               </thead>
               <tbody>
-                {bestResults.map((r, i) => (
-                  <tr
-                    key={r.tickerId}
-                    className={`border-b border-zinc-800/50 hover:bg-zinc-800/30 ${
-                      i === 0 ? "bg-emerald-950/30" : ""
-                    }`}
-                  >
-                    <td className="py-2 pr-4 text-zinc-500">
-                      {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}º`}
-                    </td>
-                    <td className="py-2 pr-4 font-bold text-white">{r.symbol}</td>
-                    <td className="py-2 pr-4">
-                      <span
-                        className={`px-2 py-0.5 rounded text-xs font-bold ${
-                          r.type === "CALL"
-                            ? "bg-blue-900/50 text-blue-300"
-                            : "bg-red-900/50 text-red-300"
-                        }`}
-                      >
-                        {r.type}
-                      </span>
-                    </td>
-                    <td className="py-2 pr-4 text-right">{formatCurrency(r.strike)}</td>
-                    <td className="py-2 pr-4 text-right text-yellow-400">
-                      {formatCurrency(r.optionPrice)}
-                    </td>
-                    <td className="py-2 pr-4 text-right">
-                      <span className={r.isProfit ? "text-emerald-400" : "text-red-400"}>
-                        {formatPercent(r.boxReturn)}
-                      </span>
-                    </td>
-                    <td className="py-2 text-right">
-                      <span className={r.isProfit ? "text-emerald-300 font-bold" : "text-red-400"}>
-                        {formatPercent(r.annualReturn)}
-                      </span>
+                {topPairs.slice(3).map((p, i) => (
+                  <tr key={`rank-${i + 3}`} className="border-b border-zinc-800/50 hover:bg-zinc-800/30">
+                    <td className="py-2 pr-3 text-zinc-500">{i + 4}º</td>
+                    <td className="py-2 pr-3 font-bold text-white">{p.familyName}</td>
+                    <td className="py-2 pr-3 text-blue-300">{p.call?.symbol}</td>
+                    <td className="py-2 pr-3 text-red-300">{p.put?.symbol}</td>
+                    <td className="py-2 pr-3 text-right">{formatBRL(p.strike)}</td>
+                    <td className="py-2 pr-3 text-right text-yellow-400">{formatBRL(p.compraBox)}</td>
+                    <td className="py-2 pr-3 text-right text-emerald-400">{formatBRL(p.lucro)}</td>
+                    <td className="py-2 text-right font-bold text-emerald-300">
+                      {formatPercent(p.lucroPercent)}
                     </td>
                   </tr>
                 ))}
@@ -523,14 +604,14 @@ export default function BoxTracker() {
         </div>
       )}
 
-      {/* ── ADICIONAR FAMÍLIA ── */}
+      {/* ADD FAMILY */}
       <div className="flex gap-2 mb-6">
         <input
           type="text"
           value={newFamilyName}
           onChange={(e) => setNewFamilyName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && addFamily()}
-          placeholder="Ticker do ativo (ex: PETR4, VALE3...)"
+          placeholder="Ticker do ativo (ex: PETR4, BBDC4, LREN3...)"
           className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors placeholder-zinc-600"
         />
         <button
@@ -542,7 +623,7 @@ export default function BoxTracker() {
         </button>
       </div>
 
-      {/* ── FAMÍLIAS ── */}
+      {/* FAMILIES */}
       {families.length === 0 ? (
         <div className="text-center py-20 text-zinc-600">
           <BarChart2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
@@ -555,7 +636,6 @@ export default function BoxTracker() {
             <FamilyCard
               key={family.id}
               family={family}
-              selectedPeriod={selectedPeriod}
               onRemoveFamily={removeFamily}
               onToggleExpand={toggleExpand}
               onAddTickers={processTickerSymbols}
@@ -572,7 +652,6 @@ export default function BoxTracker() {
 // ─── CARD DE FAMÍLIA ──────────────────────────────────────────
 interface FamilyCardProps {
   family: StockFamily;
-  selectedPeriod: number;
   onRemoveFamily: (id: string) => void;
   onToggleExpand: (id: string) => void;
   onAddTickers: (familyId: string, raw: string) => void;
@@ -582,7 +661,6 @@ interface FamilyCardProps {
 
 function FamilyCard({
   family,
-  selectedPeriod,
   onRemoveFamily,
   onToggleExpand,
   onAddTickers,
@@ -591,74 +669,86 @@ function FamilyCard({
 }: FamilyCardProps) {
   const [pasteText, setPasteText] = useState("");
   const [showPaste, setShowPaste] = useState(false);
+  const [manualTicker, setManualTicker] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const pasteRef = useRef<HTMLTextAreaElement>(null);
 
-  const handlePaste = () => {
+  // Handle paste from clipboard API directly
+  const handlePasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text.trim()) {
+        onAddTickers(family.id, text);
+      }
+    } catch {
+      // Fallback: show paste area
+      setShowPaste(true);
+      setTimeout(() => pasteRef.current?.focus(), 100);
+    }
+  };
+
+  const handlePasteSubmit = () => {
     if (!pasteText.trim()) return;
     onAddTickers(family.id, pasteText);
     setPasteText("");
     setShowPaste(false);
   };
 
-  const handlePasteEvent = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+  const handleManualAdd = () => {
+    if (!manualTicker.trim()) return;
+    onAddTickers(family.id, manualTicker);
+    setManualTicker("");
+  };
+
+  // Global paste handler when paste area is open
+  const handleTextAreaPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const text = e.clipboardData.getData("text");
-    if (text) {
+    if (text.trim()) {
       e.preventDefault();
-      setPasteText(text);
+      onAddTickers(family.id, text);
+      setShowPaste(false);
+      setPasteText("");
     }
   };
 
-  const boxResults = family.tickers
-    .map((t) =>
-      family.underlyingPrice
-        ? calculateBoxReturn(t, family.underlyingPrice, selectedPeriod)
-        : null
-    )
-    .filter(Boolean) as BoxResult[];
-
-  const bestResult =
-    boxResults.length > 0
-      ? boxResults.reduce((a, b) => (a.annualReturn > b.annualReturn ? a : b))
-      : null;
+  const boxPairs = calculateBoxPairs(family);
+  const bestPair = boxPairs.find((p) => p.lucroPercent !== null && p.lucroPercent > 0);
 
   return (
     <div className="bg-zinc-900/70 border border-zinc-700/50 rounded-xl overflow-hidden">
-      {/* Header da família */}
+      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-zinc-800/50">
         <div className="flex items-center gap-3">
           <button
             onClick={() => onToggleExpand(family.id)}
             className="text-zinc-400 hover:text-white transition-colors"
           >
-            {family.expanded ? (
-              <ChevronUp className="w-4 h-4" />
-            ) : (
-              <ChevronDown className="w-4 h-4" />
-            )}
+            {family.expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
           <div>
             <span className="font-bold text-white text-base">{family.name}</span>
             {family.loadingStock ? (
-              <span className="text-xs text-zinc-500 ml-2">Carregando preço...</span>
+              <span className="text-xs text-zinc-500 ml-2">Carregando...</span>
             ) : (
-              <span className="text-xs text-emerald-400 ml-2 font-semibold">
-                {formatCurrency(family.underlyingPrice)}
+              <span className="text-xs ml-2">
+                <span className="text-zinc-400">BID</span>{" "}
+                <span className="text-emerald-400 font-semibold">{formatBRL(family.stockBid)}</span>
+                <span className="text-zinc-600 mx-1">|</span>
+                <span className="text-zinc-400">ASK</span>{" "}
+                <span className="text-emerald-400 font-semibold">{formatBRL(family.stockAsk)}</span>
               </span>
             )}
           </div>
-          <span className="text-xs text-zinc-500">
-            {family.tickers.length} tickers
-          </span>
-          {bestResult && (
+          <span className="text-xs text-zinc-500">{family.tickers.length} tickers</span>
+          {bestPair && (
             <span className="hidden md:flex items-center gap-1 text-xs bg-emerald-950 border border-emerald-800 text-emerald-400 px-2 py-0.5 rounded-full">
               <Star className="w-3 h-3 text-yellow-400" />
-              Melhor: {bestResult.symbol} · {formatPercent(bestResult.annualReturn)} a.a.
+              Melhor: Strike {formatBRL(bestPair.strike)} · {formatPercent(bestPair.lucroPercent)}
             </span>
           )}
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Upload arquivo */}
           <input
             ref={fileRef}
             type="file"
@@ -672,22 +762,18 @@ function FamilyCard({
           />
           <button
             onClick={() => fileRef.current?.click()}
-            title="Upload CSV/TXT de tickers"
+            title="Upload CSV/TXT"
             className="flex items-center gap-1 px-2 py-1 text-xs bg-zinc-700 hover:bg-zinc-600 rounded transition-colors"
           >
             <Upload className="w-3 h-3" /> Upload
           </button>
-
-          {/* Colar tickers */}
           <button
-            onClick={() => setShowPaste(!showPaste)}
-            title="Colar tickers (Ctrl+C / Ctrl+V)"
-            className="flex items-center gap-1 px-2 py-1 text-xs bg-zinc-700 hover:bg-zinc-600 rounded transition-colors"
+            onClick={handlePasteFromClipboard}
+            title="Colar tickers da área de transferência"
+            className="flex items-center gap-1 px-2 py-1 text-xs bg-emerald-700 hover:bg-emerald-600 rounded transition-colors"
           >
-            <Copy className="w-3 h-3" /> Colar
+            <ClipboardPaste className="w-3 h-3" /> Colar
           </button>
-
-          {/* Remover família */}
           <button
             onClick={() => onRemoveFamily(family.id)}
             className="text-zinc-600 hover:text-red-400 transition-colors ml-1"
@@ -697,33 +783,31 @@ function FamilyCard({
         </div>
       </div>
 
-      {/* Área de colar tickers */}
+      {/* Paste area fallback */}
       {showPaste && (
         <div className="px-4 py-3 border-b border-zinc-700/50 bg-zinc-950/50">
           <p className="text-xs text-zinc-500 mb-2">
-            Cole os tickers abaixo (separados por vírgula, espaço, enter ou tab):
+            Cole os tickers (Ctrl+V) — separados por vírgula, espaço ou enter:
           </p>
           <div className="flex gap-2">
             <textarea
+              ref={pasteRef}
               value={pasteText}
               onChange={(e) => setPasteText(e.target.value)}
-              onPaste={handlePasteEvent}
-              placeholder="PETRK350, PETRK380, PETRL320..."
+              onPaste={handleTextAreaPaste}
+              placeholder="BBDCD194, BBDCP194, BBDCD209, BBDCP209..."
               rows={3}
               className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-xs font-mono focus:outline-none focus:border-emerald-500 resize-none"
             />
             <div className="flex flex-col gap-2">
               <button
-                onClick={handlePaste}
+                onClick={handlePasteSubmit}
                 className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 rounded text-xs font-bold transition-colors"
               >
                 Adicionar
               </button>
               <button
-                onClick={() => {
-                  setPasteText("");
-                  setShowPaste(false);
-                }}
+                onClick={() => { setPasteText(""); setShowPaste(false); }}
                 className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-xs transition-colors"
               >
                 Cancelar
@@ -733,52 +817,190 @@ function FamilyCard({
         </div>
       )}
 
-      {/* Tabela de tickers */}
+      {/* Manual ticker input */}
+      {family.expanded && (
+        <div className="px-4 py-2 border-b border-zinc-800/50 bg-zinc-900/30">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={manualTicker}
+              onChange={(e) => setManualTicker(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleManualAdd()}
+              onPaste={(e) => {
+                const text = e.clipboardData.getData("text");
+                if (text.includes(",") || text.includes("\n") || text.includes("\t") || text.includes(" ")) {
+                  e.preventDefault();
+                  onAddTickers(family.id, text);
+                }
+              }}
+              placeholder="Adicionar ticker (ex: BBDCD194) ou colar vários (Ctrl+V)"
+              className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-emerald-500 transition-colors placeholder-zinc-600"
+            />
+            <button
+              onClick={handleManualAdd}
+              className="px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 rounded text-xs transition-colors"
+            >
+              <Plus className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Box Pairs Table */}
       {family.expanded && (
         <div className="overflow-x-auto">
           {family.tickers.length === 0 ? (
-            <div className="px-6 py-6 text-center text-zinc-600 text-sm">
-              Nenhum ticker adicionado. Use "Colar" ou "Upload" acima.
+            <div className="px-6 py-8 text-center text-zinc-600 text-sm">
+              <p>Nenhum ticker adicionado.</p>
+              <p className="text-xs mt-1">
+                Use o campo acima, "Colar" ou "Upload" para importar tickers de opções.
+              </p>
+              <p className="text-xs mt-1 text-zinc-500">
+                Dica: adicione pares CALL+PUT com mesmo strike (ex: BBDCD194 + BBDCP194)
+              </p>
             </div>
           ) : (
             <table className="w-full text-xs">
               <thead>
                 <tr className="text-zinc-500 border-b border-zinc-800 bg-zinc-900/50">
-                  <th className="text-left px-4 py-2">Ticker</th>
-                  <th className="text-left px-2 py-2">Tipo</th>
+                  <th className="text-left px-4 py-2">ATIVO</th>
+                  <th className="text-left px-2 py-2">CALL</th>
+                  <th className="text-left px-2 py-2">PUT</th>
+                  <th className="text-right px-2 py-2">BID (Ativo)</th>
+                  <th className="text-right px-2 py-2">ASK (Ativo)</th>
+                  <th className="text-right px-2 py-2">BID (Call)</th>
+                  <th className="text-right px-2 py-2">ASK (Call)</th>
+                  <th className="text-right px-2 py-2">BID (Put)</th>
+                  <th className="text-right px-2 py-2">ASK (Put)</th>
+                  <th className="text-right px-2 py-2 text-yellow-400">Compra BOX</th>
                   <th className="text-right px-2 py-2">Strike</th>
-                  <th className="text-right px-2 py-2">Último</th>
-                  <th className="text-right px-2 py-2">Bid</th>
-                  <th className="text-right px-2 py-2">Ask</th>
-                  <th className="text-right px-2 py-2">Volume</th>
-                  <th className="text-right px-2 py-2">Retorno Box</th>
-                  <th className="text-right px-2 py-2">Ret. Anual.</th>
-                  <th className="text-right px-2 py-2">Breakeven</th>
-                  <th className="text-center px-2 py-2">Status</th>
+                  <th className="text-right px-2 py-2 text-emerald-400">Lucro</th>
+                  <th className="text-right px-2 py-2 text-emerald-300 font-bold">Lucro %</th>
                   <th className="px-2 py-2"></th>
                 </tr>
               </thead>
               <tbody>
-                {family.tickers.map((ticker) => {
-                  const result = family.underlyingPrice
-                    ? calculateBoxReturn(ticker, family.underlyingPrice, selectedPeriod)
-                    : null;
-
-                  const isBest =
-                    bestResult?.tickerId === ticker.id && boxResults.length > 1;
+                {boxPairs.map((pair, idx) => {
+                  const isBest = idx === 0 && pair.lucroPercent !== null && pair.lucroPercent > 0;
 
                   return (
                     <tr
-                      key={ticker.id}
+                      key={`pair-${pair.strike}-${idx}`}
                       className={`border-b border-zinc-800/30 hover:bg-zinc-800/20 transition-colors ${
                         isBest ? "bg-emerald-950/20" : ""
                       }`}
                     >
                       <td className="px-4 py-2 font-bold text-white flex items-center gap-1">
                         {isBest && <Star className="w-3 h-3 text-yellow-400 flex-shrink-0" />}
-                        {ticker.symbol}
+                        {family.name}
                       </td>
                       <td className="px-2 py-2">
+                        {pair.call ? (
+                          <span className="text-blue-300 font-semibold">{pair.call.symbol}</span>
+                        ) : (
+                          <span className="text-zinc-600">—</span>
+                        )}
+                      </td>
+                      <td className="px-2 py-2">
+                        {pair.put ? (
+                          <span className="text-red-300 font-semibold">{pair.put.symbol}</span>
+                        ) : (
+                          <span className="text-zinc-600">—</span>
+                        )}
+                      </td>
+                      {/* Stock Bid/Ask */}
+                      <td className="px-2 py-2 text-right text-zinc-300">
+                        {formatBRL(family.stockBid)}
+                      </td>
+                      <td className="px-2 py-2 text-right text-zinc-300">
+                        {formatBRL(family.stockAsk)}
+                      </td>
+                      {/* Call Bid/Ask */}
+                      <td className="px-2 py-2 text-right text-blue-300">
+                        {pair.call?.loading ? (
+                          <RefreshCw className="w-3 h-3 animate-spin inline" />
+                        ) : (
+                          formatBRL(pair.call?.bidPrice ?? null)
+                        )}
+                      </td>
+                      <td className="px-2 py-2 text-right text-blue-200">
+                        {formatBRL(pair.call?.askPrice ?? null)}
+                      </td>
+                      {/* Put Bid/Ask */}
+                      <td className="px-2 py-2 text-right text-red-300">
+                        {pair.put?.loading ? (
+                          <RefreshCw className="w-3 h-3 animate-spin inline" />
+                        ) : (
+                          formatBRL(pair.put?.bidPrice ?? null)
+                        )}
+                      </td>
+                      <td className="px-2 py-2 text-right text-red-200">
+                        {formatBRL(pair.put?.askPrice ?? null)}
+                      </td>
+                      {/* Compra BOX */}
+                      <td className="px-2 py-2 text-right font-bold text-yellow-400">
+                        {formatBRL(pair.compraBox)}
+                      </td>
+                      {/* Strike */}
+                      <td className="px-2 py-2 text-right font-semibold text-white">
+                        {formatBRL(pair.strike)}
+                      </td>
+                      {/* Lucro */}
+                      <td className="px-2 py-2 text-right font-bold">
+                        {pair.lucro !== null ? (
+                          <span className={pair.lucro >= 0 ? "text-emerald-400" : "text-red-400"}>
+                            {formatBRL(pair.lucro)}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      {/* Lucro % */}
+                      <td className="px-2 py-2 text-right font-black">
+                        {pair.lucroPercent !== null ? (
+                          <span className={pair.lucroPercent >= 0 ? "text-emerald-300" : "text-red-400"}>
+                            {formatPercent(pair.lucroPercent)}
+                          </span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      {/* Actions */}
+                      <td className="px-2 py-2">
+                        <div className="flex gap-1">
+                          {pair.call && (
+                            <button
+                              onClick={() => onRemoveTicker(family.id, pair.call!.id)}
+                              className="text-zinc-700 hover:text-red-400 transition-colors"
+                              title={`Remover ${pair.call.symbol}`}
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                          {pair.put && (
+                            <button
+                              onClick={() => onRemoveTicker(family.id, pair.put!.id)}
+                              className="text-zinc-700 hover:text-red-400 transition-colors"
+                              title={`Remover ${pair.put.symbol}`}
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {/* Unpaired tickers (no matching strike pair) */}
+                {family.tickers
+                  .filter((t) => !boxPairs.some((p) => p.call?.id === t.id || p.put?.id === t.id))
+                  .map((ticker) => (
+                    <tr
+                      key={ticker.id}
+                      className="border-b border-zinc-800/30 hover:bg-zinc-800/20 opacity-50"
+                    >
+                      <td className="px-4 py-2 text-zinc-500">{family.name}</td>
+                      <td className="px-2 py-2" colSpan={2}>
                         <span
                           className={`px-1.5 py-0.5 rounded text-xs font-bold ${
                             ticker.type === "CALL"
@@ -786,91 +1008,35 @@ function FamilyCard({
                               : "bg-red-900/40 text-red-300"
                           }`}
                         >
-                          {ticker.type}
+                          {ticker.type}: {ticker.symbol}
+                        </span>
+                        <span className="text-zinc-600 text-xs ml-2">
+                          (sem par {ticker.type === "CALL" ? "PUT" : "CALL"} no strike {formatBRL(ticker.strike)})
                         </span>
                       </td>
-                      <td className="px-2 py-2 text-right">
-                        {formatCurrency(ticker.strike)}
+                      <td className="px-2 py-2 text-right text-zinc-500" colSpan={2}>
+                        {formatBRL(family.stockBid)} / {formatBRL(family.stockAsk)}
                       </td>
-
-                      {ticker.loading ? (
-                        <td colSpan={7} className="px-2 py-2 text-center text-zinc-600">
-                          <span className="inline-flex items-center gap-1">
-                            <RefreshCw className="w-3 h-3 animate-spin" /> Buscando...
-                          </span>
-                        </td>
-                      ) : ticker.error ? (
-                        <td colSpan={7} className="px-2 py-2 text-center text-red-500">
-                          <span className="inline-flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3" /> {ticker.error}
-                          </span>
-                        </td>
-                      ) : (
-                        <>
-                          <td className="px-2 py-2 text-right text-yellow-400">
-                            {formatCurrency(ticker.lastPrice)}
-                          </td>
-                          <td className="px-2 py-2 text-right text-zinc-400">
-                            {formatCurrency(ticker.bidPrice)}
-                          </td>
-                          <td className="px-2 py-2 text-right text-zinc-400">
-                            {formatCurrency(ticker.askPrice)}
-                          </td>
-                          <td className="px-2 py-2 text-right text-zinc-500">
-                            {ticker.volume?.toLocaleString("pt-BR") ?? "—"}
-                          </td>
-                          <td className="px-2 py-2 text-right">
-                            {result ? (
-                              <span
-                                className={
-                                  result.isProfit ? "text-emerald-400" : "text-red-400"
-                                }
-                              >
-                                {formatPercent(result.boxReturn)}
-                              </span>
-                            ) : (
-                              "—"
-                            )}
-                          </td>
-                          <td className="px-2 py-2 text-right font-bold">
-                            {result ? (
-                              <span
-                                className={
-                                  result.isProfit ? "text-emerald-300" : "text-red-400"
-                                }
-                              >
-                                {formatPercent(result.annualReturn)}
-                              </span>
-                            ) : (
-                              "—"
-                            )}
-                          </td>
-                          <td className="px-2 py-2 text-right text-zinc-400">
-                            {result ? formatCurrency(result.breakeven) : "—"}
-                          </td>
-                          <td className="px-2 py-2 text-center">
-                            {result ? (
-                              result.isProfit ? (
-                                <TrendingUp className="w-3.5 h-3.5 text-emerald-400 mx-auto" />
-                              ) : (
-                                <TrendingDown className="w-3.5 h-3.5 text-red-400 mx-auto" />
-                              )
-                            ) : null}
-                          </td>
-                        </>
-                      )}
-
+                      <td className="px-2 py-2 text-right text-zinc-500" colSpan={2}>
+                        {ticker.loading ? (
+                          <RefreshCw className="w-3 h-3 animate-spin inline" />
+                        ) : (
+                          `${formatBRL(ticker.bidPrice)} / ${formatBRL(ticker.askPrice)}`
+                        )}
+                      </td>
+                      <td className="px-2 py-2 text-zinc-600 text-center" colSpan={5}>
+                        Aguardando par...
+                      </td>
                       <td className="px-2 py-2">
                         <button
                           onClick={() => onRemoveTicker(family.id, ticker.id)}
                           className="text-zinc-700 hover:text-red-400 transition-colors"
                         >
-                          <X className="w-3.5 h-3.5" />
+                          <X className="w-3 h-3" />
                         </button>
                       </td>
                     </tr>
-                  );
-                })}
+                  ))}
               </tbody>
             </table>
           )}
