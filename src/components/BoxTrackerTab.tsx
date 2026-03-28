@@ -1216,7 +1216,7 @@ function FamilyCard({
                   <th className="text-left px-2 py-2 text-red-600 dark:text-red-300">Ticker</th>
                   <th className="text-right px-2 py-2 text-red-600 dark:text-red-300">BID</th>
                   <th className="text-right px-2 py-2 text-red-600 dark:text-red-300">ASK</th>
-                  <th className="text-right px-2 py-2 text-orange-600 dark:text-orange-300">Strike</th>
+                  <th className="text-right px-2 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm">Strike</th>
                   <th className="text-center px-2 py-2 text-orange-600 dark:text-orange-300">Venc.</th>
                   <th className="text-right px-2 py-2 text-orange-600 dark:text-orange-400 font-bold">Custo</th>
                   <th className="text-right px-2 py-2 text-emerald-600 dark:text-emerald-400">Lucro (1)</th>
