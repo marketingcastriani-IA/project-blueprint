@@ -952,6 +952,7 @@ interface FamilyCardProps {
   descontarIRAcoes: boolean;
   descontarIRRendaFixa: boolean;
   winnerKey: string | null;
+  cdiAnual: number;
 }
 
 function FamilyCard({
