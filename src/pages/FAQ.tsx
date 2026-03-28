@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { 
   BookOpen, Upload, BarChart3, History, Briefcase, TrendingUp, 
   Zap, Target, ArrowRight, CheckCircle2, AlertTriangle, HelpCircle,
-  Camera, Brain, PieChart, Calculator, Shield, Eye, Download
+  Camera, Brain, PieChart, Calculator, Shield, Eye, Download,
+  Radio, Wifi, Activity, Trophy, Box, Settings, Terminal
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
