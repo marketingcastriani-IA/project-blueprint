@@ -817,12 +817,12 @@ export default function BoxTracker() {
         </div>
       )}
 
-      {/* TOP 10 TABLE */}
-      {topPairs.length > 3 && (
+      {/* TOP 10 TABLE — Top 1 de cada ação */}
+      {topPairs.length > 0 && (
         <div className="mb-5 bg-card border border-border rounded-xl p-4">
           <h2 className="text-sm font-bold text-primary mb-3 flex items-center gap-2">
             <Star className="w-4 h-4 text-amber-500" />
-            Top 10 · Melhores Box Spreads
+            🏆 Ranking · Melhor Box por Ação
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
