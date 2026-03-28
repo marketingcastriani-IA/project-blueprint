@@ -362,7 +362,9 @@ export default function BoxTracker() {
 
         if (stockAsk !== null && callBid !== null && putAsk !== null) {
           compraBox = (stockAsk + putAsk) - callBid;
-          lucro = strike - compraBox;
+          // Lucro = Strike(real/RTD) - Custo
+          const strikeReal = strikeRtd ?? strike;
+          lucro = strikeReal - compraBox;
           lucroTotal = lucro * qty;
           lucroPercent = compraBox > 0 ? (lucro / compraBox) * 100 : null;
         }
