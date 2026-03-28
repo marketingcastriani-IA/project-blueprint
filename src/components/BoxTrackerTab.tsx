@@ -848,9 +848,8 @@ export default function BoxTracker() {
                   <th className="text-right py-2 pr-2">Lucro</th>
                   <th className="text-right py-2 pr-2">Total</th>
                   <th className="text-right py-2 pr-2">Lucro %</th>
-                  <th className="text-right py-2 pr-2 text-amber-600 dark:text-amber-400">CDI Anual</th>
                   <th className="text-right py-2 pr-2 text-amber-600 dark:text-amber-400">CDI Per.</th>
-                  <th className="text-center py-2">vs CDI</th>
+                  <th className="text-center py-2 pr-2 text-emerald-600 dark:text-emerald-400 font-bold">% vs CDI</th>
                 </tr>
               </thead>
               <tbody>
