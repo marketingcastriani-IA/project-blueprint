@@ -738,12 +738,12 @@ export default function BoxTracker() {
               <div
                 key={`top-${i}`}
                 className={cn(
-                  "relative overflow-hidden rounded-xl border p-4 transition-all",
+                  "relative overflow-hidden rounded-xl border-2 p-4 transition-all duration-300",
                   isWinner
-                    ? "bg-gradient-to-br from-orange-100 to-amber-50 dark:from-orange-950/50 dark:to-amber-950/30 border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.25)] animate-pulse"
+                    ? "bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30 border-emerald-500 dark:border-emerald-400 shadow-[0_0_30px_-5px_rgba(16,185,129,0.4)] ring-2 ring-emerald-400/30 dark:ring-emerald-400/20 hover:shadow-[0_0_40px_-5px_rgba(16,185,129,0.5)] hover:scale-[1.01]"
                     : i === 1
-                    ? "bg-card border-border"
-                    : "bg-card border-border"
+                    ? "bg-card border-border/80 hover:border-muted-foreground/30 hover:shadow-md"
+                    : "bg-card border-border/80 hover:border-muted-foreground/30 hover:shadow-md"
                 )}
               >
                 <div className="flex items-center gap-2 mb-2">
