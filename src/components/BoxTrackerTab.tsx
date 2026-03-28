@@ -517,12 +517,15 @@ export default function BoxTracker() {
                 <tr className="text-zinc-500 border-b border-zinc-800">
                   <th className="text-left py-2 pr-3">#</th>
                   <th className="text-left py-2 pr-3">Ativo</th>
-                  <th className="text-left py-2 pr-3">CALL</th>
-                  <th className="text-left py-2 pr-3">PUT</th>
+                  <th className="text-left py-2 pr-3 text-blue-400">CALL</th>
+                  <th className="text-left py-2 pr-3 text-red-400">PUT</th>
                   <th className="text-right py-2 pr-3">Strike</th>
+                  <th className="text-center py-2 pr-3">Venc.</th>
                   <th className="text-right py-2 pr-3">Compra Box</th>
                   <th className="text-right py-2 pr-3">Lucro</th>
-                  <th className="text-right py-2">Lucro %</th>
+                  <th className="text-right py-2 pr-3">Lucro %</th>
+                  <th className="text-right py-2 pr-3 text-amber-400">CDI Per.</th>
+                  <th className="text-center py-2">vs CDI</th>
                 </tr>
               </thead>
               <tbody>
@@ -532,11 +535,22 @@ export default function BoxTracker() {
                     <td className="py-2 pr-3 font-bold text-white">{p.familyName}</td>
                     <td className="py-2 pr-3 text-blue-300">{p.callSymbol}</td>
                     <td className="py-2 pr-3 text-red-300">{p.putSymbol}</td>
-                    <td className="py-2 pr-3 text-right">{formatBRL(p.strike)}</td>
+                    <td className="py-2 pr-3 text-right">{formatBRL(p.strikeRtd ?? p.strike)}</td>
+                    <td className="py-2 pr-3 text-center text-zinc-400 text-[10px]">{p.vencimento ?? "—"}</td>
                     <td className="py-2 pr-3 text-right text-yellow-400">{formatBRL(p.compraBox)}</td>
                     <td className="py-2 pr-3 text-right text-emerald-400">{formatBRL(p.lucro)}</td>
-                    <td className="py-2 text-right font-bold text-emerald-300">
+                    <td className="py-2 pr-3 text-right font-bold text-emerald-300">
                       {formatPercent(p.lucroPercent)}
+                    </td>
+                    <td className="py-2 pr-3 text-right text-amber-400">
+                      {p.cdiPeriodo !== null ? formatPercent(p.cdiPeriodo) : "—"}
+                    </td>
+                    <td className="py-2 text-center">
+                      {p.vsCD === "acima" ? (
+                        <span className="text-emerald-400 font-bold text-[10px]">▲ ACIMA</span>
+                      ) : p.vsCD === "abaixo" ? (
+                        <span className="text-red-400 font-bold text-[10px]">▼ ABAIXO</span>
+                      ) : "—"}
                     </td>
                   </tr>
                 ))}
