@@ -96,7 +96,7 @@ export default function DadosAoVivo() {
   const [editNameValue, setEditNameValue] = useState("");
 
   const cfg = statusConfig[status];
-  const StatusIcon = cfg.icon;
+  const StatusIcon = status === "disconnected" ? WifiOff : status === "connecting" ? RefreshCw : status === "connected" ? Wifi : AlertTriangle;
   const rowsArr = Array.from(rows.values());
   // Only show manually added tickers in the table
   const manualRowsArr = rowsArr.filter(r => manualTickers.has(r.ticker));
