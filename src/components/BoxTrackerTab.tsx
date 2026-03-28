@@ -435,18 +435,15 @@ export default function BoxTracker() {
     [rows, quantidade, vencimentoManual, descontarIRAcoes, descontarIRRendaFixa, cdiAnual]
   );
 
-  // Global ranking
-  const allPairs: (BoxPair & { familyName: string })[] = [];
+  // Global ranking — only the #1 best box per family
+  const bestPerFamily: (BoxPair & { familyName: string })[] = [];
   families.forEach((f) => {
     const pairs = calculateBoxPairs(f);
-    pairs.forEach((p) => {
-      if (p.lucroPercent !== null && p.lucroPercent > 0) {
-        allPairs.push({ ...p, familyName: f.name });
-      }
-    });
+    const best = pairs.find((p) => p.lucroPercent !== null && p.lucroPercent > 0);
+    if (best) bestPerFamily.push({ ...best, familyName: f.name });
   });
-  allPairs.sort((a, b) => (b.lucroPercent ?? 0) - (a.lucroPercent ?? 0));
-  const topPairs = allPairs.slice(0, 10);
+  bestPerFamily.sort((a, b) => (b.lucroPercent ?? 0) - (a.lucroPercent ?? 0));
+  const topPairs = bestPerFamily.slice(0, 10);
 
   const isConnected = status === "connected";
   const statusCfg = statusConfig[status];
