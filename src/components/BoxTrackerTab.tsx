@@ -117,8 +117,8 @@ function calcDiasUteis(vencimentoStr: string | null): number | null {
   return dias;
 }
 
-function calcCdiPeriodo(diasUteis: number): number {
-  return ((1 + CDI_ANUAL / 100) ** (diasUteis / 252) - 1) * 100;
+function calcCdiPeriodo(diasUteis: number, cdiAnual: number): number {
+  return ((1 + cdiAnual / 100) ** (diasUteis / 252) - 1) * 100;
 }
 
 function generateId(): string {
