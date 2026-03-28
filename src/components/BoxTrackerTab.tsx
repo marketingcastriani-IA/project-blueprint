@@ -870,14 +870,17 @@ export default function BoxTracker() {
                       <td className="py-2 pr-2 text-right text-emerald-600 dark:text-emerald-400">{formatBRL(lucroDisplay)}</td>
                       <td className="py-2 pr-2 text-right text-emerald-600 dark:text-emerald-300 font-semibold">{formatBRL(lucroTotalDisplay)}</td>
                       <td className="py-2 pr-2 text-right font-bold text-emerald-600 dark:text-emerald-300">{formatPercent(lucroPercentDisplay)}</td>
-                      <td className="py-2 pr-2 text-right text-amber-600 dark:text-amber-400 font-bold">{String(cdiAnual).replace(".", ",")}%</td>
                       <td className="py-2 pr-2 text-right text-amber-600 dark:text-amber-400">{cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}</td>
-                      <td className="py-2 text-center">
-                        {p.vsCD === "acima" ? (
-                          <span className="text-emerald-600 dark:text-emerald-400 font-bold text-[10px]">▲ ACIMA</span>
-                        ) : p.vsCD === "abaixo" ? (
-                          <span className="text-red-500 font-bold text-[10px]">▼ ABAIXO</span>
-                        ) : "—"}
+                      <td className="py-2 pr-2 text-center">
+                        {(() => {
+                          const diff = (lucroPercentDisplay ?? 0) - (cdiDisplay ?? 0);
+                          const isAbove = diff > 0;
+                          return (
+                            <span className={cn("font-black text-sm", isAbove ? "text-emerald-500 dark:text-emerald-300" : "text-red-500")}>
+                              {isAbove ? "+" : ""}{diff.toFixed(2).replace(".", ",")}%
+                            </span>
+                          );
+                        })()}
                       </td>
                     </tr>
                   );
