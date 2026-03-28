@@ -799,23 +799,24 @@ export default function BoxTracker() {
                     <p className="text-sm font-bold text-emerald-600 dark:text-emerald-300">{formatPercent(lucroPercentDisplay)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[9px] text-muted-foreground uppercase">vs CDI</p>
+                    <p className="text-[9px] text-muted-foreground uppercase">% do CDI</p>
                     {(() => {
-                      const diff = (lucroPercentDisplay ?? 0) - (cdiDisplay ?? 0);
-                      const isAbove = diff > 0;
+                      const pctCdi = cdiDisplay && cdiDisplay > 0 ? ((lucroPercentDisplay ?? 0) / cdiDisplay) * 100 : null;
+                      if (pctCdi === null) return <p className="text-sm text-muted-foreground">—</p>;
+                      const isAbove = pctCdi >= 100;
                       return (
                         <>
                           <p className={cn(
                             "text-2xl font-black",
                             isAbove ? "text-emerald-500 dark:text-emerald-300" : "text-red-500"
                           )}>
-                            {isAbove ? "+" : ""}{diff.toFixed(2).replace(".", ",")}%
+                            {pctCdi.toFixed(0).replace(".", ",")}%
                           </p>
                           <span className={cn(
                             "text-[9px] font-bold",
                             isAbove ? "text-emerald-600 dark:text-emerald-500" : "text-red-500"
                           )}>
-                            {isAbove ? "▲ ACIMA CDI" : "▼ ABAIXO CDI"}
+                            {isAbove ? `▲ ${(pctCdi - 100).toFixed(0)}% acima` : `▼ ${(100 - pctCdi).toFixed(0)}% abaixo`} do CDI
                           </span>
                         </>
                       );
