@@ -290,6 +290,7 @@ export default function BoxTracker() {
       const stockRow = rows.get(family.name);
       const stockBid = getPrice(stockRow, "ofCompra");
       const stockAsk = getPrice(stockRow, "ofVenda");
+      const qty = quantidade;
 
       // Group by strike
       const strikeMap = new Map<number, { calls: OptionTicker[]; puts: OptionTicker[] }>();
