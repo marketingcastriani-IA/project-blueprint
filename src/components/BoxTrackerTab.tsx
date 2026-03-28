@@ -789,7 +789,7 @@ export default function BoxTracker() {
                   </div>
                   <div>
                     <p className="text-[9px] text-muted-foreground uppercase">CDI Anual</p>
-                    <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{CDI_ANUAL}%</p>
+                    <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{String(cdiAnual).replace(".", ",")}%</p>
                   </div>
                   <div>
                     <p className="text-[9px] text-muted-foreground uppercase">CDI Per.{descontarIRRendaFixa ? " líq" : ""}</p>
