@@ -26,6 +26,8 @@ import {
   CalendarIcon,
   Pencil,
   Save,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react";
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 import { statusConfig } from "@/hooks/useRtdBridge";
@@ -57,9 +59,14 @@ interface BoxPair {
   lucro: number | null;
   lucroTotal: number | null;
   lucroPercent: number | null;
+  lucroLiqAcoes: number | null;
+  lucroLiqAcoesTotal: number | null;
+  lucroLiqAcoesPercent: number | null;
   diasUteis: number | null;
   cdiPeriodo: number | null;
+  cdiPeriodoLiq: number | null;
   vsCD: string | null;
+  vsCDLiq: string | null;
 }
 
 interface StockFamily {
@@ -78,6 +85,8 @@ interface SavedFamily {
 const STORAGE_KEY = "box-tracker-families";
 const VENC_STORAGE_KEY = "box-tracker-vencimento";
 const CDI_ANUAL = 14.15;
+const IR_ACOES = 15;
+const IR_RENDA_FIXA = 22.5;
 
 function calcDiasUteis(vencimentoStr: string | null): number | null {
   if (!vencimentoStr) return null;
@@ -170,6 +179,8 @@ export default function BoxTracker() {
   const [vencimentoManual, setVencimentoManual] = useState<string>("");
   const [vencSaved, setVencSaved] = useState(false);
   const [editingVenc, setEditingVenc] = useState(false);
+  const [descontarIRAcoes, setDescontarIRAcoes] = useState(false);
+  const [descontarIRRendaFixa, setDescontarIRRendaFixa] = useState(false);
 
   const { status, rows, connect, addTicker: bridgeAddTicker } = useSharedRtdBridge();
 
@@ -354,41 +365,65 @@ export default function BoxTracker() {
         const vencimento = callRow?.ven ?? putRow?.ven ?? null;
 
         // Custo = (Preço_Ação + Preço_Put) - Preço_Call
-        // Using ASK for buys (stock, put) and BID for sells (call)
         let compraBox: number | null = null;
         let lucro: number | null = null;
         let lucroTotal: number | null = null;
         let lucroPercent: number | null = null;
+        let lucroLiqAcoes: number | null = null;
+        let lucroLiqAcoesTotal: number | null = null;
+        let lucroLiqAcoesPercent: number | null = null;
 
         if (stockAsk !== null && callBid !== null && putAsk !== null) {
           compraBox = (stockAsk + putAsk) - callBid;
-          // Lucro = Strike(real/RTD) - Custo
           const strikeReal = strikeRtd ?? strike;
           lucro = strikeReal - compraBox;
           lucroTotal = lucro * qty;
           lucroPercent = compraBox > 0 ? (lucro / compraBox) * 100 : null;
+
+          // Lucro líquido com IR de ações (15%)
+          if (descontarIRAcoes && lucro > 0) {
+            lucroLiqAcoes = lucro * (1 - IR_ACOES / 100);
+            lucroLiqAcoesTotal = lucroLiqAcoes * qty;
+            lucroLiqAcoesPercent = compraBox > 0 ? (lucroLiqAcoes / compraBox) * 100 : null;
+          } else {
+            lucroLiqAcoes = lucro;
+            lucroLiqAcoesTotal = lucroTotal;
+            lucroLiqAcoesPercent = lucroPercent;
+          }
         }
 
         const vencParaCalculo = vencimentoManual || vencimento;
         const diasUteis = calcDiasUteis(vencParaCalculo);
         const cdiPeriodo = diasUteis !== null && diasUteis > 0 ? calcCdiPeriodo(diasUteis) : null;
-        const vsCD = lucroPercent !== null && cdiPeriodo !== null
-          ? (lucroPercent > cdiPeriodo ? "acima" : "abaixo")
+
+        // CDI líquido com IR renda fixa (22.5%)
+        let cdiPeriodoLiq = cdiPeriodo;
+        if (descontarIRRendaFixa && cdiPeriodo !== null) {
+          cdiPeriodoLiq = cdiPeriodo * (1 - IR_RENDA_FIXA / 100);
+        }
+
+        const lucroFinalPercent = descontarIRAcoes ? lucroLiqAcoesPercent : lucroPercent;
+        const cdiFinal = descontarIRRendaFixa ? cdiPeriodoLiq : cdiPeriodo;
+        const vsCD = lucroFinalPercent !== null && cdiFinal !== null
+          ? (lucroFinalPercent > cdiFinal ? "acima" : "abaixo")
           : null;
+        const vsCDLiq = vsCD;
 
         pairs.push({
           strike, strikeRtd, vencimento: vencParaCalculo,
           callSymbol: call?.symbol ?? null, putSymbol: put?.symbol ?? null,
           callBid, callAsk, putBid, putAsk, stockBid, stockAsk,
           compraBox, lucro, lucroTotal, lucroPercent,
-          diasUteis, cdiPeriodo, vsCD,
+          lucroLiqAcoes, lucroLiqAcoesTotal, lucroLiqAcoesPercent,
+          diasUteis, cdiPeriodo, cdiPeriodoLiq,
+          vsCD, vsCDLiq,
         });
       });
 
       pairs.sort((a, b) => (b.lucroPercent ?? -999) - (a.lucroPercent ?? -999));
       return pairs;
     },
-    [rows, quantidade, vencimentoManual]
+    [rows, quantidade, vencimentoManual, descontarIRAcoes, descontarIRRendaFixa]
   );
 
   // Global ranking
@@ -409,22 +444,25 @@ export default function BoxTracker() {
 
   const diasUteisVenc = calcDiasUteis(vencimentoManual);
 
+  // Determine winner
+  const winnerKey = topPairs.length > 0 ? `${topPairs[0].familyName}-${topPairs[0].strike}` : null;
+
   // ─── RENDER ───────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#0a0e1a] text-white font-mono p-4 md:p-6">
+    <div className="min-h-screen bg-background text-foreground font-mono p-3 md:p-6">
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-orange-400 flex items-center gap-2">
-            <BarChart2 className="w-6 h-6" />
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-primary flex items-center gap-2">
+            <BarChart2 className="w-5 h-5 md:w-6 md:h-6" />
             Rastreador de Box
           </h1>
-          <p className="text-xs text-zinc-500 mt-1">
+          <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
             Custo = (Ação + Put) - Call · Lucro = Strike - Custo
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold ${statusCfg.color}`}>
             {status === "connected" ? (
               <Wifi className="w-3.5 h-3.5" />
@@ -437,14 +475,14 @@ export default function BoxTracker() {
             )}
             {statusCfg.label}
             {isConnected && (
-              <span className="text-emerald-500">· {rows.size} tickers</span>
+              <span className="text-emerald-600 dark:text-emerald-400">· {rows.size} tickers</span>
             )}
           </div>
 
           {!isConnected && status !== "connecting" && (
             <button
               onClick={connect}
-              className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-500 rounded-lg text-sm font-bold transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-400 text-white rounded-lg text-sm font-bold transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
               Conectar Bridge
@@ -455,27 +493,76 @@ export default function BoxTracker() {
 
       {/* Bridge not connected warning */}
       {!isConnected && status !== "connecting" && (
-        <div className="mb-6 bg-yellow-900/20 border border-yellow-700/40 rounded-xl p-4 text-sm">
-          <div className="flex items-center gap-2 text-yellow-400 font-bold mb-1">
+        <div className="mb-5 bg-warning/10 border border-warning/30 rounded-xl p-4 text-sm">
+          <div className="flex items-center gap-2 text-warning font-bold mb-1">
             <AlertTriangle className="w-4 h-4" />
             Bridge RTD não conectado
           </div>
-          <p className="text-zinc-400 text-xs">
+          <p className="text-muted-foreground text-xs">
             Inicie o <strong>ProfitRTDBridge.exe</strong> para receber dados em tempo real do Profit Pro.
           </p>
         </div>
       )}
 
-      {/* VENCIMENTO CARD - Calendar picker with save/edit/delete */}
-      <div className="mb-6">
+      {/* IR TOGGLES + CDI ANUAL */}
+      <div className="mb-5 flex flex-col sm:flex-row gap-3">
+        {/* CDI Anual */}
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-amber-400/50 bg-amber-50 dark:bg-amber-950/30">
+          <span className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider">📊 CDI Anual:</span>
+          <span className="text-lg font-black text-amber-600 dark:text-amber-400">{CDI_ANUAL}%</span>
+        </div>
+
+        {/* IR Ações */}
+        <button
+          onClick={() => setDescontarIRAcoes(!descontarIRAcoes)}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-bold transition-all",
+            descontarIRAcoes
+              ? "bg-emerald-100 dark:bg-emerald-950/40 border-emerald-500/60 text-emerald-700 dark:text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.3)] animate-pulse"
+              : "bg-red-50 dark:bg-red-950/20 border-red-400/40 text-red-600 dark:text-red-400"
+          )}
+        >
+          {descontarIRAcoes ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+          IR Ações {IR_ACOES}%
+          <span className={cn(
+            "text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase",
+            descontarIRAcoes ? "bg-emerald-500 text-white" : "bg-red-400 text-white"
+          )}>
+            {descontarIRAcoes ? "ON" : "OFF"}
+          </span>
+        </button>
+
+        {/* IR Renda Fixa */}
+        <button
+          onClick={() => setDescontarIRRendaFixa(!descontarIRRendaFixa)}
+          className={cn(
+            "flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-bold transition-all",
+            descontarIRRendaFixa
+              ? "bg-emerald-100 dark:bg-emerald-950/40 border-emerald-500/60 text-emerald-700 dark:text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.3)] animate-pulse"
+              : "bg-red-50 dark:bg-red-950/20 border-red-400/40 text-red-600 dark:text-red-400"
+          )}
+        >
+          {descontarIRRendaFixa ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+          IR Renda Fixa {IR_RENDA_FIXA}%
+          <span className={cn(
+            "text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase",
+            descontarIRRendaFixa ? "bg-emerald-500 text-white" : "bg-red-400 text-white"
+          )}>
+            {descontarIRRendaFixa ? "ON" : "OFF"}
+          </span>
+        </button>
+      </div>
+
+      {/* VENCIMENTO CARD */}
+      <div className="mb-5">
         <div className={cn(
           "rounded-xl border p-4 transition-all",
           vencSaved
-            ? "bg-gradient-to-r from-orange-950/40 to-amber-950/30 border-orange-600/50"
-            : "bg-gradient-to-r from-zinc-900/80 to-zinc-800/50 border-amber-600/40 shadow-[0_0_15px_rgba(245,158,11,0.15)]"
+            ? "bg-orange-50 dark:bg-orange-950/20 border-orange-400/50"
+            : "bg-card border-border shadow-md"
         )}>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-black text-orange-400 flex items-center gap-2 uppercase tracking-wider">
+            <h3 className="text-sm font-black text-orange-600 dark:text-orange-400 flex items-center gap-2 uppercase tracking-wider">
               <CalendarIcon className="w-4 h-4" />
               📅 Data de Vencimento
             </h3>
@@ -483,13 +570,13 @@ export default function BoxTracker() {
               <div className="flex gap-2">
                 <button
                   onClick={handleEditVenc}
-                  className="flex items-center gap-1 px-3 py-1 text-xs bg-amber-700/40 hover:bg-amber-600/50 border border-amber-600/40 rounded-lg text-amber-300 font-bold transition-colors"
+                  className="flex items-center gap-1 px-3 py-1 text-xs bg-amber-100 dark:bg-amber-700/40 hover:bg-amber-200 dark:hover:bg-amber-600/50 border border-amber-400/50 rounded-lg text-amber-700 dark:text-amber-300 font-bold transition-colors"
                 >
                   <Pencil className="w-3 h-3" /> Editar
                 </button>
                 <button
                   onClick={handleDeleteVenc}
-                  className="flex items-center gap-1 px-3 py-1 text-xs bg-red-900/40 hover:bg-red-800/50 border border-red-700/40 rounded-lg text-red-400 font-bold transition-colors"
+                  className="flex items-center gap-1 px-3 py-1 text-xs bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-800/50 border border-red-400/50 rounded-lg text-red-600 dark:text-red-400 font-bold transition-colors"
                 >
                   <Trash2 className="w-3 h-3" /> Excluir
                 </button>
@@ -498,16 +585,20 @@ export default function BoxTracker() {
           </div>
 
           {vencSaved && !editingVenc ? (
-            /* Saved state - show card */
-            <div className="flex items-center gap-6">
+            <div className="flex flex-wrap items-center gap-4 md:gap-6">
               <div>
-                <p className="text-3xl font-black text-orange-300">{vencimentoManual}</p>
+                <p className="text-2xl md:text-3xl font-black text-orange-600 dark:text-orange-300">{vencimentoManual}</p>
                 {diasUteisVenc !== null && (
-                  <p className="text-sm text-zinc-400 mt-1">
-                    <span className="text-amber-400 font-bold">{diasUteisVenc}</span> dias úteis restantes
+                  <p className="text-sm text-muted-foreground mt-1">
+                    <span className="text-amber-600 dark:text-amber-400 font-bold">{diasUteisVenc}</span> dias úteis restantes
                     {diasUteisVenc > 0 && (
-                      <span className="ml-2 text-zinc-500">
-                        · CDI do período: <span className="text-amber-300 font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc))}</span>
+                      <span className="ml-2">
+                        · CDI do período: <span className="text-amber-600 dark:text-amber-300 font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc))}</span>
+                        {descontarIRRendaFixa && (
+                          <span className="ml-1 text-muted-foreground">
+                            (líq: <span className="text-emerald-600 dark:text-emerald-400 font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc) * (1 - IR_RENDA_FIXA / 100))}</span>)
+                          </span>
+                        )}
                       </span>
                     )}
                   </p>
@@ -515,25 +606,24 @@ export default function BoxTracker() {
               </div>
             </div>
           ) : (
-            /* Editing/Creating state */
-            <div className="flex flex-wrap items-end gap-4">
+            <div className="flex flex-wrap items-end gap-3">
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] text-zinc-400 uppercase tracking-wider">Selecione a data</label>
+                <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Selecione a data</label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <button
                       className={cn(
                         "flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-bold transition-all w-[220px] justify-start",
                         vencimentoManual
-                          ? "bg-zinc-900 border-orange-500/60 text-orange-300"
-                          : "bg-zinc-900 border-amber-600/40 text-zinc-500 animate-pulse"
+                          ? "bg-card border-orange-500/60 text-orange-600 dark:text-orange-300"
+                          : "bg-card border-border text-muted-foreground animate-pulse"
                       )}
                     >
                       <CalendarIcon className="w-4 h-4" />
                       {vencimentoManual || "⚠️ Selecionar data"}
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-zinc-900 border-zinc-700" align="start">
+                  <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
                       selected={strToDate(vencimentoManual)}
@@ -541,7 +631,7 @@ export default function BoxTracker() {
                         if (date) setVencimentoManual(dateToStr(date));
                       }}
                       initialFocus
-                      className={cn("p-3 pointer-events-auto")}
+                      className="p-3 pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
@@ -550,18 +640,18 @@ export default function BoxTracker() {
               {vencimentoManual && (
                 <>
                   {diasUteisVenc !== null && (
-                    <div className="text-sm text-zinc-400">
-                      <span className="text-amber-400 font-bold">{diasUteisVenc}</span> dias úteis
+                    <div className="text-sm text-muted-foreground">
+                      <span className="text-amber-600 dark:text-amber-400 font-bold">{diasUteisVenc}</span> dias úteis
                       {diasUteisVenc > 0 && (
                         <span className="ml-2">
-                          · CDI: <span className="text-amber-300 font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc))}</span>
+                          · CDI: <span className="text-amber-600 dark:text-amber-300 font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc))}</span>
                         </span>
                       )}
                     </div>
                   )}
                   <button
                     onClick={handleSaveVenc}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 rounded-lg text-sm font-black transition-all shadow-lg shadow-orange-900/30"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 rounded-lg text-sm font-black text-white transition-all shadow-lg"
                   >
                     <Save className="w-4 h-4" />
                     Salvar Vencimento
@@ -575,129 +665,148 @@ export default function BoxTracker() {
 
       {/* WINNER CARDS - Top 3 */}
       {topPairs.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          {topPairs.slice(0, 3).map((pair, i) => (
-            <div
-              key={`top-${i}`}
-              className={`relative overflow-hidden rounded-xl border p-4 ${
-                i === 0
-                  ? "bg-gradient-to-br from-orange-900/40 to-amber-950/30 border-orange-500/60"
-                  : i === 1
-                  ? "bg-gradient-to-br from-zinc-700/30 to-zinc-800/20 border-zinc-500/50"
-                  : "bg-gradient-to-br from-amber-900/20 to-amber-950/10 border-amber-700/40"
-              }`}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <Trophy
-                  className={`w-5 h-5 ${
-                    i === 0 ? "text-orange-400" : i === 1 ? "text-zinc-300" : "text-amber-500"
-                  }`}
-                />
-                <span className="text-xs text-zinc-400 uppercase tracking-wider">
-                  {i === 0 ? "🥇 Melhor Box" : i === 1 ? "🥈 2º Melhor" : "🥉 3º Melhor"}
-                </span>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
+          {topPairs.slice(0, 3).map((pair, i) => {
+            const isWinner = i === 0;
+            const lucroDisplay = descontarIRAcoes ? pair.lucroLiqAcoes : pair.lucro;
+            const lucroTotalDisplay = descontarIRAcoes ? pair.lucroLiqAcoesTotal : pair.lucroTotal;
+            const lucroPercentDisplay = descontarIRAcoes ? pair.lucroLiqAcoesPercent : pair.lucroPercent;
+            const cdiDisplay = descontarIRRendaFixa ? pair.cdiPeriodoLiq : pair.cdiPeriodo;
 
-              <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-lg font-black text-white">{pair.familyName}</span>
-                <span className="text-xs text-zinc-400">Strike {formatBRL(pair.strikeRtd ?? pair.strike)}</span>
-                {pair.vencimento && (
-                  <span className="text-xs text-amber-400/70 ml-1">· {pair.vencimento}</span>
+            return (
+              <div
+                key={`top-${i}`}
+                className={cn(
+                  "relative overflow-hidden rounded-xl border p-4 transition-all",
+                  isWinner
+                    ? "bg-gradient-to-br from-orange-100 to-amber-50 dark:from-orange-950/50 dark:to-amber-950/30 border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.25)] animate-pulse"
+                    : i === 1
+                    ? "bg-card border-border"
+                    : "bg-card border-border"
                 )}
-              </div>
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Trophy
+                    className={cn("w-5 h-5", 
+                      isWinner ? "text-orange-500" : i === 1 ? "text-gray-400" : "text-amber-600"
+                    )}
+                  />
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-bold">
+                    {i === 0 ? "🥇 Melhor Box" : i === 1 ? "🥈 2º Melhor" : "🥉 3º Melhor"}
+                  </span>
+                </div>
 
-              <div className="flex items-center gap-3 text-sm">
-                <span className="text-zinc-400">
-                  Call: <span className="text-blue-300 font-bold">{pair.callSymbol ?? "—"}</span>
-                </span>
-                <span className="text-zinc-400">
-                  Put: <span className="text-red-300 font-bold">{pair.putSymbol ?? "—"}</span>
-                </span>
-              </div>
-
-              <div className="mt-3 grid grid-cols-5 gap-2">
-                <div>
-                  <p className="text-[9px] text-zinc-500 uppercase">Custo</p>
-                  <p className="text-sm font-bold text-orange-400">{formatBRL(pair.compraBox)}</p>
-                </div>
-                <div>
-                  <p className="text-[9px] text-zinc-500 uppercase">Lucro (1)</p>
-                  <p className="text-sm font-bold text-emerald-400">{formatBRL(pair.lucro)}</p>
-                </div>
-                <div>
-                  <p className="text-[9px] text-zinc-500 uppercase">Total ({quantidade}x)</p>
-                  <p className="text-sm font-bold text-emerald-300">{formatBRL(pair.lucroTotal)}</p>
-                </div>
-                <div>
-                  <p className="text-[9px] text-zinc-500 uppercase">CDI Per.</p>
-                  <p className="text-sm font-bold text-amber-400">{pair.cdiPeriodo !== null ? formatPercent(pair.cdiPeriodo) : "—"}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[9px] text-zinc-500 uppercase">Retorno</p>
-                  <p className="text-xl font-black text-emerald-300">
-                    {formatPercent(pair.lucroPercent)}
-                  </p>
-                  {pair.vsCD === "acima" && (
-                    <span className="text-[9px] text-emerald-500 font-bold">▲ ACIMA CDI</span>
-                  )}
-                  {pair.vsCD === "abaixo" && (
-                    <span className="text-[9px] text-red-400 font-bold">▼ ABAIXO CDI</span>
+                <div className="flex flex-wrap items-baseline gap-2 mb-1">
+                  <span className="text-lg font-black text-foreground">{pair.familyName}</span>
+                  <span className="text-xs text-muted-foreground">Strike {formatBRL(pair.strikeRtd ?? pair.strike)}</span>
+                  {pair.vencimento && (
+                    <span className="text-xs text-amber-600 dark:text-amber-400/70 ml-1">· {pair.vencimento}</span>
                   )}
                 </div>
+
+                <div className="flex items-center gap-3 text-sm">
+                  <span className="text-muted-foreground">
+                    Call: <span className="text-blue-600 dark:text-blue-300 font-bold">{pair.callSymbol ?? "—"}</span>
+                  </span>
+                  <span className="text-muted-foreground">
+                    Put: <span className="text-red-600 dark:text-red-300 font-bold">{pair.putSymbol ?? "—"}</span>
+                  </span>
+                </div>
+
+                <div className="mt-3 grid grid-cols-3 md:grid-cols-6 gap-2">
+                  <div>
+                    <p className="text-[9px] text-muted-foreground uppercase">Custo</p>
+                    <p className="text-sm font-bold text-orange-600 dark:text-orange-400">{formatBRL(pair.compraBox)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] text-muted-foreground uppercase">Lucro (1){descontarIRAcoes ? " líq" : ""}</p>
+                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{formatBRL(lucroDisplay)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] text-muted-foreground uppercase">Total ({quantidade}x)</p>
+                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-300">{formatBRL(lucroTotalDisplay)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] text-muted-foreground uppercase">CDI Anual</p>
+                    <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{CDI_ANUAL}%</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] text-muted-foreground uppercase">CDI Per.{descontarIRRendaFixa ? " líq" : ""}</p>
+                    <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[9px] text-muted-foreground uppercase">Retorno{descontarIRAcoes ? " líq" : ""}</p>
+                    <p className="text-xl font-black text-emerald-600 dark:text-emerald-300">
+                      {formatPercent(lucroPercentDisplay)}
+                    </p>
+                    {pair.vsCD === "acima" && (
+                      <span className="text-[9px] text-emerald-600 dark:text-emerald-500 font-bold">▲ ACIMA CDI</span>
+                    )}
+                    {pair.vsCD === "abaixo" && (
+                      <span className="text-[9px] text-red-500 font-bold">▼ ABAIXO CDI</span>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {/* TOP 10 TABLE */}
       {topPairs.length > 3 && (
-        <div className="mb-6 bg-zinc-900/60 border border-orange-900/40 rounded-xl p-4">
-          <h2 className="text-sm font-bold text-orange-400 mb-3 flex items-center gap-2">
-            <Star className="w-4 h-4 text-yellow-400" />
+        <div className="mb-5 bg-card border border-border rounded-xl p-4">
+          <h2 className="text-sm font-bold text-primary mb-3 flex items-center gap-2">
+            <Star className="w-4 h-4 text-amber-500" />
             Top 10 · Melhores Box Spreads
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="text-zinc-500 border-b border-zinc-800">
-                  <th className="text-left py-2 pr-3">#</th>
-                  <th className="text-left py-2 pr-3">Ativo</th>
-                  <th className="text-left py-2 pr-3 text-blue-400">CALL</th>
-                  <th className="text-left py-2 pr-3 text-red-400">PUT</th>
-                  <th className="text-right py-2 pr-3">Strike</th>
-                  <th className="text-center py-2 pr-3">Venc.</th>
-                  <th className="text-right py-2 pr-3 text-orange-400">Custo</th>
-                  <th className="text-right py-2 pr-3">Lucro (1)</th>
-                  <th className="text-right py-2 pr-3">Total ({quantidade}x)</th>
-                  <th className="text-right py-2 pr-3">Lucro %</th>
-                  <th className="text-right py-2 pr-3 text-amber-400">CDI Per.</th>
+                <tr className="text-muted-foreground border-b border-border">
+                  <th className="text-left py-2 pr-2">#</th>
+                  <th className="text-left py-2 pr-2">Ativo</th>
+                  <th className="text-left py-2 pr-2 text-blue-600 dark:text-blue-400">CALL</th>
+                  <th className="text-left py-2 pr-2 text-red-600 dark:text-red-400">PUT</th>
+                  <th className="text-right py-2 pr-2">Strike</th>
+                  <th className="text-right py-2 pr-2 text-orange-600 dark:text-orange-400">Custo</th>
+                  <th className="text-right py-2 pr-2">Lucro</th>
+                  <th className="text-right py-2 pr-2">Total</th>
+                  <th className="text-right py-2 pr-2">Lucro %</th>
+                  <th className="text-right py-2 pr-2 text-amber-600 dark:text-amber-400">CDI Anual</th>
+                  <th className="text-right py-2 pr-2 text-amber-600 dark:text-amber-400">CDI Per.</th>
                   <th className="text-center py-2">vs CDI</th>
                 </tr>
               </thead>
               <tbody>
-                {topPairs.slice(3).map((p, i) => (
-                  <tr key={`rank-${i + 3}`} className="border-b border-zinc-800/50 hover:bg-zinc-800/30">
-                    <td className="py-2 pr-3 text-zinc-500">{i + 4}º</td>
-                    <td className="py-2 pr-3 font-bold text-white">{p.familyName}</td>
-                    <td className="py-2 pr-3 text-blue-300">{p.callSymbol}</td>
-                    <td className="py-2 pr-3 text-red-300">{p.putSymbol}</td>
-                    <td className="py-2 pr-3 text-right">{formatBRL(p.strikeRtd ?? p.strike)}</td>
-                    <td className="py-2 pr-3 text-center text-zinc-400 text-[10px]">{p.vencimento ?? "—"}</td>
-                    <td className="py-2 pr-3 text-right text-orange-400">{formatBRL(p.compraBox)}</td>
-                    <td className="py-2 pr-3 text-right text-emerald-400">{formatBRL(p.lucro)}</td>
-                    <td className="py-2 pr-3 text-right text-emerald-300 font-semibold">{formatBRL(p.lucroTotal)}</td>
-                    <td className="py-2 pr-3 text-right font-bold text-emerald-300">{formatPercent(p.lucroPercent)}</td>
-                    <td className="py-2 pr-3 text-right text-amber-400">{p.cdiPeriodo !== null ? formatPercent(p.cdiPeriodo) : "—"}</td>
-                    <td className="py-2 text-center">
-                      {p.vsCD === "acima" ? (
-                        <span className="text-emerald-400 font-bold text-[10px]">▲ ACIMA</span>
-                      ) : p.vsCD === "abaixo" ? (
-                        <span className="text-red-400 font-bold text-[10px]">▼ ABAIXO</span>
-                      ) : "—"}
-                    </td>
-                  </tr>
-                ))}
+                {topPairs.slice(3).map((p, i) => {
+                  const lucroDisplay = descontarIRAcoes ? p.lucroLiqAcoes : p.lucro;
+                  const lucroTotalDisplay = descontarIRAcoes ? p.lucroLiqAcoesTotal : p.lucroTotal;
+                  const lucroPercentDisplay = descontarIRAcoes ? p.lucroLiqAcoesPercent : p.lucroPercent;
+                  const cdiDisplay = descontarIRRendaFixa ? p.cdiPeriodoLiq : p.cdiPeriodo;
+                  return (
+                    <tr key={`rank-${i + 3}`} className="border-b border-border/50 hover:bg-muted/50">
+                      <td className="py-2 pr-2 text-muted-foreground">{i + 4}º</td>
+                      <td className="py-2 pr-2 font-bold text-foreground">{p.familyName}</td>
+                      <td className="py-2 pr-2 text-blue-600 dark:text-blue-300">{p.callSymbol}</td>
+                      <td className="py-2 pr-2 text-red-600 dark:text-red-300">{p.putSymbol}</td>
+                      <td className="py-2 pr-2 text-right">{formatBRL(p.strikeRtd ?? p.strike)}</td>
+                      <td className="py-2 pr-2 text-right text-orange-600 dark:text-orange-400">{formatBRL(p.compraBox)}</td>
+                      <td className="py-2 pr-2 text-right text-emerald-600 dark:text-emerald-400">{formatBRL(lucroDisplay)}</td>
+                      <td className="py-2 pr-2 text-right text-emerald-600 dark:text-emerald-300 font-semibold">{formatBRL(lucroTotalDisplay)}</td>
+                      <td className="py-2 pr-2 text-right font-bold text-emerald-600 dark:text-emerald-300">{formatPercent(lucroPercentDisplay)}</td>
+                      <td className="py-2 pr-2 text-right text-amber-600 dark:text-amber-400 font-bold">{CDI_ANUAL}%</td>
+                      <td className="py-2 pr-2 text-right text-amber-600 dark:text-amber-400">{cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}</td>
+                      <td className="py-2 text-center">
+                        {p.vsCD === "acima" ? (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold text-[10px]">▲ ACIMA</span>
+                        ) : p.vsCD === "abaixo" ? (
+                          <span className="text-red-500 font-bold text-[10px]">▼ ABAIXO</span>
+                        ) : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -705,15 +814,15 @@ export default function BoxTracker() {
       )}
 
       {/* CONTROLES: Quantidade e Adicionar Família */}
-      <div className="flex flex-wrap gap-3 mb-6 items-end">
+      <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-5 items-stretch sm:items-end">
         <div className="flex flex-col gap-1">
-          <label className="text-[10px] text-orange-400/70 uppercase tracking-wider font-bold">Quantidade</label>
+          <label className="text-[10px] text-orange-600 dark:text-orange-400/70 uppercase tracking-wider font-bold">Quantidade</label>
           <input
             type="number"
             value={quantidade}
             onChange={(e) => setQuantidade(Math.max(1, parseInt(e.target.value) || 1))}
             min={1}
-            className="w-24 bg-zinc-900 border border-orange-700/40 rounded-lg px-3 py-2 text-sm text-center font-bold text-orange-300 focus:outline-none focus:border-orange-500 transition-colors"
+            className="w-full sm:w-24 bg-card border border-border rounded-lg px-3 py-2 text-sm text-center font-bold text-orange-600 dark:text-orange-300 focus:outline-none focus:border-primary transition-colors"
           />
         </div>
         <div className="flex gap-2 flex-1">
@@ -722,12 +831,12 @@ export default function BoxTracker() {
             value={newFamilyName}
             onChange={(e) => setNewFamilyName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addFamily()}
-            placeholder="Ticker do ativo (ex: PETR4, BBDC4, LREN3...)"
-            className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-orange-500 transition-colors placeholder-zinc-600"
+            placeholder="Ticker do ativo (ex: PETR4, BBDC4...)"
+            className="flex-1 bg-card border border-border rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary transition-colors placeholder-muted-foreground"
           />
           <button
             onClick={addFamily}
-            className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-500 rounded-lg text-sm font-bold transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-400 text-white rounded-lg text-sm font-bold transition-colors"
           >
             <Plus className="w-4 h-4" />
             Adicionar
@@ -737,7 +846,7 @@ export default function BoxTracker() {
 
       {/* FAMILIES */}
       {families.length === 0 ? (
-        <div className="text-center py-20 text-zinc-600">
+        <div className="text-center py-16 text-muted-foreground">
           <BarChart2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p className="text-sm">Nenhuma família criada.</p>
           <p className="text-xs mt-1">Adicione um ativo acima para começar a rastrear.</p>
@@ -756,6 +865,9 @@ export default function BoxTracker() {
               onAddTickers={processTickerSymbols}
               onRemoveTicker={removeTicker}
               onFileUpload={handleFileUpload}
+              descontarIRAcoes={descontarIRAcoes}
+              descontarIRRendaFixa={descontarIRRendaFixa}
+              winnerKey={winnerKey}
             />
           ))}
         </div>
@@ -775,6 +887,9 @@ interface FamilyCardProps {
   onAddTickers: (familyId: string, raw: string) => void;
   onRemoveTicker: (familyId: string, tickerId: string) => void;
   onFileUpload: (familyId: string, file: File) => void;
+  descontarIRAcoes: boolean;
+  descontarIRRendaFixa: boolean;
+  winnerKey: string | null;
 }
 
 function FamilyCard({
@@ -787,6 +902,9 @@ function FamilyCard({
   onAddTickers,
   onRemoveTicker,
   onFileUpload,
+  descontarIRAcoes,
+  descontarIRRendaFixa,
+  winnerKey,
 }: FamilyCardProps) {
   const [showPaste, setShowPaste] = useState(false);
   const [pasteText, setPasteText] = useState("");
@@ -836,35 +954,35 @@ function FamilyCard({
   const hasLiveStock = stockRow?.ultimo !== null && stockRow?.ultimo !== undefined && stockRow?.ultimo !== 0;
 
   return (
-    <div className="bg-zinc-900/70 border border-zinc-700/50 rounded-xl overflow-hidden">
+    <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-zinc-800/80 to-zinc-800/50 border-b border-orange-900/30">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between px-4 py-3 bg-muted/50 border-b border-border">
+        <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={() => onToggleExpand(family.id)}
-            className="text-zinc-400 hover:text-white transition-colors"
+            className="text-muted-foreground hover:text-foreground transition-colors"
           >
             {family.expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
-          <div>
-            <span className="font-bold text-orange-300 text-base">{family.name}</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-bold text-orange-600 dark:text-orange-300 text-base">{family.name}</span>
             {hasLiveStock ? (
-              <span className="text-xs ml-2">
-                <span className="text-zinc-400">BID</span>{" "}
-                <span className="text-emerald-400 font-semibold">{formatBRL(stockBid)}</span>
-                <span className="text-zinc-600 mx-1">|</span>
-                <span className="text-zinc-400">ASK</span>{" "}
-                <span className="text-emerald-400 font-semibold">{formatBRL(stockAsk)}</span>
-                <span className="ml-1 inline-block w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+              <span className="text-xs">
+                <span className="text-muted-foreground">BID</span>{" "}
+                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{formatBRL(stockBid)}</span>
+                <span className="text-muted-foreground mx-1">|</span>
+                <span className="text-muted-foreground">ASK</span>{" "}
+                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{formatBRL(stockAsk)}</span>
+                <span className="ml-1 inline-block w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
               </span>
             ) : (
-              <span className="text-xs text-zinc-500 ml-2">Aguardando dados...</span>
+              <span className="text-xs text-muted-foreground">Aguardando dados...</span>
             )}
+            <span className="text-xs text-muted-foreground">{family.tickers.length} tickers</span>
           </div>
-          <span className="text-xs text-zinc-500">{family.tickers.length} tickers</span>
           {bestPair && (
-            <span className="hidden md:flex items-center gap-1 text-xs bg-orange-950/50 border border-orange-800/50 text-orange-400 px-2 py-0.5 rounded-full">
-              <Star className="w-3 h-3 text-yellow-400" />
+            <span className="hidden md:flex items-center gap-1 text-xs bg-orange-100 dark:bg-orange-950/50 border border-orange-400/50 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full">
+              <Star className="w-3 h-3 text-amber-500" />
               Melhor: Strike {formatBRL(bestPair.strike)} · {formatPercent(bestPair.lucroPercent)}
             </span>
           )}
@@ -885,20 +1003,20 @@ function FamilyCard({
           <button
             onClick={() => fileRef.current?.click()}
             title="Upload CSV/TXT"
-            className="flex items-center gap-1 px-2 py-1 text-xs bg-zinc-700 hover:bg-zinc-600 rounded transition-colors"
+            className="flex items-center gap-1 px-2 py-1 text-xs bg-secondary hover:bg-secondary/80 rounded transition-colors text-secondary-foreground"
           >
             <Upload className="w-3 h-3" /> Upload
           </button>
           <button
             onClick={handlePasteFromClipboard}
             title="Colar tickers"
-            className="flex items-center gap-1 px-2 py-1 text-xs bg-orange-700/60 hover:bg-orange-600/70 rounded transition-colors"
+            className="flex items-center gap-1 px-2 py-1 text-xs bg-orange-500/80 hover:bg-orange-500 text-white rounded transition-colors"
           >
             <ClipboardPaste className="w-3 h-3" /> Colar
           </button>
           <button
             onClick={() => onRemoveFamily(family.id)}
-            className="text-zinc-600 hover:text-red-400 transition-colors ml-1"
+            className="text-muted-foreground hover:text-destructive transition-colors ml-1"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -907,8 +1025,8 @@ function FamilyCard({
 
       {/* Paste area fallback */}
       {showPaste && (
-        <div className="px-4 py-3 border-b border-zinc-700/50 bg-zinc-950/50">
-          <p className="text-xs text-zinc-500 mb-2">
+        <div className="px-4 py-3 border-b border-border bg-muted/30">
+          <p className="text-xs text-muted-foreground mb-2">
             Cole os tickers (Ctrl+V) — separados por vírgula, espaço ou enter:
           </p>
           <div className="flex gap-2">
@@ -919,18 +1037,18 @@ function FamilyCard({
               onPaste={handleTextAreaPaste}
               placeholder="BBDCD194, BBDCP194, BBDCD209, BBDCP209..."
               rows={3}
-              className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-xs font-mono focus:outline-none focus:border-orange-500 resize-none"
+              className="flex-1 bg-card border border-border rounded px-3 py-2 text-xs font-mono focus:outline-none focus:border-primary resize-none"
             />
             <div className="flex flex-col gap-2">
               <button
                 onClick={handlePasteSubmit}
-                className="px-3 py-1 bg-orange-600 hover:bg-orange-500 rounded text-xs font-bold transition-colors"
+                className="px-3 py-1 bg-orange-500 hover:bg-orange-400 text-white rounded text-xs font-bold transition-colors"
               >
                 Adicionar
               </button>
               <button
                 onClick={() => { setPasteText(""); setShowPaste(false); }}
-                className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-xs transition-colors"
+                className="px-3 py-1 bg-secondary hover:bg-secondary/80 rounded text-xs transition-colors text-secondary-foreground"
               >
                 Cancelar
               </button>
@@ -941,7 +1059,7 @@ function FamilyCard({
 
       {/* Manual ticker input */}
       {family.expanded && (
-        <div className="px-4 py-2 border-b border-zinc-800/50 bg-zinc-900/30">
+        <div className="px-4 py-2 border-b border-border bg-muted/20">
           <div className="flex gap-2">
             <input
               type="text"
@@ -956,11 +1074,11 @@ function FamilyCard({
                 }
               }}
               placeholder="Adicionar ticker (ex: BBDCD194) ou colar vários (Ctrl+V)"
-              className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-1.5 text-xs focus:outline-none focus:border-orange-500 transition-colors placeholder-zinc-600"
+              className="flex-1 bg-card border border-border rounded px-3 py-1.5 text-xs focus:outline-none focus:border-primary transition-colors placeholder-muted-foreground"
             />
             <button
               onClick={handleManualAdd}
-              className="px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 rounded text-xs transition-colors"
+              className="px-3 py-1.5 bg-secondary hover:bg-secondary/80 rounded text-xs transition-colors text-secondary-foreground"
             >
               <Plus className="w-3 h-3" />
             </button>
@@ -972,139 +1090,153 @@ function FamilyCard({
       {family.expanded && (
         <div className="overflow-x-auto">
           {family.tickers.length === 0 ? (
-            <div className="px-6 py-8 text-center text-zinc-600 text-sm">
+            <div className="px-6 py-8 text-center text-muted-foreground text-sm">
               <p>Nenhum ticker adicionado.</p>
               <p className="text-xs mt-1">
                 Use o campo acima, "Colar" ou "Upload" para importar tickers de opções.
               </p>
-              <p className="text-xs mt-1 text-zinc-500">
+              <p className="text-xs mt-1 text-muted-foreground/70">
                 Dica: adicione pares CALL+PUT com mesmo strike (ex: BBDCD194 + BBDCP194)
               </p>
             </div>
           ) : (
             <table className="w-full text-xs">
               <thead>
-                {/* Group headers with vibrant orange tones */}
-                <tr className="border-b border-zinc-700">
-                  <th className="px-4 py-1" />
-                  <th colSpan={2} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-zinc-600/80 text-zinc-100 border-x border-zinc-500/60">
+                {/* Group headers */}
+                <tr className="border-b border-border">
+                  <th className="px-3 py-1" />
+                  <th colSpan={2} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-gray-200 dark:bg-zinc-600/80 text-gray-700 dark:text-zinc-100 border-x border-gray-300 dark:border-zinc-500/60">
                     ATIVO
                   </th>
-                  <th colSpan={3} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-blue-700/50 text-blue-200 border-x border-blue-500/40">
+                  <th colSpan={3} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-blue-100 dark:bg-blue-700/50 text-blue-700 dark:text-blue-200 border-x border-blue-300 dark:border-blue-500/40">
                     📘 CALL
                   </th>
-                  <th colSpan={3} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-red-700/50 text-red-200 border-x border-red-500/40">
+                  <th colSpan={3} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-red-100 dark:bg-red-700/50 text-red-700 dark:text-red-200 border-x border-red-300 dark:border-red-500/40">
                     📕 PUT
                   </th>
-                  <th colSpan={6} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-orange-700/50 text-orange-200 border-x border-orange-500/40">
+                  <th colSpan={6} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-orange-100 dark:bg-orange-700/50 text-orange-700 dark:text-orange-200 border-x border-orange-300 dark:border-orange-500/40">
                     💰 BOX SPREAD
                   </th>
-                  <th colSpan={2} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-amber-700/50 text-amber-200 border-x border-amber-500/40">
+                  <th colSpan={3} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-amber-100 dark:bg-amber-700/50 text-amber-700 dark:text-amber-200 border-x border-amber-300 dark:border-amber-500/40">
                     📊 CDI
                   </th>
                   <th className="px-2 py-1" />
                 </tr>
                 {/* Column headers */}
-                <tr className="text-zinc-400 border-b border-zinc-800 bg-zinc-800/60">
-                  <th className="text-left px-4 py-2 font-bold">ATIVO</th>
+                <tr className="text-muted-foreground border-b border-border bg-muted/40">
+                  <th className="text-left px-3 py-2 font-bold">ATIVO</th>
                   <th className="text-right px-2 py-2">BID</th>
                   <th className="text-right px-2 py-2">ASK</th>
-                  <th className="text-left px-2 py-2 text-blue-300">Ticker</th>
-                  <th className="text-right px-2 py-2 text-blue-300">BID</th>
-                  <th className="text-right px-2 py-2 text-blue-300">ASK</th>
-                  <th className="text-left px-2 py-2 text-red-300">Ticker</th>
-                  <th className="text-right px-2 py-2 text-red-300">BID</th>
-                  <th className="text-right px-2 py-2 text-red-300">ASK</th>
-                  <th className="text-right px-2 py-2 text-orange-300">Strike</th>
-                  <th className="text-center px-2 py-2 text-orange-300">Venc.</th>
-                  <th className="text-right px-2 py-2 text-orange-400 font-bold">Custo</th>
-                  <th className="text-right px-2 py-2 text-emerald-400">Lucro (1)</th>
-                  <th className="text-right px-2 py-2 text-emerald-300 font-bold">Total ({quantidade}x)</th>
-                  <th className="text-right px-2 py-2 text-emerald-200 font-bold">Lucro %</th>
-                  <th className="text-right px-2 py-2 text-amber-400">CDI Per.</th>
-                  <th className="text-center px-2 py-2 text-amber-300">vs CDI</th>
+                  <th className="text-left px-2 py-2 text-blue-600 dark:text-blue-300">Ticker</th>
+                  <th className="text-right px-2 py-2 text-blue-600 dark:text-blue-300">BID</th>
+                  <th className="text-right px-2 py-2 text-blue-600 dark:text-blue-300">ASK</th>
+                  <th className="text-left px-2 py-2 text-red-600 dark:text-red-300">Ticker</th>
+                  <th className="text-right px-2 py-2 text-red-600 dark:text-red-300">BID</th>
+                  <th className="text-right px-2 py-2 text-red-600 dark:text-red-300">ASK</th>
+                  <th className="text-right px-2 py-2 text-orange-600 dark:text-orange-300">Strike</th>
+                  <th className="text-center px-2 py-2 text-orange-600 dark:text-orange-300">Venc.</th>
+                  <th className="text-right px-2 py-2 text-orange-600 dark:text-orange-400 font-bold">Custo</th>
+                  <th className="text-right px-2 py-2 text-emerald-600 dark:text-emerald-400">Lucro (1)</th>
+                  <th className="text-right px-2 py-2 text-emerald-600 dark:text-emerald-300 font-bold">Total ({quantidade}x)</th>
+                  <th className="text-right px-2 py-2 text-emerald-600 dark:text-emerald-200 font-bold">Lucro %</th>
+                  <th className="text-right px-2 py-2 text-amber-600 dark:text-amber-400 font-bold">CDI Anual</th>
+                  <th className="text-right px-2 py-2 text-amber-600 dark:text-amber-400">CDI Per.</th>
+                  <th className="text-center px-2 py-2 text-amber-600 dark:text-amber-300">vs CDI</th>
                   <th className="px-2 py-2"></th>
                 </tr>
               </thead>
               <tbody>
                 {boxPairs.map((pair, idx) => {
+                  const pairKey = `${family.name}-${pair.strike}`;
+                  const isGlobalWinner = pairKey === winnerKey;
                   const isBest = idx === 0 && pair.lucroPercent !== null && pair.lucroPercent > 0;
                   const displayStrike = pair.strikeRtd ?? pair.strike;
+                  const lucroDisplay = descontarIRAcoes ? pair.lucroLiqAcoes : pair.lucro;
+                  const lucroTotalDisplay = descontarIRAcoes ? pair.lucroLiqAcoesTotal : pair.lucroTotal;
+                  const lucroPercentDisplay = descontarIRAcoes ? pair.lucroLiqAcoesPercent : pair.lucroPercent;
+                  const cdiDisplay = descontarIRRendaFixa ? pair.cdiPeriodoLiq : pair.cdiPeriodo;
 
                   return (
                     <tr
                       key={`pair-${pair.strike}-${idx}`}
-                      className={`border-b border-zinc-800/30 hover:bg-zinc-800/20 transition-colors ${
-                        isBest ? "bg-orange-950/15" : ""
-                      }`}
+                      className={cn(
+                        "border-b border-border/50 hover:bg-muted/30 transition-colors",
+                        isGlobalWinner
+                          ? "bg-gradient-to-r from-orange-100/80 to-amber-50/50 dark:from-orange-950/30 dark:to-amber-950/10 animate-pulse"
+                          : isBest ? "bg-orange-50/50 dark:bg-orange-950/15" : ""
+                      )}
                     >
-                      <td className="px-4 py-2 font-bold text-white flex items-center gap-1">
-                        {isBest && <Star className="w-3 h-3 text-orange-400 flex-shrink-0" />}
+                      <td className="px-3 py-2 font-bold text-foreground flex items-center gap-1">
+                        {isGlobalWinner && <Trophy className="w-3 h-3 text-orange-500 flex-shrink-0" />}
+                        {isBest && !isGlobalWinner && <Star className="w-3 h-3 text-orange-500 flex-shrink-0" />}
                         {family.name}
                       </td>
-                      <td className="px-2 py-2 text-right text-zinc-300">{formatBRL(pair.stockBid)}</td>
-                      <td className="px-2 py-2 text-right text-zinc-300">{formatBRL(pair.stockAsk)}</td>
+                      <td className="px-2 py-2 text-right text-foreground/80">{formatBRL(pair.stockBid)}</td>
+                      <td className="px-2 py-2 text-right text-foreground/80">{formatBRL(pair.stockAsk)}</td>
                       {/* CALL */}
-                      <td className="px-2 py-2 bg-blue-950/10">
+                      <td className="px-2 py-2 bg-blue-50/50 dark:bg-blue-950/10">
                         {pair.callSymbol ? (
-                          <span className="text-blue-300 font-semibold">{pair.callSymbol}</span>
+                          <span className="text-blue-600 dark:text-blue-300 font-semibold">{pair.callSymbol}</span>
                         ) : (
-                          <span className="text-zinc-600">—</span>
+                          <span className="text-muted-foreground">—</span>
                         )}
                       </td>
-                      <td className="px-2 py-2 text-right text-blue-300 bg-blue-950/10">{formatBRL(pair.callBid)}</td>
-                      <td className="px-2 py-2 text-right text-blue-200 bg-blue-950/10">{formatBRL(pair.callAsk)}</td>
+                      <td className="px-2 py-2 text-right text-blue-600 dark:text-blue-300 bg-blue-50/50 dark:bg-blue-950/10">{formatBRL(pair.callBid)}</td>
+                      <td className="px-2 py-2 text-right text-blue-700 dark:text-blue-200 bg-blue-50/50 dark:bg-blue-950/10">{formatBRL(pair.callAsk)}</td>
                       {/* PUT */}
-                      <td className="px-2 py-2 bg-red-950/10">
+                      <td className="px-2 py-2 bg-red-50/50 dark:bg-red-950/10">
                         {pair.putSymbol ? (
-                          <span className="text-red-300 font-semibold">{pair.putSymbol}</span>
+                          <span className="text-red-600 dark:text-red-300 font-semibold">{pair.putSymbol}</span>
                         ) : (
-                          <span className="text-zinc-600">—</span>
+                          <span className="text-muted-foreground">—</span>
                         )}
                       </td>
-                      <td className="px-2 py-2 text-right text-red-300 bg-red-950/10">{formatBRL(pair.putBid)}</td>
-                      <td className="px-2 py-2 text-right text-red-200 bg-red-950/10">{formatBRL(pair.putAsk)}</td>
+                      <td className="px-2 py-2 text-right text-red-600 dark:text-red-300 bg-red-50/50 dark:bg-red-950/10">{formatBRL(pair.putBid)}</td>
+                      <td className="px-2 py-2 text-right text-red-700 dark:text-red-200 bg-red-50/50 dark:bg-red-950/10">{formatBRL(pair.putAsk)}</td>
                       {/* Box Spread */}
-                      <td className="px-2 py-2 text-right font-semibold text-orange-300">{formatBRL(displayStrike)}</td>
-                      <td className="px-2 py-2 text-center text-zinc-400 text-[10px]">
+                      <td className="px-2 py-2 text-right font-semibold text-orange-600 dark:text-orange-300">{formatBRL(displayStrike)}</td>
+                      <td className="px-2 py-2 text-center text-muted-foreground text-[10px]">
                         {pair.vencimento ?? "—"}
                         {pair.diasUteis !== null && (
-                          <span className="block text-amber-500/70 font-bold">{pair.diasUteis}du</span>
+                          <span className="block text-amber-600 dark:text-amber-500/70 font-bold">{pair.diasUteis}du</span>
                         )}
                       </td>
-                      <td className="px-2 py-2 text-right font-bold text-orange-400">{formatBRL(pair.compraBox)}</td>
+                      <td className="px-2 py-2 text-right font-bold text-orange-600 dark:text-orange-400">{formatBRL(pair.compraBox)}</td>
                       <td className="px-2 py-2 text-right font-bold">
-                        {pair.lucro !== null ? (
-                          <span className={pair.lucro >= 0 ? "text-emerald-400" : "text-red-400"}>
-                            {formatBRL(pair.lucro)}
+                        {lucroDisplay !== null ? (
+                          <span className={lucroDisplay >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"}>
+                            {formatBRL(lucroDisplay)}
                           </span>
                         ) : "—"}
                       </td>
                       <td className="px-2 py-2 text-right font-bold">
-                        {pair.lucroTotal !== null ? (
-                          <span className={pair.lucroTotal >= 0 ? "text-emerald-300" : "text-red-400"}>
-                            {formatBRL(pair.lucroTotal)}
+                        {lucroTotalDisplay !== null ? (
+                          <span className={lucroTotalDisplay >= 0 ? "text-emerald-600 dark:text-emerald-300" : "text-red-500"}>
+                            {formatBRL(lucroTotalDisplay)}
                           </span>
                         ) : "—"}
                       </td>
                       <td className="px-2 py-2 text-right font-black">
-                        {pair.lucroPercent !== null ? (
-                          <span className={pair.lucroPercent >= 0 ? "text-emerald-300" : "text-red-400"}>
-                            {formatPercent(pair.lucroPercent)}
+                        {lucroPercentDisplay !== null ? (
+                          <span className={lucroPercentDisplay >= 0 ? "text-emerald-600 dark:text-emerald-300" : "text-red-500"}>
+                            {formatPercent(lucroPercentDisplay)}
                           </span>
                         ) : "—"}
                       </td>
                       {/* CDI */}
-                      <td className="px-2 py-2 text-right text-amber-400">
-                        {pair.cdiPeriodo !== null ? formatPercent(pair.cdiPeriodo) : "—"}
+                      <td className="px-2 py-2 text-right text-amber-600 dark:text-amber-400 font-bold">
+                        {CDI_ANUAL}%
+                      </td>
+                      <td className="px-2 py-2 text-right text-amber-600 dark:text-amber-400">
+                        {cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}
                       </td>
                       <td className="px-2 py-2 text-center">
                         {pair.vsCD === "acima" ? (
-                          <span className="inline-flex items-center gap-0.5 text-emerald-400 font-bold text-[10px] bg-emerald-950/40 px-1.5 py-0.5 rounded">
+                          <span className="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] bg-emerald-100 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded">
                             <TrendingUp className="w-3 h-3" /> ACIMA
                           </span>
                         ) : pair.vsCD === "abaixo" ? (
-                          <span className="inline-flex items-center gap-0.5 text-red-400 font-bold text-[10px] bg-red-950/40 px-1.5 py-0.5 rounded">
+                          <span className="inline-flex items-center gap-0.5 text-red-500 font-bold text-[10px] bg-red-100 dark:bg-red-950/40 px-1.5 py-0.5 rounded">
                             ABAIXO
                           </span>
                         ) : "—"}
@@ -1117,7 +1249,7 @@ function FamilyCard({
                                 const t = family.tickers.find((t) => t.symbol === pair.callSymbol);
                                 if (t) onRemoveTicker(family.id, t.id);
                               }}
-                              className="text-zinc-700 hover:text-red-400 transition-colors"
+                              className="text-muted-foreground hover:text-destructive transition-colors"
                               title={`Remover ${pair.callSymbol}`}
                             >
                               <X className="w-3 h-3" />
@@ -1129,7 +1261,7 @@ function FamilyCard({
                                 const t = family.tickers.find((t) => t.symbol === pair.putSymbol);
                                 if (t) onRemoveTicker(family.id, t.id);
                               }}
-                              className="text-zinc-700 hover:text-red-400 transition-colors"
+                              className="text-muted-foreground hover:text-destructive transition-colors"
                               title={`Remover ${pair.putSymbol}`}
                             >
                               <X className="w-3 h-3" />
@@ -1148,30 +1280,30 @@ function FamilyCard({
                     return (
                       <tr
                         key={ticker.id}
-                        className="border-b border-zinc-800/30 hover:bg-zinc-800/20 opacity-50"
+                        className="border-b border-border/30 hover:bg-muted/20 opacity-50"
                       >
-                        <td className="px-4 py-2 text-zinc-500">{family.name}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{family.name}</td>
                         <td className="px-2 py-2" colSpan={2}>
                           <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${
-                            ticker.type === "CALL" ? "bg-blue-900/40 text-blue-300" : "bg-red-900/40 text-red-300"
+                            ticker.type === "CALL" ? "bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300" : "bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300"
                           }`}>
                             {ticker.type}: {ticker.symbol}
                           </span>
-                          <span className="text-zinc-600 text-xs ml-2">
+                          <span className="text-muted-foreground text-xs ml-2">
                             (sem par {ticker.type === "CALL" ? "PUT" : "CALL"} no strike {formatBRL(ticker.strike)})
                           </span>
                         </td>
-                        <td className="px-2 py-2 text-right text-zinc-500" colSpan={3}>
+                        <td className="px-2 py-2 text-right text-muted-foreground" colSpan={3}>
                           {liveRow ? `${formatBRL(liveRow.ofCompra)} / ${formatBRL(liveRow.ofVenda)}` : "—"}
                         </td>
-                        <td className="px-2 py-2 text-zinc-600 text-center" colSpan={8}>
+                        <td className="px-2 py-2 text-muted-foreground text-center" colSpan={9}>
                           Aguardando par...
                         </td>
-                        <td className="px-2 py-2" colSpan={2} />
+                        <td className="px-2 py-2" colSpan={3} />
                         <td className="px-2 py-2">
                           <button
                             onClick={() => onRemoveTicker(family.id, ticker.id)}
-                            className="text-zinc-700 hover:text-red-400 transition-colors"
+                            className="text-muted-foreground hover:text-destructive transition-colors"
                           >
                             <X className="w-3 h-3" />
                           </button>
