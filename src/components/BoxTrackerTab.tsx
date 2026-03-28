@@ -22,6 +22,7 @@ import {
   WifiOff,
   AlertTriangle,
   TrendingUp,
+  Calendar,
 } from "lucide-react";
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 import { statusConfig } from "@/hooks/useRtdBridge";
