@@ -21,6 +21,7 @@ import {
   Wifi,
   WifiOff,
   AlertTriangle,
+  TrendingUp,
 } from "lucide-react";
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 import { statusConfig } from "@/hooks/useRtdBridge";
@@ -35,6 +36,8 @@ interface OptionTicker {
 
 interface BoxPair {
   strike: number;
+  strikeRtd: number | null; // from PEX attribute
+  vencimento: string | null; // from VEN attribute
   callSymbol: string | null;
   putSymbol: string | null;
   // Live data from bridge
@@ -48,6 +51,10 @@ interface BoxPair {
   compraBox: number | null;
   lucro: number | null;
   lucroPercent: number | null;
+  // CDI comparison
+  diasUteis: number | null;
+  cdiPeriodo: number | null;
+  vsCD: string | null; // "acima" | "abaixo" | null
 }
 
 interface StockFamily {
@@ -64,6 +71,42 @@ interface SavedFamily {
 
 // ─── CONSTANTES ──────────────────────────────────────────────
 const STORAGE_KEY = "box-tracker-families";
+const CDI_ANUAL = 14.15; // Taxa CDI anual vigente (%)
+
+// Calcula dias úteis entre hoje e uma data de vencimento
+function calcDiasUteis(vencimentoStr: string | null): number | null {
+  if (!vencimentoStr) return null;
+  // Parse dd/MM/yyyy or yyyy-MM-dd
+  let target: Date | null = null;
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(vencimentoStr)) {
+    const [d, m, y] = vencimentoStr.split("/").map(Number);
+    target = new Date(y, m - 1, d);
+  } else if (/^\d{4}-\d{2}-\d{2}/.test(vencimentoStr)) {
+    target = new Date(vencimentoStr);
+  } else {
+    return null;
+  }
+  if (isNaN(target.getTime())) return null;
+
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
+  if (target <= hoje) return 0;
+
+  let dias = 0;
+  const cursor = new Date(hoje);
+  while (cursor < target) {
+    cursor.setDate(cursor.getDate() + 1);
+    const dow = cursor.getDay();
+    if (dow !== 0 && dow !== 6) dias++;
+  }
+  return dias;
+}
+
+// CDI para o período em dias úteis
+function calcCdiPeriodo(diasUteis: number): number {
+  return ((1 + CDI_ANUAL / 100) ** (diasUteis / 252) - 1) * 100;
+}
 
 // ─── FUNÇÕES AUXILIARES ──────────────────────────────────────
 function generateId(): string {
@@ -268,6 +311,10 @@ export default function BoxTracker() {
         const putBid = getPrice(putRow, "ofCompra");
         const putAsk = getPrice(putRow, "ofVenda");
 
+        // Strike e Vencimento do RTD (PEX / VEN)
+        const strikeRtd = callRow?.strike ?? putRow?.strike ?? null;
+        const vencimento = callRow?.ven ?? putRow?.ven ?? null;
+
         let compraBox: number | null = null;
         let lucro: number | null = null;
         let lucroPercent: number | null = null;
@@ -278,8 +325,17 @@ export default function BoxTracker() {
           lucroPercent = compraBox > 0 ? (lucro / compraBox) * 100 : null;
         }
 
+        // CDI do período
+        const diasUteis = calcDiasUteis(vencimento);
+        const cdiPeriodo = diasUteis !== null && diasUteis > 0 ? calcCdiPeriodo(diasUteis) : null;
+        const vsCD = lucroPercent !== null && cdiPeriodo !== null
+          ? (lucroPercent > cdiPeriodo ? "acima" : "abaixo")
+          : null;
+
         pairs.push({
           strike,
+          strikeRtd,
+          vencimento,
           callSymbol: call?.symbol ?? null,
           putSymbol: put?.symbol ?? null,
           callBid,
@@ -291,6 +347,9 @@ export default function BoxTracker() {
           compraBox,
           lucro,
           lucroPercent,
+          diasUteis,
+          cdiPeriodo,
+          vsCD,
         });
       });
 
@@ -402,7 +461,10 @@ export default function BoxTracker() {
 
               <div className="flex items-baseline gap-2 mb-1">
                 <span className="text-lg font-black text-white">{pair.familyName}</span>
-                <span className="text-xs text-zinc-400">Strike {formatBRL(pair.strike)}</span>
+                <span className="text-xs text-zinc-400">Strike {formatBRL(pair.strikeRtd ?? pair.strike)}</span>
+                {pair.vencimento && (
+                  <span className="text-xs text-zinc-500 ml-1">· Venc. {pair.vencimento}</span>
+                )}
               </div>
 
               <div className="flex items-center gap-3 text-sm">
@@ -423,11 +485,18 @@ export default function BoxTracker() {
                   <p className="text-xs text-zinc-500">Lucro</p>
                   <p className="text-sm font-bold text-emerald-400">{formatBRL(pair.lucro)}</p>
                 </div>
+                <div>
+                  <p className="text-xs text-zinc-500">CDI Per.</p>
+                  <p className="text-sm font-bold text-amber-400">{pair.cdiPeriodo !== null ? formatPercent(pair.cdiPeriodo) : "—"}</p>
+                </div>
                 <div className="text-right">
                   <p className="text-xs text-zinc-500">Retorno</p>
                   <p className="text-xl font-black text-emerald-300">
                     {formatPercent(pair.lucroPercent)}
                   </p>
+                  {pair.vsCD === "acima" && (
+                    <span className="text-[9px] text-emerald-500 font-bold">▲ ACIMA CDI</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -448,12 +517,15 @@ export default function BoxTracker() {
                 <tr className="text-zinc-500 border-b border-zinc-800">
                   <th className="text-left py-2 pr-3">#</th>
                   <th className="text-left py-2 pr-3">Ativo</th>
-                  <th className="text-left py-2 pr-3">CALL</th>
-                  <th className="text-left py-2 pr-3">PUT</th>
+                  <th className="text-left py-2 pr-3 text-blue-400">CALL</th>
+                  <th className="text-left py-2 pr-3 text-red-400">PUT</th>
                   <th className="text-right py-2 pr-3">Strike</th>
+                  <th className="text-center py-2 pr-3">Venc.</th>
                   <th className="text-right py-2 pr-3">Compra Box</th>
                   <th className="text-right py-2 pr-3">Lucro</th>
-                  <th className="text-right py-2">Lucro %</th>
+                  <th className="text-right py-2 pr-3">Lucro %</th>
+                  <th className="text-right py-2 pr-3 text-amber-400">CDI Per.</th>
+                  <th className="text-center py-2">vs CDI</th>
                 </tr>
               </thead>
               <tbody>
@@ -463,11 +535,22 @@ export default function BoxTracker() {
                     <td className="py-2 pr-3 font-bold text-white">{p.familyName}</td>
                     <td className="py-2 pr-3 text-blue-300">{p.callSymbol}</td>
                     <td className="py-2 pr-3 text-red-300">{p.putSymbol}</td>
-                    <td className="py-2 pr-3 text-right">{formatBRL(p.strike)}</td>
+                    <td className="py-2 pr-3 text-right">{formatBRL(p.strikeRtd ?? p.strike)}</td>
+                    <td className="py-2 pr-3 text-center text-zinc-400 text-[10px]">{p.vencimento ?? "—"}</td>
                     <td className="py-2 pr-3 text-right text-yellow-400">{formatBRL(p.compraBox)}</td>
                     <td className="py-2 pr-3 text-right text-emerald-400">{formatBRL(p.lucro)}</td>
-                    <td className="py-2 text-right font-bold text-emerald-300">
+                    <td className="py-2 pr-3 text-right font-bold text-emerald-300">
                       {formatPercent(p.lucroPercent)}
+                    </td>
+                    <td className="py-2 pr-3 text-right text-amber-400">
+                      {p.cdiPeriodo !== null ? formatPercent(p.cdiPeriodo) : "—"}
+                    </td>
+                    <td className="py-2 text-center">
+                      {p.vsCD === "acima" ? (
+                        <span className="text-emerald-400 font-bold text-[10px]">▲ ACIMA</span>
+                      ) : p.vsCD === "abaixo" ? (
+                        <span className="text-red-400 font-bold text-[10px]">▼ ABAIXO</span>
+                      ) : "—"}
                     </td>
                   </tr>
                 ))}
@@ -745,26 +828,51 @@ function FamilyCard({
           ) : (
             <table className="w-full text-xs">
               <thead>
+                {/* Group headers */}
+                <tr className="border-b border-zinc-800">
+                  <th className="px-4 py-1" />
+                  <th colSpan={2} className="px-2 py-1.5 text-center text-[10px] uppercase tracking-widest bg-zinc-800/80 text-zinc-400 border-x border-zinc-700/50">
+                    Ativo
+                  </th>
+                  <th colSpan={3} className="px-2 py-1.5 text-center text-[10px] uppercase tracking-widest bg-blue-950/60 text-blue-300 border-x border-blue-900/40">
+                    📘 CALL
+                  </th>
+                  <th colSpan={3} className="px-2 py-1.5 text-center text-[10px] uppercase tracking-widest bg-red-950/60 text-red-300 border-x border-red-900/40">
+                    📕 PUT
+                  </th>
+                  <th colSpan={5} className="px-2 py-1.5 text-center text-[10px] uppercase tracking-widest bg-emerald-950/50 text-emerald-300 border-x border-emerald-900/40">
+                    💰 Box Spread
+                  </th>
+                  <th colSpan={2} className="px-2 py-1.5 text-center text-[10px] uppercase tracking-widest bg-amber-950/50 text-amber-300 border-x border-amber-900/40">
+                    📊 CDI
+                  </th>
+                  <th className="px-2 py-1" />
+                </tr>
+                {/* Column headers */}
                 <tr className="text-zinc-500 border-b border-zinc-800 bg-zinc-900/50">
                   <th className="text-left px-4 py-2">ATIVO</th>
-                  <th className="text-left px-2 py-2">CALL</th>
-                  <th className="text-left px-2 py-2">PUT</th>
-                  <th className="text-right px-2 py-2">BID (Ativo)</th>
-                  <th className="text-right px-2 py-2">ASK (Ativo)</th>
-                  <th className="text-right px-2 py-2">BID (Call)</th>
-                  <th className="text-right px-2 py-2">ASK (Call)</th>
-                  <th className="text-right px-2 py-2">BID (Put)</th>
-                  <th className="text-right px-2 py-2">ASK (Put)</th>
-                  <th className="text-right px-2 py-2 text-yellow-400">Compra BOX</th>
+                  <th className="text-right px-2 py-2">BID</th>
+                  <th className="text-right px-2 py-2">ASK</th>
+                  <th className="text-left px-2 py-2 text-blue-400">Ticker</th>
+                  <th className="text-right px-2 py-2 text-blue-400">BID</th>
+                  <th className="text-right px-2 py-2 text-blue-400">ASK</th>
+                  <th className="text-left px-2 py-2 text-red-400">Ticker</th>
+                  <th className="text-right px-2 py-2 text-red-400">BID</th>
+                  <th className="text-right px-2 py-2 text-red-400">ASK</th>
                   <th className="text-right px-2 py-2">Strike</th>
+                  <th className="text-center px-2 py-2">Venc.</th>
+                  <th className="text-right px-2 py-2 text-yellow-400">Compra BOX</th>
                   <th className="text-right px-2 py-2 text-emerald-400">Lucro</th>
                   <th className="text-right px-2 py-2 text-emerald-300 font-bold">Lucro %</th>
+                  <th className="text-right px-2 py-2 text-amber-400">CDI Per.</th>
+                  <th className="text-center px-2 py-2 text-amber-300">vs CDI</th>
                   <th className="px-2 py-2"></th>
                 </tr>
               </thead>
               <tbody>
                 {boxPairs.map((pair, idx) => {
                   const isBest = idx === 0 && pair.lucroPercent !== null && pair.lucroPercent > 0;
+                  const displayStrike = pair.strikeRtd ?? pair.strike;
 
                   return (
                     <tr
@@ -777,28 +885,37 @@ function FamilyCard({
                         {isBest && <Star className="w-3 h-3 text-yellow-400 flex-shrink-0" />}
                         {family.name}
                       </td>
-                      <td className="px-2 py-2">
+                      <td className="px-2 py-2 text-right text-zinc-300">{formatBRL(pair.stockBid)}</td>
+                      <td className="px-2 py-2 text-right text-zinc-300">{formatBRL(pair.stockAsk)}</td>
+                      {/* CALL section */}
+                      <td className="px-2 py-2 bg-blue-950/10">
                         {pair.callSymbol ? (
                           <span className="text-blue-300 font-semibold">{pair.callSymbol}</span>
                         ) : (
                           <span className="text-zinc-600">—</span>
                         )}
                       </td>
-                      <td className="px-2 py-2">
+                      <td className="px-2 py-2 text-right text-blue-300 bg-blue-950/10">{formatBRL(pair.callBid)}</td>
+                      <td className="px-2 py-2 text-right text-blue-200 bg-blue-950/10">{formatBRL(pair.callAsk)}</td>
+                      {/* PUT section */}
+                      <td className="px-2 py-2 bg-red-950/10">
                         {pair.putSymbol ? (
                           <span className="text-red-300 font-semibold">{pair.putSymbol}</span>
                         ) : (
                           <span className="text-zinc-600">—</span>
                         )}
                       </td>
-                      <td className="px-2 py-2 text-right text-zinc-300">{formatBRL(pair.stockBid)}</td>
-                      <td className="px-2 py-2 text-right text-zinc-300">{formatBRL(pair.stockAsk)}</td>
-                      <td className="px-2 py-2 text-right text-blue-300">{formatBRL(pair.callBid)}</td>
-                      <td className="px-2 py-2 text-right text-blue-200">{formatBRL(pair.callAsk)}</td>
-                      <td className="px-2 py-2 text-right text-red-300">{formatBRL(pair.putBid)}</td>
-                      <td className="px-2 py-2 text-right text-red-200">{formatBRL(pair.putAsk)}</td>
+                      <td className="px-2 py-2 text-right text-red-300 bg-red-950/10">{formatBRL(pair.putBid)}</td>
+                      <td className="px-2 py-2 text-right text-red-200 bg-red-950/10">{formatBRL(pair.putAsk)}</td>
+                      {/* Box Spread section */}
+                      <td className="px-2 py-2 text-right font-semibold text-white">{formatBRL(displayStrike)}</td>
+                      <td className="px-2 py-2 text-center text-zinc-400 text-[10px]">
+                        {pair.vencimento ?? "—"}
+                        {pair.diasUteis !== null && (
+                          <span className="block text-zinc-600">{pair.diasUteis}du</span>
+                        )}
+                      </td>
                       <td className="px-2 py-2 text-right font-bold text-yellow-400">{formatBRL(pair.compraBox)}</td>
-                      <td className="px-2 py-2 text-right font-semibold text-white">{formatBRL(pair.strike)}</td>
                       <td className="px-2 py-2 text-right font-bold">
                         {pair.lucro !== null ? (
                           <span className={pair.lucro >= 0 ? "text-emerald-400" : "text-red-400"}>
@@ -810,6 +927,21 @@ function FamilyCard({
                         {pair.lucroPercent !== null ? (
                           <span className={pair.lucroPercent >= 0 ? "text-emerald-300" : "text-red-400"}>
                             {formatPercent(pair.lucroPercent)}
+                          </span>
+                        ) : "—"}
+                      </td>
+                      {/* CDI comparison */}
+                      <td className="px-2 py-2 text-right text-amber-400">
+                        {pair.cdiPeriodo !== null ? formatPercent(pair.cdiPeriodo) : "—"}
+                      </td>
+                      <td className="px-2 py-2 text-center">
+                        {pair.vsCD === "acima" ? (
+                          <span className="inline-flex items-center gap-0.5 text-emerald-400 font-bold text-[10px] bg-emerald-950/40 px-1.5 py-0.5 rounded">
+                            <TrendingUp className="w-3 h-3" /> ACIMA
+                          </span>
+                        ) : pair.vsCD === "abaixo" ? (
+                          <span className="inline-flex items-center gap-0.5 text-red-400 font-bold text-[10px] bg-red-950/40 px-1.5 py-0.5 rounded">
+                            ABAIXO
                           </span>
                         ) : "—"}
                       </td>
@@ -865,15 +997,13 @@ function FamilyCard({
                             (sem par {ticker.type === "CALL" ? "PUT" : "CALL"} no strike {formatBRL(ticker.strike)})
                           </span>
                         </td>
-                        <td className="px-2 py-2 text-right text-zinc-500" colSpan={2}>
-                          {formatBRL(stockBid)} / {formatBRL(stockAsk)}
-                        </td>
-                        <td className="px-2 py-2 text-right text-zinc-500" colSpan={2}>
+                        <td className="px-2 py-2 text-right text-zinc-500" colSpan={3}>
                           {liveRow ? `${formatBRL(liveRow.ofCompra)} / ${formatBRL(liveRow.ofVenda)}` : "—"}
                         </td>
-                        <td className="px-2 py-2 text-zinc-600 text-center" colSpan={5}>
+                        <td className="px-2 py-2 text-zinc-600 text-center" colSpan={8}>
                           Aguardando par...
                         </td>
+                        <td className="px-2 py-2" colSpan={2} />
                         <td className="px-2 py-2">
                           <button
                             onClick={() => onRemoveTicker(family.id, ticker.id)}
