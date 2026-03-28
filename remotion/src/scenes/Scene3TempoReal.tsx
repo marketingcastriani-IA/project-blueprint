@@ -206,6 +206,9 @@ export const Scene3TempoReal: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <Caption text="Cotações ao vivo sincronizadas via WebSocket com o Profit Pro — preços atualizados automaticamente" startFrame={20} endFrame={120} />
+      <Caption text="Acompanhe P&L em tempo real com status de conexão ao Profit" startFrame={120} />
     </AbsoluteFill>
   );
 };

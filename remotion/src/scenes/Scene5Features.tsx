@@ -73,6 +73,8 @@ export const Scene5Features: React.FC = () => {
           );
         })}
       </div>
+
+      <Caption text="Payoff, IA, tempo real, box tracker, OCR e portfólio — tudo integrado em uma plataforma" startFrame={40} />
     </AbsoluteFill>
   );
 };

@@ -97,6 +97,8 @@ export const Scene1Intro: React.FC = () => {
       }}>
         Monte, analise e rastreie suas operações estruturadas com dados em tempo real
       </div>
+
+      <Caption text="Simulador profissional de opções com inteligência artificial e dados em tempo real" startFrame={60} />
     </AbsoluteFill>
   );
 };

@@ -174,6 +174,9 @@ export const Scene4BoxTracker: React.FC = () => {
           <div style={{ fontSize: 24, fontWeight: 700, color: C.success, fontFamily: monoFont }}>158% CDI</div>
         </div>
       </div>
+
+      <Caption text="Rastreador automático de Box Spreads — encontre as melhores oportunidades acima do CDI" startFrame={15} endFrame={130} />
+      <Caption text="Compare retornos com o CDI e identifique os melhores box spreads do mercado" startFrame={130} />
     </AbsoluteFill>
   );
 };

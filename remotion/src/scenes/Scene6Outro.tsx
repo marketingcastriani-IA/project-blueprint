@@ -106,6 +106,8 @@ export const Scene6Outro: React.FC = () => {
       }}>
         opoesxpro.lovable.app
       </div>
+
+      <Caption text="Assine o plano PRO e leve suas operações estruturadas para o próximo nível" startFrame={50} />
     </AbsoluteFill>
   );
 };
