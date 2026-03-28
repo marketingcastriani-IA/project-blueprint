@@ -400,7 +400,7 @@ export default function DadosAoVivo() {
                 </Button>
                 <Button size="sm" variant="outline" className="gap-2" onClick={connect}>
                   <RefreshCw className="w-3 h-3" />
-                  Tentar Reconectar {reconnectCount > 0 && `(${reconnectCount}/${MAX_RECONNECT})`}
+                  Tentar Reconectar {reconnectCount > 0 && `(${reconnectCount}/10)`}
                 </Button>
                 <Button size="sm" variant="ghost" className="gap-2 text-muted-foreground" asChild>
                   <a href="https://dotnet.microsoft.com/download/dotnet/6.0" target="_blank" rel="noopener noreferrer">
