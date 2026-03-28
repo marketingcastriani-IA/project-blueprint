@@ -874,11 +874,12 @@ export default function BoxTracker() {
                       <td className="py-2 pr-2 text-right text-amber-600 dark:text-amber-400">{cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}</td>
                       <td className="py-2 pr-2 text-center">
                         {(() => {
-                          const diff = (lucroPercentDisplay ?? 0) - (cdiDisplay ?? 0);
-                          const isAbove = diff > 0;
+                          const pctCdi = cdiDisplay && cdiDisplay > 0 ? ((lucroPercentDisplay ?? 0) / cdiDisplay) * 100 : null;
+                          if (pctCdi === null) return "—";
+                          const isAbove = pctCdi >= 100;
                           return (
                             <span className={cn("font-black text-sm", isAbove ? "text-emerald-500 dark:text-emerald-300" : "text-red-500")}>
-                              {isAbove ? "+" : ""}{diff.toFixed(2).replace(".", ",")}%
+                              {pctCdi.toFixed(0)}%
                             </span>
                           );
                         })()}
