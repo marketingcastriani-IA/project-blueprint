@@ -553,6 +553,7 @@ export default function BoxTracker() {
                     <td className="py-2 pr-3 text-center text-zinc-400 text-[10px]">{p.vencimento ?? "—"}</td>
                     <td className="py-2 pr-3 text-right text-yellow-400">{formatBRL(p.compraBox)}</td>
                     <td className="py-2 pr-3 text-right text-emerald-400">{formatBRL(p.lucro)}</td>
+                    <td className="py-2 pr-3 text-right text-emerald-300 font-semibold">{formatBRL(p.lucroTotal)}</td>
                     <td className="py-2 pr-3 text-right font-bold text-emerald-300">
                       {formatPercent(p.lucroPercent)}
                     </td>
