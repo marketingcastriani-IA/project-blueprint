@@ -432,7 +432,7 @@ export default function BoxTracker() {
       pairs.sort((a, b) => (b.lucroPercent ?? -999) - (a.lucroPercent ?? -999));
       return pairs;
     },
-    [rows, quantidade, vencimentoManual, descontarIRAcoes, descontarIRRendaFixa]
+    [rows, quantidade, vencimentoManual, descontarIRAcoes, descontarIRRendaFixa, cdiAnual]
   );
 
   // Global ranking
