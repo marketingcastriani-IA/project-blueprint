@@ -149,6 +149,8 @@ function extractTypeFromTicker(symbol: string): "CALL" | "PUT" {
 export default function BoxTracker() {
   const [families, setFamilies] = useState<StockFamily[]>([]);
   const [newFamilyName, setNewFamilyName] = useState("");
+  const [quantidade, setQuantidade] = useState<number>(100);
+  const [vencimentoManual, setVencimentoManual] = useState<string>("");
   
   // Real-time bridge
   const { status, rows, connect, addTicker: bridgeAddTicker } = useSharedRtdBridge();
