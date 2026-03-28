@@ -633,7 +633,30 @@ export default function FAQ() {
               <AccordionTrigger className="text-sm font-bold">Qual a diferença entre plano Free e PRO?</AccordionTrigger>
               <AccordionContent className="text-sm text-muted-foreground">
                 O plano Free permite acesso básico com limite de simulações. O plano PRO oferece simulações ilimitadas, 
-                análise de IA, comparação com CDI, diversificador de estratégias e acesso a todos os recursos avançados da plataforma.
+                análise de IA, comparação com CDI, diversificador de estratégias, Tempo Real e Rastreador de Box — 
+                acesso a todos os recursos avançados da plataforma.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="q8">
+              <AccordionTrigger className="text-sm font-bold">O que é o ProfitRTD Bridge?</AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground">
+                É um programa que roda no seu computador e faz a ponte entre o Profit Pro (Nelogica) e o Opções PRO X via WebSocket. 
+                Ele lê os dados de cotações em tempo real do Profit Pro e os envia para o navegador, 
+                permitindo que os módulos Tempo Real e Rastreador de Box funcionem com dados ao vivo.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="q9">
+              <AccordionTrigger className="text-sm font-bold">Preciso do Profit Pro para usar o Tempo Real?</AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground">
+                Sim. Os dados ao vivo são obtidos via o Profit Pro (software da Nelogica). Você precisa ter o Profit Pro instalado, 
+                aberto e logado, além do ProfitRTD Bridge rodando. Sem esses componentes, os módulos de tempo real não funcionam.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="q10">
+              <AccordionTrigger className="text-sm font-bold">O que significa "120% do CDI" no Rastreador de Box?</AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground">
+                Significa que o Box Spread rende 120% do que o CDI renderia no mesmo período. Na prática, se o CDI do período 
+                é 0,90%, o box renderia 0,90% × 1,20 = 1,08%. Quanto maior o percentual acima de 100%, mais atrativo é o box em relação à renda fixa.
               </AccordionContent>
             </AccordionItem>
           </Accordion>
