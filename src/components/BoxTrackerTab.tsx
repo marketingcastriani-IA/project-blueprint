@@ -461,7 +461,10 @@ export default function BoxTracker() {
 
               <div className="flex items-baseline gap-2 mb-1">
                 <span className="text-lg font-black text-white">{pair.familyName}</span>
-                <span className="text-xs text-zinc-400">Strike {formatBRL(pair.strike)}</span>
+                <span className="text-xs text-zinc-400">Strike {formatBRL(pair.strikeRtd ?? pair.strike)}</span>
+                {pair.vencimento && (
+                  <span className="text-xs text-zinc-500 ml-1">· Venc. {pair.vencimento}</span>
+                )}
               </div>
 
               <div className="flex items-center gap-3 text-sm">
@@ -482,11 +485,18 @@ export default function BoxTracker() {
                   <p className="text-xs text-zinc-500">Lucro</p>
                   <p className="text-sm font-bold text-emerald-400">{formatBRL(pair.lucro)}</p>
                 </div>
+                <div>
+                  <p className="text-xs text-zinc-500">CDI Per.</p>
+                  <p className="text-sm font-bold text-amber-400">{pair.cdiPeriodo !== null ? formatPercent(pair.cdiPeriodo) : "—"}</p>
+                </div>
                 <div className="text-right">
                   <p className="text-xs text-zinc-500">Retorno</p>
                   <p className="text-xl font-black text-emerald-300">
                     {formatPercent(pair.lucroPercent)}
                   </p>
+                  {pair.vsCD === "acima" && (
+                    <span className="text-[9px] text-emerald-500 font-bold">▲ ACIMA CDI</span>
+                  )}
                 </div>
               </div>
             </div>
