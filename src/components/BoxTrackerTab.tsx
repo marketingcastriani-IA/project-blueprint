@@ -51,6 +51,7 @@ interface BoxPair {
   // Calculated
   compraBox: number | null;
   lucro: number | null;
+  lucroTotal: number | null;
   lucroPercent: number | null;
   // CDI comparison
   diasUteis: number | null;
