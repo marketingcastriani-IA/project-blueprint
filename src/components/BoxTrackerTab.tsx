@@ -1232,13 +1232,13 @@ function FamilyCard({
                       className={cn(
                         "border-b border-border/50 hover:bg-muted/30 transition-colors",
                         isGlobalWinner
-                          ? "bg-gradient-to-r from-orange-100/80 to-amber-50/50 dark:from-orange-950/30 dark:to-amber-950/10 animate-pulse"
-                          : isBest ? "bg-orange-50/50 dark:bg-orange-950/15" : ""
+                          ? "bg-gradient-to-r from-emerald-50/80 to-teal-50/50 dark:from-emerald-950/30 dark:to-teal-950/10 border-l-4 border-l-emerald-500"
+                          : isBest ? "bg-primary/5" : ""
                       )}
                     >
                       <td className="px-3 py-2 font-bold text-foreground flex items-center gap-1">
-                        {isGlobalWinner && <Trophy className="w-3 h-3 text-orange-500 flex-shrink-0" />}
-                        {isBest && !isGlobalWinner && <Star className="w-3 h-3 text-orange-500 flex-shrink-0" />}
+                        {isGlobalWinner && <Trophy className="w-3 h-3 text-emerald-500 flex-shrink-0" />}
+                        {isBest && !isGlobalWinner && <Star className="w-3 h-3 text-amber-500 flex-shrink-0" />}
                         {family.name}
                       </td>
                       <td className="px-2 py-2 text-right text-foreground/80">{formatBRL(pair.stockBid)}</td>
