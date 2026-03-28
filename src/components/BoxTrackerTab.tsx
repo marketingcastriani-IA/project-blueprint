@@ -107,7 +107,7 @@ export default function BoxTracker() {
   const [newFamilyName, setNewFamilyName] = useState("");
   
   // Real-time bridge
-  const { status, rows, connect, addTicker: bridgeAddTicker } = useRtdBridge();
+  const { status, rows, connect, addTicker: bridgeAddTicker } = useSharedRtdBridge();
 
   // Load from localStorage
   useEffect(() => {

@@ -32,7 +32,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 // ─── Types & Hook (shared) ───────────────────────────────────────────────────
-import { useRtdBridge, statusConfig, type ConStatus, type RtdRow } from "@/hooks/useRtdBridge";
+import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
+import { statusConfig, type ConStatus, type RtdRow } from "@/hooks/useRtdBridge";
 
 const fmt = (v: number | null, d = 2) =>
   v !== null && v !== undefined ? v.toFixed(d) : "—";
