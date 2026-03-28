@@ -2,6 +2,7 @@ import { AbsoluteFill, useCurrentFrame, interpolate, spring, useVideoConfig, Seq
 import { C } from "../colors";
 import { loadFont } from "@remotion/google-fonts/PlusJakartaSans";
 import { loadFont as loadMono } from "@remotion/google-fonts/JetBrainsMono";
+import { Caption } from "../components/Caption";
 
 const { fontFamily } = loadFont("normal", { weights: ["400", "600", "700"], subsets: ["latin"] });
 const { fontFamily: monoFont } = loadMono("normal", { weights: ["400", "500"], subsets: ["latin"] });
@@ -180,6 +181,9 @@ export const Scene2Dashboard: React.FC = () => {
           </Card>
         ))}
       </div>
+
+      <Caption text="Monte suas pernas de compra e venda e visualize o gráfico de payoff instantaneamente" startFrame={30} endFrame={140} />
+      <Caption text="Métricas de lucro máximo, perda máxima, breakeven e risco/retorno calculadas automaticamente" startFrame={140} />
     </AbsoluteFill>
   );
 };

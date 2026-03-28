@@ -1,6 +1,7 @@
 import { AbsoluteFill, useCurrentFrame, interpolate, spring, useVideoConfig } from "remotion";
 import { C } from "../colors";
 import { loadFont } from "@remotion/google-fonts/PlusJakartaSans";
+import { Caption } from "../components/Caption";
 
 const { fontFamily } = loadFont("normal", { weights: ["400", "600", "700", "800"], subsets: ["latin"] });
 
@@ -72,6 +73,8 @@ export const Scene5Features: React.FC = () => {
           );
         })}
       </div>
+
+      <Caption text="Payoff, IA, tempo real, box tracker, OCR e portfólio — tudo integrado em uma plataforma" startFrame={40} />
     </AbsoluteFill>
   );
 };

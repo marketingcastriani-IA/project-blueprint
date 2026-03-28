@@ -2,6 +2,7 @@ import { AbsoluteFill, useCurrentFrame, interpolate, spring, useVideoConfig } fr
 import { C } from "../colors";
 import { loadFont } from "@remotion/google-fonts/PlusJakartaSans";
 import { loadFont as loadMono } from "@remotion/google-fonts/JetBrainsMono";
+import { Caption } from "../components/Caption";
 
 const { fontFamily } = loadFont("normal", { weights: ["400", "600", "700", "800"], subsets: ["latin"] });
 const { fontFamily: monoFont } = loadMono("normal", { weights: ["400", "500"], subsets: ["latin"] });
@@ -205,6 +206,9 @@ export const Scene3TempoReal: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <Caption text="Cotações ao vivo sincronizadas via WebSocket com o Profit Pro — preços atualizados automaticamente" startFrame={20} endFrame={120} />
+      <Caption text="Acompanhe P&L em tempo real com status de conexão ao Profit" startFrame={120} />
     </AbsoluteFill>
   );
 };

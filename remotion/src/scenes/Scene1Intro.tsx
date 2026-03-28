@@ -1,6 +1,7 @@
 import { AbsoluteFill, useCurrentFrame, interpolate, spring, useVideoConfig } from "remotion";
 import { C } from "../colors";
 import { loadFont } from "@remotion/google-fonts/PlusJakartaSans";
+import { Caption } from "../components/Caption";
 
 const { fontFamily } = loadFont("normal", { weights: ["700", "800"], subsets: ["latin"] });
 
@@ -96,6 +97,8 @@ export const Scene1Intro: React.FC = () => {
       }}>
         Monte, analise e rastreie suas operações estruturadas com dados em tempo real
       </div>
+
+      <Caption text="Simulador profissional de opções com inteligência artificial e dados em tempo real" startFrame={60} />
     </AbsoluteFill>
   );
 };
