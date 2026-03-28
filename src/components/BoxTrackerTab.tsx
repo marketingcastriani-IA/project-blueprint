@@ -1304,22 +1304,19 @@ function FamilyCard({
                         ) : "—"}
                       </td>
                       {/* CDI */}
-                      <td className="px-2 py-2 text-right text-amber-600 dark:text-amber-400 font-bold">
-                        {String(cdiAnual).replace(".", ",")}%
-                      </td>
                       <td className="px-2 py-2 text-right text-amber-600 dark:text-amber-400">
                         {cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}
                       </td>
                       <td className="px-2 py-2 text-center">
-                        {pair.vsCD === "acima" ? (
-                          <span className="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] bg-emerald-100 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded">
-                            <TrendingUp className="w-3 h-3" /> ACIMA
-                          </span>
-                        ) : pair.vsCD === "abaixo" ? (
-                          <span className="inline-flex items-center gap-0.5 text-red-500 font-bold text-[10px] bg-red-100 dark:bg-red-950/40 px-1.5 py-0.5 rounded">
-                            ABAIXO
-                          </span>
-                        ) : "—"}
+                        {(() => {
+                          const diff = (lucroPercentDisplay ?? 0) - (cdiDisplay ?? 0);
+                          const isAbove = diff > 0;
+                          return cdiDisplay !== null ? (
+                            <span className={cn("font-black text-xs", isAbove ? "text-emerald-500 dark:text-emerald-300" : "text-red-500")}>
+                              {isAbove ? "+" : ""}{diff.toFixed(2).replace(".", ",")}%
+                            </span>
+                          ) : "—";
+                        })()}
                       </td>
                       <td className="px-2 py-2">
                         <div className="flex gap-1">
