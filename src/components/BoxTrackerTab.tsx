@@ -843,14 +843,15 @@ export default function BoxTracker() {
                 </tr>
               </thead>
               <tbody>
-                {topPairs.slice(3).map((p, i) => {
+                {topPairs.map((p, i) => {
                   const lucroDisplay = descontarIRAcoes ? p.lucroLiqAcoes : p.lucro;
                   const lucroTotalDisplay = descontarIRAcoes ? p.lucroLiqAcoesTotal : p.lucroTotal;
                   const lucroPercentDisplay = descontarIRAcoes ? p.lucroLiqAcoesPercent : p.lucroPercent;
                   const cdiDisplay = descontarIRRendaFixa ? p.cdiPeriodoLiq : p.cdiPeriodo;
+                  const isFirst = i === 0;
                   return (
-                    <tr key={`rank-${i + 3}`} className="border-b border-border/50 hover:bg-muted/50">
-                      <td className="py-2 pr-2 text-muted-foreground">{i + 4}º</td>
+                    <tr key={`rank-${i}`} className={cn("border-b border-border/50 hover:bg-muted/50", isFirst && "bg-emerald-50/50 dark:bg-emerald-950/20")}>
+                      <td className="py-2 pr-2 text-muted-foreground font-bold">{i + 1}º</td>
                       <td className="py-2 pr-2 font-bold text-foreground">{p.familyName}</td>
                       <td className="py-2 pr-2 text-blue-600 dark:text-blue-300">{p.callSymbol}</td>
                       <td className="py-2 pr-2 text-red-600 dark:text-red-300">{p.putSymbol}</td>
