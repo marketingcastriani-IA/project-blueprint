@@ -36,6 +36,8 @@ interface OptionTicker {
 
 interface BoxPair {
   strike: number;
+  strikeRtd: number | null; // from PEX attribute
+  vencimento: string | null; // from VEN attribute
   callSymbol: string | null;
   putSymbol: string | null;
   // Live data from bridge
@@ -49,6 +51,10 @@ interface BoxPair {
   compraBox: number | null;
   lucro: number | null;
   lucroPercent: number | null;
+  // CDI comparison
+  diasUteis: number | null;
+  cdiPeriodo: number | null;
+  vsCD: string | null; // "acima" | "abaixo" | null
 }
 
 interface StockFamily {
