@@ -86,13 +86,19 @@ export function useRtdBridge() {
             const next = new Map(prev);
             for (const item of msg.data) {
               const existing = prev.get(item.ticker);
+              // Parse numeric values - treat 0 as valid
+              const parseNum = (v: unknown): number | null => {
+                if (v === null || v === undefined || v === "") return null;
+                const n = Number(v);
+                return isNaN(n) ? null : n;
+              };
               next.set(item.ticker, {
                 ticker: item.ticker,
-                ultimo: item.ultimo ?? null,
-                strike: item.strike ?? null,
-                negocios: item.negocios ?? null,
-                ofCompra: item.ofCompra ?? null,
-                ofVenda: item.ofVenda ?? null,
+                ultimo: parseNum(item.ultimo),
+                strike: parseNum(item.strike ?? item.pex),
+                negocios: parseNum(item.negocios ?? item.neg),
+                ofCompra: parseNum(item.ofCompra ?? item.ocp),
+                ofVenda: parseNum(item.ofVenda ?? item.ovd),
                 tipo: existing?.tipo ?? "call",
                 lado: existing?.lado ?? "buy",
                 selecionado: existing?.selecionado ?? false,
