@@ -1198,7 +1198,7 @@ function FamilyCard({
                   <th colSpan={6} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-orange-100 dark:bg-orange-700/50 text-orange-700 dark:text-orange-200 border-x border-orange-300 dark:border-orange-500/40">
                     💰 BOX SPREAD
                   </th>
-                  <th colSpan={3} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-amber-100 dark:bg-amber-700/50 text-amber-700 dark:text-amber-200 border-x border-amber-300 dark:border-amber-500/40">
+                  <th colSpan={2} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-amber-100 dark:bg-amber-700/50 text-amber-700 dark:text-amber-200 border-x border-amber-300 dark:border-amber-500/40">
                     📊 CDI
                   </th>
                   <th className="px-2 py-1" />
