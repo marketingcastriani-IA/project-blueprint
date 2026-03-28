@@ -71,6 +71,42 @@ interface SavedFamily {
 
 // ─── CONSTANTES ──────────────────────────────────────────────
 const STORAGE_KEY = "box-tracker-families";
+const CDI_ANUAL = 14.15; // Taxa CDI anual vigente (%)
+
+// Calcula dias úteis entre hoje e uma data de vencimento
+function calcDiasUteis(vencimentoStr: string | null): number | null {
+  if (!vencimentoStr) return null;
+  // Parse dd/MM/yyyy or yyyy-MM-dd
+  let target: Date | null = null;
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(vencimentoStr)) {
+    const [d, m, y] = vencimentoStr.split("/").map(Number);
+    target = new Date(y, m - 1, d);
+  } else if (/^\d{4}-\d{2}-\d{2}/.test(vencimentoStr)) {
+    target = new Date(vencimentoStr);
+  } else {
+    return null;
+  }
+  if (isNaN(target.getTime())) return null;
+
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
+  if (target <= hoje) return 0;
+
+  let dias = 0;
+  const cursor = new Date(hoje);
+  while (cursor < target) {
+    cursor.setDate(cursor.getDate() + 1);
+    const dow = cursor.getDay();
+    if (dow !== 0 && dow !== 6) dias++;
+  }
+  return dias;
+}
+
+// CDI para o período em dias úteis
+function calcCdiPeriodo(diasUteis: number): number {
+  return ((1 + CDI_ANUAL / 100) ** (diasUteis / 252) - 1) * 100;
+}
 
 // ─── FUNÇÕES AUXILIARES ──────────────────────────────────────
 function generateId(): string {
