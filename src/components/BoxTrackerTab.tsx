@@ -862,41 +862,42 @@ function FamilyCard({
             <table className="w-full text-xs">
               <thead>
                 {/* Group headers */}
-                <tr className="border-b border-zinc-800">
+                <tr className="border-b border-zinc-700">
                   <th className="px-4 py-1" />
-                  <th colSpan={2} className="px-2 py-1.5 text-center text-[10px] uppercase tracking-widest bg-zinc-800/80 text-zinc-400 border-x border-zinc-700/50">
-                    Ativo
+                  <th colSpan={2} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-zinc-600/80 text-zinc-100 border-x border-zinc-500/60">
+                    ATIVO
                   </th>
-                  <th colSpan={3} className="px-2 py-1.5 text-center text-[10px] uppercase tracking-widest bg-blue-950/60 text-blue-300 border-x border-blue-900/40">
+                  <th colSpan={3} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-blue-800/70 text-blue-100 border-x border-blue-600/50">
                     📘 CALL
                   </th>
-                  <th colSpan={3} className="px-2 py-1.5 text-center text-[10px] uppercase tracking-widest bg-red-950/60 text-red-300 border-x border-red-900/40">
+                  <th colSpan={3} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-red-800/60 text-red-100 border-x border-red-600/50">
                     📕 PUT
                   </th>
-                  <th colSpan={5} className="px-2 py-1.5 text-center text-[10px] uppercase tracking-widest bg-emerald-950/50 text-emerald-300 border-x border-emerald-900/40">
-                    💰 Box Spread
+                  <th colSpan={6} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-emerald-800/60 text-emerald-100 border-x border-emerald-600/50">
+                    💰 BOX SPREAD
                   </th>
-                  <th colSpan={2} className="px-2 py-1.5 text-center text-[10px] uppercase tracking-widest bg-amber-950/50 text-amber-300 border-x border-amber-900/40">
+                  <th colSpan={2} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-amber-700/60 text-amber-100 border-x border-amber-500/50">
                     📊 CDI
                   </th>
                   <th className="px-2 py-1" />
                 </tr>
                 {/* Column headers */}
-                <tr className="text-zinc-500 border-b border-zinc-800 bg-zinc-900/50">
-                  <th className="text-left px-4 py-2">ATIVO</th>
+                <tr className="text-zinc-400 border-b border-zinc-800 bg-zinc-800/60">
+                  <th className="text-left px-4 py-2 font-bold">ATIVO</th>
                   <th className="text-right px-2 py-2">BID</th>
                   <th className="text-right px-2 py-2">ASK</th>
-                  <th className="text-left px-2 py-2 text-blue-400">Ticker</th>
-                  <th className="text-right px-2 py-2 text-blue-400">BID</th>
-                  <th className="text-right px-2 py-2 text-blue-400">ASK</th>
-                  <th className="text-left px-2 py-2 text-red-400">Ticker</th>
-                  <th className="text-right px-2 py-2 text-red-400">BID</th>
-                  <th className="text-right px-2 py-2 text-red-400">ASK</th>
+                  <th className="text-left px-2 py-2 text-blue-300">Ticker</th>
+                  <th className="text-right px-2 py-2 text-blue-300">BID</th>
+                  <th className="text-right px-2 py-2 text-blue-300">ASK</th>
+                  <th className="text-left px-2 py-2 text-red-300">Ticker</th>
+                  <th className="text-right px-2 py-2 text-red-300">BID</th>
+                  <th className="text-right px-2 py-2 text-red-300">ASK</th>
                   <th className="text-right px-2 py-2">Strike</th>
                   <th className="text-center px-2 py-2">Venc.</th>
                   <th className="text-right px-2 py-2 text-yellow-400">Compra BOX</th>
-                  <th className="text-right px-2 py-2 text-emerald-400">Lucro</th>
-                  <th className="text-right px-2 py-2 text-emerald-300 font-bold">Lucro %</th>
+                  <th className="text-right px-2 py-2 text-emerald-400">Lucro (1)</th>
+                  <th className="text-right px-2 py-2 text-emerald-300 font-bold">Lucro Total</th>
+                  <th className="text-right px-2 py-2 text-emerald-200 font-bold">Lucro %</th>
                   <th className="text-right px-2 py-2 text-amber-400">CDI Per.</th>
                   <th className="text-center px-2 py-2 text-amber-300">vs CDI</th>
                   <th className="px-2 py-2"></th>
