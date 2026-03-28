@@ -84,7 +84,8 @@ interface SavedFamily {
 // ─── CONSTANTES ──────────────────────────────────────────────
 const STORAGE_KEY = "box-tracker-families";
 const VENC_STORAGE_KEY = "box-tracker-vencimento";
-const CDI_ANUAL = 14.15;
+const CDI_ANUAL_DEFAULT = 14.15;
+const CDI_STORAGE_KEY = "box-tracker-cdi-anual";
 const IR_ACOES = 15;
 const IR_RENDA_FIXA = 22.5;
 
