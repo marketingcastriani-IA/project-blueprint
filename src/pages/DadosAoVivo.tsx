@@ -31,153 +31,11 @@ import { calculatePayoffAtExpiry, calculatePayoffToday, calculateMetrics } from 
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-type ConStatus = "disconnected" | "connecting" | "connected" | "error";
-
-interface RtdRow {
-  ticker: string;
-  ultimo: number | null;
-  strike: number | null;
-  negocios: number | null;
-  ofCompra: number | null;
-  ofVenda: number | null;
-  tipo: "call" | "put" | "stock";
-  lado: "buy" | "sell";
-  selecionado: boolean;
-  lastUpdate: number | null;
-  // User-editable fields
-  precoEntrada: number | null;
-  quantidade: number;
-  expiryDate?: string; // YYYY-MM-DD
-}
-
-// ─── Constants ───────────────────────────────────────────────────────────────
-
-const WS_URL = "ws://localhost:8765";
-const RECONNECT_DELAY = 3000;
-const MAX_RECONNECT = 10;
+// ─── Types & Hook (shared) ───────────────────────────────────────────────────
+import { useRtdBridge, statusConfig, type ConStatus, type RtdRow } from "@/hooks/useRtdBridge";
 
 const fmt = (v: number | null, d = 2) =>
   v !== null && v !== undefined ? v.toFixed(d) : "—";
-
-const statusConfig: Record<ConStatus, { color: string; label: string; icon: React.ElementType }> = {
-  disconnected: { color: "text-muted-foreground border-border bg-muted/30", label: "Desconectado", icon: WifiOff },
-  connecting:   { color: "text-warning border-warning/30 bg-warning/10", label: "Conectando...", icon: RefreshCw },
-  connected:    { color: "text-chart-profit border-chart-profit/30 bg-chart-profit/10", label: "Ao Vivo", icon: Wifi },
-  error:        { color: "text-destructive border-destructive/30 bg-destructive/10", label: "Erro de Conexão", icon: AlertTriangle },
-};
-
-// ─── Hook: WebSocket RTD ──────────────────────────────────────────────────────
-
-function useRtdBridge() {
-  const [status, setStatus] = useState<ConStatus>("disconnected");
-  const [rows, setRows] = useState<Map<string, RtdRow>>(new Map());
-  const [errorMsg, setErrorMsg] = useState<string>("");
-  const [reconnectCount, setReconnectCount] = useState(0);
-  const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { toast } = useToast();
-
-  const connect = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
-    setStatus("connecting");
-
-    const ws = new WebSocket(WS_URL);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      setStatus("connected");
-      setErrorMsg("");
-      setReconnectCount(0);
-      toast({ title: "✅ Bridge conectado!", description: "Dados do Profit chegando em tempo real." });
-    };
-
-    ws.onclose = () => {
-      setStatus("disconnected");
-      setReconnectCount((prev) => {
-        const next = prev + 1;
-        if (next <= MAX_RECONNECT) {
-          reconnectTimer.current = setTimeout(connect, RECONNECT_DELAY);
-        } else {
-          setStatus("error");
-          setErrorMsg("Bridge não encontrado após várias tentativas. Inicie o ProfitRTDBridge.exe.");
-        }
-        return next;
-      });
-    };
-
-    ws.onerror = () => {
-      setErrorMsg("Não foi possível conectar em ws://localhost:8765");
-    };
-
-    ws.onmessage = (evt) => {
-      try {
-        const msg = JSON.parse(evt.data);
-
-        if (msg.type === "rtd_data") {
-          setRows((prev) => {
-            const next = new Map(prev);
-            for (const item of msg.data) {
-              const existing = prev.get(item.ticker);
-              next.set(item.ticker, {
-                ticker: item.ticker,
-                ultimo: item.ultimo ?? null,
-                strike: item.strike ?? null,
-                negocios: item.negocios ?? null,
-                ofCompra: item.ofCompra ?? null,
-                ofVenda: item.ofVenda ?? null,
-                tipo: existing?.tipo ?? "call",
-                lado: existing?.lado ?? "buy",
-                selecionado: existing?.selecionado ?? false,
-                lastUpdate: item.timestamp ?? Date.now(),
-                precoEntrada: existing?.precoEntrada ?? null,
-                quantidade: existing?.quantidade ?? 1,
-                expiryDate: existing?.expiryDate,
-              });
-            }
-            return next;
-          });
-        }
-
-        if (msg.type === "error") {
-          setErrorMsg(msg.message);
-          toast({ title: "Erro no Bridge", description: msg.message, variant: "destructive" });
-        }
-      } catch { /* ignore */ }
-    };
-  }, [toast]);
-
-  useEffect(() => {
-    connect();
-    return () => {
-      reconnectTimer.current && clearTimeout(reconnectTimer.current);
-      wsRef.current?.close();
-    };
-  }, [connect]);
-
-  const send = (payload: object) => {
-    if (wsRef.current?.readyState === WebSocket.OPEN)
-      wsRef.current.send(JSON.stringify(payload));
-  };
-
-  const addTicker = (ticker: string) => send({ type: "add_ticker", ticker });
-  const removeTicker = (ticker: string) => {
-    send({ type: "remove_ticker", ticker });
-    setRows((prev) => { const n = new Map(prev); n.delete(ticker); return n; });
-  };
-
-  const updateRow = (ticker: string, updates: Partial<RtdRow>) => {
-    setRows((prev) => {
-      const next = new Map(prev);
-      const row = next.get(ticker);
-      if (row) next.set(ticker, { ...row, ...updates });
-      return next;
-    });
-  };
-
-  return { status, rows, errorMsg, reconnectCount, connect, addTicker, removeTicker, updateRow };
-}
 
 // ─── Date Picker ─────────────────────────────────────────────────────────────
 
@@ -238,7 +96,7 @@ export default function DadosAoVivo() {
   const [editNameValue, setEditNameValue] = useState("");
 
   const cfg = statusConfig[status];
-  const StatusIcon = cfg.icon;
+  const StatusIcon = status === "disconnected" ? WifiOff : status === "connecting" ? RefreshCw : status === "connected" ? Wifi : AlertTriangle;
   const rowsArr = Array.from(rows.values());
   // Only show manually added tickers in the table
   const manualRowsArr = rowsArr.filter(r => manualTickers.has(r.ticker));
@@ -542,7 +400,7 @@ export default function DadosAoVivo() {
                 </Button>
                 <Button size="sm" variant="outline" className="gap-2" onClick={connect}>
                   <RefreshCw className="w-3 h-3" />
-                  Tentar Reconectar {reconnectCount > 0 && `(${reconnectCount}/${MAX_RECONNECT})`}
+                  Tentar Reconectar {reconnectCount > 0 && `(${reconnectCount}/10)`}
                 </Button>
                 <Button size="sm" variant="ghost" className="gap-2 text-muted-foreground" asChild>
                   <a href="https://dotnet.microsoft.com/download/dotnet/6.0" target="_blank" rel="noopener noreferrer">

@@ -1,8 +1,8 @@
 // ============================================================
-// RASTREADOR DE BOX - Compra de Box (Stock + Put - Call)
-// Lógica: Compra BOX = Stock ASK + Put ASK - Call BID
-//         Lucro = Strike - Compra BOX
-//         Lucro % = Lucro / Compra BOX × 100
+// RASTREADOR DE BOX - Tempo Real via Profit RTD Bridge
+// Compra BOX = Stock ASK + Put ASK - Call BID
+// Lucro = Strike - Compra BOX
+// Lucro % = Lucro / Compra BOX × 100
 // ============================================================
 
 import { useState, useRef, useCallback, useEffect } from "react";
@@ -10,19 +10,19 @@ import {
   Plus,
   Trash2,
   Upload,
-  TrendingUp,
   RefreshCw,
   ChevronDown,
   ChevronUp,
   Star,
-  AlertCircle,
   ClipboardPaste,
   X,
   BarChart2,
   Trophy,
-  Save,
-  Download,
+  Wifi,
+  WifiOff,
+  AlertTriangle,
 } from "lucide-react";
+import { useRtdBridge, statusConfig } from "@/hooks/useRtdBridge";
 
 // ─── TIPOS ───────────────────────────────────────────────────
 interface OptionTicker {
@@ -30,18 +30,19 @@ interface OptionTicker {
   symbol: string;
   type: "CALL" | "PUT";
   strike: number;
-  bidPrice: number | null;
-  askPrice: number | null;
-  volume: number | null;
-  updatedAt: string | null;
-  loading: boolean;
-  error: string | null;
 }
 
 interface BoxPair {
   strike: number;
-  call: OptionTicker | null;
-  put: OptionTicker | null;
+  callSymbol: string | null;
+  putSymbol: string | null;
+  // Live data from bridge
+  callBid: number | null;
+  callAsk: number | null;
+  putBid: number | null;
+  putAsk: number | null;
+  stockBid: number | null;
+  stockAsk: number | null;
   // Calculated
   compraBox: number | null;
   lucro: number | null;
@@ -50,17 +51,14 @@ interface BoxPair {
 
 interface StockFamily {
   id: string;
-  name: string;
-  stockBid: number | null;
-  stockAsk: number | null;
+  name: string; // e.g. "PETR4"
   tickers: OptionTicker[];
   expanded: boolean;
-  loadingStock: boolean;
 }
 
 interface SavedFamily {
   name: string;
-  tickers: string[]; // symbols only
+  tickers: string[];
 }
 
 // ─── CONSTANTES ──────────────────────────────────────────────
@@ -82,13 +80,10 @@ function formatPercent(val: number | null): string {
 }
 
 function extractStrikeFromTicker(symbol: string): number {
-  // BBDCD194 → strike chars after the type letter
   const clean = symbol.toUpperCase().replace(/\s/g, "");
-  // Match: 4 letters (asset) + 1 letter (type/month) + digits (strike)
   const match = clean.match(/^[A-Z]{4,5}[A-X](\d+)$/);
   if (match) {
     const raw = parseInt(match[1]);
-    // B3: if 3+ digits, last 2 are decimals → divide by 100
     if (raw >= 100) return raw / 100;
     return raw;
   }
@@ -97,103 +92,21 @@ function extractStrikeFromTicker(symbol: string): number {
 
 function extractTypeFromTicker(symbol: string): "CALL" | "PUT" {
   const clean = symbol.toUpperCase().replace(/\s/g, "");
-  // Find the type letter: 5th character for 4-letter assets, 6th for 5-letter
   const match = clean.match(/^[A-Z]{4,5}([A-X])/);
   if (match) {
     const code = match[1].charCodeAt(0) - 65;
-    return code <= 11 ? "CALL" : "PUT"; // A-L = CALL, M-X = PUT
+    return code <= 11 ? "CALL" : "PUT";
   }
   return "CALL";
-}
-
-// ─── MOCK API (substituir por API real) ──────────────────────
-async function fetchOptionData(symbol: string): Promise<Partial<OptionTicker>> {
-  await new Promise((r) => setTimeout(r, 300 + Math.random() * 500));
-  if (Math.random() < 0.03) throw new Error("Timeout");
-
-  const strike = extractStrikeFromTicker(symbol);
-  const type = extractTypeFromTicker(symbol);
-  const base = strike > 0 ? strike : 20;
-
-  // Simulate bid/ask based on type and how far from ATM
-  let bid: number, ask: number;
-  if (type === "CALL") {
-    bid = parseFloat((base * (0.02 + Math.random() * 0.06)).toFixed(2));
-    ask = parseFloat((bid + 0.01 + Math.random() * 0.04).toFixed(2));
-  } else {
-    bid = parseFloat((base * (0.015 + Math.random() * 0.08)).toFixed(2));
-    ask = parseFloat((bid + 0.01 + Math.random() * 0.05).toFixed(2));
-  }
-
-  return {
-    bidPrice: bid,
-    askPrice: ask,
-    volume: Math.floor(Math.random() * 50000),
-    updatedAt: new Date().toLocaleTimeString("pt-BR"),
-  };
-}
-
-async function fetchStockPrice(ticker: string): Promise<{ bid: number; ask: number }> {
-  await new Promise((r) => setTimeout(r, 300));
-  const prices: Record<string, number> = {
-    PETR4: 38.5, VALE3: 62.3, ITUB4: 34.8, BBDC4: 19.30,
-    ABEV3: 12.9, MGLU3: 8.4, WEGE3: 52.1, RENT3: 58.7,
-    B3SA3: 11.3, EGIE3: 42.0, BBAS3: 28.6, SUZB3: 55.4,
-    LREN3: 15.63,
-  };
-  const mid = prices[ticker] ?? 30 + Math.random() * 50;
-  return { bid: mid, ask: parseFloat((mid + 0.02).toFixed(2)) };
-}
-
-// ─── CÁLCULO DO BOX ──────────────────────────────────────────
-// Compra de Box = Compra do Ativo (ASK) + Compra da PUT (ASK) - Venda da CALL (BID)
-// No vencimento recebe o Strike
-// Lucro = Strike - Compra Box
-// Lucro% = Lucro / Compra Box × 100
-function calculateBoxPairs(family: StockFamily): BoxPair[] {
-  const { tickers, stockAsk } = family;
-  if (!stockAsk || stockAsk <= 0) return [];
-
-  // Group by strike
-  const strikeMap = new Map<number, { calls: OptionTicker[]; puts: OptionTicker[] }>();
-
-  tickers.forEach((t) => {
-    if (t.loading || t.error || t.strike <= 0) return;
-    const key = t.strike;
-    if (!strikeMap.has(key)) strikeMap.set(key, { calls: [], puts: [] });
-    const group = strikeMap.get(key)!;
-    if (t.type === "CALL") group.calls.push(t);
-    else group.puts.push(t);
-  });
-
-  const pairs: BoxPair[] = [];
-
-  strikeMap.forEach((group, strike) => {
-    // For each call+put pair at this strike
-    const call = group.calls[0] || null;
-    const put = group.puts[0] || null;
-
-    if (call && put && call.bidPrice !== null && put.askPrice !== null) {
-      const compraBox = stockAsk + put.askPrice - call.bidPrice;
-      const lucro = strike - compraBox;
-      const lucroPercent = compraBox > 0 ? (lucro / compraBox) * 100 : null;
-
-      pairs.push({ strike, call, put, compraBox, lucro, lucroPercent });
-    } else {
-      // Incomplete pair
-      pairs.push({ strike, call, put, compraBox: null, lucro: null, lucroPercent: null });
-    }
-  });
-
-  pairs.sort((a, b) => (b.lucroPercent ?? -999) - (a.lucroPercent ?? -999));
-  return pairs;
 }
 
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────
 export default function BoxTracker() {
   const [families, setFamilies] = useState<StockFamily[]>([]);
   const [newFamilyName, setNewFamilyName] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
+  
+  // Real-time bridge
+  const { status, rows, connect, addTicker: bridgeAddTicker } = useRtdBridge();
 
   // Load from localStorage
   useEffect(() => {
@@ -201,14 +114,23 @@ export default function BoxTracker() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed: SavedFamily[] = JSON.parse(saved);
-        parsed.forEach((sf) => {
-          addFamilyFromSaved(sf.name, sf.tickers);
-        });
+        const loaded: StockFamily[] = parsed.map((sf) => ({
+          id: generateId(),
+          name: sf.name,
+          tickers: sf.tickers.map((sym) => ({
+            id: generateId(),
+            symbol: sym.toUpperCase(),
+            type: extractTypeFromTicker(sym),
+            strike: extractStrikeFromTicker(sym),
+          })),
+          expanded: true,
+        }));
+        setFamilies(loaded);
       }
     } catch {}
   }, []);
 
-  // Save to localStorage whenever families change
+  // Save to localStorage
   useEffect(() => {
     const toSave: SavedFamily[] = families.map((f) => ({
       name: f.name,
@@ -217,116 +139,31 @@ export default function BoxTracker() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
   }, [families]);
 
-  const addFamilyFromSaved = (name: string, symbols: string[]) => {
-    const familyId = generateId();
-    const newFamily: StockFamily = {
-      id: familyId,
-      name,
-      stockBid: null,
-      stockAsk: null,
-      tickers: [],
-      expanded: true,
-      loadingStock: true,
-    };
-
-    setFamilies((prev) => {
-      if (prev.find((f) => f.name === name)) return prev;
-      return [...prev, newFamily];
+  // Auto-subscribe all tickers + stock tickers to bridge when connected
+  useEffect(() => {
+    if (status !== "connected") return;
+    families.forEach((f) => {
+      // Subscribe the underlying stock
+      bridgeAddTicker(f.name);
+      // Subscribe each option ticker
+      f.tickers.forEach((t) => bridgeAddTicker(t.symbol));
     });
-
-    fetchStockPrice(name).then((price) => {
-      setFamilies((prev) =>
-        prev.map((f) =>
-          f.id === familyId
-            ? { ...f, stockBid: price.bid, stockAsk: price.ask, loadingStock: false }
-            : f
-        )
-      );
-    });
-
-    if (symbols.length > 0) {
-      const newTickers: OptionTicker[] = symbols.map((symbol) => ({
-        id: generateId(),
-        symbol: symbol.toUpperCase(),
-        type: extractTypeFromTicker(symbol),
-        strike: extractStrikeFromTicker(symbol),
-        bidPrice: null,
-        askPrice: null,
-        volume: null,
-        updatedAt: null,
-        loading: true,
-        error: null,
-      }));
-
-      setFamilies((prev) =>
-        prev.map((f) =>
-          f.id === familyId ? { ...f, tickers: [...f.tickers, ...newTickers] } : f
-        )
-      );
-
-      newTickers.forEach((ticker) => {
-        fetchOptionData(ticker.symbol)
-          .then((data) => {
-            setFamilies((prev) =>
-              prev.map((f) =>
-                f.id !== familyId
-                  ? f
-                  : {
-                      ...f,
-                      tickers: f.tickers.map((t) =>
-                        t.id === ticker.id ? { ...t, ...data, loading: false } : t
-                      ),
-                    }
-              )
-            );
-          })
-          .catch((err) => {
-            setFamilies((prev) =>
-              prev.map((f) =>
-                f.id !== familyId
-                  ? f
-                  : {
-                      ...f,
-                      tickers: f.tickers.map((t) =>
-                        t.id === ticker.id ? { ...t, loading: false, error: err.message } : t
-                      ),
-                    }
-              )
-            );
-          });
-      });
-    }
-  };
+  }, [status, families, bridgeAddTicker]);
 
   const addFamily = useCallback(() => {
     const name = newFamilyName.trim().toUpperCase();
     if (!name) return;
     if (families.find((f) => f.name === name)) return;
 
-    const familyId = generateId();
-    const newFamily: StockFamily = {
-      id: familyId,
-      name,
-      stockBid: null,
-      stockAsk: null,
-      tickers: [],
-      expanded: true,
-      loadingStock: true,
-    };
-
-    setFamilies((prev) => [...prev, newFamily]);
+    setFamilies((prev) => [
+      ...prev,
+      { id: generateId(), name, tickers: [], expanded: true },
+    ]);
     setNewFamilyName("");
 
-    fetchStockPrice(name).then((price) => {
-      setFamilies((prev) =>
-        prev.map((f) =>
-          f.id === familyId
-            ? { ...f, stockBid: price.bid, stockAsk: price.ask, loadingStock: false }
-            : f
-        )
-      );
-    });
-  }, [newFamilyName, families]);
+    // Subscribe stock ticker to bridge
+    if (status === "connected") bridgeAddTicker(name);
+  }, [newFamilyName, families, status, bridgeAddTicker]);
 
   const removeFamily = useCallback((familyId: string) => {
     setFamilies((prev) => prev.filter((f) => f.id !== familyId));
@@ -338,68 +175,38 @@ export default function BoxTracker() {
     );
   }, []);
 
-  const processTickerSymbols = useCallback((familyId: string, rawText: string) => {
-    const symbols = rawText
-      .split(/[\n,;\t\s]+/)
-      .map((s) => s.trim().toUpperCase())
-      .filter((s) => s.length >= 5 && /^[A-Z]{4,5}[A-X]\d+$/.test(s));
+  const processTickerSymbols = useCallback(
+    (familyId: string, rawText: string) => {
+      const symbols = rawText
+        .split(/[\n,;\t\s]+/)
+        .map((s) => s.trim().toUpperCase())
+        .filter((s) => s.length >= 5 && /^[A-Z]{4,5}[A-X]\d+$/.test(s));
 
-    if (!symbols.length) return;
+      if (!symbols.length) return;
 
-    const newTickers: OptionTicker[] = symbols.map((symbol) => ({
-      id: generateId(),
-      symbol,
-      type: extractTypeFromTicker(symbol),
-      strike: extractStrikeFromTicker(symbol),
-      bidPrice: null,
-      askPrice: null,
-      volume: null,
-      updatedAt: null,
-      loading: true,
-      error: null,
-    }));
+      const newTickers: OptionTicker[] = symbols.map((symbol) => ({
+        id: generateId(),
+        symbol,
+        type: extractTypeFromTicker(symbol),
+        strike: extractStrikeFromTicker(symbol),
+      }));
 
-    setFamilies((prev) =>
-      prev.map((f) => {
-        if (f.id !== familyId) return f;
-        const existing = new Set(f.tickers.map((t) => t.symbol));
-        const toAdd = newTickers.filter((t) => !existing.has(t.symbol));
-        return { ...f, tickers: [...f.tickers, ...toAdd] };
-      })
-    );
-
-    newTickers.forEach((ticker) => {
-      fetchOptionData(ticker.symbol)
-        .then((data) => {
-          setFamilies((prev) =>
-            prev.map((f) =>
-              f.id !== familyId
-                ? f
-                : {
-                    ...f,
-                    tickers: f.tickers.map((t) =>
-                      t.id === ticker.id ? { ...t, ...data, loading: false } : t
-                    ),
-                  }
-            )
-          );
+      setFamilies((prev) =>
+        prev.map((f) => {
+          if (f.id !== familyId) return f;
+          const existing = new Set(f.tickers.map((t) => t.symbol));
+          const toAdd = newTickers.filter((t) => !existing.has(t.symbol));
+          return { ...f, tickers: [...f.tickers, ...toAdd] };
         })
-        .catch((err) => {
-          setFamilies((prev) =>
-            prev.map((f) =>
-              f.id !== familyId
-                ? f
-                : {
-                    ...f,
-                    tickers: f.tickers.map((t) =>
-                      t.id === ticker.id ? { ...t, loading: false, error: err.message } : t
-                    ),
-                  }
-            )
-          );
-        });
-    });
-  }, []);
+      );
+
+      // Subscribe each new ticker to bridge
+      if (status === "connected") {
+        newTickers.forEach((t) => bridgeAddTicker(t.symbol));
+      }
+    },
+    [status, bridgeAddTicker]
+  );
 
   const handleFileUpload = useCallback(
     (familyId: string, file: File) => {
@@ -421,48 +228,70 @@ export default function BoxTracker() {
     );
   }, []);
 
-  const refreshAll = useCallback(async () => {
-    setRefreshing(true);
-    const updates: Promise<void>[] = [];
+  // Calculate box pairs using live data from bridge
+  const calculateBoxPairs = useCallback(
+    (family: StockFamily): BoxPair[] => {
+      const stockRow = rows.get(family.name);
+      const stockBid = stockRow?.ofCompra ?? stockRow?.ultimo ?? null;
+      const stockAsk = stockRow?.ofVenda ?? stockRow?.ultimo ?? null;
 
-    families.forEach((family) => {
-      updates.push(
-        fetchStockPrice(family.name).then((price) => {
-          setFamilies((prev) =>
-            prev.map((f) =>
-              f.id === family.id ? { ...f, stockBid: price.bid, stockAsk: price.ask } : f
-            )
-          );
-        })
-      );
-
-      family.tickers.forEach((ticker) => {
-        updates.push(
-          fetchOptionData(ticker.symbol)
-            .then((data) => {
-              setFamilies((prev) =>
-                prev.map((f) =>
-                  f.id !== family.id
-                    ? f
-                    : {
-                        ...f,
-                        tickers: f.tickers.map((t) =>
-                          t.id === ticker.id ? { ...t, ...data, loading: false, error: null } : t
-                        ),
-                      }
-                )
-              );
-            })
-            .catch(() => {})
-        );
+      // Group by strike
+      const strikeMap = new Map<number, { calls: OptionTicker[]; puts: OptionTicker[] }>();
+      family.tickers.forEach((t) => {
+        if (t.strike <= 0) return;
+        if (!strikeMap.has(t.strike)) strikeMap.set(t.strike, { calls: [], puts: [] });
+        const group = strikeMap.get(t.strike)!;
+        if (t.type === "CALL") group.calls.push(t);
+        else group.puts.push(t);
       });
-    });
 
-    await Promise.all(updates);
-    setRefreshing(false);
-  }, [families]);
+      const pairs: BoxPair[] = [];
 
-  // Collect all box pairs across families for global ranking
+      strikeMap.forEach((group, strike) => {
+        const call = group.calls[0] || null;
+        const put = group.puts[0] || null;
+
+        const callRow = call ? rows.get(call.symbol) : null;
+        const putRow = put ? rows.get(put.symbol) : null;
+
+        const callBid = callRow?.ofCompra ?? callRow?.ultimo ?? null;
+        const callAsk = callRow?.ofVenda ?? callRow?.ultimo ?? null;
+        const putBid = putRow?.ofCompra ?? putRow?.ultimo ?? null;
+        const putAsk = putRow?.ofVenda ?? putRow?.ultimo ?? null;
+
+        let compraBox: number | null = null;
+        let lucro: number | null = null;
+        let lucroPercent: number | null = null;
+
+        if (stockAsk !== null && callBid !== null && putAsk !== null) {
+          compraBox = stockAsk + putAsk - callBid;
+          lucro = strike - compraBox;
+          lucroPercent = compraBox > 0 ? (lucro / compraBox) * 100 : null;
+        }
+
+        pairs.push({
+          strike,
+          callSymbol: call?.symbol ?? null,
+          putSymbol: put?.symbol ?? null,
+          callBid,
+          callAsk,
+          putBid,
+          putAsk,
+          stockBid,
+          stockAsk,
+          compraBox,
+          lucro,
+          lucroPercent,
+        });
+      });
+
+      pairs.sort((a, b) => (b.lucroPercent ?? -999) - (a.lucroPercent ?? -999));
+      return pairs;
+    },
+    [rows]
+  );
+
+  // Global ranking
   const allPairs: (BoxPair & { familyName: string })[] = [];
   families.forEach((f) => {
     const pairs = calculateBoxPairs(f);
@@ -474,6 +303,9 @@ export default function BoxTracker() {
   });
   allPairs.sort((a, b) => (b.lucroPercent ?? 0) - (a.lucroPercent ?? 0));
   const topPairs = allPairs.slice(0, 10);
+
+  const isConnected = status === "connected";
+  const statusCfg = statusConfig[status];
 
   // ─── RENDER ───────────────────────────────────────────────
   return (
@@ -491,16 +323,48 @@ export default function BoxTracker() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={refreshAll}
-            disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 rounded-lg text-sm transition-all disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-            {refreshing ? "Atualizando..." : "Atualizar Tudo"}
-          </button>
+          {/* Connection status */}
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold ${statusCfg.color}`}>
+            {status === "connected" ? (
+              <Wifi className="w-3.5 h-3.5" />
+            ) : status === "error" ? (
+              <AlertTriangle className="w-3.5 h-3.5" />
+            ) : status === "connecting" ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <WifiOff className="w-3.5 h-3.5" />
+            )}
+            {statusCfg.label}
+            {isConnected && (
+              <span className="text-emerald-500">· {rows.size} tickers</span>
+            )}
+          </div>
+
+          {!isConnected && status !== "connecting" && (
+            <button
+              onClick={connect}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm font-bold transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Conectar Bridge
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Bridge not connected warning */}
+      {!isConnected && status !== "connecting" && (
+        <div className="mb-6 bg-yellow-900/20 border border-yellow-700/40 rounded-xl p-4 text-sm">
+          <div className="flex items-center gap-2 text-yellow-400 font-bold mb-1">
+            <AlertTriangle className="w-4 h-4" />
+            Bridge RTD não conectado
+          </div>
+          <p className="text-zinc-400 text-xs">
+            Inicie o <strong>ProfitRTDBridge.exe</strong> para receber dados em tempo real do Profit Pro.
+            Os mesmos dados do "Tempo Real" serão usados aqui para calcular os Box Spreads.
+          </p>
+        </div>
+      )}
 
       {/* WINNER CARDS - Top 3 */}
       {topPairs.length > 0 && (
@@ -534,10 +398,10 @@ export default function BoxTracker() {
 
               <div className="flex items-center gap-3 text-sm">
                 <span className="text-zinc-400">
-                  Call: <span className="text-blue-300 font-bold">{pair.call?.symbol}</span>
+                  Call: <span className="text-blue-300 font-bold">{pair.callSymbol ?? "—"}</span>
                 </span>
                 <span className="text-zinc-400">
-                  Put: <span className="text-red-300 font-bold">{pair.put?.symbol}</span>
+                  Put: <span className="text-red-300 font-bold">{pair.putSymbol ?? "—"}</span>
                 </span>
               </div>
 
@@ -588,8 +452,8 @@ export default function BoxTracker() {
                   <tr key={`rank-${i + 3}`} className="border-b border-zinc-800/50 hover:bg-zinc-800/30">
                     <td className="py-2 pr-3 text-zinc-500">{i + 4}º</td>
                     <td className="py-2 pr-3 font-bold text-white">{p.familyName}</td>
-                    <td className="py-2 pr-3 text-blue-300">{p.call?.symbol}</td>
-                    <td className="py-2 pr-3 text-red-300">{p.put?.symbol}</td>
+                    <td className="py-2 pr-3 text-blue-300">{p.callSymbol}</td>
+                    <td className="py-2 pr-3 text-red-300">{p.putSymbol}</td>
                     <td className="py-2 pr-3 text-right">{formatBRL(p.strike)}</td>
                     <td className="py-2 pr-3 text-right text-yellow-400">{formatBRL(p.compraBox)}</td>
                     <td className="py-2 pr-3 text-right text-emerald-400">{formatBRL(p.lucro)}</td>
@@ -636,6 +500,8 @@ export default function BoxTracker() {
             <FamilyCard
               key={family.id}
               family={family}
+              rows={rows}
+              calculateBoxPairs={calculateBoxPairs}
               onRemoveFamily={removeFamily}
               onToggleExpand={toggleExpand}
               onAddTickers={processTickerSymbols}
@@ -652,6 +518,8 @@ export default function BoxTracker() {
 // ─── CARD DE FAMÍLIA ──────────────────────────────────────────
 interface FamilyCardProps {
   family: StockFamily;
+  rows: Map<string, any>;
+  calculateBoxPairs: (family: StockFamily) => BoxPair[];
   onRemoveFamily: (id: string) => void;
   onToggleExpand: (id: string) => void;
   onAddTickers: (familyId: string, raw: string) => void;
@@ -661,19 +529,20 @@ interface FamilyCardProps {
 
 function FamilyCard({
   family,
+  rows,
+  calculateBoxPairs,
   onRemoveFamily,
   onToggleExpand,
   onAddTickers,
   onRemoveTicker,
   onFileUpload,
 }: FamilyCardProps) {
-  const [pasteText, setPasteText] = useState("");
   const [showPaste, setShowPaste] = useState(false);
+  const [pasteText, setPasteText] = useState("");
   const [manualTicker, setManualTicker] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const pasteRef = useRef<HTMLTextAreaElement>(null);
 
-  // Handle paste from clipboard API directly
   const handlePasteFromClipboard = async () => {
     try {
       const text = await navigator.clipboard.readText();
@@ -681,7 +550,6 @@ function FamilyCard({
         onAddTickers(family.id, text);
       }
     } catch {
-      // Fallback: show paste area
       setShowPaste(true);
       setTimeout(() => pasteRef.current?.focus(), 100);
     }
@@ -700,7 +568,6 @@ function FamilyCard({
     setManualTicker("");
   };
 
-  // Global paste handler when paste area is open
   const handleTextAreaPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const text = e.clipboardData.getData("text");
     if (text.trim()) {
@@ -713,6 +580,12 @@ function FamilyCard({
 
   const boxPairs = calculateBoxPairs(family);
   const bestPair = boxPairs.find((p) => p.lucroPercent !== null && p.lucroPercent > 0);
+
+  // Live stock data
+  const stockRow = rows.get(family.name);
+  const stockBid = stockRow?.ofCompra ?? stockRow?.ultimo ?? null;
+  const stockAsk = stockRow?.ofVenda ?? stockRow?.ultimo ?? null;
+  const hasLiveStock = stockRow?.ultimo !== null && stockRow?.ultimo !== undefined;
 
   return (
     <div className="bg-zinc-900/70 border border-zinc-700/50 rounded-xl overflow-hidden">
@@ -727,16 +600,17 @@ function FamilyCard({
           </button>
           <div>
             <span className="font-bold text-white text-base">{family.name}</span>
-            {family.loadingStock ? (
-              <span className="text-xs text-zinc-500 ml-2">Carregando...</span>
-            ) : (
+            {hasLiveStock ? (
               <span className="text-xs ml-2">
                 <span className="text-zinc-400">BID</span>{" "}
-                <span className="text-emerald-400 font-semibold">{formatBRL(family.stockBid)}</span>
+                <span className="text-emerald-400 font-semibold">{formatBRL(stockBid)}</span>
                 <span className="text-zinc-600 mx-1">|</span>
                 <span className="text-zinc-400">ASK</span>{" "}
-                <span className="text-emerald-400 font-semibold">{formatBRL(family.stockAsk)}</span>
+                <span className="text-emerald-400 font-semibold">{formatBRL(stockAsk)}</span>
+                <span className="ml-1 inline-block w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
               </span>
+            ) : (
+              <span className="text-xs text-zinc-500 ml-2">Aguardando dados...</span>
             )}
           </div>
           <span className="text-xs text-zinc-500">{family.tickers.length} tickers</span>
@@ -895,93 +769,63 @@ function FamilyCard({
                         {family.name}
                       </td>
                       <td className="px-2 py-2">
-                        {pair.call ? (
-                          <span className="text-blue-300 font-semibold">{pair.call.symbol}</span>
+                        {pair.callSymbol ? (
+                          <span className="text-blue-300 font-semibold">{pair.callSymbol}</span>
                         ) : (
                           <span className="text-zinc-600">—</span>
                         )}
                       </td>
                       <td className="px-2 py-2">
-                        {pair.put ? (
-                          <span className="text-red-300 font-semibold">{pair.put.symbol}</span>
+                        {pair.putSymbol ? (
+                          <span className="text-red-300 font-semibold">{pair.putSymbol}</span>
                         ) : (
                           <span className="text-zinc-600">—</span>
                         )}
                       </td>
-                      {/* Stock Bid/Ask */}
-                      <td className="px-2 py-2 text-right text-zinc-300">
-                        {formatBRL(family.stockBid)}
-                      </td>
-                      <td className="px-2 py-2 text-right text-zinc-300">
-                        {formatBRL(family.stockAsk)}
-                      </td>
-                      {/* Call Bid/Ask */}
-                      <td className="px-2 py-2 text-right text-blue-300">
-                        {pair.call?.loading ? (
-                          <RefreshCw className="w-3 h-3 animate-spin inline" />
-                        ) : (
-                          formatBRL(pair.call?.bidPrice ?? null)
-                        )}
-                      </td>
-                      <td className="px-2 py-2 text-right text-blue-200">
-                        {formatBRL(pair.call?.askPrice ?? null)}
-                      </td>
-                      {/* Put Bid/Ask */}
-                      <td className="px-2 py-2 text-right text-red-300">
-                        {pair.put?.loading ? (
-                          <RefreshCw className="w-3 h-3 animate-spin inline" />
-                        ) : (
-                          formatBRL(pair.put?.bidPrice ?? null)
-                        )}
-                      </td>
-                      <td className="px-2 py-2 text-right text-red-200">
-                        {formatBRL(pair.put?.askPrice ?? null)}
-                      </td>
-                      {/* Compra BOX */}
-                      <td className="px-2 py-2 text-right font-bold text-yellow-400">
-                        {formatBRL(pair.compraBox)}
-                      </td>
-                      {/* Strike */}
-                      <td className="px-2 py-2 text-right font-semibold text-white">
-                        {formatBRL(pair.strike)}
-                      </td>
-                      {/* Lucro */}
+                      <td className="px-2 py-2 text-right text-zinc-300">{formatBRL(pair.stockBid)}</td>
+                      <td className="px-2 py-2 text-right text-zinc-300">{formatBRL(pair.stockAsk)}</td>
+                      <td className="px-2 py-2 text-right text-blue-300">{formatBRL(pair.callBid)}</td>
+                      <td className="px-2 py-2 text-right text-blue-200">{formatBRL(pair.callAsk)}</td>
+                      <td className="px-2 py-2 text-right text-red-300">{formatBRL(pair.putBid)}</td>
+                      <td className="px-2 py-2 text-right text-red-200">{formatBRL(pair.putAsk)}</td>
+                      <td className="px-2 py-2 text-right font-bold text-yellow-400">{formatBRL(pair.compraBox)}</td>
+                      <td className="px-2 py-2 text-right font-semibold text-white">{formatBRL(pair.strike)}</td>
                       <td className="px-2 py-2 text-right font-bold">
                         {pair.lucro !== null ? (
                           <span className={pair.lucro >= 0 ? "text-emerald-400" : "text-red-400"}>
                             {formatBRL(pair.lucro)}
                           </span>
-                        ) : (
-                          "—"
-                        )}
+                        ) : "—"}
                       </td>
-                      {/* Lucro % */}
                       <td className="px-2 py-2 text-right font-black">
                         {pair.lucroPercent !== null ? (
                           <span className={pair.lucroPercent >= 0 ? "text-emerald-300" : "text-red-400"}>
                             {formatPercent(pair.lucroPercent)}
                           </span>
-                        ) : (
-                          "—"
-                        )}
+                        ) : "—"}
                       </td>
-                      {/* Actions */}
                       <td className="px-2 py-2">
                         <div className="flex gap-1">
-                          {pair.call && (
+                          {pair.callSymbol && (
                             <button
-                              onClick={() => onRemoveTicker(family.id, pair.call!.id)}
+                              onClick={() => {
+                                const t = family.tickers.find((t) => t.symbol === pair.callSymbol);
+                                if (t) onRemoveTicker(family.id, t.id);
+                              }}
                               className="text-zinc-700 hover:text-red-400 transition-colors"
-                              title={`Remover ${pair.call.symbol}`}
+                              title={`Remover ${pair.callSymbol}`}
                             >
                               <X className="w-3 h-3" />
                             </button>
                           )}
-                          {pair.put && (
+                          {pair.putSymbol && (
                             <button
-                              onClick={() => onRemoveTicker(family.id, pair.put!.id)}
+                              onClick={() => {
+                                const t = family.tickers.find((t) => t.symbol === pair.putSymbol);
+                                if (t) onRemoveTicker(family.id, t.id);
+                              }}
                               className="text-zinc-700 hover:text-red-400 transition-colors"
-                              title={`Remover ${pair.put.symbol}`}
+                              title={`Remover ${pair.putSymbol}`}
                             >
                               <X className="w-3 h-3" />
                             </button>
@@ -991,52 +835,47 @@ function FamilyCard({
                     </tr>
                   );
                 })}
-                {/* Unpaired tickers (no matching strike pair) */}
+                {/* Unpaired tickers */}
                 {family.tickers
-                  .filter((t) => !boxPairs.some((p) => p.call?.id === t.id || p.put?.id === t.id))
-                  .map((ticker) => (
-                    <tr
-                      key={ticker.id}
-                      className="border-b border-zinc-800/30 hover:bg-zinc-800/20 opacity-50"
-                    >
-                      <td className="px-4 py-2 text-zinc-500">{family.name}</td>
-                      <td className="px-2 py-2" colSpan={2}>
-                        <span
-                          className={`px-1.5 py-0.5 rounded text-xs font-bold ${
-                            ticker.type === "CALL"
-                              ? "bg-blue-900/40 text-blue-300"
-                              : "bg-red-900/40 text-red-300"
-                          }`}
-                        >
-                          {ticker.type}: {ticker.symbol}
-                        </span>
-                        <span className="text-zinc-600 text-xs ml-2">
-                          (sem par {ticker.type === "CALL" ? "PUT" : "CALL"} no strike {formatBRL(ticker.strike)})
-                        </span>
-                      </td>
-                      <td className="px-2 py-2 text-right text-zinc-500" colSpan={2}>
-                        {formatBRL(family.stockBid)} / {formatBRL(family.stockAsk)}
-                      </td>
-                      <td className="px-2 py-2 text-right text-zinc-500" colSpan={2}>
-                        {ticker.loading ? (
-                          <RefreshCw className="w-3 h-3 animate-spin inline" />
-                        ) : (
-                          `${formatBRL(ticker.bidPrice)} / ${formatBRL(ticker.askPrice)}`
-                        )}
-                      </td>
-                      <td className="px-2 py-2 text-zinc-600 text-center" colSpan={5}>
-                        Aguardando par...
-                      </td>
-                      <td className="px-2 py-2">
-                        <button
-                          onClick={() => onRemoveTicker(family.id, ticker.id)}
-                          className="text-zinc-700 hover:text-red-400 transition-colors"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  .filter((t) => !boxPairs.some((p) => p.callSymbol === t.symbol || p.putSymbol === t.symbol))
+                  .map((ticker) => {
+                    const liveRow = rows.get(ticker.symbol);
+                    return (
+                      <tr
+                        key={ticker.id}
+                        className="border-b border-zinc-800/30 hover:bg-zinc-800/20 opacity-50"
+                      >
+                        <td className="px-4 py-2 text-zinc-500">{family.name}</td>
+                        <td className="px-2 py-2" colSpan={2}>
+                          <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${
+                            ticker.type === "CALL" ? "bg-blue-900/40 text-blue-300" : "bg-red-900/40 text-red-300"
+                          }`}>
+                            {ticker.type}: {ticker.symbol}
+                          </span>
+                          <span className="text-zinc-600 text-xs ml-2">
+                            (sem par {ticker.type === "CALL" ? "PUT" : "CALL"} no strike {formatBRL(ticker.strike)})
+                          </span>
+                        </td>
+                        <td className="px-2 py-2 text-right text-zinc-500" colSpan={2}>
+                          {formatBRL(stockBid)} / {formatBRL(stockAsk)}
+                        </td>
+                        <td className="px-2 py-2 text-right text-zinc-500" colSpan={2}>
+                          {liveRow ? `${formatBRL(liveRow.ofCompra)} / ${formatBRL(liveRow.ofVenda)}` : "—"}
+                        </td>
+                        <td className="px-2 py-2 text-zinc-600 text-center" colSpan={5}>
+                          Aguardando par...
+                        </td>
+                        <td className="px-2 py-2">
+                          <button
+                            onClick={() => onRemoveTicker(family.id, ticker.id)}
+                            className="text-zinc-700 hover:text-red-400 transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
               </tbody>
             </table>
           )}
