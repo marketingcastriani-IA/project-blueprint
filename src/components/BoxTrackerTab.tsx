@@ -495,6 +495,10 @@ export default function BoxTracker() {
                   <p className="text-sm font-bold text-emerald-400">{formatBRL(pair.lucro)}</p>
                 </div>
                 <div>
+                  <p className="text-xs text-zinc-500">Total ({quantidade}x)</p>
+                  <p className="text-sm font-bold text-emerald-300">{formatBRL(pair.lucroTotal)}</p>
+                </div>
+                <div>
                   <p className="text-xs text-zinc-500">CDI Per.</p>
                   <p className="text-sm font-bold text-amber-400">{pair.cdiPeriodo !== null ? formatPercent(pair.cdiPeriodo) : "—"}</p>
                 </div>
