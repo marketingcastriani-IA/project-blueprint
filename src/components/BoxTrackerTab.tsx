@@ -967,7 +967,6 @@ function FamilyCard({
   onFileUpload,
   descontarIRAcoes,
   descontarIRRendaFixa,
-  descontarIRRendaFixa,
   winnerKey,
   cdiAnual,
 }: FamilyCardProps) {
