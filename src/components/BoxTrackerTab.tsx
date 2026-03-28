@@ -322,16 +322,19 @@ export default function BoxTracker() {
 
         let compraBox: number | null = null;
         let lucro: number | null = null;
+        let lucroTotal: number | null = null;
         let lucroPercent: number | null = null;
 
         if (stockAsk !== null && callBid !== null && putAsk !== null) {
           compraBox = stockAsk + putAsk - callBid;
           lucro = strike - compraBox;
+          lucroTotal = lucro * qty;
           lucroPercent = compraBox > 0 ? (lucro / compraBox) * 100 : null;
         }
 
-        // CDI do período
-        const diasUteis = calcDiasUteis(vencimento);
+        // CDI do período - prioriza vencimento manual, depois RTD
+        const vencParaCalculo = vencimentoManual || vencimento;
+        const diasUteis = calcDiasUteis(vencParaCalculo);
         const cdiPeriodo = diasUteis !== null && diasUteis > 0 ? calcCdiPeriodo(diasUteis) : null;
         const vsCD = lucroPercent !== null && cdiPeriodo !== null
           ? (lucroPercent > cdiPeriodo ? "acima" : "abaixo")
@@ -340,7 +343,7 @@ export default function BoxTracker() {
         pairs.push({
           strike,
           strikeRtd,
-          vencimento,
+          vencimento: vencParaCalculo,
           callSymbol: call?.symbol ?? null,
           putSymbol: put?.symbol ?? null,
           callBid,
@@ -351,6 +354,7 @@ export default function BoxTracker() {
           stockAsk,
           compraBox,
           lucro,
+          lucroTotal,
           lucroPercent,
           diasUteis,
           cdiPeriodo,
@@ -361,7 +365,7 @@ export default function BoxTracker() {
       pairs.sort((a, b) => (b.lucroPercent ?? -999) - (a.lucroPercent ?? -999));
       return pairs;
     },
-    [rows]
+    [rows, quantidade, vencimentoManual]
   );
 
   // Global ranking
