@@ -1,29 +1,49 @@
 
 
-## Plan: Integrate BoxTracker Component
+# Payoff Conjunto — Nova Página PRO
 
-### What
-Add the uploaded **Rastreador de Box** component as a new page in the app, accessible via the navigation menu with a dedicated route `/box-tracker`.
+## Resumo
+Criar uma nova página `/payoff-conjunto` acessível via menu principal, exclusiva para usuários PRO. A página permite selecionar múltiplas análises salvas do histórico e sobrepor seus gráficos de payoff num único chart, com uma curva consolidada (soma).
 
-### Steps
+## O que o usuário verá
 
-1. **Create the component file**
-   - Copy `BoxTrackerTab.tsx` to `src/components/BoxTrackerTab.tsx`
+1. Nova aba no menu principal: **"Payoff Conjunto"** (ícone Layers)
+2. Página com:
+   - Lista de análises ativas do usuário (checkboxes para selecionar)
+   - Gráfico Recharts com uma linha de payoff por estratégia selecionada (cores distintas)
+   - Linha consolidada (soma de todos os payoffs) em destaque
+   - Legenda com nome de cada estratégia e cor correspondente
+   - Métricas consolidadas: Lucro Máx, Risco Máx, Breakevens
+3. Bloqueio para usuários FREE com CTA para assinar PRO
 
-2. **Create a new page `src/pages/BoxTracker.tsx`**
-   - Wrap `BoxTrackerTab` inside `ProfessionalLayout` (same pattern as other pages)
-   - Add PRO access control (same as DadosAoVivo) since this is a premium feature
+## Arquivos a criar/editar
 
-3. **Add route in `App.tsx`**
-   - Add `<Route path="/box-tracker" element={<BoxTracker />} />`
+### 1. `src/pages/PayoffConjunto.tsx` (novo)
+- Busca análises ativas do usuário no Supabase (analyses + legs)
+- Checkboxes para selecionar quais estratégias sobrepor
+- Gera payoff curve para cada análise selecionada via `generatePayoffCurve()`
+- Calcula curva consolidada somando `profitAtExpiry` ponto a ponto
+- Gráfico `ComposedChart` com:
+  - Uma `<Line>` por estratégia (cores automáticas do array de cores)
+  - Uma `<Line>` grossa tracejada para o consolidado
+  - `<ReferenceLine y={0}>`
+- Cards de métricas consolidadas
+- Gate PRO: se `planType !== 'pro'`, mostra overlay com botão "Assine PRO"
 
-4. **Add nav item in `Header.tsx`**
-   - Add "Rastreador Box" to `navItems` array with `BarChart2` icon, path `/box-tracker`
-   - Place it after "Tempo Real" in the menu
+### 2. `src/components/Header.tsx` (editar)
+- Adicionar item no `navItems`: `{ label: 'Payoff Conjunto', path: '/payoff-conjunto', icon: Layers }`
 
-### Technical Details
-- The component is self-contained (881 lines) with its own types, mock API functions, and UI
-- Uses only `lucide-react` and Tailwind — no extra dependencies needed
-- Has a dark theme hardcoded (`bg-[#0a0e1a]`) which will work well with the app's dark mode; may need minor adjustments for light mode
-- Mock data functions (`fetchOptionData`, `fetchStockPrice`) are included — can be replaced with real API later
+### 3. `src/App.tsx` (editar)
+- Importar e adicionar rota: `<Route path="/payoff-conjunto" element={<PayoffConjunto />} />`
+
+### 4. `src/pages/Index.tsx` (editar)
+- Adicionar "Payoff Conjunto de Estratégias" na lista de features PRO
+
+## Detalhes Técnicos
+
+- Reutiliza `generatePayoffCurve()` de `src/lib/payoff.ts` para cada análise
+- Normaliza os pontos para o mesmo eixo X (range unificado baseado no min/max de todas as estratégias)
+- Array de 8 cores para distinguir cada estratégia
+- Consolidado = soma dos `profitAtExpiry` de todas as curvas no mesmo ponto X
+- Controle de acesso via `useAccessControl()` — bloqueia se `planType === 'free'`
 
