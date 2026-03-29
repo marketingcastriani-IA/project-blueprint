@@ -362,6 +362,7 @@ export default function Index() {
               <PricingItem included label="OCR de Imagem (IA)" />
               <PricingItem included label="Análise com Inteligência Artificial" />
               <PricingItem included label="Portfólio e P&L consolidado" />
+              <PricingItem included label="Rastreador de Box — Vença o CDI" />
             </ul>
             <Button className="w-full h-14 text-lg font-black bg-primary hover:bg-primary/90 shadow-[0_0_30px_-8px_hsl(var(--primary)/0.5)] hover:scale-[1.02] transition-transform" onClick={() => navigate('/auth')}>
               TESTAR 7 DIAS GRÁTIS <ArrowRight className="ml-2 h-5 w-5" />
