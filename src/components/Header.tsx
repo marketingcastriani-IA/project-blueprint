@@ -24,6 +24,7 @@ export default function Header() {
     { label: 'Diversificador', path: '/diversificador', icon: PieChart },
     { label: 'Tempo Real', path: '/dados-ao-vivo', icon: Radio },
     { label: 'Rastreador Box', path: '/box-tracker', icon: BarChart2 },
+    { label: 'Payoff Conjunto', path: '/payoff-conjunto', icon: Layers },
     { label: 'Manual', path: '/manual', icon: BookOpen },
     { label: 'FAQ', path: '/faq', icon: HelpCircle },
     { label: 'Configurações', path: '/settings', icon: Settings },
