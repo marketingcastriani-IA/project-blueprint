@@ -155,13 +155,11 @@ export default function DadosAoVivo() {
           }
         }
 
-        // CDI comparison for the period
+        // CDI comparison: from opening date to TODAY (not expiry)
         const createdAt = new Date(a.created_at);
-        const expiryDate = a.expiry_date ? new Date(a.expiry_date) : null;
         const now = new Date();
         const CDI_ANNUAL = 14.90;
-        const endDate = expiryDate && expiryDate > now ? expiryDate : now;
-        const bizDays = countBusinessDays(createdAt, endDate);
+        const bizDays = countBusinessDays(createdAt, now);
         const absInvestido = Math.abs(investido);
         const cdiReturn = absInvestido > 0 && bizDays > 0
           ? absInvestido * (Math.pow(1 + CDI_ANNUAL / 100, bizDays / 252) - 1)

@@ -179,175 +179,226 @@ export default function History() {
     return `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  const renderCard = (a: AnalysisSummary) => {
+  const renderActiveCard = (a: AnalysisSummary) => {
     const m = metricsMap[a.id];
     const legs = legsMap[a.id] || [];
-    
-    // Calculate CDI comparison
-    const cdiRate = a.cdi_rate || 15;
-    const daysToExpiry = a.days_to_expiry || 0;
-    const investedCapital = m ? Math.max(Math.abs(m.montageTotal || m.netCost || 0), 1) : 0;
-    const cdiReturn = investedCapital > 0 && daysToExpiry > 0 
-      ? calculateCDIOpportunityCost(investedCapital, cdiRate, daysToExpiry) 
+    const investido = legs.reduce((acc, l) => {
+      const cost = l.price * l.quantity * (l.option_type === 'stock' ? 1 : 100);
+      return acc + (l.side === 'buy' ? cost : -cost);
+    }, 0);
+
+    // CDI from opening date to NOW
+    const createdAt = new Date(a.created_at);
+    const now = new Date();
+    const bizDays = countBusinessDays(createdAt, now);
+    const absInvestido = Math.abs(investido);
+    const cdiReturn = absInvestido > 0 && bizDays > 0
+      ? absInvestido * (Math.pow(1 + 0.149, bizDays / 252) - 1)
       : 0;
-    const cdiEfficiency = cdiReturn > 0 && m && typeof m.maxGain === 'number' 
-      ? Math.round((m.maxGain / cdiReturn) * 100) 
+    const cdiEfficiency = cdiReturn > 0 && m && typeof m.maxGain === 'number'
+      ? Math.round((m.maxGain / cdiReturn) * 100)
       : null;
+
+    return (
+      <div
+        key={a.id}
+        className="rounded-xl overflow-hidden border border-border/40 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-card cursor-pointer"
+        onClick={() => navigate(`/analysis/${a.id}`)}
+      >
+        {/* Dark header strip */}
+        <div className="bg-gradient-to-r from-[hsl(222,47%,11%)] to-[hsl(222,47%,18%)] dark:from-[hsl(222,47%,6%)] dark:to-[hsl(222,47%,12%)] px-4 py-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+              <span className="font-extrabold text-base text-white truncate tracking-tight">{a.name}</span>
+              {m?.isRiskFree && (
+                <Badge className="text-[9px] font-black bg-success/20 text-success border-success/40 gap-0.5 px-1.5">
+                  <ShieldCheck className="h-2.5 w-2.5" /> Zero
+                </Badge>
+              )}
+            </div>
+            <div className="text-right shrink-0">
+              <span className="text-[10px] text-white/40 block">Investido</span>
+              <span className="text-white font-bold text-sm font-mono">
+                R$<span className="text-lg">{Math.abs(investido).toFixed(2)}</span>
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-1">
+            <span className="text-[10px] text-white/40 uppercase tracking-wider">
+              {a.underlying_asset || legs[0]?.asset || '—'}
+            </span>
+            {a.expiry_date && (
+              <span className="text-[10px] text-white/50">
+                Venc: {(() => {
+                  const [y, mo, d] = a.expiry_date!.split('-').map(Number);
+                  return new Date(y, mo - 1, d).toLocaleDateString('pt-BR');
+                })()}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Body with metrics */}
+        <div className="px-4 py-3 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            {/* Lucro Máx */}
+            <div>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Lucro Máximo</span>
+              <div className={cn("text-xl font-extrabold font-mono mt-0.5", m && (m.maxGain === 'Ilimitado' || (typeof m.maxGain === 'number' && m.maxGain > 0)) ? "text-success" : "text-foreground")}>
+                {m ? (
+                  <>
+                    <span className="text-sm font-normal">R$</span>
+                    {m.maxGain === 'Ilimitado' ? '∞' : (typeof m.maxGain === 'number' ? m.maxGain.toFixed(2) : '—')}
+                  </>
+                ) : '—'}
+              </div>
+            </div>
+            {/* Risco */}
+            <div>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Risco Máximo</span>
+              <div className="mt-0.5">
+                {m ? (
+                  <span className={cn(
+                    "inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-lg font-extrabold font-mono",
+                    m.isRiskFree
+                      ? "bg-success/15 text-success"
+                      : "bg-destructive/15 text-destructive"
+                  )}>
+                    {m.isRiskFree ? 'R$ 0,00' : (typeof m.maxLoss === 'number' ? `R$ ${Math.abs(m.maxLoss).toFixed(2)}` : '—')}
+                  </span>
+                ) : (
+                  <span className="text-xl font-bold text-muted-foreground">—</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* CDI comparison */}
+          {cdiReturn > 0 && (
+            <div>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">vs CDI ({bizDays} dias úteis)</span>
+              <div className="mt-0.5">
+                <span className={cn(
+                  "inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-sm font-bold font-mono",
+                  cdiEfficiency != null && cdiEfficiency >= 100
+                    ? "bg-success/15 text-success"
+                    : "bg-warning/15 text-warning"
+                )}>
+                  {cdiEfficiency != null && cdiEfficiency >= 100 ? '▲' : '▼'} {cdiEfficiency ?? 0}% do CDI
+                  <span className="text-[10px] font-normal opacity-70 ml-1">
+                    (CDI: R${cdiReturn.toFixed(2)})
+                  </span>
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Breakevens */}
+          {m && m.breakevens.length > 0 && (
+            <div>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                <Target className="h-3 w-3" /> Breakeven
+              </span>
+              <p className="text-sm font-bold text-foreground mt-0.5">
+                {m.breakevens.map(b => `R$ ${b.toFixed(2)}`).join(' / ')}
+              </p>
+            </div>
+          )}
+
+          {/* Footer: legs badge + actions */}
+          <div className="flex items-center justify-between pt-1 border-t border-border/50">
+            <div className="flex items-center gap-2">
+              <Badge className="bg-warning/90 text-warning-foreground font-bold text-[10px] px-2">
+                {legs.length} perna{legs.length > 1 ? 's' : ''}
+              </Badge>
+              {m?.strategyLabel && (
+                <Badge variant="outline" className="text-[10px] border-accent/30 text-accent-foreground font-bold bg-accent/10">
+                  {m.strategyLabel}
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                className="h-7 text-xs gap-1 bg-primary/10 text-primary hover:bg-primary/20 border border-primary/30"
+                variant="outline"
+                onClick={(e) => { e.stopPropagation(); navigate(`/analysis/${a.id}`); }}
+              >
+                <Edit2 className="w-3 h-3" /> Editar
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs text-warning hover:bg-warning/10"
+                disabled={closingId === a.id}
+                onClick={(e) => handleClose(e, a.id)}
+              >
+                {closingId === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 w-7 text-destructive hover:bg-destructive/10 p-0"
+                disabled={deleting === a.id}
+                onClick={(e) => handleDelete(e, a.id)}
+              >
+                {deleting === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderClosedCard = (a: AnalysisSummary) => {
+    const m = metricsMap[a.id];
+    const legs = legsMap[a.id] || [];
 
     return (
       <ProfessionalCard
         key={a.id}
-        className="group cursor-pointer"
+        className="group cursor-pointer opacity-80 hover:opacity-100"
         onClick={() => navigate(`/analysis/${a.id}`)}
       >
-        <CardContent className="py-5 px-6 space-y-3">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0 flex-1 space-y-2">
-              <div className="flex items-center gap-3 flex-wrap">
-                <p className="text-lg font-black tracking-tight">{a.name}</p>
+        <CardContent className="py-4 px-5 space-y-2">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-base font-bold tracking-tight">{a.name}</p>
                 {a.underlying_asset && (
-                  <Badge variant="outline" className="text-[10px] border-primary/30 text-primary font-bold">
+                  <Badge variant="outline" className="text-[10px] border-muted-foreground/30 text-muted-foreground font-bold">
                     {a.underlying_asset}
                   </Badge>
                 )}
-                <Badge
-                  className={cn(
-                    'text-[10px] font-black uppercase tracking-widest',
-                    a.status === 'active'
-                      ? 'bg-success/20 text-success border-success/30'
-                      : 'bg-muted text-muted-foreground'
-                  )}
-                >
-                  {a.status === 'active' ? 'Ativa' : 'Encerrada'}
+                <Badge className="text-[10px] font-black uppercase tracking-widest bg-muted text-muted-foreground">
+                  Encerrada
                 </Badge>
-                {m?.strategyLabel && (
-                  <Badge variant="outline" className="text-[10px] border-accent/30 text-accent-foreground font-bold bg-accent/10">
-                    {m.strategyLabel}
-                  </Badge>
-                )}
-                {m?.isRiskFree && (
-                  <Badge className="text-[10px] font-black bg-success/20 text-success border-success/40 gap-1">
-                    <ShieldCheck className="h-3 w-3" /> Risco Zero
-                  </Badge>
-                )}
               </div>
-              <div className="flex items-center gap-4 text-[11px] text-muted-foreground font-medium">
+              <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
                   {new Date(a.created_at).toLocaleDateString('pt-BR')}
                 </span>
-                {a.expiry_date && (
-                  <span className="flex items-center gap-1">
-                    <CalendarDays className="h-3 w-3" />
-                    Venc: {(() => {
-                      const [y, mo, d] = a.expiry_date.split('-').map(Number);
-                      return new Date(y, mo - 1, d).toLocaleDateString('pt-BR');
-                    })()}
-                    {a.days_to_expiry != null && (
-                      <span className="text-muted-foreground/60">({a.days_to_expiry}du)</span>
-                    )}
-                  </span>
-                )}
                 {a.closed_at && (
                   <span className="flex items-center gap-1">
                     <XCircle className="h-3 w-3" />
-                    Encerrada: {new Date(a.closed_at).toLocaleDateString('pt-BR')}
+                    {new Date(a.closed_at).toLocaleDateString('pt-BR')}
                   </span>
                 )}
               </div>
             </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-9 px-3 hover:bg-primary/10 hover:text-primary transition-all"
-                onClick={(e) => { e.stopPropagation(); navigate(`/analysis/${a.id}`); }}
-              >
-                <Edit2 className="h-4 w-4 mr-2" /> Editar
+            <div className="flex items-center gap-1 shrink-0">
+              <Button variant="ghost" size="sm" className="h-8 text-xs text-info hover:bg-info/10"
+                onClick={(e) => handleReopen(e, a.id)}>
+                <RotateCcw className="h-3 w-3 mr-1" /> Reabrir
               </Button>
-              {a.status === 'active' ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 px-3 text-warning hover:bg-warning/10 transition-all"
-                  disabled={closingId === a.id}
-                  onClick={(e) => handleClose(e, a.id)}
-                >
-                  {closingId === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4 mr-2" />}
-                  Encerrar
-                </Button>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 px-3 text-info hover:bg-info/10 transition-all"
-                  onClick={(e) => handleReopen(e, a.id)}
-                >
-                  <RotateCcw className="h-4 w-4 mr-2" /> Reabrir
-                </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 text-destructive hover:bg-destructive/10 transition-all"
-                disabled={deleting === a.id}
-                onClick={(e) => handleDelete(e, a.id)}
-              >
-                {deleting === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                disabled={deleting === a.id} onClick={(e) => handleDelete(e, a.id)}>
+                {deleting === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
               </Button>
             </div>
           </div>
-
-          {/* Metrics row */}
-          {m && legs.length > 0 && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-2 border-t border-border/30">
-              <div className="space-y-0.5">
-                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Custo / PM</p>
-                <p className="text-sm font-bold text-foreground">
-                  {formatValue(Math.abs(m.montageTotal || m.netCost))}
-                </p>
-              </div>
-              <div className="space-y-0.5">
-                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3 text-success" /> Lucro Máx
-                </p>
-                <p className={cn("text-sm font-bold", m.maxGain === 'Ilimitado' || (typeof m.maxGain === 'number' && m.maxGain > 0) ? "text-success" : "text-foreground")}>
-                  {formatValue(m.maxGain)}
-                </p>
-              </div>
-              <div className="space-y-0.5">
-                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
-                  <AlertTriangle className="h-3 w-3 text-destructive" /> Risco Máx
-                </p>
-                <p className={cn("text-sm font-bold", m.isRiskFree ? "text-success" : "text-destructive")}>
-                  {m.isRiskFree ? 'R$ 0,00' : formatValue(m.maxLoss)}
-                </p>
-              </div>
-              <div className="space-y-0.5">
-                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
-                  <Target className="h-3 w-3 text-primary" /> Breakeven
-                </p>
-                <p className="text-sm font-bold text-foreground">
-                  {m.breakevens.length > 0 ? m.breakevens.map(b => `R$ ${b.toFixed(2)}`).join(' / ') : '—'}
-                </p>
-              </div>
-              <div className="space-y-0.5">
-                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
-                  <BarChart3 className="h-3 w-3 text-primary" /> CDI ({daysToExpiry}du)
-                </p>
-                <p className="text-sm font-bold text-foreground">
-                  {cdiReturn > 0 ? `R$ ${cdiReturn.toFixed(2)}` : '—'}
-                </p>
-              </div>
-              <div className="space-y-0.5">
-                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Eficiência CDI</p>
-                <p className={cn("text-sm font-bold", cdiEfficiency && cdiEfficiency > 100 ? "text-success" : "text-foreground")}>
-                  {cdiEfficiency != null ? `${cdiEfficiency}%` : '—'}
-                </p>
-              </div>
-            </div>
-          )}
         </CardContent>
       </ProfessionalCard>
     );
