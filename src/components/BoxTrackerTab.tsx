@@ -876,7 +876,7 @@ export default function BoxTracker() {
                       <td className="py-2 pr-2 font-bold text-foreground">{p.familyName}</td>
                       <td className="py-2 pr-2 text-blue-600 dark:text-blue-300">{p.callSymbol}</td>
                       <td className="py-2 pr-2 text-red-600 dark:text-red-300">{p.putSymbol}</td>
-                      <td className="py-2 pr-2 text-right bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-semibold">{formatBRL(p.strikeRtd ?? p.strike)}</td>
+                      <td className="py-2 pr-2 text-right bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-semibold">{formatBRL((p.strikeRtd && p.strikeRtd > 0) ? p.strikeRtd : p.strike)}</td>
                       <td className="py-2 pr-2 text-right text-orange-600 dark:text-orange-400">{formatBRL(p.compraBox)}</td>
                       <td className="py-2 pr-2 text-right text-emerald-600 dark:text-emerald-400">{formatBRL(lucroDisplay)}</td>
                       <td className="py-2 pr-2 text-right text-emerald-600 dark:text-emerald-300 font-semibold">{formatBRL(lucroTotalDisplay)}</td>
