@@ -81,47 +81,10 @@ export default function Header() {
         </button>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-0.5 flex-1 justify-center min-w-0 overflow-x-auto scrollbar-hide">
-          {/* Primary items - always visible, compact on md-lg */}
-          {primaryNav.map(item => (
-            <NavButton key={item.path} item={item} compact />
+        <nav className="hidden md:flex items-center gap-1 flex-1 justify-center min-w-0 overflow-x-auto scrollbar-hide">
+          {allNavItems.map(item => (
+            <NavButton key={item.path} item={item} />
           ))}
-
-          {/* Secondary items - visible on 2xl+, otherwise in dropdown */}
-          <div className="hidden 2xl:flex items-center gap-0.5">
-            {secondaryNav.map(item => (
-              <NavButton key={item.path} item={item} compact />
-            ))}
-          </div>
-
-          {/* "More" dropdown for md-xl screens */}
-          <div className="flex 2xl:hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-all">
-                  <MoreHorizontal className="h-4 w-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[180px]">
-                {secondaryNav.map(item => {
-                  const isActive = location.pathname === item.path;
-                  return (
-                    <DropdownMenuItem
-                      key={item.path}
-                      onClick={() => navigate(item.path)}
-                      className={cn(
-                        'flex items-center gap-2 text-xs font-bold uppercase tracking-wider cursor-pointer',
-                        isActive && 'bg-primary/10 text-primary'
-                      )}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {item.label}
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
         </nav>
 
         {/* Right actions */}
