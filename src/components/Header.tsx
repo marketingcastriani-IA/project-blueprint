@@ -105,9 +105,9 @@ export default function Header() {
       </div>
 
       {/* Row 2: Secondary Nav + Theme (desktop) */}
-      <div className="hidden md:flex border-t border-primary-foreground/10 bg-primary/90">
-        <div className="container flex items-center justify-between py-1.5">
-          <nav className="flex items-center gap-1">
+      <div className="hidden md:flex border-t border-primary-foreground/10 bg-background dark:bg-[hsl(222,47%,6%)]">
+        <div className="container flex items-center justify-between py-2">
+          <nav className="flex items-center gap-2">
             {secondaryNav.map(item => {
               const isActive = location.pathname === item.path;
               return (
@@ -115,21 +115,21 @@ export default function Header() {
                   key={item.path}
                   onClick={() => navigate(item.path)}
                   className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap',
+                    'flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap',
                     isActive
-                      ? 'bg-primary-foreground/20 text-primary-foreground'
-                      : 'text-primary-foreground/60 hover:text-primary-foreground hover:bg-primary-foreground/10'
+                      ? 'bg-primary text-primary-foreground shadow-md'
+                      : 'text-foreground/80 hover:text-foreground hover:bg-muted'
                   )}
                 >
-                  <item.icon className="h-3.5 w-3.5" />
+                  <item.icon className="h-4 w-4" />
                   {item.label}
                 </button>
               );
             })}
           </nav>
           <div className="flex items-center gap-1">
-            <Palette className="h-3 w-3 text-primary-foreground/60 mr-1" />
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-primary-foreground/60 mr-2">Tema:</span>
+            <Palette className="h-3 w-3 text-muted-foreground mr-1" />
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mr-2">Tema:</span>
             {([
               { key: 'light' as const, label: 'Branco', icon: Sun },
               { key: 'dark' as const, label: 'Dark', icon: Moon },
@@ -139,10 +139,10 @@ export default function Header() {
                 key={item.key}
                 onClick={() => setTheme(item.key)}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold transition-all',
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all',
                   theme === item.key
-                    ? 'bg-primary-foreground/20 text-primary-foreground ring-1 ring-primary-foreground/30'
-                    : 'text-primary-foreground/60 hover:bg-primary-foreground/10 hover:text-primary-foreground'
+                    ? 'bg-primary text-primary-foreground ring-1 ring-primary/30'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 )}
               >
                 <item.icon className="h-3 w-3" />
