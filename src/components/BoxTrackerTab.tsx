@@ -429,7 +429,7 @@ export default function BoxTracker() {
         const vsCDLiq = vsCD;
 
         pairs.push({
-          strike, strikeRtd, vencimento: vencParaCalculo,
+          strike: strikeReal, strikeRtd, vencimento: vencParaCalculo,
           callSymbol: call?.symbol ?? null, putSymbol: put?.symbol ?? null,
           callBid, callAsk, putBid, putAsk, stockBid, stockAsk,
           compraBox, lucro, lucroTotal, lucroPercent,
