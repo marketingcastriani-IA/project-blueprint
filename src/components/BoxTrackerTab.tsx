@@ -140,11 +140,13 @@ function extractStrikeFromTicker(symbol: string): number {
   const match = clean.match(/^[A-Z]{4,5}[A-X](\d+)$/);
   if (match) {
     const raw = parseInt(match[1]);
-    // B3 convention: strikes are encoded with 2 implied decimal places
-    // e.g. PETRM2800 = 28.00, PETRM2850 = 28.50, VALEA900 = 9.00
-    // Numbers with 3+ digits → divide by 100
-    // Numbers with 1-2 digits → use as-is (e.g. PETRM28 = 28)
-    if (raw >= 100) return raw / 100;
+    // B3 convention: the numeric suffix IS the strike with implied decimals
+    // e.g. PETRD476 = 47.60, PETRM2800 = 28.00, PETRM28 = 28
+    // 4+ digits → divide by 100 (e.g. 2800 → 28.00)
+    // 3 digits → divide by 10 (e.g. 476 → 47.6)
+    // 1-2 digits → use as-is (e.g. 28 → 28)
+    if (raw >= 1000) return raw / 100;
+    if (raw >= 100) return raw / 10;
     return raw;
   }
   return 0;
@@ -377,7 +379,8 @@ export default function BoxTracker() {
         const putBid = getPrice(putRow, "ofCompra");
         const putAsk = getPrice(putRow, "ofVenda");
 
-        const strikeRtd = callRow?.strike ?? putRow?.strike ?? null;
+        const strikeRtdRaw = callRow?.strike ?? putRow?.strike ?? null;
+        const strikeRtd = (strikeRtdRaw && strikeRtdRaw > 0) ? strikeRtdRaw : null;
         const vencimento = callRow?.ven ?? putRow?.ven ?? null;
 
         // Custo = (Preço_Ação + Preço_Put) - Preço_Call
@@ -769,7 +772,7 @@ export default function BoxTracker() {
 
                 <div className="flex flex-wrap items-baseline gap-2 mb-1">
                   <span className="text-lg font-black text-foreground">{pair.familyName}</span>
-                  <span className="text-xs text-muted-foreground">Strike {formatBRL(pair.strikeRtd ?? pair.strike)}</span>
+                  <span className="text-xs text-muted-foreground">Strike {formatBRL((pair.strikeRtd && pair.strikeRtd > 0) ? pair.strikeRtd : pair.strike)}</span>
                   {pair.vencimento && (
                     <span className="text-xs text-amber-600 dark:text-amber-400/70 ml-1">· {pair.vencimento}</span>
                   )}
@@ -873,7 +876,7 @@ export default function BoxTracker() {
                       <td className="py-2 pr-2 font-bold text-foreground">{p.familyName}</td>
                       <td className="py-2 pr-2 text-blue-600 dark:text-blue-300">{p.callSymbol}</td>
                       <td className="py-2 pr-2 text-red-600 dark:text-red-300">{p.putSymbol}</td>
-                      <td className="py-2 pr-2 text-right bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-semibold">{formatBRL(p.strikeRtd ?? p.strike)}</td>
+                      <td className="py-2 pr-2 text-right bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-semibold">{formatBRL((p.strikeRtd && p.strikeRtd > 0) ? p.strikeRtd : p.strike)}</td>
                       <td className="py-2 pr-2 text-right text-orange-600 dark:text-orange-400">{formatBRL(p.compraBox)}</td>
                       <td className="py-2 pr-2 text-right text-emerald-600 dark:text-emerald-400">{formatBRL(lucroDisplay)}</td>
                       <td className="py-2 pr-2 text-right text-emerald-600 dark:text-emerald-300 font-semibold">{formatBRL(lucroTotalDisplay)}</td>
@@ -1239,7 +1242,7 @@ function FamilyCard({
                   const pairKey = `${family.name}-${pair.strike}`;
                   const isGlobalWinner = pairKey === winnerKey;
                   const isBest = idx === 0 && pair.lucroPercent !== null && pair.lucroPercent > 0;
-                  const displayStrike = pair.strikeRtd ?? pair.strike;
+                  const displayStrike = (pair.strikeRtd && pair.strikeRtd > 0) ? pair.strikeRtd : pair.strike;
                   const lucroDisplay = descontarIRAcoes ? pair.lucroLiqAcoes : pair.lucro;
                   const lucroTotalDisplay = descontarIRAcoes ? pair.lucroLiqAcoesTotal : pair.lucroTotal;
                   const lucroPercentDisplay = descontarIRAcoes ? pair.lucroLiqAcoesPercent : pair.lucroPercent;
