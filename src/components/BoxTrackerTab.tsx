@@ -356,19 +356,18 @@ export default function BoxTracker() {
 
       const strikeMap = new Map<number, { calls: OptionTicker[]; puts: OptionTicker[] }>();
       family.tickers.forEach((t) => {
-        // Prefer RTD strike (PEX) over parsed ticker strike
-        const rtdRow = rows.get(t.symbol);
-        const realStrike = (rtdRow?.strike && rtdRow.strike > 0) ? rtdRow.strike : t.strike;
-        if (realStrike <= 0) return;
-        if (!strikeMap.has(realStrike)) strikeMap.set(realStrike, { calls: [], puts: [] });
-        const group = strikeMap.get(realStrike)!;
+        // Group by TICKER-parsed strike so call/put pairs always match
+        const groupKey = t.strike;
+        if (groupKey <= 0) return;
+        if (!strikeMap.has(groupKey)) strikeMap.set(groupKey, { calls: [], puts: [] });
+        const group = strikeMap.get(groupKey)!;
         if (t.type === "CALL") group.calls.push(t);
         else group.puts.push(t);
       });
 
       const pairs: BoxPair[] = [];
 
-      strikeMap.forEach((group, strike) => {
+      strikeMap.forEach((group, tickerStrike) => {
         const call = group.calls[0] || null;
         const put = group.puts[0] || null;
         const callRow = call ? rows.get(call.symbol) : null;
@@ -379,8 +378,10 @@ export default function BoxTracker() {
         const putBid = getPrice(putRow, "ofCompra");
         const putAsk = getPrice(putRow, "ofVenda");
 
+        // RTD PEX strike takes priority over ticker-parsed strike
         const strikeRtdRaw = callRow?.strike ?? putRow?.strike ?? null;
         const strikeRtd = (strikeRtdRaw && strikeRtdRaw > 0) ? strikeRtdRaw : null;
+        const strikeReal = strikeRtd ?? tickerStrike;
         const vencimento = callRow?.ven ?? putRow?.ven ?? null;
 
         // Custo = (Preço_Ação + Preço_Put) - Preço_Call
@@ -394,7 +395,6 @@ export default function BoxTracker() {
 
         if (stockAsk !== null && callBid !== null && putAsk !== null) {
           compraBox = (stockAsk + putAsk) - callBid;
-          const strikeReal = strikeRtd ?? strike;
           lucro = strikeReal - compraBox;
           lucroTotal = lucro * qty;
           lucroPercent = compraBox > 0 ? (lucro / compraBox) * 100 : null;
@@ -429,7 +429,7 @@ export default function BoxTracker() {
         const vsCDLiq = vsCD;
 
         pairs.push({
-          strike, strikeRtd, vencimento: vencParaCalculo,
+          strike: strikeReal, strikeRtd, vencimento: vencParaCalculo,
           callSymbol: call?.symbol ?? null, putSymbol: put?.symbol ?? null,
           callBid, callAsk, putBid, putAsk, stockBid, stockAsk,
           compraBox, lucro, lucroTotal, lucroPercent,
