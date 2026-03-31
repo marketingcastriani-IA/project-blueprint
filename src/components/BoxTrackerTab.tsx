@@ -354,9 +354,12 @@ export default function BoxTracker() {
 
       const strikeMap = new Map<number, { calls: OptionTicker[]; puts: OptionTicker[] }>();
       family.tickers.forEach((t) => {
-        if (t.strike <= 0) return;
-        if (!strikeMap.has(t.strike)) strikeMap.set(t.strike, { calls: [], puts: [] });
-        const group = strikeMap.get(t.strike)!;
+        // Prefer RTD strike (PEX) over parsed ticker strike
+        const rtdRow = rows.get(t.symbol);
+        const realStrike = (rtdRow?.strike && rtdRow.strike > 0) ? rtdRow.strike : t.strike;
+        if (realStrike <= 0) return;
+        if (!strikeMap.has(realStrike)) strikeMap.set(realStrike, { calls: [], puts: [] });
+        const group = strikeMap.get(realStrike)!;
         if (t.type === "CALL") group.calls.push(t);
         else group.puts.push(t);
       });
