@@ -670,7 +670,8 @@ export default function DadosAoVivo() {
                 return (
                   <div
                     key={op.id}
-                    className="rounded-xl overflow-hidden border border-border/40 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-card"
+                    className="rounded-2xl overflow-hidden border border-white/10 bg-card transition-all duration-300 hover:-translate-y-2 shadow-[0_8px_30px_-4px_rgba(255,255,255,0.12),0_2px_8px_-2px_rgba(255,255,255,0.08)] hover:shadow-[0_20px_50px_-8px_rgba(255,255,255,0.2),0_4px_12px_-4px_rgba(255,255,255,0.15)]"
+                    style={{ transform: 'perspective(800px) rotateX(1deg)', transformStyle: 'preserve-3d' }}
                   >
                     {/* ── Dark header strip ── */}
                     <div className="bg-gradient-to-r from-[hsl(222,47%,11%)] to-[hsl(222,47%,18%)] dark:from-[hsl(222,47%,6%)] dark:to-[hsl(222,47%,12%)] px-4 py-3">
