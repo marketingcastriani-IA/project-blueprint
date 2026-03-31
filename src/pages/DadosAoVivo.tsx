@@ -766,6 +766,25 @@ export default function DadosAoVivo() {
                             )}
                           </div>
                         </div>
+                        {/* CDI comparison */}
+                        {op.temDadoVivo && op.cdiReturn > 0 && (
+                          <div className="col-span-2">
+                            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">vs CDI ({op.bizDays} dias úteis)</span>
+                            <div className="mt-0.5">
+                              <span className={cn(
+                                "inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-sm font-bold font-mono",
+                                op.cdiPct >= 100
+                                  ? "bg-success/15 text-success"
+                                  : "bg-warning/15 text-warning"
+                              )}>
+                                {op.cdiPct >= 100 ? '▲' : '▼'} {op.cdiPct.toFixed(0)}% do CDI
+                                <span className="text-[10px] font-normal opacity-70 ml-1">
+                                  (CDI: R${op.cdiReturn.toFixed(2)})
+                                </span>
+                              </span>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Legs badge + live indicator */}
