@@ -503,7 +503,7 @@ export default function History() {
                   <div className="h-2 w-2 rounded-full bg-muted-foreground" />
                   <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Operações Encerradas ({closedAnalyses.length})</h2>
                 </div>
-                <div className="grid gap-3">{closedAnalyses.map(renderCard)}</div>
+                <div className="grid gap-3">{closedAnalyses.map(renderClosedCard)}</div>
               </div>
             )}
           </div>
