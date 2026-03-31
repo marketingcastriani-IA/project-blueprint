@@ -2,8 +2,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
-import { TrendingUp, Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, Briefcase, Settings, Crown, Zap, PieChart, HelpCircle, Sparkles, Palette, BookOpen, Radio, BarChart2 } from 'lucide-react';
+import { Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, Briefcase, Settings, Zap, PieChart, HelpCircle, Sparkles, Palette, BookOpen, Radio, BarChart2, MoreHorizontal } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
@@ -17,25 +23,52 @@ export default function Header() {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const navItems = [
+  // Primary nav items (always visible on desktop)
+  const primaryNav = [
     { label: 'Nova Análise', path: '/dashboard', icon: PlusCircle },
-    { label: 'Operações em Aberto', path: '/history', icon: History },
+    { label: 'Operações', path: '/history', icon: History },
     { label: 'Portfólio', path: '/portfolio', icon: Briefcase },
     { label: 'Diversificador', path: '/diversificador', icon: PieChart },
     { label: 'Tempo Real', path: '/dados-ao-vivo', icon: Radio },
-    { label: 'Rastreador Box', path: '/box-tracker', icon: BarChart2 },
-    
+    { label: 'Box Tracker', path: '/box-tracker', icon: BarChart2 },
+  ];
+
+  // Secondary nav items (inside "More" dropdown on md, visible on xl+)
+  const secondaryNav = [
     { label: 'Manual', path: '/manual', icon: BookOpen },
     { label: 'FAQ', path: '/faq', icon: HelpCircle },
     { label: 'Configurações', path: '/settings', icon: Settings },
     ...(access.isAdmin ? [{ label: 'Admin', path: '/admin', icon: Shield }] : []),
   ];
 
+  const allNavItems = [...primaryNav, ...secondaryNav];
   const isFree = access.planType === 'free';
+
+  const NavButton = ({ item, compact = false }: { item: typeof primaryNav[0]; compact?: boolean }) => {
+    const isActive = location.pathname === item.path;
+    const isRealtime = item.path === '/dados-ao-vivo';
+    return (
+      <button
+        onClick={() => navigate(item.path)}
+        className={cn(
+          'flex items-center gap-1.5 rounded-lg font-black uppercase tracking-widest transition-all whitespace-nowrap',
+          compact ? 'px-2 py-1.5 text-[10px]' : 'px-2.5 py-2 text-[10px] xl:text-[11px] xl:px-3',
+          isRealtime && 'text-red-100 bg-red-600 hover:bg-red-500 animate-pulse shadow-[0_0_16px_rgba(239,68,68,0.5)] border border-red-400/50',
+          isRealtime && isActive && 'ring-2 ring-red-300',
+          !isRealtime && isActive && 'bg-primary-foreground/20 text-primary-foreground',
+          !isRealtime && !isActive && 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
+        )}
+      >
+        <item.icon className={cn("h-3.5 w-3.5 shrink-0", isRealtime && "animate-pulse")} />
+        {item.label}
+      </button>
+    );
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-primary/30 bg-primary shadow-lg">
-      <div className="container flex h-14 items-center justify-between">
+      <div className="container flex h-14 items-center justify-between gap-2">
+        {/* Logo */}
         <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 font-black text-lg shrink-0">
           <img src="/assets/logo.png" alt="Opções PRO X" className="h-8 w-8 object-contain" />
           <span className="hidden sm:inline tracking-tight text-primary-foreground">Opções PRO X</span>
@@ -47,51 +80,74 @@ export default function Header() {
           </Badge>
         </button>
 
-        <nav className="hidden md:flex items-center gap-0.5">
-          {navItems.map(item => {
-            const isActive = location.pathname === item.path;
-            const isRealtime = item.path === '/dados-ao-vivo';
-            return (
-              <button
-                key={item.path}
-                onClick={() => navigate(item.path)}
-                className={cn(
-                  'flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all',
-                  isRealtime && 'text-red-100 bg-red-600 hover:bg-red-500 animate-pulse shadow-[0_0_16px_rgba(239,68,68,0.5)] border border-red-400/50',
-                  isRealtime && isActive && 'ring-2 ring-red-300',
-                  !isRealtime && isActive && 'bg-primary-foreground/20 text-primary-foreground',
-                  !isRealtime && !isActive && 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
-                )}
-              >
-                <item.icon className={cn("h-3.5 w-3.5", isRealtime && "animate-pulse")} />
-                {item.label}
-              </button>
-            );
-          })}
+        {/* Desktop Nav */}
+        <nav className="hidden md:flex items-center gap-0.5 flex-1 justify-center min-w-0">
+          {/* Primary items - always visible */}
+          {primaryNav.map(item => (
+            <NavButton key={item.path} item={item} />
+          ))}
+
+          {/* Secondary items - visible on xl+, otherwise in dropdown */}
+          <div className="hidden xl:flex items-center gap-0.5">
+            {secondaryNav.map(item => (
+              <NavButton key={item.path} item={item} />
+            ))}
+          </div>
+
+          {/* "More" dropdown for md-lg screens */}
+          <div className="flex xl:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-all">
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="hidden lg:inline">Mais</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[180px]">
+                {secondaryNav.map(item => {
+                  const isActive = location.pathname === item.path;
+                  return (
+                    <DropdownMenuItem
+                      key={item.path}
+                      onClick={() => navigate(item.path)}
+                      className={cn(
+                        'flex items-center gap-2 text-xs font-bold uppercase tracking-wider cursor-pointer',
+                        isActive && 'bg-primary/10 text-primary'
+                      )}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {item.label}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </nav>
 
-        <div className="flex items-center gap-2">
+        {/* Right actions */}
+        <div className="flex items-center gap-1.5 shrink-0">
           {isFree && (
             <Button 
               onClick={() => navigate('/settings')}
-              className="hidden sm:flex h-9 px-4 bg-yellow-400 hover:bg-yellow-300 text-black font-black text-[10px] uppercase tracking-widest animate-pulse shadow-[0_0_15px_rgba(250,204,21,0.6)] border-b-2 border-black/20"
+              className="hidden sm:flex h-8 px-3 bg-yellow-400 hover:bg-yellow-300 text-black font-black text-[9px] uppercase tracking-widest animate-pulse shadow-[0_0_15px_rgba(250,204,21,0.6)] border-b-2 border-black/20"
             >
-              <Zap className="h-3 w-3 mr-1.5 fill-current" /> ASSINE PRO
+              <Zap className="h-3 w-3 mr-1 fill-current" /> ASSINE PRO
             </Button>
           )}
           
           {user && (
-            <Button variant="ghost" size="icon" onClick={async () => { await signOut(); navigate('/auth'); }} className="h-9 w-9 text-primary-foreground hover:bg-primary-foreground/10">
+            <Button variant="ghost" size="icon" onClick={async () => { await signOut(); navigate('/auth'); }} className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/10">
               <LogOut className="h-4 w-4" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" className="h-9 w-9 md:hidden text-primary-foreground hover:bg-primary-foreground/10" onClick={() => setMobileOpen(!mobileOpen)}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 md:hidden text-primary-foreground hover:bg-primary-foreground/10" onClick={() => setMobileOpen(!mobileOpen)}>
             {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </Button>
         </div>
       </div>
 
-      {/* Theme selector strip */}
+      {/* Theme selector strip - desktop */}
       <div className="hidden md:flex border-t border-primary-foreground/10 bg-primary/90">
         <div className="container flex items-center gap-1 py-1">
           <Palette className="h-3 w-3 text-primary-foreground/60 mr-1" />
@@ -118,6 +174,7 @@ export default function Header() {
         </div>
       </div>
 
+      {/* Mobile menu */}
       {mobileOpen && (
         <div className="md:hidden border-t border-primary-foreground/10 bg-primary/95 backdrop-blur-md animate-fade-in">
           <nav className="container py-2 space-y-1">
@@ -130,7 +187,7 @@ export default function Header() {
               </button>
             )}
             <div className="grid grid-cols-2 gap-1">
-              {navItems.map(item => {
+              {allNavItems.map(item => {
                 const isActive = location.pathname === item.path;
                 const isRealtime = item.path === '/dados-ao-vivo';
                 return (
