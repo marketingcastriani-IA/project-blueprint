@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-import { Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, Briefcase, Settings, Zap, PieChart, HelpCircle, Sparkles, Palette, BookOpen, Radio, BarChart2, MoreHorizontal } from 'lucide-react';
+import { Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, Briefcase, Settings, Zap, PieChart, HelpCircle, Sparkles, Palette, BookOpen, Radio, BarChart2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
