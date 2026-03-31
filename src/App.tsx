@@ -20,7 +20,7 @@ import FAQ from "./pages/FAQ";
 import Manual from "./pages/Manual";
 import DadosAoVivo from "./pages/DadosAoVivo";
 import BoxTracker from "./pages/BoxTracker";
-import PayoffConjunto from "./pages/PayoffConjunto";
+
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
