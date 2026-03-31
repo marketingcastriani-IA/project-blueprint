@@ -137,16 +137,15 @@ export default function DadosAoVivo() {
           return acc + (l.side === 'buy' ? cost : -cost);
         }, 0);
 
-        // Calculate PnL using saved exit prices (current_price) — same as AnalysisDetail
-        // Fall back to live RTD price only when no current_price is saved
+        // Calculate PnL using LIVE RTD prices (priority), fallback to saved current_price
         let lucroAtual = 0;
         let temDadoVivo = false;
         for (let i = 0; i < legsList.length; i++) {
           const leg = legsList[i];
           const dbLeg = rawLegs[i];
-          const savedPrice = dbLeg?.current_price;
           const livePrice = rows.get(leg.asset)?.ultimo;
-          const exitPrice = savedPrice != null && savedPrice > 0 ? savedPrice : livePrice;
+          const savedPrice = dbLeg?.current_price;
+          const exitPrice = (livePrice != null && livePrice > 0) ? livePrice : (savedPrice != null && savedPrice > 0 ? savedPrice : null);
           
           if (exitPrice != null && exitPrice > 0) {
             temDadoVivo = true;
@@ -156,6 +155,19 @@ export default function DadosAoVivo() {
           }
         }
 
+        // CDI comparison for the period
+        const createdAt = new Date(a.created_at);
+        const expiryDate = a.expiry_date ? new Date(a.expiry_date) : null;
+        const now = new Date();
+        const CDI_ANNUAL = 14.90;
+        const endDate = expiryDate && expiryDate > now ? expiryDate : now;
+        const bizDays = countBusinessDays(createdAt, endDate);
+        const absInvestido = Math.abs(investido);
+        const cdiReturn = absInvestido > 0 && bizDays > 0
+          ? absInvestido * (Math.pow(1 + CDI_ANNUAL / 100, bizDays / 252) - 1)
+          : 0;
+        const cdiPct = cdiReturn > 0 ? (lucroAtual / cdiReturn) * 100 : 0;
+
         return {
           ...a,
           legs: legsList,
@@ -164,6 +176,9 @@ export default function DadosAoVivo() {
           lucroAtual,
           temDadoVivo,
           pctLucro: investido !== 0 ? (lucroAtual / Math.abs(investido)) * 100 : 0,
+          cdiPct,
+          cdiReturn,
+          bizDays,
         };
       }));
       setOpenOps(ops);
