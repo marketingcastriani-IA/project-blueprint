@@ -379,7 +379,8 @@ export default function BoxTracker() {
         const putBid = getPrice(putRow, "ofCompra");
         const putAsk = getPrice(putRow, "ofVenda");
 
-        const strikeRtd = callRow?.strike ?? putRow?.strike ?? null;
+        const strikeRtdRaw = callRow?.strike ?? putRow?.strike ?? null;
+        const strikeRtd = (strikeRtdRaw && strikeRtdRaw > 0) ? strikeRtdRaw : null;
         const vencimento = callRow?.ven ?? putRow?.ven ?? null;
 
         // Custo = (Preço_Ação + Preço_Put) - Preço_Call
