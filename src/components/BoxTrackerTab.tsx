@@ -140,6 +140,10 @@ function extractStrikeFromTicker(symbol: string): number {
   const match = clean.match(/^[A-Z]{4,5}[A-X](\d+)$/);
   if (match) {
     const raw = parseInt(match[1]);
+    // B3 convention: strikes are encoded with 2 implied decimal places
+    // e.g. PETRM2800 = 28.00, PETRM2850 = 28.50, VALEA900 = 9.00
+    // Numbers with 3+ digits → divide by 100
+    // Numbers with 1-2 digits → use as-is (e.g. PETRM28 = 28)
     if (raw >= 100) return raw / 100;
     return raw;
   }
@@ -350,9 +354,12 @@ export default function BoxTracker() {
 
       const strikeMap = new Map<number, { calls: OptionTicker[]; puts: OptionTicker[] }>();
       family.tickers.forEach((t) => {
-        if (t.strike <= 0) return;
-        if (!strikeMap.has(t.strike)) strikeMap.set(t.strike, { calls: [], puts: [] });
-        const group = strikeMap.get(t.strike)!;
+        // Prefer RTD strike (PEX) over parsed ticker strike
+        const rtdRow = rows.get(t.symbol);
+        const realStrike = (rtdRow?.strike && rtdRow.strike > 0) ? rtdRow.strike : t.strike;
+        if (realStrike <= 0) return;
+        if (!strikeMap.has(realStrike)) strikeMap.set(realStrike, { calls: [], puts: [] });
+        const group = strikeMap.get(realStrike)!;
         if (t.type === "CALL") group.calls.push(t);
         else group.puts.push(t);
       });

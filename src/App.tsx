@@ -20,7 +20,7 @@ import FAQ from "./pages/FAQ";
 import Manual from "./pages/Manual";
 import DadosAoVivo from "./pages/DadosAoVivo";
 import BoxTracker from "./pages/BoxTracker";
-import PayoffConjunto from "./pages/PayoffConjunto";
+
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,7 +49,7 @@ const App = () => (
               <Route path="/manual" element={<Manual />} />
               <Route path="/dados-ao-vivo" element={<DadosAoVivo />} />
               <Route path="/box-tracker" element={<BoxTracker />} />
-              <Route path="/payoff-conjunto" element={<PayoffConjunto />} />
+              
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
