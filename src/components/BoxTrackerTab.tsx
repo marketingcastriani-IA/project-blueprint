@@ -772,7 +772,7 @@ export default function BoxTracker() {
 
                 <div className="flex flex-wrap items-baseline gap-2 mb-1">
                   <span className="text-lg font-black text-foreground">{pair.familyName}</span>
-                  <span className="text-xs text-muted-foreground">Strike {formatBRL(pair.strikeRtd ?? pair.strike)}</span>
+                  <span className="text-xs text-muted-foreground">Strike {formatBRL((pair.strikeRtd && pair.strikeRtd > 0) ? pair.strikeRtd : pair.strike)}</span>
                   {pair.vencimento && (
                     <span className="text-xs text-amber-600 dark:text-amber-400/70 ml-1">· {pair.vencimento}</span>
                   )}
