@@ -494,7 +494,7 @@ export default function History() {
                   <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
                   <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Operações Ativas ({activeAnalyses.length})</h2>
                 </div>
-                <div className="grid gap-3">{activeAnalyses.map(renderCard)}</div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{activeAnalyses.map(renderActiveCard)}</div>
               </div>
             )}
             {closedAnalyses.length > 0 && (
