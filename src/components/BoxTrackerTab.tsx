@@ -1242,7 +1242,7 @@ function FamilyCard({
                   const pairKey = `${family.name}-${pair.strike}`;
                   const isGlobalWinner = pairKey === winnerKey;
                   const isBest = idx === 0 && pair.lucroPercent !== null && pair.lucroPercent > 0;
-                  const displayStrike = pair.strikeRtd ?? pair.strike;
+                  const displayStrike = (pair.strikeRtd && pair.strikeRtd > 0) ? pair.strikeRtd : pair.strike;
                   const lucroDisplay = descontarIRAcoes ? pair.lucroLiqAcoes : pair.lucro;
                   const lucroTotalDisplay = descontarIRAcoes ? pair.lucroLiqAcoesTotal : pair.lucroTotal;
                   const lucroPercentDisplay = descontarIRAcoes ? pair.lucroLiqAcoesPercent : pair.lucroPercent;
