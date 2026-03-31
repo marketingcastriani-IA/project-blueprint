@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useAccessControl } from "@/hooks/useAccessControl";
 import { format } from "date-fns";
+import { countBusinessDays } from "@/lib/b3-calendar";
 import {
   Radio, Plus, Trash2, Wifi, WifiOff, RefreshCw,
   TrendingUp, TrendingDown, Activity, AlertTriangle, CheckCircle2,
