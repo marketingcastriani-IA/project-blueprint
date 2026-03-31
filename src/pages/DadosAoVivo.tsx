@@ -128,22 +128,29 @@ export default function DadosAoVivo() {
           quantity: l.quantity,
           expiry_date: l.expiry_date,
         }));
+        // Keep raw DB legs for current_price access
+        const rawLegs = aLegs || [];
         const m = legsList.length > 0 ? calculateMetrics(legsList) : null;
         const investido = legsList.reduce((acc, l) => {
           const cost = l.price * l.quantity * (l.option_type === 'stock' ? 1 : 100);
           return acc + (l.side === 'buy' ? cost : -cost);
         }, 0);
 
-        // Check if any leg ticker is live in rows
+        // Calculate PnL using saved exit prices (current_price) — same as AnalysisDetail
+        // Fall back to live RTD price only when no current_price is saved
         let lucroAtual = 0;
         let temDadoVivo = false;
-        for (const leg of legsList) {
-          const liveRow = rows.get(leg.asset);
-          if (liveRow?.ultimo) {
+        for (let i = 0; i < legsList.length; i++) {
+          const leg = legsList[i];
+          const dbLeg = rawLegs[i];
+          const savedPrice = dbLeg?.current_price;
+          const livePrice = rows.get(leg.asset)?.ultimo;
+          const exitPrice = savedPrice != null && savedPrice > 0 ? savedPrice : livePrice;
+          
+          if (exitPrice != null && exitPrice > 0) {
             temDadoVivo = true;
-            const precoAtual = liveRow.ultimo;
             const multiplier = leg.side === 'buy' ? 1 : -1;
-            const pnl = multiplier * (precoAtual - leg.price) * leg.quantity;
+            const pnl = multiplier * (exitPrice - leg.price) * leg.quantity;
             lucroAtual += pnl;
           }
         }
