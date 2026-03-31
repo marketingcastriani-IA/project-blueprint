@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
+import { countBusinessDays } from '@/lib/b3-calendar';
 import { supabase } from '@/integrations/supabase/client';
 import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
