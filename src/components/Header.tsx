@@ -2,14 +2,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 
-import { Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, Briefcase, Settings, Zap, PieChart, HelpCircle, Sparkles, Palette, BookOpen, Radio, BarChart2, MoreHorizontal } from 'lucide-react';
+import { Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, Briefcase, Settings, Zap, PieChart, HelpCircle, Sparkles, Palette, BookOpen, Radio, BarChart2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
@@ -44,7 +38,7 @@ export default function Header() {
   const allNavItems = [...primaryNav, ...secondaryNav];
   const isFree = access.planType === 'free';
 
-  const NavButton = ({ item, compact = false }: { item: typeof primaryNav[0]; compact?: boolean }) => {
+  const NavButton = ({ item }: { item: typeof primaryNav[0] }) => {
     const isActive = location.pathname === item.path;
     const isRealtime = item.path === '/dados-ao-vivo';
     return (
@@ -52,14 +46,14 @@ export default function Header() {
         onClick={() => navigate(item.path)}
         className={cn(
           'flex items-center gap-1.5 rounded-lg font-black uppercase tracking-widest transition-all whitespace-nowrap',
-          compact ? 'px-2 py-1.5 text-[10px]' : 'px-2.5 py-2 text-[10px] xl:text-[11px] xl:px-3',
+          'px-3 py-2 text-[11px] lg:text-xs lg:px-4',
           isRealtime && 'text-red-100 bg-red-600 hover:bg-red-500 animate-pulse shadow-[0_0_16px_rgba(239,68,68,0.5)] border border-red-400/50',
           isRealtime && isActive && 'ring-2 ring-red-300',
           !isRealtime && isActive && 'bg-primary-foreground/20 text-primary-foreground',
           !isRealtime && !isActive && 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
         )}
       >
-        <item.icon className={cn("h-3.5 w-3.5 shrink-0", isRealtime && "animate-pulse")} />
+        <item.icon className={cn("h-4 w-4 shrink-0", isRealtime && "animate-pulse")} />
         {item.label}
       </button>
     );
@@ -67,7 +61,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-primary/30 bg-primary shadow-lg">
-      <div className="container flex h-14 items-center justify-between gap-2">
+      <div className="container flex h-16 items-center justify-between gap-3">
         {/* Logo */}
         <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 font-black text-lg shrink-0">
           <img src="/assets/logo.png" alt="Opções PRO X" className="h-8 w-8 object-contain" />
@@ -81,47 +75,10 @@ export default function Header() {
         </button>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-0.5 flex-1 justify-center min-w-0 overflow-x-auto scrollbar-hide">
-          {/* Primary items - always visible, compact on md-lg */}
-          {primaryNav.map(item => (
-            <NavButton key={item.path} item={item} compact />
+        <nav className="hidden md:flex items-center gap-1 flex-1 justify-center min-w-0 overflow-x-auto scrollbar-hide">
+          {allNavItems.map(item => (
+            <NavButton key={item.path} item={item} />
           ))}
-
-          {/* Secondary items - visible on 2xl+, otherwise in dropdown */}
-          <div className="hidden 2xl:flex items-center gap-0.5">
-            {secondaryNav.map(item => (
-              <NavButton key={item.path} item={item} compact />
-            ))}
-          </div>
-
-          {/* "More" dropdown for md-xl screens */}
-          <div className="flex 2xl:hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-all">
-                  <MoreHorizontal className="h-4 w-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[180px]">
-                {secondaryNav.map(item => {
-                  const isActive = location.pathname === item.path;
-                  return (
-                    <DropdownMenuItem
-                      key={item.path}
-                      onClick={() => navigate(item.path)}
-                      className={cn(
-                        'flex items-center gap-2 text-xs font-bold uppercase tracking-wider cursor-pointer',
-                        isActive && 'bg-primary/10 text-primary'
-                      )}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {item.label}
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
         </nav>
 
         {/* Right actions */}
