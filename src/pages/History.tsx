@@ -203,7 +203,8 @@ export default function History() {
     return (
       <div
         key={a.id}
-        className="rounded-xl overflow-hidden border border-border/40 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-card cursor-pointer"
+        className="rounded-xl overflow-hidden border border-white/10 bg-card cursor-pointer transition-all duration-300 hover:-translate-y-2 shadow-[0_8px_30px_-4px_rgba(255,255,255,0.12),0_2px_8px_-2px_rgba(255,255,255,0.08)] hover:shadow-[0_20px_50px_-8px_rgba(255,255,255,0.2),0_4px_12px_-4px_rgba(255,255,255,0.15)]"
+        style={{ transform: 'perspective(800px) rotateX(1deg)', transformStyle: 'preserve-3d' }}
         onClick={() => navigate(`/analysis/${a.id}`)}
       >
         {/* Dark header strip */}
