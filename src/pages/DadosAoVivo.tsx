@@ -142,8 +142,7 @@ export default function DadosAoVivo() {
           if (liveRow?.ultimo) {
             temDadoVivo = true;
             const precoAtual = liveRow.ultimo;
-            const pnl = (precoAtual - leg.price) * leg.quantity;
-            if (leg.side === 'sell') pnl = -pnl;
+            let pnl = (precoAtual - leg.price) * leg.quantity;
             lucroAtual += pnl;
           }
         }
