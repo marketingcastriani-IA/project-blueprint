@@ -44,7 +44,7 @@ export default function Header() {
   const allNavItems = [...primaryNav, ...secondaryNav];
   const isFree = access.planType === 'free';
 
-  const NavButton = ({ item, compact = false }: { item: typeof primaryNav[0]; compact?: boolean }) => {
+  const NavButton = ({ item }: { item: typeof primaryNav[0] }) => {
     const isActive = location.pathname === item.path;
     const isRealtime = item.path === '/dados-ao-vivo';
     return (
@@ -52,14 +52,14 @@ export default function Header() {
         onClick={() => navigate(item.path)}
         className={cn(
           'flex items-center gap-1.5 rounded-lg font-black uppercase tracking-widest transition-all whitespace-nowrap',
-          compact ? 'px-2 py-1.5 text-[10px]' : 'px-2.5 py-2 text-[10px] xl:text-[11px] xl:px-3',
+          'px-3 py-2 text-[11px] lg:text-xs lg:px-4',
           isRealtime && 'text-red-100 bg-red-600 hover:bg-red-500 animate-pulse shadow-[0_0_16px_rgba(239,68,68,0.5)] border border-red-400/50',
           isRealtime && isActive && 'ring-2 ring-red-300',
           !isRealtime && isActive && 'bg-primary-foreground/20 text-primary-foreground',
           !isRealtime && !isActive && 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
         )}
       >
-        <item.icon className={cn("h-3.5 w-3.5 shrink-0", isRealtime && "animate-pulse")} />
+        <item.icon className={cn("h-4 w-4 shrink-0", isRealtime && "animate-pulse")} />
         {item.label}
       </button>
     );
