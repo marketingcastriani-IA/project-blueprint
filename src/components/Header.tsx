@@ -67,7 +67,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-primary/30 bg-primary shadow-lg">
-      <div className="container flex h-14 items-center justify-between gap-2">
+      <div className="container flex h-16 items-center justify-between gap-3">
         {/* Logo */}
         <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 font-black text-lg shrink-0">
           <img src="/assets/logo.png" alt="Opções PRO X" className="h-8 w-8 object-contain" />
