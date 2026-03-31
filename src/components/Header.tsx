@@ -81,26 +81,25 @@ export default function Header() {
         </button>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-0.5 flex-1 justify-center min-w-0">
-          {/* Primary items - always visible */}
+        <nav className="hidden md:flex items-center gap-0.5 flex-1 justify-center min-w-0 overflow-x-auto scrollbar-hide">
+          {/* Primary items - always visible, compact on md-lg */}
           {primaryNav.map(item => (
-            <NavButton key={item.path} item={item} />
+            <NavButton key={item.path} item={item} compact />
           ))}
 
-          {/* Secondary items - visible on xl+, otherwise in dropdown */}
-          <div className="hidden xl:flex items-center gap-0.5">
+          {/* Secondary items - visible on 2xl+, otherwise in dropdown */}
+          <div className="hidden 2xl:flex items-center gap-0.5">
             {secondaryNav.map(item => (
-              <NavButton key={item.path} item={item} />
+              <NavButton key={item.path} item={item} compact />
             ))}
           </div>
 
-          {/* "More" dropdown for md-lg screens */}
-          <div className="flex xl:hidden">
+          {/* "More" dropdown for md-xl screens */}
+          <div className="flex 2xl:hidden">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-all">
+                <button className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-all">
                   <MoreHorizontal className="h-4 w-4" />
-                  <span className="hidden lg:inline">Mais</span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-[180px]">
