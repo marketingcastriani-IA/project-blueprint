@@ -61,7 +61,8 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-primary/30 bg-primary shadow-lg">
-      <div className="container flex h-16 items-center justify-between gap-3">
+      {/* Row 1: Logo + Primary Nav + Actions */}
+      <div className="container flex h-14 items-center justify-between gap-3">
         {/* Logo */}
         <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 font-black text-lg shrink-0">
           <img src="/assets/logo.png" alt="Opções PRO X" className="h-8 w-8 object-contain" />
@@ -74,9 +75,9 @@ export default function Header() {
           </Badge>
         </button>
 
-        {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-1 flex-1 justify-center min-w-0 overflow-x-auto scrollbar-hide">
-          {allNavItems.map(item => (
+        {/* Desktop Primary Nav */}
+        <nav className="hidden md:flex items-center gap-1 flex-1 justify-center">
+          {primaryNav.map(item => (
             <NavButton key={item.path} item={item} />
           ))}
         </nav>
@@ -103,30 +104,52 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Theme selector strip - desktop */}
+      {/* Row 2: Secondary Nav + Theme (desktop) */}
       <div className="hidden md:flex border-t border-primary-foreground/10 bg-primary/90">
-        <div className="container flex items-center gap-1 py-1">
-          <Palette className="h-3 w-3 text-primary-foreground/60 mr-1" />
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-primary-foreground/60 mr-2">Tema:</span>
-          {([
-            { key: 'light' as const, label: 'Branco', icon: Sun },
-            { key: 'dark' as const, label: 'Dark', icon: Moon },
-            { key: 'destaque' as const, label: 'Destaque', icon: Sparkles },
-          ]).map(item => (
-            <button
-              key={item.key}
-              onClick={() => setTheme(item.key)}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold transition-all',
-                theme === item.key
-                  ? 'bg-primary-foreground/20 text-primary-foreground ring-1 ring-primary-foreground/30'
-                  : 'text-primary-foreground/60 hover:bg-primary-foreground/10 hover:text-primary-foreground'
-              )}
-            >
-              <item.icon className="h-3 w-3" />
-              {item.label}
-            </button>
-          ))}
+        <div className="container flex items-center justify-between py-1.5">
+          <nav className="flex items-center gap-1">
+            {secondaryNav.map(item => {
+              const isActive = location.pathname === item.path;
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => navigate(item.path)}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap',
+                    isActive
+                      ? 'bg-primary-foreground/20 text-primary-foreground'
+                      : 'text-primary-foreground/60 hover:text-primary-foreground hover:bg-primary-foreground/10'
+                  )}
+                >
+                  <item.icon className="h-3.5 w-3.5" />
+                  {item.label}
+                </button>
+              );
+            })}
+          </nav>
+          <div className="flex items-center gap-1">
+            <Palette className="h-3 w-3 text-primary-foreground/60 mr-1" />
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-primary-foreground/60 mr-2">Tema:</span>
+            {([
+              { key: 'light' as const, label: 'Branco', icon: Sun },
+              { key: 'dark' as const, label: 'Dark', icon: Moon },
+              { key: 'destaque' as const, label: 'Destaque', icon: Sparkles },
+            ]).map(item => (
+              <button
+                key={item.key}
+                onClick={() => setTheme(item.key)}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold transition-all',
+                  theme === item.key
+                    ? 'bg-primary-foreground/20 text-primary-foreground ring-1 ring-primary-foreground/30'
+                    : 'text-primary-foreground/60 hover:bg-primary-foreground/10 hover:text-primary-foreground'
+                )}
+              >
+                <item.icon className="h-3 w-3" />
+                {item.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
