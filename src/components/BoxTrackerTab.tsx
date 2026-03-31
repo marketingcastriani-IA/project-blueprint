@@ -140,11 +140,13 @@ function extractStrikeFromTicker(symbol: string): number {
   const match = clean.match(/^[A-Z]{4,5}[A-X](\d+)$/);
   if (match) {
     const raw = parseInt(match[1]);
-    // B3 convention: strikes are encoded with 2 implied decimal places
-    // e.g. PETRM2800 = 28.00, PETRM2850 = 28.50, VALEA900 = 9.00
-    // Numbers with 3+ digits → divide by 100
-    // Numbers with 1-2 digits → use as-is (e.g. PETRM28 = 28)
-    if (raw >= 100) return raw / 100;
+    // B3 convention: the numeric suffix IS the strike with implied decimals
+    // e.g. PETRD476 = 47.60, PETRM2800 = 28.00, PETRM28 = 28
+    // 4+ digits → divide by 100 (e.g. 2800 → 28.00)
+    // 3 digits → divide by 10 (e.g. 476 → 47.6)
+    // 1-2 digits → use as-is (e.g. 28 → 28)
+    if (raw >= 1000) return raw / 100;
+    if (raw >= 100) return raw / 10;
     return raw;
   }
   return 0;
