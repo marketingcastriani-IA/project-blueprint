@@ -150,7 +150,8 @@ function extractStrikeFromTicker(symbol: string): number {
 
 function extractTypeFromTicker(symbol: string): "CALL" | "PUT" {
   const clean = symbol.toUpperCase().replace(/\s/g, "");
-  const match = clean.match(/^[A-Z]{4,5}([A-X])/);
+  // Find series letter before strike digits: PETR4B28 → B, BOVA11N28 → N
+  const match = clean.match(/([A-X])\d+$/);
   if (match) {
     const code = match[1].charCodeAt(0) - 65;
     return code <= 11 ? "CALL" : "PUT";
