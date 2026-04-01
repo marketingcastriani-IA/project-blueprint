@@ -130,6 +130,23 @@
     @apply bg-card/60 backdrop-blur-xl border border-white/10 shadow-2xl;
   }
   
+  .glass-card {
+    @apply relative overflow-hidden rounded-2xl border backdrop-blur-2xl transition-all duration-300;
+    background: linear-gradient(135deg, hsl(var(--card) / 0.7), hsl(var(--card) / 0.3));
+    border-color: hsl(var(--primary) / 0.15);
+    box-shadow: 
+      0 8px 32px -8px hsl(var(--primary) / 0.1),
+      inset 0 1px 0 hsl(var(--primary) / 0.05),
+      inset 0 -1px 0 hsl(var(--background) / 0.1);
+  }
+  .glass-card:hover {
+    border-color: hsl(var(--primary) / 0.35);
+    box-shadow: 
+      0 20px 60px -12px hsl(var(--primary) / 0.2),
+      inset 0 1px 0 hsl(var(--primary) / 0.1);
+    transform: translateY(-2px);
+  }
+
   .pro-card {
     @apply relative overflow-hidden rounded-2xl border transition-all duration-300;
   }
@@ -140,5 +157,13 @@
 
   .text-gradient-primary {
     @apply bg-gradient-to-br from-primary to-success bg-clip-text text-transparent;
+  }
+
+  /* Button microinteractions */
+  .btn-tactile {
+    @apply transition-all duration-150;
+  }
+  .btn-tactile:active {
+    transform: scale(0.97);
   }
 }
