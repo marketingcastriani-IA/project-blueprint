@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
 import { generateHistoryPdf } from '@/lib/pdf-generator';
 import { calculateMetrics, calculateCDIOpportunityCost } from '@/lib/payoff';
+import { Leg } from '@/lib/types';
 import type { AnalysisMetrics } from '@/lib/types';
 import ListSkeleton from '@/components/skeletons/ListSkeleton';
 
