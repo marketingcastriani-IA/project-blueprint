@@ -557,7 +557,45 @@ export default function CollarTrackerTab() {
         </div>
       </div>
 
-      {/* VENCIMENTO */}
+      {/* FILTROS INTELIGENTES */}
+      <div className="mb-5 p-4 rounded-xl border border-border bg-card shadow-md">
+        <h3 className="text-xs font-black text-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+          🎯 Filtros de Seleção de Strike
+        </h3>
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="flex items-center gap-2">
+            <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Tipo:</label>
+            <select value={filterTipo} onChange={(e) => setFilterTipo(e.target.value as CollarTipo | "Todos")}
+              className="bg-background border border-input rounded-lg px-2 py-1.5 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary">
+              <option value="Todos">Todos</option>
+              <option value="Normal">Normal (Put OTM + Call OTM)</option>
+              <option value="ATM">ATM (Put próxima do preço)</option>
+              <option value="Baixa">Baixa (Call abaixo da Put)</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Custo:</label>
+            <select value={filterCusto} onChange={(e) => setFilterCusto(e.target.value as CollarCusto | "Todos")}
+              className="bg-background border border-input rounded-lg px-2 py-1.5 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary">
+              <option value="Todos">Todos</option>
+              <option value="Zero-Cost">Zero-Cost</option>
+              <option value="Crédito">Crédito</option>
+              <option value="Débito">Débito</option>
+            </select>
+          </div>
+          <button
+            onClick={() => setHideNegative(!hideNegative)}
+            className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors",
+              hideNegative ? "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-400 text-emerald-700 dark:text-emerald-300" : "bg-muted border-border text-muted-foreground")}>
+            {hideNegative ? <ToggleRight className="w-3.5 h-3.5" /> : <ToggleLeft className="w-3.5 h-3.5" />}
+            Ocultar negativos
+          </button>
+        </div>
+        <p className="text-[9px] text-muted-foreground mt-2">
+          📐 Zona ideal: PUT 5-15% abaixo · CALL 5-15% acima · Custo ≈ zero · Rent. &gt; CDI
+        </p>
+      </div>
+
       <div className="mb-5">
         <div className={cn("rounded-xl border p-4 transition-all",
           vencSaved ? "bg-orange-50 dark:bg-orange-950/20 border-orange-400/50" : "bg-card border-border shadow-md")}>
