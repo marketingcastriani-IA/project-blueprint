@@ -789,7 +789,7 @@ export default function CollarTrackerTab() {
                           <th className="text-right py-2 px-2 bg-muted/50">Strike Put</th>
                           <th className="text-right py-2 px-2">Call Bid</th>
                           <th className="text-right py-2 px-2">Put Ask</th>
-                          <th className="text-right py-2 px-2 font-black">Coef.</th>
+                          <th className="text-right py-2 px-2 font-black">Custo</th>
                           <th className="text-right py-2 px-2">↓ Baixa</th>
                           <th className="text-right py-2 px-2">↔ Neutra</th>
                           <th className="text-right py-2 px-2">↑ Alta</th>
