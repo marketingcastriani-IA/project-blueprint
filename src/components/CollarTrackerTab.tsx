@@ -20,6 +20,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 
 // ─── TIPOS ───────────────────────────────────────────────────
+type CollarTipo = "Normal" | "Baixa" | "ATM" | "Calendário";
+type CollarCusto = "Zero-Cost" | "Crédito" | "Débito";
+
 interface OptionTicker {
   id: string;
   symbol: string;
@@ -46,7 +49,12 @@ interface CollarResult {
   diasUteis: number | null;
   cdiPeriodo: number | null;
   rating: number; // 1-3 stars
-  tipo: string;   // Zero-Cost / Crédito / Débito
+  tipo: CollarTipo;
+  custoTipo: CollarCusto;
+  distPutPct: number | null;   // % distância put do preço (negativo = OTM)
+  distCallPct: number | null;  // % distância call do preço (positivo = OTM)
+  riskRewardRatio: number | null; // rentAlta / |rentBaixa| (quanto maior melhor)
+  qualityScore: number; // 0-100 score composto
 }
 
 interface StockFamily {
