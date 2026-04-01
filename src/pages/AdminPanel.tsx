@@ -508,19 +508,12 @@ export default function AdminPanel() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/50 bg-card p-3">
-              <p className="text-xs font-bold text-muted-foreground">Email em massa (usuários filtrados):</p>
-              <Button size="sm" variant="outline" onClick={() => openBulkEmailForFiltered('promo')} className="h-8 px-3 text-[10px] font-bold border-primary/30 hover:bg-primary/10">
-                🔥 Promoção
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => openBulkEmailForFiltered('renewal')} className="h-8 px-3 text-[10px] font-bold border-warning/30 text-warning hover:bg-warning/10">
-                ⚠️ Renovação
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => openBulkEmailForFiltered('news')} className="h-8 px-3 text-[10px] font-bold border-success/30 text-success hover:bg-success/10">
-                🚀 Novidades
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => openBulkEmailForFiltered('custom')} className="h-8 px-3 text-[10px] font-bold hover:bg-accent">
-                ✏️ Personalizado
-              </Button>
+              <p className="text-xs font-bold text-muted-foreground mr-1">📧 Email em massa:</p>
+              {EMAIL_TEMPLATE_OPTIONS.map(t => (
+                <Button key={t.value} size="sm" variant="outline" onClick={() => openBulkEmailForFiltered(t.value)} className={cn("h-8 px-3 text-[10px] font-bold", t.color)}>
+                  {t.icon} {t.label}
+                </Button>
+              ))}
             </div>
 
             <div className="space-y-3">
