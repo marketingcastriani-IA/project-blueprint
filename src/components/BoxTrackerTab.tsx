@@ -242,7 +242,7 @@ export default function BoxTracker() {
       return;
     }
     if (!("Notification" in window)) {
-      alert("Seu navegador não suporta notificações push.");
+      alert("Seu navegador não suporta notificações push. Instale o app (PWA) para receber alertas.");
       return;
     }
     const permission = await Notification.requestPermission();
@@ -250,12 +250,22 @@ export default function BoxTracker() {
     if (permission === "granted") {
       setNotifEnabled(true);
       localStorage.setItem(NOTIF_ENABLED_KEY, "true");
-      new Notification("🔔 Alertas Box Ativados", {
-        body: `Você será notificado quando um box superar ${notifThreshold}% do CDI.`,
-        icon: "/favicon.ico",
-      });
+      // Send test notification via Service Worker
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'BOX_ALERT',
+          title: '🔔 Alertas Box Ativados!',
+          body: `✅ Você será notificado quando um box superar ${notifThreshold}% do CDI.\n📱 Funciona mesmo com o app minimizado!`,
+          tag: 'box-tracker-test',
+        });
+      } else {
+        new Notification("🔔 Alertas Box Ativados!", {
+          body: `Você será notificado quando um box superar ${notifThreshold}% do CDI.`,
+          icon: "/favicon.png",
+        });
+      }
     } else {
-      alert("Permissão de notificação negada. Habilite nas configurações do navegador.");
+      alert("Permissão de notificação negada.\n\n📱 No celular: Configurações → Notificações → Permitir\n💻 No PC: Clique no 🔒 ao lado da URL → Permitir Notificações");
     }
   }, [notifEnabled, notifThreshold]);
 
