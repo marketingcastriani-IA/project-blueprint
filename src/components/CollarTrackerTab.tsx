@@ -859,6 +859,16 @@ export default function CollarTrackerTab() {
                   </span>
                 )}
 
+                {/* Risk Free banner */}
+                {collar.isRiskFree && (
+                  <div className="mb-3 flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 border border-emerald-400/50 animate-pulse">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-300">
+                      🛡️ Estrutura Risco Zero — Lucro em todos os cenários
+                    </span>
+                  </div>
+                )}
+
                 {/* Header: badge + stock */}
                 <div className="flex items-center gap-2 mb-3">
                   <Trophy className={cn("w-5 h-5", isWinner ? "text-emerald-500" : i === 1 ? "text-gray-400" : "text-amber-600")} />
