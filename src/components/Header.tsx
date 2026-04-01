@@ -119,19 +119,22 @@ export default function Header() {
           <nav className="flex items-center gap-2">
             {secondaryNav.map(item => {
               const isActive = location.pathname === item.path;
+              const isHighlight = 'highlight' in item && item.highlight;
               return (
                 <button
                   key={item.path}
                   onClick={() => navigate(item.path)}
                   className={cn(
                     'flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap',
-                    isActive
-                      ? 'bg-primary text-primary-foreground shadow-md'
-                      : 'text-foreground/80 hover:text-foreground hover:bg-muted'
+                    isHighlight && !isActive && 'bg-yellow-400/90 text-black hover:bg-yellow-300 shadow-[0_0_16px_rgba(250,204,21,0.5)] animate-pulse',
+                    isHighlight && isActive && 'bg-yellow-400 text-black shadow-[0_0_20px_rgba(250,204,21,0.6)] ring-2 ring-yellow-300',
+                    !isHighlight && isActive && 'bg-primary text-primary-foreground shadow-md',
+                    !isHighlight && !isActive && 'text-foreground/80 hover:text-foreground hover:bg-muted'
                   )}
                 >
                   <item.icon className="h-4 w-4" />
                   {item.label}
+                  {isHighlight && <span className="text-[8px] bg-black/20 px-1.5 py-0.5 rounded-full">NOVO</span>}
                 </button>
               );
             })}
