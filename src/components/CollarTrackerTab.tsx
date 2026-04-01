@@ -924,6 +924,8 @@ export default function CollarTrackerTab() {
                       <Star key={si} className={cn("w-3.5 h-3.5", si < collar.rating ? "text-amber-400 fill-amber-400" : "text-muted-foreground/30")} />
                     ))}
                   </span>
+                </div>
+
                 {/* Select for chart button */}
                 <button
                   onClick={() => setSelectedCollar({ ...collar, familyName: collar.familyName })}
@@ -936,7 +938,6 @@ export default function CollarTrackerTab() {
                 >
                   <BarChart3 className="w-3.5 h-3.5" /> Ver Gráfico Payoff
                 </button>
-                </div>
               </div>
             );
           })}
