@@ -332,3 +332,49 @@ export function calculateCDIOpportunityCost(
   const result = capital * (Math.pow(1 + annualRate / 100, businessDays / 252) - 1);
   return Math.round(result * 100) / 100;
 }
+
+/**
+ * Calcula gregas do portfólio num dado preço spot.
+ */
+export function calculatePortfolioGreeks(
+  legs: Leg[],
+  spotPrice: number,
+  daysToExpiry: number,
+  cdiRate: number = 14.90,
+  volatility: number = 0.35
+): { delta: number; gamma: number; theta: number; vega: number } {
+  let delta = 0, gamma = 0, theta = 0, vega = 0;
+  const T = daysToExpiry / 252;
+  const r = cdiRate / 100;
+  const v = volatility;
+
+  if (T <= 0.001) return { delta, gamma, theta, vega };
+
+  for (const leg of legs) {
+    const multiplier = leg.side === 'buy' ? 1 : -1;
+    const q = leg.quantity;
+
+    if (leg.option_type === 'stock') {
+      delta += multiplier * q;
+      continue;
+    }
+
+    const S = spotPrice;
+    const K = leg.strike;
+    const d1 = (Math.log(S / K) + (r + v * v / 2) * T) / (v * Math.sqrt(T));
+    const d2 = d1 - v * Math.sqrt(T);
+    const nd1 = Math.exp(-d1 * d1 / 2) / Math.sqrt(2 * Math.PI); // N'(d1)
+
+    if (leg.option_type === 'call') {
+      delta += multiplier * q * normalCDF(d1);
+    } else {
+      delta += multiplier * q * (normalCDF(d1) - 1);
+    }
+
+    gamma += multiplier * q * nd1 / (S * v * Math.sqrt(T));
+    theta += multiplier * q * (-(S * nd1 * v) / (2 * Math.sqrt(T)) - r * K * Math.exp(-r * T) * (leg.option_type === 'call' ? normalCDF(d2) : normalCDF(-d2))) / 252;
+    vega += multiplier * q * S * nd1 * Math.sqrt(T) / 100;
+  }
+
+  return { delta: +delta.toFixed(4), gamma: +gamma.toFixed(4), theta: +theta.toFixed(2), vega: +vega.toFixed(2) };
+}

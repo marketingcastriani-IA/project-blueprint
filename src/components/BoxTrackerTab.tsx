@@ -213,6 +213,24 @@ export default function BoxTracker() {
   const [editingThreshold, setEditingThreshold] = useState(false);
   const [thresholdInput, setThresholdInput] = useState(String(notifThreshold));
   const lastNotifRef = useRef<number>(0);
+
+  // ─── HISTÓRICO DE ALERTAS ─────────────────────────────────
+  interface AlertEntry {
+    id: string;
+    time: string;
+    familyName: string;
+    strike: number;
+    lucroPercent: number;
+    cdiPercent: number;
+  }
+  const ALERT_HISTORY_KEY = "box-tracker-alert-history";
+  const [alertHistory, setAlertHistory] = useState<AlertEntry[]>(() => {
+    try {
+      const saved = localStorage.getItem(ALERT_HISTORY_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  const [showAlertHistory, setShowAlertHistory] = useState(false);
   const notifPermissionRef = useRef<NotificationPermission>("default");
 
   // Request notification permission
@@ -523,6 +541,22 @@ export default function BoxTracker() {
     
     if (cdiPercent >= notifThreshold) {
       lastNotifRef.current = now;
+      
+      // Log to alert history
+      const entry: AlertEntry = {
+        id: generateId(),
+        time: new Date().toLocaleString('pt-BR'),
+        familyName: best.familyName,
+        strike: best.strike,
+        lucroPercent: best.lucroPercent,
+        cdiPercent: Math.round(cdiPercent),
+      };
+      setAlertHistory(prev => {
+        const updated = [entry, ...prev].slice(0, 50); // keep last 50
+        localStorage.setItem(ALERT_HISTORY_KEY, JSON.stringify(updated));
+        return updated;
+      });
+
       new Notification(`🚀 Box ${best.familyName} a ${cdiPercent.toFixed(0)}% do CDI!`, {
         body: `Strike R$ ${best.strike.toFixed(2)} · Lucro ${best.lucroPercent.toFixed(2)}% · Meta: ${notifThreshold}% CDI`,
         icon: "/favicon.ico",
@@ -766,10 +800,49 @@ export default function BoxTracker() {
               </button>
             )
           )}
+          {/* Botão Histórico de Alertas */}
+          {notifEnabled && alertHistory.length > 0 && (
+            <button
+              onClick={() => setShowAlertHistory(!showAlertHistory)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold bg-muted/50 border-border text-muted-foreground hover:text-foreground transition-all"
+            >
+              🕐 Histórico ({alertHistory.length})
+              {showAlertHistory ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            </button>
+          )}
         </div>
-      </div>
 
-      {/* VENCIMENTO CARD */}
+        {/* Painel de Histórico de Alertas */}
+        {showAlertHistory && alertHistory.length > 0 && (
+          <div className="glass-card rounded-xl p-4 mb-5 animate-fade-in">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-black text-foreground flex items-center gap-2">
+                🔔 Histórico de Alertas
+              </h3>
+              <button
+                onClick={() => {
+                  setAlertHistory([]);
+                  localStorage.removeItem(ALERT_HISTORY_KEY);
+                }}
+                className="text-[10px] px-2 py-1 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 font-bold transition-colors"
+              >
+                Limpar
+              </button>
+            </div>
+            <div className="max-h-48 overflow-y-auto space-y-1.5">
+              {alertHistory.map((a) => (
+                <div key={a.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-muted/30 border border-border/50 text-xs">
+                  <span className="text-muted-foreground font-mono">{a.time}</span>
+                  <span className="font-bold text-foreground">{a.familyName}</span>
+                  <span className="font-mono">R$ {a.strike.toFixed(2)}</span>
+                  <span className="font-bold text-success">{a.lucroPercent.toFixed(2)}%</span>
+                  <span className="font-black text-primary">{a.cdiPercent}% CDI</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
       <div className="mb-5">
         <div className={cn(
           "rounded-xl border p-4 transition-all",

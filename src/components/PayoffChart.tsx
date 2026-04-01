@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import { PayoffPoint } from '@/lib/types';
+import { Leg } from '@/lib/types';
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { Area, CartesianGrid, ReferenceLine, XAxis, YAxis, Line, ComposedChart, ResponsiveContainer, ReferenceDot } from 'recharts';
-import { calculateCDIReturn } from '@/lib/payoff';
+import { calculateCDIReturn, calculatePortfolioGreeks } from '@/lib/payoff';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { TrendingUp, TrendingDown, Target, Percent, DollarSign, Layers } from 'lucide-react';
@@ -21,6 +22,7 @@ interface PayoffChartProps {
   currentPnL?: number | null;
   simulationData?: PayoffPoint[] | null;
   simulationCdiReturn?: number | null;
+  legs?: Leg[];
 }
 
 const chartConfig = {
@@ -30,12 +32,17 @@ const chartConfig = {
   simulated: { label: 'Simulação', color: 'hsl(var(--primary))' },
 };
 
-const CustomTooltip = ({ active, payload, label, displayMode }: any) => {
+const CustomTooltip = ({ active, payload, label, displayMode, legs, daysToExpiry, cdiRate }: any) => {
   if (active && payload && payload.length) {
     const format = (val: number) => {
       if (displayMode === 'percent') return `${val.toFixed(2)}%`;
       return `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
     };
+
+    // Calculate greeks at this spot price
+    const greeks = legs && legs.length > 0 && daysToExpiry > 0
+      ? calculatePortfolioGreeks(legs, label, daysToExpiry, cdiRate)
+      : null;
 
     return (
       <div className="rounded-lg border border-border bg-card/95 p-3 shadow-xl backdrop-blur-sm">
@@ -59,6 +66,14 @@ const CustomTooltip = ({ active, payload, label, displayMode }: any) => {
             );
           })}
         </div>
+        {greeks && (
+          <div className="mt-2 pt-2 border-t border-border/50 grid grid-cols-2 gap-x-4 gap-y-1">
+            <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">Δ Delta</span><span className="text-[10px] font-mono font-bold">{greeks.delta}</span></div>
+            <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">Γ Gamma</span><span className="text-[10px] font-mono font-bold">{greeks.gamma}</span></div>
+            <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">Θ Theta</span><span className="text-[10px] font-mono font-bold">{greeks.theta}</span></div>
+            <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">ν Vega</span><span className="text-[10px] font-mono font-bold">{greeks.vega}</span></div>
+          </div>
+        )}
       </div>
     );
   }
@@ -78,7 +93,8 @@ export default function PayoffChart({
   entrySpotPrice,
   currentPnL,
   simulationData,
-  simulationCdiReturn
+  simulationCdiReturn,
+  legs
 }: PayoffChartProps) {
   const [displayMode, setDisplayMode] = useState<'value' | 'percent'>('value');
 
@@ -193,7 +209,7 @@ export default function PayoffChart({
               <ReferenceDot x={currentSpotPrice} y={currentPnL * factor} r={6} fill="hsl(var(--primary))" stroke="white" strokeWidth={2} className="animate-pulse" />
             )}
             
-            <ChartTooltip content={<CustomTooltip displayMode={displayMode} />} />
+            <ChartTooltip content={<CustomTooltip displayMode={displayMode} legs={legs} daysToExpiry={daysToExpiry} cdiRate={cdiRate} />} />
             
             {/* Áreas de Payoff (3 Cores) */}
             <Area type="monotone" dataKey="belowZero" stroke="none" fill="url(#lossGradient)" isAnimationActive={false} />

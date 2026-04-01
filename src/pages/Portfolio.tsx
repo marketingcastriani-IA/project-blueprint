@@ -17,6 +17,7 @@ import { calculateCDIReturn } from '@/lib/payoff';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
 import { generatePortfolioPdf } from '@/lib/pdf-generator';
+import ListSkeleton from '@/components/skeletons/ListSkeleton';
 
 interface ClosedAnalysis {
   id: string;
@@ -360,7 +361,7 @@ export default function Portfolio() {
 
         {/* Operations List */}
         {loading ? (
-          <div className="flex justify-center py-24"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
+          <ListSkeleton rows={4} />
         ) : filteredAnalyses.length === 0 ? (
           <ProfessionalCard className="border-dashed border-2 border-muted-foreground/20">
             <CardContent className="py-24 text-center space-y-6">

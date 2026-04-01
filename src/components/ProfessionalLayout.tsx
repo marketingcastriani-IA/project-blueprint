@@ -36,19 +36,12 @@ export const ProfessionalCard = ({
   <div
     onClick={onClick}
     className={cn(
-      'relative rounded-2xl border backdrop-blur-xl transition-all duration-300',
-      'bg-gradient-to-br from-card/80 to-card/40',
-      'border-primary/20 hover:border-primary/40',
-      'hover:shadow-[0_20px_60px_-12px_hsl(var(--primary)/0.2)]',
+      'glass-card group',
       glow && 'shadow-[0_0_40px_-8px_hsl(var(--primary)/0.3)]',
       highlight && 'ring-2 ring-primary/30 shadow-[0_0_60px_-12px_hsl(var(--primary)/0.4)]',
       className
     )}
   >
-    {/* Gradient overlay */}
-    <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-    
-    {/* Content */}
     <div className="relative">
       {children}
     </div>

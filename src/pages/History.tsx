@@ -16,6 +16,7 @@ import { generateHistoryPdf } from '@/lib/pdf-generator';
 import { calculateMetrics, calculateCDIOpportunityCost } from '@/lib/payoff';
 import { Leg } from '@/lib/types';
 import type { AnalysisMetrics } from '@/lib/types';
+import ListSkeleton from '@/components/skeletons/ListSkeleton';
 
 interface AnalysisSummary {
   id: string;
@@ -469,7 +470,7 @@ export default function History() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-24"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
+          <ListSkeleton rows={4} />
         ) : filteredAnalyses.length === 0 ? (
           <ProfessionalCard className="border-dashed border-2 border-muted-foreground/20">
             <CardContent className="py-24 text-center space-y-6">
