@@ -137,14 +137,10 @@ function formatPercent(val: number | null): string {
 
 function extractStrikeFromTicker(symbol: string): number {
   const clean = symbol.toUpperCase().replace(/\s/g, "");
-  const match = clean.match(/^[A-Z]{4,5}[A-X](\d+)$/);
+  // Match series letter + strike digits at end: PETR4B28, BOVA11B28, PETRB28, etc.
+  const match = clean.match(/[A-X](\d+)$/);
   if (match) {
     const raw = parseInt(match[1]);
-    // B3 convention: the numeric suffix IS the strike with implied decimals
-    // e.g. PETRD476 = 47.60, PETRM2800 = 28.00, PETRM28 = 28
-    // 4+ digits → divide by 100 (e.g. 2800 → 28.00)
-    // 3 digits → divide by 10 (e.g. 476 → 47.6)
-    // 1-2 digits → use as-is (e.g. 28 → 28)
     if (raw >= 1000) return raw / 100;
     if (raw >= 100) return raw / 10;
     return raw;
@@ -154,7 +150,8 @@ function extractStrikeFromTicker(symbol: string): number {
 
 function extractTypeFromTicker(symbol: string): "CALL" | "PUT" {
   const clean = symbol.toUpperCase().replace(/\s/g, "");
-  const match = clean.match(/^[A-Z]{4,5}([A-X])/);
+  // Find series letter before strike digits: PETR4B28 → B, BOVA11N28 → N
+  const match = clean.match(/([A-X])\d+$/);
   if (match) {
     const code = match[1].charCodeAt(0) - 65;
     return code <= 11 ? "CALL" : "PUT";
@@ -297,7 +294,7 @@ export default function BoxTracker() {
       const symbols = rawText
         .split(/[\n,;\t\s]+/)
         .map((s) => s.trim().toUpperCase())
-        .filter((s) => s.length >= 5 && /^[A-Z]{4,5}[A-X]\d+$/.test(s));
+        .filter((s) => s.length >= 5 && /^[A-Z]{3,6}\d{0,2}[A-X]\d+$/.test(s));
       if (!symbols.length) return;
       const newTickers: OptionTicker[] = symbols.map((symbol) => ({
         id: generateId(),
