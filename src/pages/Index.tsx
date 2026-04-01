@@ -11,33 +11,13 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Sun, Moon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useProPrice } from '@/hooks/useProPrice';
 
 export default function Index() {
   const { user, loading } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const [proPrice, setProPrice] = useState(19.90);
-
-  useEffect(() => {
-    const fetchPrice = async () => {
-      try {
-        const { data } = await (supabase
-          .from('site_settings' as any)
-          .select('*')
-          .eq('id', 'pro_plan')
-          .maybeSingle() as any);
-        
-        if (data && (data as any).value?.price) {
-          setProPrice(Number((data as any).value.price));
-        }
-      } catch (e) {
-        console.error("Erro ao buscar preço do plano PRO:", e);
-      }
-    };
-    fetchPrice();
-  }, []);
+  const { proPrice } = useProPrice();
 
   if (loading) return null;
   if (user) return <Navigate to="/dashboard" replace />;

@@ -266,9 +266,6 @@ export default function Dashboard() {
 
   const isLimitReached = access.trialExpired || (access.planType === 'free' && access.daysRemaining !== null && access.daysRemaining <= 0);
 
-  const incrementSimulations = async () => {
-    // No longer counting simulations - trial is time-based
-  };
 
   const addLeg = useCallback(async (leg: Leg) => { 
     if (isLimitReached) {

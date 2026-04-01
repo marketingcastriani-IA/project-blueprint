@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Lock, Mail, LogOut, Shield, CheckCircle2, Crown, CreditCard, Sparkles, Zap, Camera, Bot, History, Briefcase, MessageSquare, ExternalLink, Radio } from 'lucide-react';
 import { useAccessControl } from '@/hooks/useAccessControl';
+import { useProPrice } from '@/hooks/useProPrice';
 
 export default function Settings() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -22,27 +23,10 @@ export default function Settings() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
-  const [proPrice, setProPrice] = useState(19.90);
+  const { proPrice } = useProPrice();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
-    const fetchPrice = async () => {
-      try {
-        const { data } = await (supabase
-          .from('site_settings' as any)
-          .select('*')
-          .eq('id', 'pro_plan')
-          .maybeSingle() as any);
-        
-        if (data && (data as any).value?.price) {
-          setProPrice(Number((data as any).value.price));
-        }
-      } catch (e) {
-        console.log("Usando preço padrão");
-      }
-    };
-    fetchPrice();
-
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
       toast.success("Pagamento aprovado!", { description: "Seu plano PRO será liberado em instantes." });
