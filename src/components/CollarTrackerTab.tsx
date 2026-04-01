@@ -34,19 +34,19 @@ interface CollarResult {
   putStrike: number;
   callStrikeRtd: number | null;
   putStrikeRtd: number | null;
-  callBid: number | null;
-  putAsk: number | null;
-  stockAsk: number | null;
+  callBid: number | null;   // P_call (prêmio da call vendida)
+  putAsk: number | null;    // P_put (prêmio da put comprada)
+  stockAsk: number | null;  // S_0 (preço de entrada do ativo)
   stockUlt: number | null;
-  coeficiente: number | null;
-  rentBaixa: number | null;
+  custoCollar: number | null; // P_put - P_call (< 0 = crédito)
+  rentBaixa: number | null;  // R_min = (K_put - S_0 + (P_call - P_put)) / S_0
   rentNeutra: number | null;
-  rentAlta: number | null;
+  rentAlta: number | null;   // R_max = (K_call - S_0 + (P_call - P_put)) / S_0
   vencimento: string | null;
   diasUteis: number | null;
   cdiPeriodo: number | null;
   rating: number; // 1-3 stars
-  tipo: string;
+  tipo: string;   // Zero-Cost / Crédito / Débito
 }
 
 interface StockFamily {
