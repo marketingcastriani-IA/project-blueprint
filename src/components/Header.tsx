@@ -38,6 +38,7 @@ export default function Header() {
   // Secondary nav items (inside "More" dropdown on md, visible on xl+)
   const secondaryNav = [
     { label: 'Manual', path: '/manual', icon: BookOpen },
+    { label: 'CDI x Opções', path: '/calculadora-renda-fixa', icon: Calculator, highlight: true },
     { label: 'FAQ', path: '/faq', icon: HelpCircle },
     { label: 'Configurações', path: '/settings', icon: Settings },
     ...(access.isAdmin ? [{ label: 'Admin', path: '/admin', icon: Shield }] : []),
