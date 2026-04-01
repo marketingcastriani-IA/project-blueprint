@@ -24,6 +24,7 @@ import Manual from "./pages/Manual";
 import DadosAoVivo from "./pages/DadosAoVivo";
 import BoxTracker from "./pages/BoxTracker";
 import CollarTracker from "./pages/CollarTracker";
+import CalculadoraRendaFixa from "./pages/CalculadoraRendaFixa";
 
 import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/ScrollToTop";
@@ -50,6 +51,7 @@ function AnimatedRoutes() {
         <Route path="/dados-ao-vivo" element={<PageTransition><DadosAoVivo /></PageTransition>} />
         <Route path="/box-tracker" element={<PageTransition><BoxTracker /></PageTransition>} />
         <Route path="/collar-tracker" element={<PageTransition><CollarTracker /></PageTransition>} />
+        <Route path="/calculadora-renda-fixa" element={<PageTransition><CalculadoraRendaFixa /></PageTransition>} />
         <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
       </Routes>
     </AnimatePresence>
