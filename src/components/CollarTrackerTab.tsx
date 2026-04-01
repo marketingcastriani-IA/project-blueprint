@@ -910,10 +910,221 @@ export default function CollarTrackerTab() {
                       <Star key={si} className={cn("w-3.5 h-3.5", si < collar.rating ? "text-amber-400 fill-amber-400" : "text-muted-foreground/30")} />
                     ))}
                   </span>
+                {/* Select for chart button */}
+                <button
+                  onClick={() => setSelectedCollar({ ...collar, familyName: collar.familyName })}
+                  className={cn(
+                    "mt-3 w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all border",
+                    selectedCollar?.callSymbol === collar.callSymbol && selectedCollar?.putSymbol === collar.putSymbol
+                      ? "bg-primary text-primary-foreground border-primary shadow-lg"
+                      : "bg-muted/50 hover:bg-muted border-border text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <BarChart3 className="w-3.5 h-3.5" /> Ver Gráfico Payoff
+                </button>
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ─── PAYOFF CHART ───────────────────────────────────────── */}
+      {selectedCollar && payoffData.length > 0 && (
+        <div className="mb-5 rounded-2xl border-2 border-primary/40 bg-card overflow-hidden shadow-[0_8px_30px_-4px_hsl(var(--primary)/0.15)]">
+          <div className="px-5 py-4 bg-muted/30 border-b border-border/50">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <BarChart3 className="w-5 h-5 text-primary" />
+                <div>
+                  <h3 className="text-sm font-black text-foreground uppercase tracking-wider">
+                    Gráfico Payoff — Collar {selectedCollar.familyName}
+                  </h3>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    {selectedCollar.callSymbol} (V Call) + {selectedCollar.putSymbol} (C Put) · Score: {selectedCollar.qualityScore}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedCollar(null)}
+                className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Metrics row */}
+          <div className="px-5 py-3 grid grid-cols-2 sm:grid-cols-5 gap-3 border-b border-border/30 bg-muted/10">
+            <div>
+              <p className="text-[9px] font-black uppercase text-muted-foreground flex items-center gap-1">
+                <TrendingUp className="h-3 w-3 text-emerald-500" /> Ganho Máx (Teto)
+              </p>
+              <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">
+                {formatPercent(selectedCollar.rentAlta)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[9px] font-black uppercase text-muted-foreground flex items-center gap-1">
+                <TrendingDown className="h-3 w-3 text-red-500" /> Perda Máx (Piso)
+              </p>
+              <p className="text-sm font-black text-red-600 dark:text-red-400">
+                {formatPercent(selectedCollar.rentBaixa)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[9px] font-black uppercase text-muted-foreground">Custo Collar</p>
+              <p className={cn("text-sm font-black", (selectedCollar.custoCollar ?? 0) <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-orange-600 dark:text-orange-400")}>
+                {formatBRL(selectedCollar.custoCollar)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[9px] font-black uppercase text-muted-foreground">Breakeven</p>
+              <p className="text-sm font-black text-foreground">{selectedBreakeven ? formatBRL(selectedBreakeven) : "—"}</p>
+            </div>
+            <div>
+              <p className="text-[9px] font-black uppercase text-muted-foreground">CDI Período</p>
+              <p className="text-sm font-black text-amber-600 dark:text-amber-400">{formatPercent(selectedCollar.cdiPeriodo)}</p>
+            </div>
+          </div>
+
+          {/* Chart */}
+          <div className="px-3 py-4">
+            <div className="h-[400px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={payoffData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="collarLoss" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.02} />
+                    </linearGradient>
+                    <linearGradient id="collarGain" x1="0" y1="1" x2="0" y2="0">
+                      <stop offset="0%" stopColor="hsl(142 76% 36%)" stopOpacity={0.05} />
+                      <stop offset="100%" stopColor="hsl(142 76% 36%)" stopOpacity={0.35} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" opacity={0.3} />
+                  <XAxis
+                    type="number" dataKey="price"
+                    domain={["dataMin", "dataMax"]}
+                    tickFormatter={(v) => v.toFixed(2)}
+                    stroke="hsl(var(--muted-foreground))" fontSize={11}
+                    label={{ value: "Preço", position: "insideBottomRight", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                  />
+                  <YAxis
+                    tickFormatter={(v) => `R$${v.toFixed(0)}`}
+                    stroke="hsl(var(--muted-foreground))" fontSize={11} width={65}
+                    label={{ value: "Lucro", angle: -90, position: "insideLeft", offset: 5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
+                  />
+
+                  {/* Zero line */}
+                  <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" strokeOpacity={0.5} />
+
+                  {/* Strike lines */}
+                  <ReferenceLine
+                    x={selectedCollar.putStrike} stroke="hsl(0 84% 60%)"
+                    strokeDasharray="6 3" strokeWidth={1.5}
+                    label={{ value: `PUT ${selectedCollar.putStrike.toFixed(2)}`, position: "top", fill: "hsl(0 84% 60%)", fontSize: 10, fontWeight: 700 }}
+                  />
+                  <ReferenceLine
+                    x={selectedCollar.callStrike} stroke="hsl(217 91% 60%)"
+                    strokeDasharray="6 3" strokeWidth={1.5}
+                    label={{ value: `CALL ${selectedCollar.callStrike.toFixed(2)}`, position: "top", fill: "hsl(217 91% 60%)", fontSize: 10, fontWeight: 700 }}
+                  />
+
+                  {/* Current price */}
+                  {selectedCollar.stockAsk && (
+                    <ReferenceLine
+                      x={selectedCollar.stockAsk} stroke="hsl(var(--primary))"
+                      strokeWidth={2.5}
+                      label={{ value: `PREÇO ${selectedCollar.stockAsk.toFixed(2)}`, position: "top", fill: "hsl(var(--primary))", fontSize: 11, fontWeight: 900 }}
+                    />
+                  )}
+
+                  {/* Breakeven */}
+                  {selectedBreakeven && (
+                    <ReferenceLine
+                      x={selectedBreakeven} stroke="hsl(45 95% 55%)"
+                      strokeDasharray="4 2" strokeWidth={1.5}
+                      label={{ value: `BE ${selectedBreakeven.toFixed(2)}`, position: "insideTopRight", fill: "hsl(45 95% 55%)", fontSize: 10, fontWeight: 700 }}
+                    />
+                  )}
+
+                  <Tooltip content={<CollarChartTooltip />} />
+
+                  {/* Loss area */}
+                  <Area
+                    type="monotone" dataKey="payoffExpiry" stroke="none" fill="url(#collarLoss)"
+                    isAnimationActive={false}
+                    baseValue={0}
+                    activeDot={false}
+                  />
+
+                  {/* Today line */}
+                  <Line
+                    name="Hoje (T+0)" type="monotone" dataKey="payoffToday"
+                    stroke="hsl(142 76% 36%)" strokeWidth={2} strokeDasharray="5 5"
+                    dot={false} isAnimationActive={false}
+                  />
+
+                  {/* Expiry line */}
+                  <Line
+                    name="No Vencimento" type="monotone" dataKey="payoffExpiry"
+                    stroke="hsl(217 91% 60%)" strokeWidth={3}
+                    dot={false} isAnimationActive={false}
+                  />
+
+                  {/* Current price dot */}
+                  {selectedCollar.stockAsk && (() => {
+                    const closest = payoffData.reduce((prev, curr) =>
+                      Math.abs(curr.price - selectedCollar.stockAsk!) < Math.abs(prev.price - selectedCollar.stockAsk!) ? curr : prev
+                    );
+                    return (
+                      <ReferenceDot
+                        x={closest.price} y={closest.payoffExpiry}
+                        r={6} fill="hsl(var(--primary))" stroke="white" strokeWidth={2}
+                      />
+                    );
+                  })()}
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Legend */}
+            <div className="flex flex-wrap items-center justify-center gap-6 mt-3 text-xs">
+              <span className="flex items-center gap-2">
+                <span className="w-6 h-0.5 bg-blue-500 rounded" style={{ display: "inline-block" }} />
+                <span className="text-muted-foreground font-bold">No Vencimento</span>
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="w-6 h-0.5 rounded" style={{ display: "inline-block", background: "hsl(142 76% 36%)", borderStyle: "dashed" }} />
+                <span className="text-muted-foreground font-bold">Hoje (T+0)</span>
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-primary" style={{ display: "inline-block" }} />
+                <span className="text-muted-foreground font-bold">Preço Atual</span>
+              </span>
+            </div>
+
+            {/* Structure summary */}
+            <div className="mt-4 p-3 rounded-xl bg-muted/30 border border-border/50">
+              <div className="grid grid-cols-3 gap-4 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-foreground" />
+                  <span className="text-muted-foreground">Compra <span className="font-black text-foreground">{selectedCollar.familyName}</span></span>
+                  <span className="ml-auto font-bold">{formatBRL(selectedCollar.stockAsk)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-red-500" />
+                  <span className="text-muted-foreground">C Put <span className="font-black text-foreground">{selectedCollar.putSymbol}</span></span>
+                  <span className="ml-auto font-bold">Strike {formatBRL(selectedCollar.putStrike)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-blue-500" />
+                  <span className="text-muted-foreground">V Call <span className="font-black text-foreground">{selectedCollar.callSymbol}</span></span>
+                  <span className="ml-auto font-bold">Strike {formatBRL(selectedCollar.callStrike)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
