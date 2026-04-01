@@ -508,6 +508,30 @@ export default function BoxTracker() {
   // Determine winner
   const winnerKey = topPairs.length > 0 ? `${topPairs[0].familyName}-${topPairs[0].strike}` : null;
 
+  // ─── NOTIFICAÇÃO PUSH: monitorar box acima do threshold ────
+  useEffect(() => {
+    if (!notifEnabled || !("Notification" in window) || Notification.permission !== "granted") return;
+    if (topPairs.length === 0) return;
+
+    const now = Date.now();
+    if (now - lastNotifRef.current < NOTIF_COOLDOWN_MS) return;
+
+    const best = topPairs[0];
+    if (best.lucroPercent === null || best.cdiPeriodo === null || best.cdiPeriodo <= 0) return;
+
+    const cdiPercent = (best.lucroPercent / best.cdiPeriodo) * 100;
+    
+    if (cdiPercent >= notifThreshold) {
+      lastNotifRef.current = now;
+      new Notification(`🚀 Box ${best.familyName} a ${cdiPercent.toFixed(0)}% do CDI!`, {
+        body: `Strike R$ ${best.strike.toFixed(2)} · Lucro ${best.lucroPercent.toFixed(2)}% · Meta: ${notifThreshold}% CDI`,
+        icon: "/favicon.ico",
+        tag: "box-tracker-alert",
+        renotify: true,
+      });
+    }
+  }, [topPairs, notifEnabled, notifThreshold]);
+
   // ─── RENDER ───────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-background text-foreground font-mono p-3 md:p-6">
