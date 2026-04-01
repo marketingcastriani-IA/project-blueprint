@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import { PayoffPoint } from '@/lib/types';
+import { Leg } from '@/lib/types';
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { Area, CartesianGrid, ReferenceLine, XAxis, YAxis, Line, ComposedChart, ResponsiveContainer, ReferenceDot } from 'recharts';
-import { calculateCDIReturn } from '@/lib/payoff';
+import { calculateCDIReturn, calculatePortfolioGreeks } from '@/lib/payoff';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { TrendingUp, TrendingDown, Target, Percent, DollarSign, Layers } from 'lucide-react';
