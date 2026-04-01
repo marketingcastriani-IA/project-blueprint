@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { useAuth } from '@/contexts/AuthContext';
@@ -268,9 +266,6 @@ export default function Dashboard() {
 
   const isLimitReached = access.trialExpired || (access.planType === 'free' && access.daysRemaining !== null && access.daysRemaining <= 0);
 
-  const incrementSimulations = async () => {
-    // No longer counting simulations - trial is time-based
-  };
 
   const addLeg = useCallback(async (leg: Leg) => { 
     if (isLimitReached) {
@@ -380,17 +375,8 @@ export default function Dashboard() {
       }));
       await supabase.from('legs').insert(legsToInsert);
 
-      // Incrementar contador de simulações
-      const { data: currentAccess } = await supabase
-        .from('user_access')
-        .select('simulations_count')
-        .eq('user_id', user.id)
-        .single();
-      
-      await supabase
-        .from('user_access')
-        .update({ simulations_count: (currentAccess?.simulations_count || 0) + 1 })
-        .eq('user_id', user.id);
+      // Incrementar contador de simulações via função segura
+      await supabase.rpc('increment_simulation_count', { _user_id: user.id });
 
       setShowSaveDialog(true);
     } catch (err: any) {
