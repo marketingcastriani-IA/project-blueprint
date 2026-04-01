@@ -1,149 +1,52 @@
+# Melhorias Visuais, de Sistema e Funcionalidades Inovadoras — OpçõesX
 
+## O que o app já tem
 
-# Análise Completa do OpçõesX — Melhorias e Correções
-
-## RESUMO EXECUTIVO
-
-Analisei 100% do código: páginas, componentes, lógica financeira, banco de dados, segurança e UX. Encontrei **4 vulnerabilidades de segurança** (1 crítica), **3 bugs ativos**, e identifiquei **12 melhorias** organizadas por prioridade.
+O OpçõesX já possui: análise de estruturas via imagem/manual, payoff chart, gregas (Black-Scholes), rastreador de Box e Collar em tempo real, portfólio com P&L, diversificador, dados ao vivo via RTD Bridge, análise por IA, e push notifications para Box. É um produto maduro.
 
 ---
 
-## 1. VULNERABILIDADES DE SEGURANÇA (CRÍTICO)
+## A. MELHORIAS VISUAIS
 
-### 1.1 Escalação de Privilégios no `user_access` (CRÍTICO)
-A RLS policy "Users can update own simulation count" permite que qualquer usuário autenticado altere **todos os campos** da sua linha — incluindo `status`, `plan_type`, `expires_at`. Um usuário pode se dar plano PRO gratuito com um simples `UPDATE` no console do navegador.
+### A1. Dark Mode Glass Morphism nos Cards
 
-**Correção**: Criar uma função `SECURITY DEFINER` que só permite atualizar `simulations_count`, ou restringir a policy com `WITH CHECK` limitado a colunas específicas.
+Os cards atuais usam `bg-gradient-to-br from-card/80 to-card/40` — funcional, mas plano. Adicionar efeito glassmorphism mais pronunciado com `backdrop-blur-2xl`, bordas sutis com gradiente, e micro-sombras internas para dar profundidade real, alinhado ao design language vibrante já existente.
 
-### 1.2 Falta de restrição de INSERT na `user_roles`
-A policy "Admins can manage roles" usa o role `public` ao invés de `authenticated`. Sem uma policy de INSERT restritiva, há risco de auto-atribuição de admin.
+### A2. Animações de Transição entre Páginas
 
-**Correção**: Adicionar policy explícita que bloqueia INSERT para não-admins.
+Atualmente não há transição entre rotas — o conteúdo aparece abruptamente. Adicionar `framer-motion` com `AnimatePresence` no `App.tsx` para fade+slide suave entre páginas (200ms).
 
-### 1.3 Upload irrestrito no bucket `email-images`
-Qualquer usuário autenticado pode fazer upload. Deveria ser restrito a admins.
+### A3. Skeleton Loaders em todas as Páginas
 
-### 1.4 Leaked Password Protection desativado
-Ativar nas configurações do Supabase Auth.
+Portfolio, History, Dashboard e DadosAoVivo mostram `Loader2` spinner genérico. Substituir por skeletons que imitam o layout real (cards, tabelas, gráficos) para percepção de velocidade.
 
----
+### A4. Microinterações nos Botões de Ação
 
-## 2. BUGS ATIVOS
+Botões como "Salvar", "Analisar IA" e "Calcular" não têm feedback tátil além do hover. Adicionar scale(0.97) no click, ripple effect sutil, e ícone animado de confirmação (checkmark que desenha).
 
-### 2.1 `"use client"` desnecessário (Dashboard.tsx, AnalysisDetail.tsx)
-`"use client"` é diretiva do Next.js. No Vite/React puro não faz nada, mas indica confusão de framework. Remover.
+### A5. Gráfico de Payoff com Gradiente e Tooltip Rico
 
-### 2.2 Warning: Function components cannot be given refs (Dashboard.tsx)
-O console mostra erro de ref no `Dialog`. O componente `DialogContent` está tentando passar ref para um componente funcional sem `forwardRef`. Provavelmente causado pela versão do Radix UI ou por um wrapper customizado.
-
-### 2.3 Uso excessivo de `as any` (145 ocorrências)
-Tabelas como `site_settings` existem nos types mas são acessadas com `as any`, perdendo toda a type-safety. Também em `user_access`, `legs`, e `analyses` — campos como `status`, `closed_at` são forçados com `as any` nos updates.
-
-**Correção**: Remover os casts `as any` e usar os tipos gerados do Supabase corretamente. A tabela `site_settings` já está tipada — não precisa de `from('site_settings' as any)`.
+O PayoffChart atual é funcional mas básico. Adicionar gradiente de preenchimento (verde acima de zero, vermelho abaixo), tooltip com todas as gregas no ponto, e linha vertical de "preço atual" com label.
 
 ---
 
-## 3. MELHORIAS DE PERFORMANCE
+## B. MELHORIAS DE SISTEMA
 
-### 3.1 Dashboard.tsx — Arquivo monolítico (774 linhas)
-O `PortfolioSummary` é um componente inteiro dentro do mesmo arquivo. O Dashboard mistura lógica de fetch, UI, estado e side effects.
+### B1. Modo Offline / PWA Completo
 
-**Melhoria**: Extrair `PortfolioSummary` para seu próprio arquivo. Extrair a lógica de save/AI para custom hooks (`useSaveAnalysis`, `useAIAnalysis`).
+Registrar Service Worker, adicionar `manifest.json`, cachear assets. O usuário poderá instalar o app no celular e acessar análises salvas offline. Isso também habilita as push notifications de forma mais robusta.
 
-### 3.2 CollarTrackerTab.tsx — 1391 linhas
-Arquivo gigante com tudo inline. Funções utilitárias (`calcDiasUteis`, `formatBRL`, `extractStrikeFromTicker`) duplicadas entre BoxTracker e CollarTracker.
+### B2. Atalhos de Teclado (Power User)
 
-**Melhoria**: Mover funções compartilhadas para `src/lib/b3-utils.ts`. Extrair sub-componentes (CollarResultCard, CollarPayoffChart).
+Adicionar shortcuts: `Ctrl+S` salvar análise, `Ctrl+Enter` analisar IA, `N` nova análise, `Esc` fechar modais. Exibir dica de atalho nos tooltips dos botões.
 
-### 3.3 `calculateMetrics` chama `generatePayoffCurve` internamente
-Em `payoff.ts`, `calculateMetrics` gera uma curva de 1000 pontos para encontrar max/min. Depois o Dashboard gera outra curva de 200 pontos para o gráfico. Isso duplica o cálculo.
+### B3. Export Avançado
 
-**Melhoria**: Calcular métricas a partir da curva já gerada, ou cachear.
+Além do PDF atual, permitir exportar para Excel (.xlsx) com abas separadas (Resumo, Pernas, Payoff Data, Gregas). Útil para quem precisa importar em planilhas próprias.
 
-### 3.4 `PortfolioSummary` faz fetch sem React Query
-Usa `useEffect` + `useState` direto, sem cache nem stale-while-revalidate. Se o usuário navega e volta, refaz o fetch.
+### B4. Histórico de Alertas do Box Tracker
 
-**Melhoria**: Migrar para `useQuery` do TanStack Query.
+As notificações push atuais não ficam registradas. Criar um painel de "Histórico de Alertas" mostrando horário, ativo, % CDI, e strike do box que disparou o alerta.
 
 ---
-
-## 4. MELHORIAS DE UX
-
-### 4.1 Sem feedback de loading na landing page (Index.tsx)
-A página busca `proPrice` do Supabase mas não mostra skeleton/loader enquanto carrega.
-
-### 4.2 Sem tratamento de erro no `PortfolioSummary`
-Se o fetch falha, o componente simplesmente não renderiza nada — sem mensagem de erro.
-
-### 4.3 Botão "Analisar IA" aparece 3 vezes
-O mesmo botão está no topo, no fundo e na sticky bar. Poluição visual.
-
-**Melhoria**: Manter apenas na sticky bar (que já é fixa e sempre visível).
-
-### 4.4 Feature flag do Collar via localStorage
-O toggle do Admin Panel usa `localStorage`, que é local ao navegador. Outro admin ou outro dispositivo não verá a mudança.
-
-**Melhoria**: Mover feature flags para a tabela `site_settings` no Supabase.
-
----
-
-## 5. MELHORIAS DE CÓDIGO
-
-### 5.1 Função `incrementSimulations` está vazia
-```typescript
-const incrementSimulations = async () => {
-  // No longer counting simulations - trial is time-based
-};
-```
-Código morto. A contagem de simulações ainda é feita no `saveAnalysis`, mas a função está abandonada. Limpar.
-
-### 5.2 Duplicação de lógica de fetch de preço PRO
-`Index.tsx`, `Settings.tsx`, `AccessBlocked.tsx` e `AdminPanel.tsx` todos fazem o mesmo fetch de `site_settings` para o preço PRO. 
-
-**Melhoria**: Criar hook `useProPrice()`.
-
-### 5.3 Falta de error boundaries
-Nenhum Error Boundary no app. Se um componente filho crashar (ex: gráfico com dados inválidos), o app inteiro cai.
-
-**Melhoria**: Adicionar `ErrorBoundary` ao redor das rotas principais.
-
----
-
-## 6. PLANO DE IMPLEMENTAÇÃO RECOMENDADO
-
-```text
-PRIORIDADE 1 — Segurança (URGENTE)
-├── Corrigir RLS do user_access (restrição de colunas)
-├── Adicionar policy de INSERT restritiva no user_roles
-├── Restringir upload do bucket email-images a admins
-└── Ativar Leaked Password Protection
-
-PRIORIDADE 2 — Bugs
-├── Remover "use client" dos arquivos Vite
-├── Corrigir warning de ref no Dialog
-└── Eliminar casts "as any" desnecessários
-
-PRIORIDADE 3 — Performance & Código
-├── Extrair PortfolioSummary + migrar para useQuery
-├── Criar hook useProPrice()
-├── Mover utils compartilhados (extractStrike, formatBRL)
-├── Remover código morto (incrementSimulations)
-└── Reduzir botões duplicados de "Analisar IA"
-
-PRIORIDADE 4 — Arquitetura
-├── Quebrar Dashboard.tsx em componentes menores
-├── Quebrar CollarTrackerTab.tsx em sub-componentes
-├── Adicionar ErrorBoundary global
-└── Migrar feature flags para Supabase
-```
-
----
-
-## NOTAS POSITIVAS
-
-- Arquitetura de autenticação bem feita com Supabase Auth + roles separados
-- Cálculos financeiros (Black-Scholes, CDI, payoff) robustos e corretos
-- UI/UX profissional com temas, responsividade e animações
-- Sistema de detecção de estratégias (Collar, Covered Call, Spreads) bem implementado
-- Integração RTD Bridge para dados em tempo real é diferencial competitivo
 
