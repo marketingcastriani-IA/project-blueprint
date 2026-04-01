@@ -20,6 +20,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 
 // ─── TIPOS ───────────────────────────────────────────────────
+type CollarTipo = "Normal" | "Baixa" | "ATM" | "Calendário";
+type CollarCusto = "Zero-Cost" | "Crédito" | "Débito";
+
 interface OptionTicker {
   id: string;
   symbol: string;
@@ -46,7 +49,12 @@ interface CollarResult {
   diasUteis: number | null;
   cdiPeriodo: number | null;
   rating: number; // 1-3 stars
-  tipo: string;   // Zero-Cost / Crédito / Débito
+  tipo: CollarTipo;
+  custoTipo: CollarCusto;
+  distPutPct: number | null;   // % distância put do preço (negativo = OTM)
+  distCallPct: number | null;  // % distância call do preço (positivo = OTM)
+  riskRewardRatio: number | null; // rentAlta / |rentBaixa| (quanto maior melhor)
+  qualityScore: number; // 0-100 score composto
 }
 
 interface StockFamily {
@@ -167,6 +175,9 @@ export default function CollarTrackerTab() {
   const [vencimentoManual, setVencimentoManual] = useState<string>("");
   const [vencSaved, setVencSaved] = useState(false);
   const [editingVenc, setEditingVenc] = useState(false);
+  const [filterTipo, setFilterTipo] = useState<CollarTipo | "Todos">("Todos");
+  const [filterCusto, setFilterCusto] = useState<CollarCusto | "Todos">("Todos");
+  const [hideNegative, setHideNegative] = useState(false);
   const [cdiAnual, setCdiAnual] = useState<number>(() => {
     try {
       const saved = localStorage.getItem(CDI_STORAGE_KEY);
@@ -381,13 +392,53 @@ export default function CollarTrackerTab() {
             else if (count >= 1) rating = 2;
           }
 
-          // Tipo baseado no custo do collar
-          let tipo = "Collar";
-          if (custoCollar !== null) {
-            if (Math.abs(custoCollar) < 0.05) tipo = "Zero-Cost";
-            else if (custoCollar < 0) tipo = "Crédito";
-            else tipo = "Débito";
+          // Classificação do tipo de collar baseado nos strikes
+          let tipo: CollarTipo = "Normal";
+          const distPutPct = stockAsk !== null && stockAsk > 0 ? ((putStrike - stockAsk) / stockAsk) * 100 : null;
+          const distCallPct = stockAsk !== null && stockAsk > 0 ? ((callStrike - stockAsk) / stockAsk) * 100 : null;
+
+          if (callStrike < putStrike) {
+            // Call vendida ABAIXO da put = collar de baixa (bearish)
+            tipo = "Baixa";
+          } else if (distPutPct !== null && Math.abs(distPutPct) < 2) {
+            // Put muito próxima do preço = ATM collar (mais proteção)
+            tipo = "ATM";
+          } else {
+            // Normal: K_put < S₀ < K_call
+            tipo = "Normal";
           }
+
+          // Custo tipo
+          let custoTipo: CollarCusto = "Débito";
+          if (custoCollar !== null) {
+            if (Math.abs(custoCollar) < 0.05) custoTipo = "Zero-Cost";
+            else if (custoCollar < 0) custoTipo = "Crédito";
+          }
+
+          // Risk/reward ratio
+          const riskRewardRatio = (rentAlta !== null && rentBaixa !== null && rentBaixa !== 0)
+            ? Math.abs(rentAlta / rentBaixa) : null;
+
+          // Quality score (0-100) para auto-ranking inteligente
+          let qualityScore = 50;
+          if (rentAlta !== null && rentBaixa !== null && cdiPeriodo !== null) {
+            // +20 se rentAlta > CDI
+            if (rentAlta > cdiPeriodo) qualityScore += 20;
+            // +15 se rentBaixa > CDI (raro, excelente)
+            if (rentBaixa > cdiPeriodo) qualityScore += 15;
+            // +10 se collar zero-cost ou crédito
+            if (custoTipo === "Zero-Cost") qualityScore += 10;
+            if (custoTipo === "Crédito") qualityScore += 15;
+            // +10 se put 5-15% OTM (zona ideal)
+            if (distPutPct !== null && distPutPct >= -15 && distPutPct <= -5) qualityScore += 10;
+            // +10 se call 5-15% OTM (zona ideal)
+            if (distCallPct !== null && distCallPct >= 5 && distCallPct <= 15) qualityScore += 10;
+            // -20 se perda muito grande
+            if (rentBaixa < -10) qualityScore -= 20;
+            // +5 por bom risk/reward
+            if (riskRewardRatio !== null && riskRewardRatio > 2) qualityScore += 5;
+          }
+          qualityScore = Math.max(0, Math.min(100, qualityScore));
 
           results.push({
             callSymbol: call.symbol, putSymbol: put.symbol,
@@ -396,13 +447,14 @@ export default function CollarTrackerTab() {
             callBid, putAsk, stockAsk, stockUlt,
             custoCollar, rentBaixa, rentNeutra, rentAlta,
             vencimento: vencParaCalculo, diasUteis, cdiPeriodo,
-            rating, tipo,
+            rating, tipo, custoTipo,
+            distPutPct, distCallPct, riskRewardRatio, qualityScore,
           });
         }
       }
 
-      // Sort by best alta rentability
-      results.sort((a, b) => (b.rentAlta ?? -999) - (a.rentAlta ?? -999));
+      // Sort by qualityScore (melhor primeiro)
+      results.sort((a, b) => b.qualityScore - a.qualityScore);
       return results;
     },
     [rows, vencimentoManual, cdiAnual]
@@ -415,7 +467,7 @@ export default function CollarTrackerTab() {
     const best = collars.find((c) => c.rentAlta !== null && c.stockAsk !== null);
     if (best) bestPerFamily.push({ ...best, familyName: f.name });
   });
-  bestPerFamily.sort((a, b) => (b.rentAlta ?? 0) - (a.rentAlta ?? 0));
+  bestPerFamily.sort((a, b) => b.qualityScore - a.qualityScore);
   const topCollars = bestPerFamily.slice(0, 10);
 
   const isConnected = status === "connected";
@@ -505,7 +557,45 @@ export default function CollarTrackerTab() {
         </div>
       </div>
 
-      {/* VENCIMENTO */}
+      {/* FILTROS INTELIGENTES */}
+      <div className="mb-5 p-4 rounded-xl border border-border bg-card shadow-md">
+        <h3 className="text-xs font-black text-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+          🎯 Filtros de Seleção de Strike
+        </h3>
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="flex items-center gap-2">
+            <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Tipo:</label>
+            <select value={filterTipo} onChange={(e) => setFilterTipo(e.target.value as CollarTipo | "Todos")}
+              className="bg-background border border-input rounded-lg px-2 py-1.5 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary">
+              <option value="Todos">Todos</option>
+              <option value="Normal">Normal (Put OTM + Call OTM)</option>
+              <option value="ATM">ATM (Put próxima do preço)</option>
+              <option value="Baixa">Baixa (Call abaixo da Put)</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Custo:</label>
+            <select value={filterCusto} onChange={(e) => setFilterCusto(e.target.value as CollarCusto | "Todos")}
+              className="bg-background border border-input rounded-lg px-2 py-1.5 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary">
+              <option value="Todos">Todos</option>
+              <option value="Zero-Cost">Zero-Cost</option>
+              <option value="Crédito">Crédito</option>
+              <option value="Débito">Débito</option>
+            </select>
+          </div>
+          <button
+            onClick={() => setHideNegative(!hideNegative)}
+            className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors",
+              hideNegative ? "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-400 text-emerald-700 dark:text-emerald-300" : "bg-muted border-border text-muted-foreground")}>
+            {hideNegative ? <ToggleRight className="w-3.5 h-3.5" /> : <ToggleLeft className="w-3.5 h-3.5" />}
+            Ocultar negativos
+          </button>
+        </div>
+        <p className="text-[9px] text-muted-foreground mt-2">
+          📐 Zona ideal: PUT 5-15% abaixo · CALL 5-15% acima · Custo ≈ zero · Rent. &gt; CDI
+        </p>
+      </div>
+
       <div className="mb-5">
         <div className={cn("rounded-xl border p-4 transition-all",
           vencSaved ? "bg-orange-50 dark:bg-orange-950/20 border-orange-400/50" : "bg-card border-border shadow-md")}>
@@ -606,7 +696,15 @@ export default function CollarTrackerTab() {
                   <span className="text-xs text-muted-foreground uppercase tracking-wider font-bold">
                     {i === 0 ? "🥇 Melhor Collar" : i === 1 ? "🥈 2º Melhor" : "🥉 3º Melhor"}
                   </span>
-                  <span className="ml-auto text-[9px] uppercase tracking-widest font-black text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{collar.tipo}</span>
+                  <span className={cn("ml-auto text-[9px] uppercase tracking-widest font-black px-2 py-0.5 rounded-full",
+                    collar.tipo === "Normal" ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300" :
+                    collar.tipo === "ATM" ? "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300" :
+                    collar.tipo === "Baixa" ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300" :
+                    "bg-muted text-muted-foreground")}>{collar.tipo}</span>
+                  <span className={cn("text-[9px] uppercase tracking-widest font-black px-2 py-0.5 rounded-full",
+                    collar.custoTipo === "Crédito" ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300" :
+                    collar.custoTipo === "Zero-Cost" ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300" :
+                    "bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300")}>{collar.custoTipo}</span>
                 </div>
 
                 {/* Stock info */}
@@ -670,6 +768,18 @@ export default function CollarTrackerTab() {
                   <span className="text-muted-foreground">
                     CDI Período: <span className="font-bold text-amber-600 dark:text-amber-400">{formatPercent(collar.cdiPeriodo)}</span>
                   </span>
+                  <span className="text-muted-foreground">
+                    Put: <span className="font-bold">{collar.distPutPct !== null ? formatPercent(collar.distPutPct) : "—"}</span>
+                  </span>
+                  <span className="text-muted-foreground">
+                    Call: <span className="font-bold">{collar.distCallPct !== null ? `+${formatPercent(collar.distCallPct)}` : "—"}</span>
+                  </span>
+                  <span className={cn("font-black px-1.5 py-0.5 rounded-full text-[9px]",
+                    collar.qualityScore >= 80 ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300" :
+                    collar.qualityScore >= 60 ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300" :
+                    "bg-muted text-muted-foreground")}>
+                    Score: {collar.qualityScore}
+                  </span>
                   <span className="flex items-center gap-0.5">
                     {Array.from({ length: 3 }).map((_, si) => (
                       <Star key={si} className={cn("w-3.5 h-3.5", si < collar.rating ? "text-amber-400 fill-amber-400" : "text-muted-foreground/30")} />
@@ -704,7 +814,13 @@ export default function CollarTrackerTab() {
 
       {/* FAMILIES */}
       {families.map((family) => {
-        const collars = calculateCollars(family);
+        const allCollars = calculateCollars(family);
+        const collars = allCollars.filter((c) => {
+          if (filterTipo !== "Todos" && c.tipo !== filterTipo) return false;
+          if (filterCusto !== "Todos" && c.custoTipo !== filterCusto) return false;
+          if (hideNegative && c.rentAlta !== null && c.rentAlta < 0) return false;
+          return true;
+        });
         const stockRow = rows.get(family.name);
         const stockPrice = stockRow?.ultimo;
         const calls = family.tickers.filter((t) => t.type === "CALL");
@@ -783,6 +899,7 @@ export default function CollarTrackerTab() {
                     <table className="w-full text-xs">
                       <thead>
                         <tr className="border-b border-border text-[9px] uppercase tracking-wider text-muted-foreground">
+                          <th className="text-center py-2 px-1">Tipo</th>
                           <th className="text-left py-2 px-2">V Call</th>
                           <th className="text-left py-2 px-2">C Put</th>
                           <th className="text-right py-2 px-2 bg-muted/50">Strike Call</th>
@@ -794,6 +911,7 @@ export default function CollarTrackerTab() {
                           <th className="text-right py-2 px-2">↔ Neutra</th>
                           <th className="text-right py-2 px-2">↑ Alta</th>
                           <th className="text-right py-2 px-2">CDI Per.</th>
+                          <th className="text-center py-2 px-1">Score</th>
                           <th className="text-center py-2 px-2">Rating</th>
                         </tr>
                       </thead>
@@ -801,6 +919,13 @@ export default function CollarTrackerTab() {
                         {collars.map((c, ci) => (
                           <tr key={ci} className={cn("border-b border-border/30 hover:bg-muted/20 transition-colors",
                             ci === 0 && "bg-emerald-50/50 dark:bg-emerald-950/10")}>
+                            <td className="py-2 px-1 text-center">
+                              <span className={cn("text-[8px] font-black px-1.5 py-0.5 rounded-full whitespace-nowrap",
+                                c.tipo === "Normal" ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300" :
+                                c.tipo === "ATM" ? "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300" :
+                                c.tipo === "Baixa" ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300" :
+                                "bg-muted text-muted-foreground")}>{c.tipo}</span>
+                            </td>
                             <td className="py-2 px-2 font-bold text-blue-600 dark:text-blue-400">{c.callSymbol ?? "—"}</td>
                             <td className="py-2 px-2 font-bold text-red-600 dark:text-red-400">{c.putSymbol ?? "—"}</td>
                             <td className="py-2 px-2 text-right bg-muted/30 font-bold">{formatBRL(c.callStrike)}</td>
@@ -818,6 +943,12 @@ export default function CollarTrackerTab() {
                               {formatPercent(c.rentAlta)}
                             </td>
                             <td className="py-2 px-2 text-right text-amber-600 dark:text-amber-400">{formatPercent(c.cdiPeriodo)}</td>
+                            <td className="py-2 px-1 text-center">
+                              <span className={cn("text-[9px] font-black px-1.5 py-0.5 rounded-full",
+                                c.qualityScore >= 80 ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300" :
+                                c.qualityScore >= 60 ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300" :
+                                "bg-muted text-muted-foreground")}>{c.qualityScore}</span>
+                            </td>
                             <td className="py-2 px-2 text-center">
                               <span className="flex items-center justify-center gap-0.5">
                                 {Array.from({ length: 3 }).map((_, si) => (
