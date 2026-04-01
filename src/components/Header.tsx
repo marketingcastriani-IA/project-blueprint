@@ -31,8 +31,8 @@ export default function Header() {
     { label: 'Portfólio', path: '/portfolio', icon: Briefcase },
     { label: 'Diversificador', path: '/diversificador', icon: PieChart },
     { label: 'Tempo Real', path: '/dados-ao-vivo', icon: Radio },
-    { label: 'Box Tracker', path: '/box-tracker', icon: BarChart2 },
-    ...(collarEnabled ? [{ label: 'Collar Tracker', path: '/collar-tracker', icon: ShieldCheck }] : []),
+    { label: 'Rastrear Box', path: '/box-tracker', icon: BarChart2 },
+    ...(collarEnabled ? [{ label: 'Rastrear Collar', path: '/collar-tracker', icon: ShieldCheck }] : []),
   ];
 
   // Secondary nav items (inside "More" dropdown on md, visible on xl+)
