@@ -557,24 +557,34 @@ export default function CollarTrackerTab() {
     [rows, vencimentoManual, cdiAnual]
   );
 
-  // Global best per family
-  const bestPerFamily: (CollarResult & { familyName: string })[] = [];
-  families.forEach((f) => {
-    const collars = calculateCollars(f);
-    const best = collars.find((c) => c.rentAlta !== null && c.stockAsk !== null);
-    if (best) bestPerFamily.push({ ...best, familyName: f.name });
-  });
-  bestPerFamily.sort((a, b) => b.qualityScore - a.qualityScore);
-  const topCollars = bestPerFamily.slice(0, 10);
+  // Global best per family (memoized)
+  const topCollars = useMemo(() => {
+    const bestPerFamily: (CollarResult & { familyName: string })[] = [];
+    families.forEach((f) => {
+      if (f.tickers.length === 0) return;
+      const collars = calculateCollars(f);
+      const best = collars.find((c) => c.rentAlta !== null && c.stockAsk !== null);
+      if (best) bestPerFamily.push({ ...best, familyName: f.name });
+    });
+    bestPerFamily.sort((a, b) => b.qualityScore - a.qualityScore);
+    return bestPerFamily.slice(0, 10);
+  }, [families, calculateCollars]);
 
   // Auto-select best collar for chart (only when results exist)
+  const topCollarsKey = topCollars.map(c => `${c.callSymbol}-${c.putSymbol}`).join(",");
   useEffect(() => {
-    if (topCollars.length > 0 && !selectedCollar) {
-      setSelectedCollar(topCollars[0]);
-    } else if (topCollars.length === 0) {
+    if (topCollars.length > 0) {
+      // Auto-select first if nothing selected or current selection no longer exists
+      const stillExists = selectedCollar && topCollars.some(
+        c => c.callSymbol === selectedCollar.callSymbol && c.putSymbol === selectedCollar.putSymbol
+      );
+      if (!stillExists) {
+        setSelectedCollar(topCollars[0]);
+      }
+    } else {
       setSelectedCollar(null);
     }
-  }, [topCollars.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [topCollarsKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Generate payoff data for selected collar
   const payoffData = useMemo(() => {
