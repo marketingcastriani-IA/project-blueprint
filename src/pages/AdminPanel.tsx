@@ -95,14 +95,14 @@ export default function AdminPanel() {
       setUsers(rows);
 
       // Fetch current price from settings
-      const { data: settings } = await (supabase
-        .from('site_settings' as any)
+      const { data: settings } = await supabase
+        .from('site_settings')
         .select('*')
         .eq('id', 'pro_plan')
-        .single() as any);
+        .single();
       
-      if (settings) {
-        setProPrice(String((settings as any).value?.price));
+      if (settings?.value && typeof settings.value === 'object' && 'price' in settings.value) {
+        setProPrice(String((settings.value as { price: number }).price));
       }
     } catch (err: any) {
       toast.error('Erro ao carregar dados');
