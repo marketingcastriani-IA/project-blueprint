@@ -755,22 +755,33 @@ export default function BoxTracker() {
           </span>
         </button>
 
-        {/* 🔔 Alerta Push */}
-        <div className="flex items-center gap-2">
+        {/* 🔔 Alerta Push — DESTAQUE */}
+        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
           <button
             onClick={toggleNotifications}
             className={cn(
-              "flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-bold transition-all",
+              "flex items-center gap-2.5 px-5 py-3 rounded-xl border-2 text-sm font-black transition-all relative overflow-hidden",
               notifEnabled
-                ? "bg-blue-100 dark:bg-blue-950/40 border-blue-500/60 text-blue-700 dark:text-blue-300 shadow-[0_0_12px_rgba(59,130,246,0.3)]"
-                : "bg-muted/50 border-border text-muted-foreground"
+                ? "bg-emerald-500/20 border-emerald-400 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)]"
+                : "bg-red-500/10 border-red-400/50 text-red-400 hover:border-red-400 hover:bg-red-500/20"
             )}
           >
-            {notifEnabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
-            Alerta Push
+            {notifEnabled && (
+              <span className="absolute top-1.5 right-1.5 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+              </span>
+            )}
+            {notifEnabled ? <Bell className="w-5 h-5 animate-pulse" /> : <BellOff className="w-5 h-5" />}
+            <span className="flex flex-col items-start leading-tight">
+              <span className="text-xs uppercase tracking-wider">Alerta Push</span>
+              <span className="text-[9px] font-normal opacity-70">
+                {notifEnabled ? "📱 Notificações ativas no celular" : "Clique para ativar alertas"}
+              </span>
+            </span>
             <span className={cn(
-              "text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase",
-              notifEnabled ? "bg-blue-500 text-white" : "bg-muted-foreground/50 text-white"
+              "text-[10px] px-2 py-1 rounded-full font-black uppercase ml-1",
+              notifEnabled ? "bg-emerald-500 text-white" : "bg-red-500/80 text-white"
             )}>
               {notifEnabled ? "ON" : "OFF"}
             </span>
@@ -779,8 +790,8 @@ export default function BoxTracker() {
           {/* Threshold editável */}
           {notifEnabled && (
             editingThreshold ? (
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-muted-foreground">≥</span>
+              <div className="flex items-center gap-1.5 bg-card/80 px-3 py-2 rounded-xl border border-emerald-400/30">
+                <span className="text-xs text-muted-foreground font-bold">Alertar quando ≥</span>
                 <input
                   type="text"
                   value={thresholdInput}
@@ -798,10 +809,10 @@ export default function BoxTracker() {
                       setEditingThreshold(false);
                     }
                   }}
-                  className="w-16 bg-card border border-blue-400 dark:border-blue-500 rounded-lg px-2 py-1 text-sm text-center font-black text-blue-700 dark:text-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-16 bg-card border border-emerald-400 rounded-lg px-2 py-1 text-sm text-center font-black text-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400"
                   autoFocus
                 />
-                <span className="text-xs font-bold text-blue-600 dark:text-blue-400">% CDI</span>
+                <span className="text-xs font-bold text-emerald-400">% CDI</span>
                 <button
                   onClick={() => {
                     const val = parseFloat(thresholdInput.replace(",", "."));
@@ -811,7 +822,7 @@ export default function BoxTracker() {
                       setEditingThreshold(false);
                     }
                   }}
-                  className="px-2 py-1 bg-blue-500 hover:bg-blue-400 text-white rounded-lg text-xs font-bold transition-colors"
+                  className="px-2 py-1 bg-emerald-500 hover:bg-emerald-400 text-white rounded-lg text-xs font-bold transition-colors"
                 >
                   <Save className="w-3 h-3" />
                 </button>
@@ -825,19 +836,25 @@ export default function BoxTracker() {
             ) : (
               <button
                 onClick={() => { setThresholdInput(String(notifThreshold)); setEditingThreshold(true); }}
-                className="flex items-center gap-1.5 text-sm font-black text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors cursor-pointer"
-                title="Clique para editar o limite de alerta"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed border-emerald-400/40 text-sm font-black text-emerald-400 hover:border-emerald-400 hover:bg-emerald-500/10 transition-all cursor-pointer"
+                title="Clique para definir o limite de alerta em % do CDI"
               >
-                ≥ {notifThreshold}% CDI
-                <Pencil className="w-3 h-3 opacity-50" />
+                🎯 Meta: ≥ {notifThreshold}% CDI
+                <Pencil className="w-3.5 h-3.5 opacity-50" />
               </button>
             )
           )}
+          
           {/* Botão Histórico de Alertas */}
           {notifEnabled && alertHistory.length > 0 && (
             <button
               onClick={() => setShowAlertHistory(!showAlertHistory)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold bg-muted/50 border-border text-muted-foreground hover:text-foreground transition-all"
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-xs font-bold transition-all",
+                showAlertHistory
+                  ? "bg-emerald-500/20 border-emerald-400/50 text-emerald-400"
+                  : "bg-muted/50 border-border text-muted-foreground hover:text-foreground"
+              )}
             >
               🕐 Histórico ({alertHistory.length})
               {showAlertHistory ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
