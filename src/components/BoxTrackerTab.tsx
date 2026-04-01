@@ -93,7 +93,8 @@ const IR_RENDA_FIXA = 22.5;
 const NOTIF_ENABLED_KEY = "box-tracker-notif-enabled";
 const NOTIF_THRESHOLD_KEY = "box-tracker-notif-threshold";
 const NOTIF_THRESHOLD_DEFAULT = 110;
-const NOTIF_COOLDOWN_MS = 60_000; // 1 min cooldown entre notificações
+const NOTIF_COOLDOWN_MS = 30_000; // 30s cooldown entre notificações
+const NOTIF_SOUND_ENABLED_KEY = "box-tracker-notif-sound";
 
 function calcDiasUteis(vencimentoStr: string | null): number | null {
   if (!vencimentoStr) return null;
