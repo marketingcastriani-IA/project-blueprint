@@ -32,12 +32,17 @@ const chartConfig = {
   simulated: { label: 'Simulação', color: 'hsl(var(--primary))' },
 };
 
-const CustomTooltip = ({ active, payload, label, displayMode }: any) => {
+const CustomTooltip = ({ active, payload, label, displayMode, legs, daysToExpiry, cdiRate }: any) => {
   if (active && payload && payload.length) {
     const format = (val: number) => {
       if (displayMode === 'percent') return `${val.toFixed(2)}%`;
       return `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
     };
+
+    // Calculate greeks at this spot price
+    const greeks = legs && legs.length > 0 && daysToExpiry > 0
+      ? calculatePortfolioGreeks(legs, label, daysToExpiry, cdiRate)
+      : null;
 
     return (
       <div className="rounded-lg border border-border bg-card/95 p-3 shadow-xl backdrop-blur-sm">
@@ -61,6 +66,14 @@ const CustomTooltip = ({ active, payload, label, displayMode }: any) => {
             );
           })}
         </div>
+        {greeks && (
+          <div className="mt-2 pt-2 border-t border-border/50 grid grid-cols-2 gap-x-4 gap-y-1">
+            <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">Δ Delta</span><span className="text-[10px] font-mono font-bold">{greeks.delta}</span></div>
+            <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">Γ Gamma</span><span className="text-[10px] font-mono font-bold">{greeks.gamma}</span></div>
+            <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">Θ Theta</span><span className="text-[10px] font-mono font-bold">{greeks.theta}</span></div>
+            <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">ν Vega</span><span className="text-[10px] font-mono font-bold">{greeks.vega}</span></div>
+          </div>
+        )}
       </div>
     );
   }
