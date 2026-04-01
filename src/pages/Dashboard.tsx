@@ -23,7 +23,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2, Info, AlertTriangle, Calendar, Percent, Trash2, CheckCircle2, Download } from 'lucide-react';
+import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2, Info, AlertTriangle, Calendar, Percent, Trash2, CheckCircle2, Download, Calculator, ArrowRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, SectionDivider } from '@/components/ProfessionalLayout';
@@ -389,6 +389,34 @@ export default function Dashboard() {
       <Header />
       <main className="container px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in">
         <PortfolioSummary userId={user.id} />
+
+        {/* CTA Calculadora CDI x Opções */}
+        <Card 
+          className="border-2 border-yellow-400/50 bg-gradient-to-r from-yellow-400/10 via-yellow-400/5 to-transparent cursor-pointer hover:border-yellow-400 hover:shadow-[0_0_30px_rgba(250,204,21,0.2)] transition-all group"
+          onClick={() => navigate('/calculadora-renda-fixa')}
+        >
+          <CardContent className="py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-xl bg-yellow-400/20 border border-yellow-400/30 group-hover:bg-yellow-400/30 transition-all">
+                <Calculator className="h-6 w-6 text-yellow-400" />
+              </div>
+              <div>
+                <p className="text-base sm:text-lg font-black uppercase tracking-tight text-foreground flex items-center gap-2">
+                  Calculadora CDI × Opções
+                  <Badge className="bg-yellow-400 text-black font-black text-[9px] border-0 animate-pulse">NOVO</Badge>
+                </p>
+                <p className="text-xs sm:text-sm text-muted-foreground font-medium">
+                  Compare o rendimento da renda fixa com sua estrutura — com ou sem IR
+                </p>
+              </div>
+            </div>
+            <Button className="bg-yellow-400 hover:bg-yellow-300 text-black font-black uppercase tracking-widest text-xs shadow-[0_0_20px_rgba(250,204,21,0.4)] group-hover:shadow-[0_0_30px_rgba(250,204,21,0.6)] transition-all whitespace-nowrap">
+              <Calculator className="mr-2 h-4 w-4" />
+              Clique Aqui Para Calcular
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </CardContent>
+        </Card>
 
         {access.planType === 'free' && access.daysRemaining !== null && (
           <Card className={cn("border-2 transition-all", isLimitReached ? "border-destructive bg-destructive/5" : "border-primary/30 bg-primary/5")}>
