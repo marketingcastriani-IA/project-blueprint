@@ -541,6 +541,22 @@ export default function BoxTracker() {
     
     if (cdiPercent >= notifThreshold) {
       lastNotifRef.current = now;
+      
+      // Log to alert history
+      const entry: AlertEntry = {
+        id: generateId(),
+        time: new Date().toLocaleString('pt-BR'),
+        familyName: best.familyName,
+        strike: best.strike,
+        lucroPercent: best.lucroPercent,
+        cdiPercent: Math.round(cdiPercent),
+      };
+      setAlertHistory(prev => {
+        const updated = [entry, ...prev].slice(0, 50); // keep last 50
+        localStorage.setItem(ALERT_HISTORY_KEY, JSON.stringify(updated));
+        return updated;
+      });
+
       new Notification(`🚀 Box ${best.familyName} a ${cdiPercent.toFixed(0)}% do CDI!`, {
         body: `Strike R$ ${best.strike.toFixed(2)} · Lucro ${best.lucroPercent.toFixed(2)}% · Meta: ${notifThreshold}% CDI`,
         icon: "/favicon.ico",
