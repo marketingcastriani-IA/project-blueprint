@@ -9,7 +9,7 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import {
   Plus, Trash2, Upload, RefreshCw, ChevronDown, ChevronUp, Star,
-  ClipboardPaste, X, Shield, Trophy, Wifi, WifiOff, AlertTriangle,
+  ClipboardPaste, X, Shield, ShieldCheck, Trophy, Wifi, WifiOff, AlertTriangle,
   TrendingUp, TrendingDown, Minus, CalendarIcon, Pencil, Save,
   ToggleLeft, ToggleRight, BarChart3,
 } from "lucide-react";
