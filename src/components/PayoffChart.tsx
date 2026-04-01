@@ -93,7 +93,8 @@ export default function PayoffChart({
   entrySpotPrice,
   currentPnL,
   simulationData,
-  simulationCdiReturn
+  simulationCdiReturn,
+  legs
 }: PayoffChartProps) {
   const [displayMode, setDisplayMode] = useState<'value' | 'percent'>('value');
 
