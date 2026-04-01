@@ -422,9 +422,10 @@ export default function AdminPanel() {
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsList className="grid w-full grid-cols-3 max-w-md">
             <TabsTrigger value="users" className="font-bold">Usuários</TabsTrigger>
-            <TabsTrigger value="api" className="font-bold">Configurações API</TabsTrigger>
+            <TabsTrigger value="features" className="font-bold">Features</TabsTrigger>
+            <TabsTrigger value="api" className="font-bold">Config. API</TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="space-y-6">
@@ -664,6 +665,44 @@ export default function AdminPanel() {
               );
               })}
             </div>
+          </TabsContent>
+
+          <TabsContent value="features" className="space-y-6">
+            <Card className="border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5 text-primary" />
+                  Feature Flags
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/20">
+                  <div className="flex items-center gap-3">
+                    <Shield className="h-5 w-5 text-primary" />
+                    <div>
+                      <p className="font-bold text-sm">Collar Tracker</p>
+                      <p className="text-xs text-muted-foreground">Aba de rastreamento de Collar em tempo real</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const current = localStorage.getItem('feature-collar-tracker') !== 'false';
+                      localStorage.setItem('feature-collar-tracker', current ? 'false' : 'true');
+                      toast.success(`Collar Tracker ${current ? 'desativado' : 'ativado'}!`);
+                      window.dispatchEvent(new Event('storage'));
+                    }}
+                    className={cn(
+                      "px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all",
+                      localStorage.getItem('feature-collar-tracker') !== 'false'
+                        ? "bg-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.4)]"
+                        : "bg-red-500 text-white"
+                    )}
+                  >
+                    {localStorage.getItem('feature-collar-tracker') !== 'false' ? 'ATIVO' : 'DESATIVADO'}
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="api" className="space-y-6">

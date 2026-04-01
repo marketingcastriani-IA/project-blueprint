@@ -20,6 +20,7 @@ import FAQ from "./pages/FAQ";
 import Manual from "./pages/Manual";
 import DadosAoVivo from "./pages/DadosAoVivo";
 import BoxTracker from "./pages/BoxTracker";
+import CollarTracker from "./pages/CollarTracker";
 
 import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/ScrollToTop";
@@ -51,6 +52,7 @@ const App = () => (
               <Route path="/manual" element={<Manual />} />
               <Route path="/dados-ao-vivo" element={<DadosAoVivo />} />
               <Route path="/box-tracker" element={<BoxTracker />} />
+              <Route path="/collar-tracker" element={<CollarTracker />} />
               
               <Route path="*" element={<NotFound />} />
             </Routes>
