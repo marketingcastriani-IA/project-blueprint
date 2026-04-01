@@ -27,7 +27,6 @@ export default function Header() {
   // Primary nav items (always visible on desktop)
   const primaryNav = [
     { label: 'Nova Análise', path: '/dashboard', icon: PlusCircle },
-    { label: 'CDI x Opções', path: '/calculadora-renda-fixa', icon: Calculator, highlight: true },
     { label: 'Operações', path: '/history', icon: History },
     { label: 'Portfólio', path: '/portfolio', icon: Briefcase },
     { label: 'Diversificador', path: '/diversificador', icon: PieChart },
@@ -39,6 +38,7 @@ export default function Header() {
   // Secondary nav items (inside "More" dropdown on md, visible on xl+)
   const secondaryNav = [
     { label: 'Manual', path: '/manual', icon: BookOpen },
+    { label: 'CDI x Opções', path: '/calculadora-renda-fixa', icon: Calculator, highlight: true },
     { label: 'FAQ', path: '/faq', icon: HelpCircle },
     { label: 'Configurações', path: '/settings', icon: Settings },
     ...(access.isAdmin ? [{ label: 'Admin', path: '/admin', icon: Shield }] : []),
