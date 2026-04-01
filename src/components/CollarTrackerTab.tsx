@@ -275,6 +275,7 @@ export default function CollarTrackerTab() {
   const [filterTipo, setFilterTipo] = useState<CollarTipo | "Todos">("Todos");
   const [filterCusto, setFilterCusto] = useState<CollarCusto | "Todos">("Todos");
   const [hideNegative, setHideNegative] = useState(false);
+  const [onlyRiskFree, setOnlyRiskFree] = useState(false);
   const [selectedCollar, setSelectedCollar] = useState<(CollarResult & { familyName: string }) | null>(null);
   const [cdiAnual, setCdiAnual] = useState<number>(() => {
     try {
