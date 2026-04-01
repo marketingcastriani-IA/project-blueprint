@@ -287,12 +287,12 @@ export default function AdminPanel() {
 
   const saveSettings = async () => {
     try {
-      const { error } = await (supabase
-        .from('site_settings' as any)
+      const { error } = await supabase
+        .from('site_settings')
         .upsert({ 
           id: 'pro_plan', 
           value: { price: parseFloat(proPrice) } 
-        }) as any);
+        });
       
       if (error) throw error;
       toast.success('Configurações salvas com sucesso!');
