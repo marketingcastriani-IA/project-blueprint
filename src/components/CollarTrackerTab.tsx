@@ -371,7 +371,7 @@ export default function CollarTrackerTab() {
       const symbols = rawText
         .split(/[\n,;\t\s]+/)
         .map((s) => s.trim().toUpperCase())
-        .filter((s) => s.length >= 5 && /^[A-Z]{4,5}[A-X]\d+$/.test(s));
+        .filter((s) => s.length >= 5 && /^[A-Z]{4,6}\d{0,2}[A-X]\d+$/.test(s));
       if (!symbols.length) return;
       const newTickers: OptionTicker[] = symbols.map((symbol) => ({
         id: generateId(), symbol,
@@ -557,24 +557,34 @@ export default function CollarTrackerTab() {
     [rows, vencimentoManual, cdiAnual]
   );
 
-  // Global best per family
-  const bestPerFamily: (CollarResult & { familyName: string })[] = [];
-  families.forEach((f) => {
-    const collars = calculateCollars(f);
-    const best = collars.find((c) => c.rentAlta !== null && c.stockAsk !== null);
-    if (best) bestPerFamily.push({ ...best, familyName: f.name });
-  });
-  bestPerFamily.sort((a, b) => b.qualityScore - a.qualityScore);
-  const topCollars = bestPerFamily.slice(0, 10);
+  // Global best per family (memoized)
+  const topCollars = useMemo(() => {
+    const bestPerFamily: (CollarResult & { familyName: string })[] = [];
+    families.forEach((f) => {
+      if (f.tickers.length === 0) return;
+      const collars = calculateCollars(f);
+      const best = collars.find((c) => c.rentAlta !== null && c.stockAsk !== null);
+      if (best) bestPerFamily.push({ ...best, familyName: f.name });
+    });
+    bestPerFamily.sort((a, b) => b.qualityScore - a.qualityScore);
+    return bestPerFamily.slice(0, 10);
+  }, [families, calculateCollars]);
 
   // Auto-select best collar for chart (only when results exist)
+  const topCollarsKey = topCollars.map(c => `${c.callSymbol}-${c.putSymbol}`).join(",");
   useEffect(() => {
-    if (topCollars.length > 0 && !selectedCollar) {
-      setSelectedCollar(topCollars[0]);
-    } else if (topCollars.length === 0) {
+    if (topCollars.length > 0) {
+      // Auto-select first if nothing selected or current selection no longer exists
+      const stillExists = selectedCollar && topCollars.some(
+        c => c.callSymbol === selectedCollar.callSymbol && c.putSymbol === selectedCollar.putSymbol
+      );
+      if (!stillExists) {
+        setSelectedCollar(topCollars[0]);
+      }
+    } else {
       setSelectedCollar(null);
     }
-  }, [topCollars.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [topCollarsKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Generate payoff data for selected collar
   const payoffData = useMemo(() => {
@@ -914,6 +924,8 @@ export default function CollarTrackerTab() {
                       <Star key={si} className={cn("w-3.5 h-3.5", si < collar.rating ? "text-amber-400 fill-amber-400" : "text-muted-foreground/30")} />
                     ))}
                   </span>
+                </div>
+
                 {/* Select for chart button */}
                 <button
                   onClick={() => setSelectedCollar({ ...collar, familyName: collar.familyName })}
@@ -926,7 +938,6 @@ export default function CollarTrackerTab() {
                 >
                   <BarChart3 className="w-3.5 h-3.5" /> Ver Gráfico Payoff
                 </button>
-                </div>
               </div>
             );
           })}
