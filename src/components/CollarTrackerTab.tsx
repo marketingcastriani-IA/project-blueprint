@@ -411,6 +411,7 @@ export default function CollarTrackerTab() {
         f.id !== familyId ? f : { ...f, tickers: f.tickers.filter((t) => t.id !== tickerId) }
       )
     );
+    setSelectedCollar(null);
   }, []);
 
   const getPrice = (row: any, field: "ofCompra" | "ofVenda"): number | null => {
