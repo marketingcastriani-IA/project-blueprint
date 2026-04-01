@@ -168,9 +168,99 @@ function strToDate(s: string): Date | undefined {
 
 function calcMeses(diasUteis: number | null): string {
   if (diasUteis === null || diasUteis <= 0) return "—";
-  const meses = diasUteis / 21; // ~21 dias úteis por mês
+  const meses = diasUteis / 21;
   return meses < 1 ? `${diasUteis}d` : `${meses.toFixed(1)}m`;
 }
+
+// ─── PAYOFF DATA GENERATION ──────────────────────────────────
+interface CollarPayoffPoint {
+  price: number;
+  payoffExpiry: number;
+  payoffToday: number;
+}
+
+function generateCollarPayoff(
+  S0: number, Kput: number, Kcall: number,
+  Pput: number, Pcall: number, diasUteis: number | null,
+  cdiAnual: number, numPoints = 200
+): CollarPayoffPoint[] {
+  const range = Math.max(Kcall - Kput, S0 * 0.3);
+  const padding = range * 1.2;
+  const start = Math.max(0, Math.min(Kput, S0) - padding);
+  const end = Math.max(Kcall, S0) + padding;
+  const step = (end - start) / numPoints;
+
+  const r = cdiAnual / 100;
+  const v = 0.35; // vol implícita estimada
+  const T = diasUteis && diasUteis > 0 ? diasUteis / 252 : 0;
+
+  const points: CollarPayoffPoint[] = [];
+  for (let i = 0; i <= numPoints; i++) {
+    const ST = start + step * i;
+
+    // Payoff no vencimento: ST - S0 + max(Kput - ST, 0) - max(ST - Kcall, 0) + (Pcall - Pput)
+    const payoffExpiry = ST - S0 + Math.max(Kput - ST, 0) - Math.max(ST - Kcall, 0) + (Pcall - Pput);
+
+    // Payoff hoje (T+0) via Black-Scholes approximation
+    let payoffToday = payoffExpiry;
+    if (T > 0.001) {
+      // Simplified BS for collar today
+      const d1c = (Math.log(ST / Kcall) + (r + v * v / 2) * T) / (v * Math.sqrt(T));
+      const d2c = d1c - v * Math.sqrt(T);
+      const d1p = (Math.log(ST / Kput) + (r + v * v / 2) * T) / (v * Math.sqrt(T));
+      const d2p = d1p - v * Math.sqrt(T);
+
+      const Ncdf = (x: number) => {
+        const t = 1 / (1 + 0.2316419 * Math.abs(x));
+        const d = 0.3989423 * Math.exp(-x * x / 2);
+        const p = d * t * (0.3193815 + t * (-0.3565638 + t * (1.7814779 + t * (-1.821256 + t * 1.3302744))));
+        return x > 0 ? 1 - p : p;
+      };
+
+      const callVal = ST * Ncdf(d1c) - Kcall * Math.exp(-r * T) * Ncdf(d2c);
+      const putVal = Kput * Math.exp(-r * T) * Ncdf(-d2p) - ST * Ncdf(-d1p);
+
+      // Today: stock P&L + put value - put cost - (call value - call premium)
+      payoffToday = (ST - S0) + (putVal - Pput) - (callVal - Pcall);
+    }
+
+    points.push({
+      price: Math.round(ST * 100) / 100,
+      payoffExpiry: Math.round(payoffExpiry * 100) / 100,
+      payoffToday: Math.round(payoffToday * 100) / 100,
+    });
+  }
+  return points;
+}
+
+// ─── PAYOFF CHART TOOLTIP ────────────────────────────────────
+const CollarChartTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border border-border bg-card/95 p-3 shadow-xl backdrop-blur-sm">
+      <div className="mb-2 border-b border-border/50 pb-1">
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Preço do Ativo</p>
+        <p className="text-sm font-bold font-mono">R$ {Number(label).toFixed(2)}</p>
+      </div>
+      <div className="space-y-1.5">
+        {payload.map((p: any, i: number) => {
+          if (p.dataKey === "belowZero" || p.dataKey === "aboveZero") return null;
+          return (
+            <div key={i} className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
+                <span className="text-[11px] font-bold text-foreground/80">{p.name}</span>
+              </div>
+              <span className={cn("text-xs font-black font-mono", p.value >= 0 ? "text-emerald-500" : "text-red-500")}>
+                R$ {Number(p.value).toFixed(2)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────
 export default function CollarTrackerTab() {
