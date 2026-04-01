@@ -807,7 +807,7 @@ export default function CollarTrackerTab() {
                             <td className="py-2 px-2 text-right bg-muted/30 font-bold">{formatBRL(c.putStrike)}</td>
                             <td className="py-2 px-2 text-right">{formatBRL(c.callBid)}</td>
                             <td className="py-2 px-2 text-right">{formatBRL(c.putAsk)}</td>
-                            <td className="py-2 px-2 text-right font-black text-orange-600 dark:text-orange-400">{formatBRL(c.coeficiente)}</td>
+                            <td className={cn("py-2 px-2 text-right font-black", (c.custoCollar ?? 0) <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-orange-600 dark:text-orange-400")}>{formatBRL(c.custoCollar)}</td>
                             <td className={cn("py-2 px-2 text-right font-bold", (c.rentBaixa ?? 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
                               {formatPercent(c.rentBaixa)}
                             </td>
