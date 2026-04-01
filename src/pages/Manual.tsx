@@ -743,7 +743,7 @@ export default function Manual() {
             Estratégias com <span className="text-primary">Opções</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Nível Avançado · Foco Técnico-Operacional — 9 estratégias com payoff charts, exemplos com strikes e prêmios, e Greeks detalhados.
+            Nível Avançado · Foco Técnico-Operacional — 12 estratégias com payoff charts, exemplos com strikes e prêmios, e Greeks detalhados.
           </p>
         </div>
 
