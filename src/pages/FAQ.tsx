@@ -6,7 +6,8 @@ import {
   BookOpen, Upload, BarChart3, History, Briefcase, TrendingUp, 
   Zap, Target, ArrowRight, CheckCircle2, AlertTriangle, HelpCircle,
   Camera, Brain, PieChart, Calculator, Shield, Eye, Download,
-  Radio, Wifi, Activity, Trophy, Box, Settings, Terminal
+  Radio, Wifi, Activity, Trophy, Box, Settings, Terminal,
+  Keyboard, Palette, BookOpenCheck, Lock, Bell, Layers
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -582,6 +583,174 @@ export default function FAQ() {
           </div>
         </FeatureSection>
 
+        {/* ─── RASTREADOR DE COLLAR ─── */}
+        <FeatureSection icon={Layers} title="Rastreador de Collar" badge="PRO">
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              O <strong className="text-foreground">Rastreador de Collar</strong> monitora automaticamente combinações de Collar 
+              (Ação + Put de proteção + Call vendida) em tempo real, calculando custo de proteção, lucro máximo, 
+              piso (floor) e teto (cap) da operação. Ideal para investidores que querem proteger carteira sem custo.
+            </p>
+
+            <div className="space-y-4">
+              <StepCard 
+                step={1} icon={Target}
+                title="Adicione Ativos" 
+                description="Selecione a ação que deseja proteger e adicione os tickers de PUT (proteção) e CALL (financiamento). O sistema calcula automaticamente o custo líquido da proteção."
+              />
+              <StepCard 
+                step={2} icon={Shield}
+                title="Analise Piso e Teto" 
+                description="O sistema exibe o Floor (perda máxima limitada pelo strike da put) e o Cap (ganho máximo limitado pelo strike da call). Collars de custo zero são destacados automaticamente."
+              />
+              <StepCard 
+                step={3} icon={BarChart3}
+                title="Compare com CDI" 
+                description="Avalie se o custo de oportunidade (limitar o upside) compensa a proteção obtida. O sistema mostra a rentabilidade máxima comparada ao CDI do período."
+              />
+            </div>
+
+            <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+              <div className="flex items-start gap-2">
+                <Eye className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  <strong className="text-foreground">Dica:</strong> Monte collars de custo zero escolhendo puts e calls com prêmios similares. 
+                  Assim você protege a posição sem desembolsar nenhum valor adicional — apenas limitando o ganho acima do strike da call.
+                </p>
+              </div>
+            </div>
+          </div>
+        </FeatureSection>
+
+        {/* ─── ATALHOS DE TECLADO ─── */}
+        <FeatureSection icon={Keyboard} title="Atalhos de Teclado" badge="Power User">
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              O Opções PRO X possui atalhos de teclado para acelerar o uso. Os atalhos funcionam em qualquer página 
+              (exceto quando o cursor está em campos de texto).
+            </p>
+
+            <div className="rounded-lg border border-border/40 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-muted/50 border-b border-border/40">
+                    <th className="px-4 py-2 text-left text-[10px] font-black uppercase tracking-widest">Atalho</th>
+                    <th className="px-4 py-2 text-left text-[10px] font-black uppercase tracking-widest">Ação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { key: 'Ctrl + S', action: 'Salvar a análise atual' },
+                    { key: 'Ctrl + Enter', action: 'Analisar com IA' },
+                    { key: 'N', action: 'Nova análise (ir para Dashboard)' },
+                    { key: 'Esc', action: 'Fechar modais e diálogos abertos' },
+                    { key: 'H', action: 'Ir para Histórico' },
+                    { key: 'P', action: 'Ir para Portfólio' },
+                  ].map((item, i) => (
+                    <tr key={i} className={i % 2 === 0 ? 'bg-muted/20' : ''}>
+                      <td className="px-4 py-2">
+                        <kbd className="px-2 py-1 rounded bg-muted border border-border text-[10px] font-mono font-bold">{item.key}</kbd>
+                      </td>
+                      <td className="px-4 py-2 text-xs text-muted-foreground">{item.action}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="p-4 rounded-xl bg-warning/5 border border-warning/20">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  <strong className="text-foreground">Nota:</strong> Os atalhos são desativados automaticamente quando você está digitando em campos de texto, 
+                  como nome da análise, tickers ou formulários.
+                </p>
+              </div>
+            </div>
+          </div>
+        </FeatureSection>
+
+        {/* ─── CONFIGURAÇÕES ─── */}
+        <FeatureSection icon={Settings} title="Configurações e Personalização" badge="Sistema">
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              A página de <strong className="text-foreground">Configurações</strong> (/settings) permite personalizar sua experiência no Opções PRO X.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { label: 'Tema (Dark/Light)', desc: 'Alterne entre modo escuro e claro conforme sua preferência visual' },
+                { label: 'Nome de Exibição', desc: 'Personalize como seu nome aparece no topo da aplicação' },
+                { label: 'Foto de Perfil', desc: 'Faça upload de uma imagem de perfil para identificação visual' },
+                { label: 'Informações do Plano', desc: 'Veja o status do seu plano (Free/PRO), data de expiração e simulações restantes' },
+              ].map(item => (
+                <div key={item.label} className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                  <p className="text-xs font-bold">{item.label}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </FeatureSection>
+
+        {/* ─── GLOSSÁRIO ─── */}
+        <FeatureSection icon={BookOpenCheck} title="Glossário de Termos" badge="Referência">
+          <div className="space-y-1">
+            <Accordion type="single" collapsible className="w-full">
+              {[
+                { term: 'ATM (At The Money)', def: 'Opção cujo strike é igual ou muito próximo do preço atual do ativo-objeto.' },
+                { term: 'OTM (Out of The Money)', def: 'Opção cujo strike está fora do dinheiro — call com strike acima do preço, ou put com strike abaixo do preço.' },
+                { term: 'ITM (In The Money)', def: 'Opção cujo strike está dentro do dinheiro — call com strike abaixo do preço, ou put com strike acima.' },
+                { term: 'Delta', def: 'Sensibilidade do preço da opção em relação à variação de R$1 no ativo-objeto. Delta 0,50 = a opção sobe R$0,50 se o ativo subir R$1.' },
+                { term: 'Gamma', def: 'Taxa de variação do Delta. Quanto mais perto do vencimento e do strike, maior o Gamma.' },
+                { term: 'Theta', def: 'Decaimento temporal da opção. Representa quanto valor a opção perde por dia que passa.' },
+                { term: 'Vega', def: 'Sensibilidade do preço da opção à variação de 1% na volatilidade implícita.' },
+                { term: 'Rho', def: 'Sensibilidade do preço da opção à variação de 1% na taxa de juros livre de risco.' },
+                { term: 'IV (Implied Volatility)', def: 'Volatilidade implícita nos preços das opções pelo mercado. Quanto maior a IV, mais caras as opções.' },
+                { term: 'IV Rank', def: 'Percentual que indica onde a IV atual se encontra em relação ao range dos últimos 12 meses. IV Rank 80% = IV está no top 20% do histórico.' },
+                { term: 'DTE (Days to Expiry)', def: 'Dias úteis restantes até o vencimento da opção.' },
+                { term: 'Breakeven', def: 'Preço do ativo no qual a operação não tem lucro nem prejuízo no vencimento.' },
+                { term: 'CDI', def: 'Certificado de Depósito Interbancário — taxa de referência de juros no Brasil, usada como benchmark de renda fixa.' },
+                { term: 'Payoff', def: 'Gráfico que mostra o resultado (lucro/prejuízo) de uma estrutura de opções em função do preço do ativo no vencimento.' },
+                { term: 'Rolling (Rolagem)', def: 'Fechar a posição atual e abrir nova posição em vencimento ou strike diferente para estender ou ajustar a estratégia.' },
+                { term: 'Spread', def: 'Diferença entre dois preços (bid/ask) ou combinação de duas ou mais opções formando uma estrutura.' },
+                { term: 'Prêmio', def: 'Preço pago (ou recebido) para comprar (ou vender) uma opção.' },
+                { term: 'Open Interest (OI)', def: 'Número de contratos de opção em aberto no mercado para determinado strike/vencimento.' },
+              ].map((item, i) => (
+                <AccordionItem key={i} value={`glossary-${i}`}>
+                  <AccordionTrigger className="text-sm font-bold py-2">{item.term}</AccordionTrigger>
+                  <AccordionContent className="text-sm text-muted-foreground">{item.def}</AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+        </FeatureSection>
+
+        {/* ─── NOTIFICAÇÕES PUSH ─── */}
+        <FeatureSection icon={Bell} title="Notificações Push" badge="PRO">
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              O Opções PRO X envia <strong className="text-foreground">notificações push</strong> diretamente no navegador 
+              quando o Rastreador de Box encontra oportunidades que superam o CDI configurado. Isso permite que você 
+              não precise ficar olhando a tela constantemente.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { label: 'Ativação', desc: 'Clique em "Ativar Notificações" no Rastreador de Box para permitir alertas do navegador' },
+                { label: 'Critério de Disparo', desc: 'O alerta é enviado quando um box atinge rentabilidade ≥ threshold configurado vs CDI' },
+                { label: 'Histórico', desc: 'Todos os alertas disparados ficam registrados no painel de Histórico de Alertas do Box' },
+                { label: 'Silenciar', desc: 'Desative as notificações a qualquer momento nas configurações do navegador' },
+              ].map(item => (
+                <div key={item.label} className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                  <p className="text-xs font-bold">{item.label}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </FeatureSection>
+
         {/* FAQ Perguntas Frequentes */}
         <FeatureSection icon={HelpCircle} title="Perguntas Frequentes">
           <Accordion type="single" collapsible className="w-full">
@@ -657,6 +826,50 @@ export default function FAQ() {
               <AccordionContent className="text-sm text-muted-foreground">
                 Significa que o Box Spread rende 120% do que o CDI renderia no mesmo período. Na prática, se o CDI do período 
                 é 0,90%, o box renderia 0,90% × 1,20 = 1,08%. Quanto maior o percentual acima de 100%, mais atrativo é o box em relação à renda fixa.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="q11">
+              <AccordionTrigger className="text-sm font-bold">O que é o Rastreador de Collar?</AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground">
+                O Rastreador de Collar monitora combinações de proteção de carteira (Ação + Put comprada + Call vendida) em tempo real. 
+                Ele calcula automaticamente o piso de proteção (floor), o teto de ganho (cap) e o custo líquido da proteção, 
+                ajudando você a encontrar collars de custo zero ou baixo custo para proteger suas posições.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="q12">
+              <AccordionTrigger className="text-sm font-bold">O que são as Gregas (Greeks) no gráfico de Payoff?</AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground">
+                As Gregas são medidas de sensibilidade da opção. No tooltip do gráfico de payoff, você vê: 
+                <strong className="text-foreground"> Delta</strong> (sensibilidade ao preço), 
+                <strong className="text-foreground"> Gamma</strong> (aceleração do delta), 
+                <strong className="text-foreground"> Theta</strong> (decaimento temporal diário) e 
+                <strong className="text-foreground"> Vega</strong> (sensibilidade à volatilidade). 
+                Esses valores ajudam a entender o comportamento dinâmico da estrutura.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="q13">
+              <AccordionTrigger className="text-sm font-bold">Como funciona o Diversificador de Estratégias?</AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground">
+                O Diversificador permite criar planos de alocação do seu patrimônio entre diferentes estratégias de opções. 
+                Defina o patrimônio total, crie estratégias com percentuais, níveis de risco e alavancagem. 
+                O sistema calcula automaticamente o valor alocado e o saldo livre, ajudando a manter disciplina na gestão de risco.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="q14">
+              <AccordionTrigger className="text-sm font-bold">Posso usar o app no celular?</AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground">
+                Sim! O Opções PRO X é um PWA (Progressive Web App) — você pode instalar no celular clicando em 
+                "Adicionar à Tela Inicial" no navegador. Funciona em Android e iOS. 
+                O layout é totalmente responsivo e otimizado para telas menores. As funcionalidades de Tempo Real e Bridge 
+                requerem que o Bridge esteja rodando no computador, mas análises salvas podem ser consultadas offline.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="q15">
+              <AccordionTrigger className="text-sm font-bold">A ferramenta funciona com quais corretoras?</AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground">
+                O simulador de análise funciona com prints de qualquer corretora — basta fazer upload da imagem. 
+                Os módulos de Tempo Real e Rastreador de Box/Collar dependem especificamente do Profit Pro (Nelogica), 
+                que é usado por corretoras como XP, Clear, Rico, Inter, BTG e outras que oferecem a plataforma.
               </AccordionContent>
             </AccordionItem>
           </Accordion>

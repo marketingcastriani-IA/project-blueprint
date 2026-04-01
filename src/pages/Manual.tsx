@@ -4,7 +4,7 @@ import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { BookOpen, TrendingUp, Shield, BarChart3, Zap, Target, DollarSign, Activity, ArrowUpDown } from 'lucide-react';
+import { BookOpen, TrendingUp, Shield, BarChart3, Zap, Target, DollarSign, Activity, ArrowUpDown, TrendingDown, Umbrella, Hexagon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface GreekRow {
@@ -428,14 +428,151 @@ const strategies: Strategy[] = [
     ],
     payoffImage: '/assets/manual/payoff-backspread.png',
   },
+  {
+    id: 'butterfly-spread',
+    number: '10',
+    title: 'Butterfly Spread (Borboleta)',
+    subtitle: 'Lateral · Risco Definido · Débito',
+    icon: <Hexagon className="h-5 w-5" />,
+    color: 'text-primary',
+    concept: 'A Butterfly Spread é uma estratégia de três pernas que combina uma trava de alta e uma trava de baixa com um strike central compartilhado. O lucro máximo ocorre quando o ativo fecha exatamente no strike central no vencimento. É ideal para cenários de lateralização precisa com risco limitado ao débito pago.',
+    whenToUse: [
+      'Ativo em lateralização clara com suporte e resistência bem definidos.',
+      'Expectativa de que o ativo ficará próximo a um preço-alvo específico no vencimento.',
+      'IV moderada a alta: prêmios permitem montar butterfly por débito baixo.',
+      'Vencimento curto (15–30 DTE) para maximizar a convergência ao strike central.',
+      'Quando o custo de uma iron condor é similar mas o lucro máximo da butterfly é superior.',
+    ],
+    structure: [
+      { label: 'Leg 1 — Long Call K1', value: 'Compra de 1 call OTM inferior (asa esquerda)' },
+      { label: 'Leg 2 — Short Call K2 (×2)', value: 'Venda de 2 calls ATM (corpo central)' },
+      { label: 'Leg 3 — Long Call K3', value: 'Compra de 1 call OTM superior (asa direita)' },
+      { label: 'Distância entre strikes', value: 'K2 – K1 = K3 – K2 (equidistante)' },
+      { label: 'Débito líquido', value: 'Prêmio K1 + Prêmio K3 – 2 × Prêmio K2' },
+      { label: 'Lucro máximo', value: '(K2 – K1) – Débito (se ativo = K2 no venc)' },
+    ],
+    greeks: [
+      { greek: 'Delta', sinal: '≈ 0', impacto: 'Neutra quando montada ATM; fica direcional se ativo se afastar de K2.' },
+      { greek: 'Theta', sinal: 'Positivo (+)', impacto: 'As 2 short calls vendem mais Theta do que as long compram.' },
+      { greek: 'Vega', sinal: 'Negativo (–)', impacto: 'Net short Vega: alta na VI prejudica a posição.' },
+      { greek: 'Gamma', sinal: 'Negativo (–)', impacto: 'Gamma negativo próximo de K2 — ativo precisa ficar parado.' },
+    ],
+    example: [
+      'Ativo: VALE3 a R$60,00.',
+      'Long 1x VALEK56 call por R$5,20 | Short 2x VALEK60 call por R$3,00 cada | Long 1x VALEK64 call por R$1,40.',
+      'Débito: R$5,20 + R$1,40 – 2×R$3,00 = R$0,60/ação = R$60/lote.',
+      'Lucro máximo: R$3,40/ação = R$340/lote (se VALE3 = R$60 no venc).',
+      'Breakevens: R$56,60 e R$63,40.',
+      'Relação R/R: R$340 / R$60 ≈ 5,7:1.',
+    ],
+    notes: [
+      'A butterfly é uma das estratégias com melhor relação R/R, mas exige acertar o preço-alvo.',
+      'Broken wing butterfly: ajuste uma asa para viés direcional mantendo risco controlado.',
+      'Iron butterfly (versão crédito): substitua as long calls por puts para coletar crédito líquido.',
+      'Feche ao atingir 50% do lucro máximo — o risco/retorno marginal piora muito após esse ponto.',
+    ],
+    payoffImage: '/assets/manual/payoff-butterfly.png',
+  },
+  {
+    id: 'bear-put-spread',
+    number: '11',
+    title: 'Trava de Baixa (Bear Put Spread)',
+    subtitle: 'Baixa · Risco Definido · Débito',
+    icon: <TrendingDown className="h-5 w-5" />,
+    color: 'text-destructive',
+    concept: 'A Trava de Baixa consiste em comprar uma put de strike maior e vender uma put de strike menor, ambas com o mesmo vencimento. O débito líquido pago é o risco máximo; a diferença entre os strikes menos o débito é o lucro máximo. É a contraparte da trava de alta, ideal para operações direcionais de queda com risco controlado.',
+    whenToUse: [
+      'Visão baixista moderada: espera que o ativo caia, mas com risco definido.',
+      'Proteção parcial: hedge mais barato do que comprar put simples.',
+      'IV elevada: trava reduz impacto do prêmio alto da put comprada.',
+      'Rompimento de suporte: operação direcional de queda com relação R/R atrativa.',
+      'Mercado em correção: posição bearish de curto prazo.',
+    ],
+    structure: [
+      { label: 'Leg 1 — Long Put K2', value: 'Compra da put ATM ou levemente ITM (delta –0,45 a –0,55)' },
+      { label: 'Leg 2 — Short Put K1', value: 'Venda da put mais OTM (delta –0,20 a –0,35)' },
+      { label: 'Débito líquido', value: 'Prêmio K2 – Prêmio K1 (máxima perda possível)' },
+      { label: 'Lucro máximo', value: '(K2 – K1) – Débito líquido' },
+      { label: 'Breakeven', value: 'K2 – Débito líquido' },
+      { label: 'Vencimento típico', value: '30–60 DTE' },
+    ],
+    greeks: [
+      { greek: 'Delta', sinal: 'Negativo (–)', impacto: 'Posição direcional de queda; delta líquido entre –0,15 e –0,35.' },
+      { greek: 'Theta', sinal: 'Neutro/negativo', impacto: 'Long put decai mais rápido que short put no início.' },
+      { greek: 'Vega', sinal: 'Positivo (+)', impacto: 'Alta na IV beneficia levemente (put comprada > put vendida em Vega).' },
+      { greek: 'Gamma', sinal: 'Positivo (+)', impacto: 'Próximo ao breakeven o Gamma líquido favorece a posição.' },
+    ],
+    example: [
+      'Ativo: BBDC4 a R$14,50. Expectativa: queda para R$12.',
+      'Compra BBDCX14 (put strike 14) por R$1,10.',
+      'Venda BBDCX11 (put strike 11) por R$0,30.',
+      'Débito líquido: R$0,80. Risco máximo: R$80/lote.',
+      'Lucro máximo: R$2,20/ação = R$220/lote (se BBDC4 ≤ R$11 no venc).',
+      'Breakeven: R$13,20. Relação R/R: R$220 / R$80 ≈ 2,75:1.',
+    ],
+    notes: [
+      'Saída antecipada: ao atingir 50–75% do lucro máximo, feche para garantir o resultado.',
+      'Se o ativo reverter para alta, a perda máxima é apenas o débito pago.',
+      'Combine com trava de alta em calls para montar um Iron Condor completo.',
+    ],
+    payoffImage: '/assets/manual/payoff-bear-put.png',
+  },
+  {
+    id: 'protective-put',
+    number: '12',
+    title: 'Put Protetora (Protective Put)',
+    subtitle: 'Hedge · Seguro · Débito',
+    icon: <Umbrella className="h-5 w-5" />,
+    color: 'text-warning',
+    concept: 'A Put Protetora é a compra de uma put OTM sobre ações que você já possui em carteira. Funciona como um seguro: você paga um prêmio para limitar suas perdas caso o ativo caia abaixo do strike da put. Diferente do collar, a protective put não limita o ganho — mantém 100% do upside. É a estratégia de hedge mais simples e direta.',
+    whenToUse: [
+      'Carteira com ganhos acumulados que você quer proteger sem vender as ações.',
+      'Pré-evento de alto impacto: resultado, eleições, dados macro.',
+      'IV baixa: prêmio da put está barato em termos históricos.',
+      'Investidor que não aceita limitar o upside (diferença para o collar).',
+      'Proteção de posição concentrada antes de período de lockup ou restrição de venda.',
+    ],
+    structure: [
+      { label: 'Leg 1 — Long Stock', value: 'Ações em carteira (100 por lote)' },
+      { label: 'Leg 2 — Long Put OTM', value: 'Compra put com strike abaixo do preço atual' },
+      { label: 'Custo do seguro', value: 'Prêmio pago pela put (débito)' },
+      { label: 'Piso (floor)', value: 'Strike da put – prêmio pago' },
+      { label: 'Upside', value: 'Ilimitado (mantém 100% da alta)' },
+      { label: 'Breakeven', value: 'Preço de compra da ação + prêmio da put' },
+    ],
+    greeks: [
+      { greek: 'Delta', sinal: 'Positivo (+)', impacto: 'Delta reduzido vs long stock puro; put comprada subtrai delta.' },
+      { greek: 'Theta', sinal: 'Negativo (–)', impacto: 'Put comprada perde valor com o tempo — custo do seguro.' },
+      { greek: 'Vega', sinal: 'Positivo (+)', impacto: 'Alta na IV aumenta o valor da put comprada.' },
+      { greek: 'Gamma', sinal: 'Positivo (+)', impacto: 'Put comprada contribui com Gamma positivo em quedas.' },
+    ],
+    example: [
+      'Ativo: PETR4 a R$38,00, comprada a R$32 (ganho de 18,75%).',
+      'Compra put PETRX35 (strike 35, venc 45 dias) por R$1,20.',
+      'Custo do seguro: R$120/lote. Piso: R$33,80.',
+      'Se PETR4 cair para R$25: perda limitada a R$4,20/ação (vs R$13 sem proteção).',
+      'Se PETR4 subir para R$50: lucro = R$50 – R$32 – R$1,20 = R$16,80/ação.',
+      'Proteção: 11% de downside protegido. Custo: 3,2% do capital.',
+    ],
+    notes: [
+      'A protective put é mais cara que o collar, mas mantém 100% do upside.',
+      'Compre puts com 30–60 DTE para equilibrar custo vs proteção.',
+      'Em mercado de alta forte, o custo da put é compensado pela valorização das ações.',
+      'Married put: quando a ação e a put são compradas simultaneamente como uma posição integrada.',
+    ],
+    payoffImage: '/assets/manual/payoff-protective-put.png',
+  },
 ];
 
 const referenceTable = [
   { name: 'Venda Coberta', dir: 'Neutro/Alta', vega: '–', theta: '+', delta: '+', complexity: 'Baixa', risk: 'Ilimitado baixo' },
   { name: 'Trava de Alta', dir: 'Alta', vega: '±', theta: '–/+', delta: '+', complexity: 'Média', risk: 'Limitado' },
+  { name: 'Trava de Baixa', dir: 'Baixa', vega: '±', theta: '–/+', delta: '–', complexity: 'Média', risk: 'Limitado' },
   { name: 'Iron Condor', dir: 'Lateral', vega: '–', theta: '+', delta: '≈0', complexity: 'Alta', risk: 'Limitado' },
+  { name: 'Butterfly', dir: 'Lateral', vega: '–', theta: '+', delta: '≈0', complexity: 'Alta', risk: 'Limitado' },
   { name: 'Straddle', dir: 'Explosão', vega: '+', theta: '–', delta: '≈0', complexity: 'Alta', risk: 'Prêmio pago' },
   { name: 'Collar', dir: 'Ponderado', vega: '±', theta: '±', delta: '+', complexity: 'Baixa', risk: 'Limitado' },
+  { name: 'Put Protetora', dir: 'Hedge', vega: '+', theta: '–', delta: '+', complexity: 'Baixa', risk: 'Prêmio pago' },
   { name: 'Box Spread', dir: 'Neutro', vega: '≈0', theta: '≈0', delta: '≈0', complexity: 'Média', risk: 'Custo crédito' },
   { name: 'Ratio Spread', dir: 'Alta', vega: '–', theta: '+', delta: '+', complexity: 'Alta', risk: 'Ilimitado acima' },
   { name: 'Calendar', dir: 'Lateral', vega: '+', theta: '+', delta: '≈0', complexity: 'Alta', risk: 'Débito pago' },
@@ -606,7 +743,7 @@ export default function Manual() {
             Estratégias com <span className="text-primary">Opções</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Nível Avançado · Foco Técnico-Operacional — 9 estratégias com payoff charts, exemplos com strikes e prêmios, e Greeks detalhados.
+            Nível Avançado · Foco Técnico-Operacional — 12 estratégias com payoff charts, exemplos com strikes e prêmios, e Greeks detalhados.
           </p>
         </div>
 
