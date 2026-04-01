@@ -1319,6 +1319,7 @@ export default function CollarTrackerTab() {
                             <td className="py-2 px-1 text-center">
                               {c.isRiskFree ? <ShieldCheck className="w-3.5 h-3.5 mx-auto text-emerald-500" /> : <span className="text-muted-foreground/30">—</span>}
                             </td>
+                            <td className="py-2 px-1 text-center">
                               <span className={cn("text-[8px] font-black px-1.5 py-0.5 rounded-full whitespace-nowrap",
                                 c.tipo === "Normal" ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300" :
                                 c.tipo === "ATM" ? "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300" :
