@@ -25,6 +25,7 @@ export default function Header() {
     { label: 'Diversificador', path: '/diversificador', icon: PieChart },
     { label: 'Tempo Real', path: '/dados-ao-vivo', icon: Radio },
     { label: 'Box Tracker', path: '/box-tracker', icon: BarChart2 },
+    { label: 'Collar Tracker', path: '/collar-tracker', icon: ShieldCheck },
   ];
 
   // Secondary nav items (inside "More" dropdown on md, visible on xl+)
