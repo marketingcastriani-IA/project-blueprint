@@ -50,16 +50,19 @@ export default function Header() {
   const NavButton = ({ item }: { item: typeof primaryNav[0] }) => {
     const isActive = location.pathname === item.path;
     const isRealtime = item.path === '/dados-ao-vivo';
+    const isHighlight = 'highlight' in item && item.highlight;
     return (
       <button
         onClick={() => navigate(item.path)}
         className={cn(
           'flex items-center gap-1.5 rounded-lg font-black uppercase tracking-widest transition-all whitespace-nowrap',
           'px-3 py-2 text-[11px] lg:text-xs lg:px-4',
-          isRealtime && 'text-red-100 bg-red-600 hover:bg-red-500 animate-pulse shadow-[0_0_16px_rgba(239,68,68,0.5)] border border-red-400/50',
-          isRealtime && isActive && 'ring-2 ring-red-300',
-          !isRealtime && isActive && 'bg-primary-foreground/20 text-primary-foreground',
-          !isRealtime && !isActive && 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
+          isHighlight && !isActive && 'bg-yellow-400/90 text-black hover:bg-yellow-300 shadow-[0_0_16px_rgba(250,204,21,0.5)] animate-pulse border border-yellow-300/50',
+          isHighlight && isActive && 'bg-yellow-400 text-black shadow-[0_0_20px_rgba(250,204,21,0.6)] ring-2 ring-yellow-300',
+          isRealtime && !isHighlight && 'text-red-100 bg-red-600 hover:bg-red-500 animate-pulse shadow-[0_0_16px_rgba(239,68,68,0.5)] border border-red-400/50',
+          isRealtime && isActive && !isHighlight && 'ring-2 ring-red-300',
+          !isRealtime && !isHighlight && isActive && 'bg-primary-foreground/20 text-primary-foreground',
+          !isRealtime && !isHighlight && !isActive && 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
         )}
       >
         <item.icon className={cn("h-4 w-4 shrink-0", isRealtime && "animate-pulse")} />
