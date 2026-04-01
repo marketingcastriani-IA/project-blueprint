@@ -215,7 +215,22 @@ export default function AdminPanel() {
     }
   };
 
-  const buildEmailTemplate = (template: 'promo' | 'renewal' | 'news' | 'custom', recipientName?: string) => {
+  type EmailTemplate = 'promo' | 'renewal' | 'news' | 'custom' | 'calc_cdi' | 'box_tracker' | 'collar_tracker' | 'tempo_real' | 'diversificador' | 'resumo_geral';
+
+  const EMAIL_TEMPLATE_OPTIONS: { value: EmailTemplate; label: string; icon: string; color: string }[] = [
+    { value: 'promo', label: 'Promoção', icon: '🔥', color: 'border-primary/30 hover:bg-primary/10' },
+    { value: 'renewal', label: 'Renovação', icon: '⚠️', color: 'border-warning/30 text-warning hover:bg-warning/10' },
+    { value: 'news', label: 'Novidades', icon: '🚀', color: 'border-success/30 text-success hover:bg-success/10' },
+    { value: 'calc_cdi', label: 'Calculadora CDI x Opções', icon: '🧮', color: 'border-yellow-400/50 text-yellow-500 hover:bg-yellow-400/10' },
+    { value: 'box_tracker', label: 'Rastreador Box', icon: '📊', color: 'border-blue-400/50 text-blue-400 hover:bg-blue-400/10' },
+    { value: 'collar_tracker', label: 'Rastreador Collar', icon: '🛡️', color: 'border-emerald-400/50 text-emerald-400 hover:bg-emerald-400/10' },
+    { value: 'tempo_real', label: 'Dados ao Vivo', icon: '🔴', color: 'border-red-400/50 text-red-400 hover:bg-red-400/10' },
+    { value: 'diversificador', label: 'Diversificador', icon: '🎯', color: 'border-purple-400/50 text-purple-400 hover:bg-purple-400/10' },
+    { value: 'resumo_geral', label: 'Resumo Todas Novidades', icon: '📢', color: 'border-primary/50 text-primary hover:bg-primary/10' },
+    { value: 'custom', label: 'Personalizado', icon: '✏️', color: 'hover:bg-accent' },
+  ];
+
+  const buildEmailTemplate = (template: EmailTemplate, recipientName?: string) => {
     const namePrefix = recipientName ? `Olá ${recipientName},` : 'Olá,';
 
     const templates: Record<string, { subject: string; body: string }> = {
@@ -230,6 +245,30 @@ export default function AdminPanel() {
       news: {
         subject: '🚀 Novidades - Opções PRO X',
         body: `${namePrefix}\n\nConfira as últimas novidades do Opções PRO X!\n\n📊 Novos recursos de análise\n🤖 IA aprimorada\n📈 Melhorias no gráfico de payoff\n\nAcesse agora: https://www.opcoesprox.com.br\n\nEquipe Opções PRO X`
+      },
+      calc_cdi: {
+        subject: '🧮 NOVO! Compare sua estrutura de opções com o CDI em segundos',
+        body: `${namePrefix}\n\nTemos uma novidade exclusiva que vai transformar sua tomada de decisão:\n\n🧮 Calculadora CDI x Opções — NOVA FERRAMENTA!\n\nAgora você pode comparar, em tempo real, quanto sua estrutura de opções rende em relação ao CDI do período.\n\n✅ Insira o capital investido e a data de vencimento\n✅ Escolha se deseja considerar o Imposto de Renda (tabela regressiva automática)\n✅ Digite o % de lucro da sua estrutura\n✅ Descubra instantaneamente quantos % do CDI sua operação equivale\n\nExemplo prático:\nSe o CDI rende 1,12% no período e sua estrutura dá 1,8% — você está ganhando 160% do CDI! 🚀\n\n🔗 Acesse agora: Menu → CDI x Opções (destaque amarelo)\nhttps://www.opcoesprox.com.br/calculadora-renda-fixa\n\nEquipe Opções PRO X`
+      },
+      box_tracker: {
+        subject: '📊 Rastreie seu Box Spread e saiba se está acima do CDI',
+        body: `${namePrefix}\n\nVocê já conhece o Rastreador de Box Spread do Opções PRO X?\n\n📊 Rastrear Box — Controle Total da Rentabilidade\n\nCom esta ferramenta você consegue:\n\n✅ Monitorar a rentabilidade do Box em relação ao CDI\n✅ Acompanhar se a operação está acima ou abaixo do benchmark\n✅ Visualizar dias úteis restantes e taxa equivalente\n✅ Tomar decisão de manter ou encerrar com dados reais\n\n💡 Dica PRO: Combine o Rastreador de Box com a nova Calculadora CDI x Opções para ter uma visão completa da sua rentabilidade!\n\n🔗 Acesse agora: Menu → Rastrear Box\nhttps://www.opcoesprox.com.br/box-tracker\n\nEquipe Opções PRO X`
+      },
+      collar_tracker: {
+        subject: '🛡️ Proteja seu patrimônio com o Rastreador de Collar',
+        body: `${namePrefix}\n\nConheça o Rastreador de Collar — sua ferramenta de proteção inteligente:\n\n🛡️ Rastrear Collar — Proteção com Visibilidade\n\n✅ Acompanhe sua estratégia de proteção (Collar) em tempo real\n✅ Visualize os limites de proteção e ganho da operação\n✅ Saiba exatamente quando agir para ajustar sua posição\n✅ Ideal para quem tem carteira de ações e quer proteger sem abrir mão de ganhos\n\n🔗 Acesse agora: Menu → Rastrear Collar\nhttps://www.opcoesprox.com.br/collar-tracker\n\nEquipe Opções PRO X`
+      },
+      tempo_real: {
+        subject: '🔴 AO VIVO! Dados de mercado em tempo real no Opções PRO X',
+        body: `${namePrefix}\n\nJá experimentou os Dados ao Vivo do Opções PRO X?\n\n🔴 Tempo Real — Acompanhe o Mercado Sem Sair da Plataforma\n\n✅ Preços de ativos e opções atualizados em tempo real\n✅ Integração com o Bridge RTD para dados direto da sua corretora\n✅ Visualização profissional e limpa, sem distrações\n✅ Ideal para quem opera intraday ou precisa acompanhar vencimentos\n\n📥 Configure o Bridge: Menu → Manual → Configuração do Bridge\n\n🔗 Acesse agora: Menu → Tempo Real (botão vermelho pulsante)\nhttps://www.opcoesprox.com.br/dados-ao-vivo\n\nEquipe Opções PRO X`
+      },
+      diversificador: {
+        subject: '🎯 Diversifique suas estratégias com inteligência',
+        body: `${namePrefix}\n\nO Diversificador do Opções PRO X ajuda você a:\n\n🎯 Monte um Portfólio de Estratégias Equilibrado\n\n✅ Distribua seu patrimônio entre diferentes estratégias\n✅ Visualize a alocação por percentual e nível de risco\n✅ Controle alavancagem e frequência de cada estratégia\n✅ Veja o resultado consolidado com gráfico profissional\n\n💡 Dica PRO: Use junto com a Calculadora CDI x Opções para saber se cada estratégia supera o CDI!\n\n🔗 Acesse agora: Menu → Diversificador\nhttps://www.opcoesprox.com.br/diversificador\n\nEquipe Opções PRO X`
+      },
+      resumo_geral: {
+        subject: '🚀 5 Ferramentas NOVAS no Opções PRO X — Confira!',
+        body: `${namePrefix}\n\nO Opções PRO X está cada vez mais completo! Veja as ferramentas que você já pode usar:\n\n🧮 CDI x Opções — Compare o lucro da sua estrutura com o CDI (com/sem IR)\n📊 Rastrear Box — Monitore Box Spread vs CDI em tempo real\n🛡️ Rastrear Collar — Acompanhe proteção de carteira com Collar\n🔴 Tempo Real — Dados ao vivo do mercado via Bridge RTD\n🎯 Diversificador — Monte portfólio de estratégias equilibrado\n\n🆕 Destaque: A Calculadora CDI x Opções é NOVA e está com destaque amarelo no menu!\n\n👉 Acesse agora e explore todas as ferramentas!\nhttps://www.opcoesprox.com.br\n\n🚀 Assine PRO para acesso completo:\nhttps://www.opcoesprox.com.br/settings?upgrade=true\n\nEquipe Opções PRO X`
       },
       custom: {
         subject: '',
