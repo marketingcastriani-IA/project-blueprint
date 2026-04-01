@@ -629,10 +629,12 @@ export default function CollarTrackerTab() {
                   </div>
                 </div>
 
-                {/* Coeficiente */}
+                {/* Custo do Collar */}
                 <div className="bg-muted/50 rounded-lg px-3 py-2 mb-3 flex items-center justify-between">
-                  <span className="text-xs font-bold text-muted-foreground uppercase">Coeficiente</span>
-                  <span className="text-lg font-black text-foreground">{formatBRL(collar.coeficiente)}</span>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">Custo Collar</span>
+                  <span className={cn("text-lg font-black", (collar.custoCollar ?? 0) <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
+                    {formatBRL(collar.custoCollar)} {(collar.custoCollar ?? 0) <= -0.05 ? "💰" : (collar.custoCollar ?? 0) < 0.05 ? "⚖️" : "💸"}
+                  </span>
                 </div>
 
                 {/* Rentabilidade 3 cenários */}
