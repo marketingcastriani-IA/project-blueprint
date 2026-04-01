@@ -1210,6 +1210,7 @@ export default function CollarTrackerTab() {
           if (filterTipo !== "Todos" && c.tipo !== filterTipo) return false;
           if (filterCusto !== "Todos" && c.custoTipo !== filterCusto) return false;
           if (hideNegative && c.rentAlta !== null && c.rentAlta < 0) return false;
+          if (onlyRiskFree && !c.isRiskFree) return false;
           return true;
         });
         const stockRow = rows.get(family.name);
