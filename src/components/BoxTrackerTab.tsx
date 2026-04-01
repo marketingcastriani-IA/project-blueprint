@@ -527,7 +527,29 @@ export default function BoxTracker() {
   // Determine winner
   const winnerKey = topPairs.length > 0 ? `${topPairs[0].familyName}-${topPairs[0].strike}` : null;
 
-  // ─── NOTIFICAÇÃO PUSH: monitorar box acima do threshold ────
+  // ─── NOTIFICAÇÃO PUSH via Service Worker ────
+  const sendPushNotification = useCallback(async (title: string, body: string, data?: any) => {
+    // Try Service Worker first (works when app is backgrounded on mobile)
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'BOX_ALERT',
+        title,
+        body,
+        tag: 'box-tracker-alert',
+        data,
+      });
+      return;
+    }
+    // Fallback to regular Notification API
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, {
+        body,
+        icon: '/favicon.png',
+        tag: 'box-tracker-alert',
+      });
+    }
+  }, []);
+
   useEffect(() => {
     if (!notifEnabled || !("Notification" in window) || Notification.permission !== "granted") return;
     if (topPairs.length === 0) return;
@@ -553,18 +575,18 @@ export default function BoxTracker() {
         cdiPercent: Math.round(cdiPercent),
       };
       setAlertHistory(prev => {
-        const updated = [entry, ...prev].slice(0, 50); // keep last 50
+        const updated = [entry, ...prev].slice(0, 50);
         localStorage.setItem(ALERT_HISTORY_KEY, JSON.stringify(updated));
         return updated;
       });
 
-      new Notification(`🚀 Box ${best.familyName} a ${cdiPercent.toFixed(0)}% do CDI!`, {
-        body: `Strike R$ ${best.strike.toFixed(2)} · Lucro ${best.lucroPercent.toFixed(2)}% · Meta: ${notifThreshold}% CDI`,
-        icon: "/favicon.ico",
-        tag: "box-tracker-alert",
-      } as NotificationOptions);
+      sendPushNotification(
+        `🚀 BOX ${best.familyName} ACIMA DO CDI!`,
+        `📊 ${cdiPercent.toFixed(0)}% do CDI · Strike R$ ${best.strike.toFixed(2)} · Lucro ${best.lucroPercent.toFixed(2)}%\n🎯 Meta: ≥ ${notifThreshold}% CDI`,
+        { url: '/box-tracker', familyName: best.familyName, cdiPercent }
+      );
     }
-  }, [topPairs, notifEnabled, notifThreshold]);
+  }, [topPairs, notifEnabled, notifThreshold, sendPushNotification]);
 
   // ─── RENDER ───────────────────────────────────────────────
   return (
