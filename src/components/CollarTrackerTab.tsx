@@ -412,7 +412,7 @@ export default function CollarTrackerTab() {
   const bestPerFamily: (CollarResult & { familyName: string })[] = [];
   families.forEach((f) => {
     const collars = calculateCollars(f);
-    const best = collars.find((c) => c.coeficiente !== null && c.rentAlta !== null);
+    const best = collars.find((c) => c.rentAlta !== null && c.stockAsk !== null);
     if (best) bestPerFamily.push({ ...best, familyName: f.name });
   });
   bestPerFamily.sort((a, b) => (b.rentAlta ?? 0) - (a.rentAlta ?? 0));
