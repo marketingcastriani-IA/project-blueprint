@@ -750,6 +750,15 @@ export default function CollarTrackerTab() {
             {hideNegative ? <ToggleRight className="w-3.5 h-3.5" /> : <ToggleLeft className="w-3.5 h-3.5" />}
             Ocultar negativos
           </button>
+          <button
+            onClick={() => setOnlyRiskFree(!onlyRiskFree)}
+            className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all",
+              onlyRiskFree
+                ? "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-500 text-emerald-700 dark:text-emerald-300 shadow-[0_0_12px_-2px_rgba(16,185,129,0.4)] ring-1 ring-emerald-400/50"
+                : "bg-muted border-border text-muted-foreground")}>
+            <ShieldCheck className={cn("w-3.5 h-3.5", onlyRiskFree && "animate-pulse")} />
+            Só Risco Zero
+          </button>
         </div>
         <p className="text-[9px] text-muted-foreground mt-2">
           📐 Zona ideal: PUT 5-15% abaixo · CALL 5-15% acima · Custo ≈ zero · Rent. &gt; CDI
