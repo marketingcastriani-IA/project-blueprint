@@ -200,7 +200,47 @@ export default function BoxTracker() {
   const [editingCdi, setEditingCdi] = useState(false);
   const [cdiInput, setCdiInput] = useState(String(cdiAnual).replace(".", ","));
 
-  const { status, rows, connect, addTicker: bridgeAddTicker } = useSharedRtdBridge();
+  // ─── NOTIFICAÇÕES ──────────────────────────────────────────
+  const [notifEnabled, setNotifEnabled] = useState<boolean>(() => {
+    try { return localStorage.getItem(NOTIF_ENABLED_KEY) === "true"; } catch { return false; }
+  });
+  const [notifThreshold, setNotifThreshold] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(NOTIF_THRESHOLD_KEY);
+      return saved ? parseFloat(saved) : NOTIF_THRESHOLD_DEFAULT;
+    } catch { return NOTIF_THRESHOLD_DEFAULT; }
+  });
+  const [editingThreshold, setEditingThreshold] = useState(false);
+  const [thresholdInput, setThresholdInput] = useState(String(notifThreshold));
+  const lastNotifRef = useRef<number>(0);
+  const notifPermissionRef = useRef<NotificationPermission>("default");
+
+  // Request notification permission
+  const toggleNotifications = useCallback(async () => {
+    if (notifEnabled) {
+      setNotifEnabled(false);
+      localStorage.setItem(NOTIF_ENABLED_KEY, "false");
+      return;
+    }
+    if (!("Notification" in window)) {
+      alert("Seu navegador não suporta notificações push.");
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    notifPermissionRef.current = permission;
+    if (permission === "granted") {
+      setNotifEnabled(true);
+      localStorage.setItem(NOTIF_ENABLED_KEY, "true");
+      new Notification("🔔 Alertas Box Ativados", {
+        body: `Você será notificado quando um box superar ${notifThreshold}% do CDI.`,
+        icon: "/favicon.ico",
+      });
+    } else {
+      alert("Permissão de notificação negada. Habilite nas configurações do navegador.");
+    }
+  }, [notifEnabled, notifThreshold]);
+
+
 
   // Load vencimento from localStorage
   useEffect(() => {
