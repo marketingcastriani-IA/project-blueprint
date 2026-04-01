@@ -130,7 +130,8 @@ function formatPercent(val: number | null): string {
 
 function extractStrikeFromTicker(symbol: string): number {
   const clean = symbol.toUpperCase().replace(/\s/g, "");
-  const match = clean.match(/^[A-Z]{4,5}[A-X](\d+)$/);
+  // Match: PETR4B28, VALE3A100, BOVA11B28, PETRB28, etc.
+  const match = clean.match(/[A-X](\d+)$/);
   if (match) {
     const raw = parseInt(match[1]);
     if (raw >= 1000) return raw / 100;
@@ -142,7 +143,8 @@ function extractStrikeFromTicker(symbol: string): number {
 
 function extractTypeFromTicker(symbol: string): "CALL" | "PUT" {
   const clean = symbol.toUpperCase().replace(/\s/g, "");
-  const match = clean.match(/^[A-Z]{4,5}([A-X])/);
+  // Find the option letter (A-X) before the numeric strike
+  const match = clean.match(/([A-X])\d+$/);
   if (match) {
     const code = match[1].charCodeAt(0) - 65;
     return code <= 11 ? "CALL" : "PUT";
