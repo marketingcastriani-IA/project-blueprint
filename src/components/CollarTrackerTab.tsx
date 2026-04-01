@@ -175,6 +175,9 @@ export default function CollarTrackerTab() {
   const [vencimentoManual, setVencimentoManual] = useState<string>("");
   const [vencSaved, setVencSaved] = useState(false);
   const [editingVenc, setEditingVenc] = useState(false);
+  const [filterTipo, setFilterTipo] = useState<CollarTipo | "Todos">("Todos");
+  const [filterCusto, setFilterCusto] = useState<CollarCusto | "Todos">("Todos");
+  const [hideNegative, setHideNegative] = useState(false);
   const [cdiAnual, setCdiAnual] = useState<number>(() => {
     try {
       const saved = localStorage.getItem(CDI_STORAGE_KEY);
