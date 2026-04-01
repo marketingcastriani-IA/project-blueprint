@@ -779,7 +779,7 @@ export default function AdminPanel() {
       {/* Email Modal */}
       {emailRecipients.length > 0 && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setEmailRecipients([])}>
-          <Card className="w-full max-w-lg" onClick={e => e.stopPropagation()}>
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <Send className="h-5 w-5 text-primary" />
