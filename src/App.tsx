@@ -20,6 +20,7 @@ import FAQ from "./pages/FAQ";
 import Manual from "./pages/Manual";
 import DadosAoVivo from "./pages/DadosAoVivo";
 import BoxTracker from "./pages/BoxTracker";
+import CollarTracker from "./pages/CollarTracker";
 
 import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/ScrollToTop";
