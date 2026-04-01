@@ -22,6 +22,7 @@ interface PayoffChartProps {
   currentPnL?: number | null;
   simulationData?: PayoffPoint[] | null;
   simulationCdiReturn?: number | null;
+  legs?: Leg[];
 }
 
 const chartConfig = {
