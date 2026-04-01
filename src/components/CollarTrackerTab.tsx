@@ -344,19 +344,31 @@ export default function CollarTrackerTab() {
           const diasUteis = calcDiasUteis(vencParaCalculo);
           const cdiPeriodo = diasUteis !== null && diasUteis > 0 ? calcCdiPeriodo(diasUteis, cdiAnual) : null;
 
-          let coeficiente: number | null = null;
+          let custoCollar: number | null = null;
           let rentBaixa: number | null = null;
           let rentNeutra: number | null = null;
           let rentAlta: number | null = null;
 
           if (stockAsk !== null && callBid !== null && putAsk !== null) {
-            coeficiente = stockAsk + putAsk - callBid;
+            const S0 = stockAsk;
+            const Pcall = callBid;
+            const Pput = putAsk;
 
-            if (coeficiente > 0) {
-              rentBaixa = ((putStrike - coeficiente) / coeficiente) * 100;
-              rentAlta = ((callStrike - coeficiente) / coeficiente) * 100;
-              // Neutra: preço fica onde está (stockAsk)
-              rentNeutra = ((stockAsk - coeficiente) / coeficiente) * 100;
+            // Custo do Collar = P_put - P_call (negativo = crédito líquido)
+            custoCollar = Pput - Pcall;
+
+            if (S0 > 0) {
+              // R_max (teto - cenário de alta): ativo sobe até K_call
+              // R_max = (K_call - S_0 + (P_call - P_put)) / S_0
+              rentAlta = ((callStrike - S0 + (Pcall - Pput)) / S0) * 100;
+
+              // R_min (piso - cenário de baixa): ativo cai até K_put
+              // R_min = (K_put - S_0 + (P_call - P_put)) / S_0
+              rentBaixa = ((putStrike - S0 + (Pcall - Pput)) / S0) * 100;
+
+              // Cenário neutro: preço fica em S_0
+              // Payoff = S_0 - S_0 + 0 - 0 + (P_call - P_put) = P_call - P_put
+              rentNeutra = ((Pcall - Pput) / S0) * 100;
             }
           }
 
@@ -369,18 +381,20 @@ export default function CollarTrackerTab() {
             else if (count >= 1) rating = 2;
           }
 
-          // Tipo
+          // Tipo baseado no custo do collar
           let tipo = "Collar";
-          if (callStrike === putStrike) tipo = "Collar Zero-Cost";
-          else if (putStrike < callStrike) tipo = "Collar OTM";
-          else tipo = "Collar ITM";
+          if (custoCollar !== null) {
+            if (Math.abs(custoCollar) < 0.05) tipo = "Zero-Cost";
+            else if (custoCollar < 0) tipo = "Crédito";
+            else tipo = "Débito";
+          }
 
           results.push({
             callSymbol: call.symbol, putSymbol: put.symbol,
             callStrike, putStrike,
             callStrikeRtd, putStrikeRtd,
             callBid, putAsk, stockAsk, stockUlt,
-            coeficiente, rentBaixa, rentNeutra, rentAlta,
+            custoCollar, rentBaixa, rentNeutra, rentAlta,
             vencimento: vencParaCalculo, diasUteis, cdiPeriodo,
             rating, tipo,
           });
