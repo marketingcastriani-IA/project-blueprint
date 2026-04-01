@@ -565,6 +565,36 @@ export default function CollarTrackerTab() {
   bestPerFamily.sort((a, b) => b.qualityScore - a.qualityScore);
   const topCollars = bestPerFamily.slice(0, 10);
 
+  // Auto-select best collar for chart
+  useEffect(() => {
+    if (!selectedCollar && topCollars.length > 0) {
+      setSelectedCollar(topCollars[0]);
+    }
+  }, [topCollars.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Generate payoff data for selected collar
+  const payoffData = useMemo(() => {
+    if (!selectedCollar || !selectedCollar.stockAsk || !selectedCollar.callBid || !selectedCollar.putAsk) return [];
+    return generateCollarPayoff(
+      selectedCollar.stockAsk,
+      selectedCollar.putStrike,
+      selectedCollar.callStrike,
+      selectedCollar.putAsk,
+      selectedCollar.callBid,
+      selectedCollar.diasUteis,
+      cdiAnual
+    );
+  }, [selectedCollar, cdiAnual]);
+
+  // Breakeven for selected collar
+  const selectedBreakeven = useMemo(() => {
+    if (!selectedCollar?.stockAsk) return null;
+    const S0 = selectedCollar.stockAsk;
+    const Pcall = selectedCollar.callBid ?? 0;
+    const Pput = selectedCollar.putAsk ?? 0;
+    return S0 + Pput - Pcall; // breakeven = S0 + custo do collar
+  }, [selectedCollar]);
+
   const isConnected = status === "connected";
   const statusCfg = statusConfig[status];
   const diasUteisVenc = calcDiasUteis(vencimentoManual);
