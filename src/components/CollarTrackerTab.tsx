@@ -433,7 +433,7 @@ export default function CollarTrackerTab() {
             Rastreador de Collar
           </h1>
           <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
-            Coef = (Ação + Put) - Call · Rent. = (Strike - Coef) / Coef
+            R↑ = (K_call − S₀ + P_call − P_put) / S₀ · R↓ = (K_put − S₀ + P_call − P_put) / S₀ · Custo = P_put − P_call
           </p>
         </div>
 
