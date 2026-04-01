@@ -687,6 +687,86 @@ export default function BoxTracker() {
             {descontarIRRendaFixa ? "ON" : "OFF"}
           </span>
         </button>
+
+        {/* 🔔 Alerta Push */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleNotifications}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-bold transition-all",
+              notifEnabled
+                ? "bg-blue-100 dark:bg-blue-950/40 border-blue-500/60 text-blue-700 dark:text-blue-300 shadow-[0_0_12px_rgba(59,130,246,0.3)]"
+                : "bg-muted/50 border-border text-muted-foreground"
+            )}
+          >
+            {notifEnabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
+            Alerta Push
+            <span className={cn(
+              "text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase",
+              notifEnabled ? "bg-blue-500 text-white" : "bg-muted-foreground/50 text-white"
+            )}>
+              {notifEnabled ? "ON" : "OFF"}
+            </span>
+          </button>
+
+          {/* Threshold editável */}
+          {notifEnabled && (
+            editingThreshold ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">≥</span>
+                <input
+                  type="text"
+                  value={thresholdInput}
+                  onChange={(e) => setThresholdInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const val = parseFloat(thresholdInput.replace(",", "."));
+                      if (!isNaN(val) && val > 0 && val <= 1000) {
+                        setNotifThreshold(val);
+                        localStorage.setItem(NOTIF_THRESHOLD_KEY, String(val));
+                        setEditingThreshold(false);
+                      }
+                    } else if (e.key === "Escape") {
+                      setThresholdInput(String(notifThreshold));
+                      setEditingThreshold(false);
+                    }
+                  }}
+                  className="w-16 bg-card border border-blue-400 dark:border-blue-500 rounded-lg px-2 py-1 text-sm text-center font-black text-blue-700 dark:text-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  autoFocus
+                />
+                <span className="text-xs font-bold text-blue-600 dark:text-blue-400">% CDI</span>
+                <button
+                  onClick={() => {
+                    const val = parseFloat(thresholdInput.replace(",", "."));
+                    if (!isNaN(val) && val > 0 && val <= 1000) {
+                      setNotifThreshold(val);
+                      localStorage.setItem(NOTIF_THRESHOLD_KEY, String(val));
+                      setEditingThreshold(false);
+                    }
+                  }}
+                  className="px-2 py-1 bg-blue-500 hover:bg-blue-400 text-white rounded-lg text-xs font-bold transition-colors"
+                >
+                  <Save className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={() => { setThresholdInput(String(notifThreshold)); setEditingThreshold(false); }}
+                  className="px-2 py-1 bg-muted hover:bg-muted/80 text-muted-foreground rounded-lg text-xs font-bold transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => { setThresholdInput(String(notifThreshold)); setEditingThreshold(true); }}
+                className="flex items-center gap-1.5 text-sm font-black text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors cursor-pointer"
+                title="Clique para editar o limite de alerta"
+              >
+                ≥ {notifThreshold}% CDI
+                <Pencil className="w-3 h-3 opacity-50" />
+              </button>
+            )
+          )}
+        </div>
       </div>
 
       {/* VENCIMENTO CARD */}
