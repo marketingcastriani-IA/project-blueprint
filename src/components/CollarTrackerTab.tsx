@@ -887,6 +887,7 @@ export default function CollarTrackerTab() {
                     <table className="w-full text-xs">
                       <thead>
                         <tr className="border-b border-border text-[9px] uppercase tracking-wider text-muted-foreground">
+                          <th className="text-center py-2 px-1">Tipo</th>
                           <th className="text-left py-2 px-2">V Call</th>
                           <th className="text-left py-2 px-2">C Put</th>
                           <th className="text-right py-2 px-2 bg-muted/50">Strike Call</th>
@@ -898,6 +899,7 @@ export default function CollarTrackerTab() {
                           <th className="text-right py-2 px-2">↔ Neutra</th>
                           <th className="text-right py-2 px-2">↑ Alta</th>
                           <th className="text-right py-2 px-2">CDI Per.</th>
+                          <th className="text-center py-2 px-1">Score</th>
                           <th className="text-center py-2 px-2">Rating</th>
                         </tr>
                       </thead>
@@ -905,6 +907,13 @@ export default function CollarTrackerTab() {
                         {collars.map((c, ci) => (
                           <tr key={ci} className={cn("border-b border-border/30 hover:bg-muted/20 transition-colors",
                             ci === 0 && "bg-emerald-50/50 dark:bg-emerald-950/10")}>
+                            <td className="py-2 px-1 text-center">
+                              <span className={cn("text-[8px] font-black px-1.5 py-0.5 rounded-full whitespace-nowrap",
+                                c.tipo === "Normal" ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300" :
+                                c.tipo === "ATM" ? "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300" :
+                                c.tipo === "Baixa" ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300" :
+                                "bg-muted text-muted-foreground")}>{c.tipo}</span>
+                            </td>
                             <td className="py-2 px-2 font-bold text-blue-600 dark:text-blue-400">{c.callSymbol ?? "—"}</td>
                             <td className="py-2 px-2 font-bold text-red-600 dark:text-red-400">{c.putSymbol ?? "—"}</td>
                             <td className="py-2 px-2 text-right bg-muted/30 font-bold">{formatBRL(c.callStrike)}</td>
@@ -922,6 +931,12 @@ export default function CollarTrackerTab() {
                               {formatPercent(c.rentAlta)}
                             </td>
                             <td className="py-2 px-2 text-right text-amber-600 dark:text-amber-400">{formatPercent(c.cdiPeriodo)}</td>
+                            <td className="py-2 px-1 text-center">
+                              <span className={cn("text-[9px] font-black px-1.5 py-0.5 rounded-full",
+                                c.qualityScore >= 80 ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300" :
+                                c.qualityScore >= 60 ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300" :
+                                "bg-muted text-muted-foreground")}>{c.qualityScore}</span>
+                            </td>
                             <td className="py-2 px-2 text-center">
                               <span className="flex items-center justify-center gap-0.5">
                                 {Array.from({ length: 3 }).map((_, si) => (
