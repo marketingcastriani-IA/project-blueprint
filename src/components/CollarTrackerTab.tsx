@@ -357,6 +357,7 @@ export default function CollarTrackerTab() {
 
   const removeFamily = useCallback((familyId: string) => {
     setFamilies((prev) => prev.filter((f) => f.id !== familyId));
+    setSelectedCollar(null);
   }, []);
 
   const toggleExpand = useCallback((familyId: string) => {
