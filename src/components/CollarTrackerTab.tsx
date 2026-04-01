@@ -696,7 +696,15 @@ export default function CollarTrackerTab() {
                   <span className="text-xs text-muted-foreground uppercase tracking-wider font-bold">
                     {i === 0 ? "🥇 Melhor Collar" : i === 1 ? "🥈 2º Melhor" : "🥉 3º Melhor"}
                   </span>
-                  <span className="ml-auto text-[9px] uppercase tracking-widest font-black text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{collar.tipo}</span>
+                  <span className={cn("ml-auto text-[9px] uppercase tracking-widest font-black px-2 py-0.5 rounded-full",
+                    collar.tipo === "Normal" ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300" :
+                    collar.tipo === "ATM" ? "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300" :
+                    collar.tipo === "Baixa" ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300" :
+                    "bg-muted text-muted-foreground")}>{collar.tipo}</span>
+                  <span className={cn("text-[9px] uppercase tracking-widest font-black px-2 py-0.5 rounded-full",
+                    collar.custoTipo === "Crédito" ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300" :
+                    collar.custoTipo === "Zero-Cost" ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300" :
+                    "bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300")}>{collar.custoTipo}</span>
                 </div>
 
                 {/* Stock info */}
