@@ -385,7 +385,7 @@ export default function AdminPanel() {
 
   const filtered = users.filter(matchesUserFilters);
 
-  const openBulkEmailForFiltered = (template: 'promo' | 'renewal' | 'news' | 'custom') => {
+  const openBulkEmailForFiltered = (template: EmailTemplate) => {
     const recipients = filtered
       .map((u) => u.email)
       .filter((email): email is string => Boolean(email && email.includes('@')));
