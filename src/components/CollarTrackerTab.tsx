@@ -1291,6 +1291,7 @@ export default function CollarTrackerTab() {
                     <table className="w-full text-xs">
                       <thead>
                         <tr className="border-b border-border text-[9px] uppercase tracking-wider text-muted-foreground">
+                          <th className="text-center py-2 px-1">🛡️</th>
                           <th className="text-center py-2 px-1">Tipo</th>
                           <th className="text-left py-2 px-2">V Call</th>
                           <th className="text-left py-2 px-2">C Put</th>
