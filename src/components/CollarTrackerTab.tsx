@@ -567,10 +567,12 @@ export default function CollarTrackerTab() {
   bestPerFamily.sort((a, b) => b.qualityScore - a.qualityScore);
   const topCollars = bestPerFamily.slice(0, 10);
 
-  // Auto-select best collar for chart
+  // Auto-select best collar for chart (only when results exist)
   useEffect(() => {
-    if (!selectedCollar && topCollars.length > 0) {
+    if (topCollars.length > 0 && !selectedCollar) {
       setSelectedCollar(topCollars[0]);
+    } else if (topCollars.length === 0) {
+      setSelectedCollar(null);
     }
   }, [topCollars.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
