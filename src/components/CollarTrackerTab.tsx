@@ -1,8 +1,9 @@
 // ============================================================
 // RASTREADOR DE COLLAR - Tempo Real via Profit RTD Bridge
-// Coeficiente = Preço_Ação(Ask) + Preço_Put(Ask) - Preço_Call(Bid)
-// Rent. Baixa  = (Strike Put - Coef) / Coef × 100
-// Rent. Alta   = (Strike Call - Coef) / Coef × 100
+// Payoff = S_T - S_0 + max(K_put - S_T, 0) - max(S_T - K_call, 0) + (P_call - P_put)
+// R_max = (K_call - S_0 + (P_call - P_put)) / S_0
+// R_min = (K_put - S_0 + (P_call - P_put)) / S_0
+// Custo = P_put - P_call (ideal: ~0 = collar financiado)
 // ============================================================
 
 import { useState, useCallback, useEffect } from "react";
