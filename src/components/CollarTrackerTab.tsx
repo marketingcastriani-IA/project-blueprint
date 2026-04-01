@@ -1,8 +1,9 @@
 // ============================================================
 // RASTREADOR DE COLLAR - Tempo Real via Profit RTD Bridge
-// Coeficiente = Preço_Ação(Ask) + Preço_Put(Ask) - Preço_Call(Bid)
-// Rent. Baixa  = (Strike Put - Coef) / Coef × 100
-// Rent. Alta   = (Strike Call - Coef) / Coef × 100
+// Payoff = S_T - S_0 + max(K_put - S_T, 0) - max(S_T - K_call, 0) + (P_call - P_put)
+// R_max = (K_call - S_0 + (P_call - P_put)) / S_0
+// R_min = (K_put - S_0 + (P_call - P_put)) / S_0
+// Custo = P_put - P_call (ideal: ~0 = collar financiado)
 // ============================================================
 
 import { useState, useCallback, useEffect } from "react";
@@ -33,19 +34,19 @@ interface CollarResult {
   putStrike: number;
   callStrikeRtd: number | null;
   putStrikeRtd: number | null;
-  callBid: number | null;
-  putAsk: number | null;
-  stockAsk: number | null;
+  callBid: number | null;   // P_call (prêmio da call vendida)
+  putAsk: number | null;    // P_put (prêmio da put comprada)
+  stockAsk: number | null;  // S_0 (preço de entrada do ativo)
   stockUlt: number | null;
-  coeficiente: number | null;
-  rentBaixa: number | null;
+  custoCollar: number | null; // P_put - P_call (< 0 = crédito)
+  rentBaixa: number | null;  // R_min = (K_put - S_0 + (P_call - P_put)) / S_0
   rentNeutra: number | null;
-  rentAlta: number | null;
+  rentAlta: number | null;   // R_max = (K_call - S_0 + (P_call - P_put)) / S_0
   vencimento: string | null;
   diasUteis: number | null;
   cdiPeriodo: number | null;
   rating: number; // 1-3 stars
-  tipo: string;
+  tipo: string;   // Zero-Cost / Crédito / Débito
 }
 
 interface StockFamily {
@@ -343,19 +344,31 @@ export default function CollarTrackerTab() {
           const diasUteis = calcDiasUteis(vencParaCalculo);
           const cdiPeriodo = diasUteis !== null && diasUteis > 0 ? calcCdiPeriodo(diasUteis, cdiAnual) : null;
 
-          let coeficiente: number | null = null;
+          let custoCollar: number | null = null;
           let rentBaixa: number | null = null;
           let rentNeutra: number | null = null;
           let rentAlta: number | null = null;
 
           if (stockAsk !== null && callBid !== null && putAsk !== null) {
-            coeficiente = stockAsk + putAsk - callBid;
+            const S0 = stockAsk;
+            const Pcall = callBid;
+            const Pput = putAsk;
 
-            if (coeficiente > 0) {
-              rentBaixa = ((putStrike - coeficiente) / coeficiente) * 100;
-              rentAlta = ((callStrike - coeficiente) / coeficiente) * 100;
-              // Neutra: preço fica onde está (stockAsk)
-              rentNeutra = ((stockAsk - coeficiente) / coeficiente) * 100;
+            // Custo do Collar = P_put - P_call (negativo = crédito líquido)
+            custoCollar = Pput - Pcall;
+
+            if (S0 > 0) {
+              // R_max (teto - cenário de alta): ativo sobe até K_call
+              // R_max = (K_call - S_0 + (P_call - P_put)) / S_0
+              rentAlta = ((callStrike - S0 + (Pcall - Pput)) / S0) * 100;
+
+              // R_min (piso - cenário de baixa): ativo cai até K_put
+              // R_min = (K_put - S_0 + (P_call - P_put)) / S_0
+              rentBaixa = ((putStrike - S0 + (Pcall - Pput)) / S0) * 100;
+
+              // Cenário neutro: preço fica em S_0
+              // Payoff = S_0 - S_0 + 0 - 0 + (P_call - P_put) = P_call - P_put
+              rentNeutra = ((Pcall - Pput) / S0) * 100;
             }
           }
 
@@ -368,18 +381,20 @@ export default function CollarTrackerTab() {
             else if (count >= 1) rating = 2;
           }
 
-          // Tipo
+          // Tipo baseado no custo do collar
           let tipo = "Collar";
-          if (callStrike === putStrike) tipo = "Collar Zero-Cost";
-          else if (putStrike < callStrike) tipo = "Collar OTM";
-          else tipo = "Collar ITM";
+          if (custoCollar !== null) {
+            if (Math.abs(custoCollar) < 0.05) tipo = "Zero-Cost";
+            else if (custoCollar < 0) tipo = "Crédito";
+            else tipo = "Débito";
+          }
 
           results.push({
             callSymbol: call.symbol, putSymbol: put.symbol,
             callStrike, putStrike,
             callStrikeRtd, putStrikeRtd,
             callBid, putAsk, stockAsk, stockUlt,
-            coeficiente, rentBaixa, rentNeutra, rentAlta,
+            custoCollar, rentBaixa, rentNeutra, rentAlta,
             vencimento: vencParaCalculo, diasUteis, cdiPeriodo,
             rating, tipo,
           });
@@ -397,7 +412,7 @@ export default function CollarTrackerTab() {
   const bestPerFamily: (CollarResult & { familyName: string })[] = [];
   families.forEach((f) => {
     const collars = calculateCollars(f);
-    const best = collars.find((c) => c.coeficiente !== null && c.rentAlta !== null);
+    const best = collars.find((c) => c.rentAlta !== null && c.stockAsk !== null);
     if (best) bestPerFamily.push({ ...best, familyName: f.name });
   });
   bestPerFamily.sort((a, b) => (b.rentAlta ?? 0) - (a.rentAlta ?? 0));
@@ -418,7 +433,7 @@ export default function CollarTrackerTab() {
             Rastreador de Collar
           </h1>
           <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
-            Coef = (Ação + Put) - Call · Rent. = (Strike - Coef) / Coef
+            R↑ = (K_call − S₀ + P_call − P_put) / S₀ · R↓ = (K_put − S₀ + P_call − P_put) / S₀ · Custo = P_put − P_call
           </p>
         </div>
 
@@ -614,10 +629,12 @@ export default function CollarTrackerTab() {
                   </div>
                 </div>
 
-                {/* Coeficiente */}
+                {/* Custo do Collar */}
                 <div className="bg-muted/50 rounded-lg px-3 py-2 mb-3 flex items-center justify-between">
-                  <span className="text-xs font-bold text-muted-foreground uppercase">Coeficiente</span>
-                  <span className="text-lg font-black text-foreground">{formatBRL(collar.coeficiente)}</span>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">Custo Collar</span>
+                  <span className={cn("text-lg font-black", (collar.custoCollar ?? 0) <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
+                    {formatBRL(collar.custoCollar)} {(collar.custoCollar ?? 0) <= -0.05 ? "💰" : (collar.custoCollar ?? 0) < 0.05 ? "⚖️" : "💸"}
+                  </span>
                 </div>
 
                 {/* Rentabilidade 3 cenários */}
@@ -772,7 +789,7 @@ export default function CollarTrackerTab() {
                           <th className="text-right py-2 px-2 bg-muted/50">Strike Put</th>
                           <th className="text-right py-2 px-2">Call Bid</th>
                           <th className="text-right py-2 px-2">Put Ask</th>
-                          <th className="text-right py-2 px-2 font-black">Coef.</th>
+                          <th className="text-right py-2 px-2 font-black">Custo</th>
                           <th className="text-right py-2 px-2">↓ Baixa</th>
                           <th className="text-right py-2 px-2">↔ Neutra</th>
                           <th className="text-right py-2 px-2">↑ Alta</th>
@@ -790,7 +807,7 @@ export default function CollarTrackerTab() {
                             <td className="py-2 px-2 text-right bg-muted/30 font-bold">{formatBRL(c.putStrike)}</td>
                             <td className="py-2 px-2 text-right">{formatBRL(c.callBid)}</td>
                             <td className="py-2 px-2 text-right">{formatBRL(c.putAsk)}</td>
-                            <td className="py-2 px-2 text-right font-black text-orange-600 dark:text-orange-400">{formatBRL(c.coeficiente)}</td>
+                            <td className={cn("py-2 px-2 text-right font-black", (c.custoCollar ?? 0) <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-orange-600 dark:text-orange-400")}>{formatBRL(c.custoCollar)}</td>
                             <td className={cn("py-2 px-2 text-right font-bold", (c.rentBaixa ?? 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
                               {formatPercent(c.rentBaixa)}
                             </td>
