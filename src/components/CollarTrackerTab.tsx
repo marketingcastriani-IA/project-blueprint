@@ -629,6 +629,12 @@ export default function CollarTrackerTab() {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {families.length > 0 && (
+            <button onClick={() => { setFamilies([]); setSelectedCollar(null); localStorage.removeItem(STORAGE_KEY); }}
+              className="flex items-center gap-2 px-3 py-1.5 bg-destructive/10 hover:bg-destructive/20 border border-destructive/30 text-destructive rounded-lg text-xs font-bold transition-colors">
+              <Trash2 className="w-3.5 h-3.5" /> Limpar Tudo
+            </button>
+          )}
           <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold ${statusCfg.color}`}>
             {status === "connected" ? <Wifi className="w-3.5 h-3.5" /> :
              status === "error" ? <AlertTriangle className="w-3.5 h-3.5" /> :
