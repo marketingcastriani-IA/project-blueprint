@@ -768,6 +768,18 @@ export default function CollarTrackerTab() {
                   <span className="text-muted-foreground">
                     CDI Período: <span className="font-bold text-amber-600 dark:text-amber-400">{formatPercent(collar.cdiPeriodo)}</span>
                   </span>
+                  <span className="text-muted-foreground">
+                    Put: <span className="font-bold">{collar.distPutPct !== null ? formatPercent(collar.distPutPct) : "—"}</span>
+                  </span>
+                  <span className="text-muted-foreground">
+                    Call: <span className="font-bold">{collar.distCallPct !== null ? `+${formatPercent(collar.distCallPct)}` : "—"}</span>
+                  </span>
+                  <span className={cn("font-black px-1.5 py-0.5 rounded-full text-[9px]",
+                    collar.qualityScore >= 80 ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300" :
+                    collar.qualityScore >= 60 ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300" :
+                    "bg-muted text-muted-foreground")}>
+                    Score: {collar.qualityScore}
+                  </span>
                   <span className="flex items-center gap-0.5">
                     {Array.from({ length: 3 }).map((_, si) => (
                       <Star key={si} className={cn("w-3.5 h-3.5", si < collar.rating ? "text-amber-400 fill-amber-400" : "text-muted-foreground/30")} />
