@@ -279,7 +279,7 @@ export default function AdminPanel() {
     return templates[template];
   };
 
-  const openEmailForUser = (u: UserRow, template: 'promo' | 'renewal' | 'news' | 'custom') => {
+  const openEmailForUser = (u: UserRow, template: EmailTemplate) => {
     const recipient = u.email?.includes('@') ? u.email : null;
     if (!recipient) {
       toast.error('Este usuário não possui e-mail válido para envio');
