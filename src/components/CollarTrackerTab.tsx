@@ -371,7 +371,7 @@ export default function CollarTrackerTab() {
       const symbols = rawText
         .split(/[\n,;\t\s]+/)
         .map((s) => s.trim().toUpperCase())
-        .filter((s) => s.length >= 5 && /^[A-Z]{4,5}[A-X]\d+$/.test(s));
+        .filter((s) => s.length >= 5 && /^[A-Z]{4,6}\d{0,2}[A-X]\d+$/.test(s));
       if (!symbols.length) return;
       const newTickers: OptionTicker[] = symbols.map((symbol) => ({
         id: generateId(), symbol,
