@@ -130,7 +130,8 @@ function formatPercent(val: number | null): string {
 
 function extractStrikeFromTicker(symbol: string): number {
   const clean = symbol.toUpperCase().replace(/\s/g, "");
-  const match = clean.match(/^[A-Z]{4,5}[A-X](\d+)$/);
+  // Match: PETR4B28, VALE3A100, BOVA11B28, PETRB28, etc.
+  const match = clean.match(/[A-X](\d+)$/);
   if (match) {
     const raw = parseInt(match[1]);
     if (raw >= 1000) return raw / 100;
@@ -142,7 +143,8 @@ function extractStrikeFromTicker(symbol: string): number {
 
 function extractTypeFromTicker(symbol: string): "CALL" | "PUT" {
   const clean = symbol.toUpperCase().replace(/\s/g, "");
-  const match = clean.match(/^[A-Z]{4,5}([A-X])/);
+  // Find the option letter (A-X) before the numeric strike
+  const match = clean.match(/([A-X])\d+$/);
   if (match) {
     const code = match[1].charCodeAt(0) - 65;
     return code <= 11 ? "CALL" : "PUT";
@@ -371,7 +373,11 @@ export default function CollarTrackerTab() {
       const symbols = rawText
         .split(/[\n,;\t\s]+/)
         .map((s) => s.trim().toUpperCase())
-        .filter((s) => s.length >= 5 && /^[A-Z]{4,6}\d{0,2}[A-X]\d+$/.test(s));
+        .filter((s) => {
+          if (s.length < 5) return false;
+          // Accept: PETR4B28, VALE3A100, BOVA11B28, PETRB28, PETRD3050, etc.
+          return /^[A-Z]{4,6}\d{0,2}[A-X]\d+$/.test(s) || /^[A-Z]{4,5}[A-X]\d+$/.test(s);
+        });
       if (!symbols.length) return;
       const newTickers: OptionTicker[] = symbols.map((symbol) => ({
         id: generateId(), symbol,
