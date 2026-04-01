@@ -9,7 +9,7 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import {
   Plus, Trash2, Upload, RefreshCw, ChevronDown, ChevronUp, Star,
-  ClipboardPaste, X, Shield, Trophy, Wifi, WifiOff, AlertTriangle,
+  ClipboardPaste, X, Shield, ShieldCheck, Trophy, Wifi, WifiOff, AlertTriangle,
   TrendingUp, TrendingDown, Minus, CalendarIcon, Pencil, Save,
   ToggleLeft, ToggleRight, BarChart3,
 } from "lucide-react";
@@ -59,6 +59,7 @@ interface CollarResult {
   distCallPct: number | null;  // % distância call do preço (positivo = OTM)
   riskRewardRatio: number | null; // rentAlta / |rentBaixa| (quanto maior melhor)
   qualityScore: number; // 0-100 score composto
+  isRiskFree: boolean; // true se rentBaixa >= 0 && rentNeutra >= 0 && rentAlta >= 0
 }
 
 interface StockFamily {
@@ -274,6 +275,7 @@ export default function CollarTrackerTab() {
   const [filterTipo, setFilterTipo] = useState<CollarTipo | "Todos">("Todos");
   const [filterCusto, setFilterCusto] = useState<CollarCusto | "Todos">("Todos");
   const [hideNegative, setHideNegative] = useState(false);
+  const [onlyRiskFree, setOnlyRiskFree] = useState(false);
   const [selectedCollar, setSelectedCollar] = useState<(CollarResult & { familyName: string }) | null>(null);
   const [cdiAnual, setCdiAnual] = useState<number>(() => {
     try {
@@ -523,8 +525,14 @@ export default function CollarTrackerTab() {
             ? Math.abs(rentAlta / rentBaixa) : null;
 
           // Quality score (0-100) para auto-ranking inteligente
+          // Detectar Risco Zero: todos os cenários >= 0
+          const isRiskFree = rentAlta !== null && rentBaixa !== null && rentNeutra !== null
+            && rentBaixa >= -0.01 && rentNeutra >= -0.01 && rentAlta >= -0.01;
+
           let qualityScore = 50;
           if (rentAlta !== null && rentBaixa !== null && cdiPeriodo !== null) {
+            // RISCO ZERO: boost massivo (+30)
+            if (isRiskFree) qualityScore += 30;
             // +20 se rentAlta > CDI
             if (rentAlta > cdiPeriodo) qualityScore += 20;
             // +15 se rentBaixa > CDI (raro, excelente)
@@ -536,8 +544,8 @@ export default function CollarTrackerTab() {
             if (distPutPct !== null && distPutPct >= -15 && distPutPct <= -5) qualityScore += 10;
             // +10 se call 5-15% OTM (zona ideal)
             if (distCallPct !== null && distCallPct >= 5 && distCallPct <= 15) qualityScore += 10;
-            // -20 se perda muito grande
-            if (rentBaixa < -10) qualityScore -= 20;
+            // -20 se perda muito grande (mas não se riskFree)
+            if (!isRiskFree && rentBaixa < -10) qualityScore -= 20;
             // +5 por bom risk/reward
             if (riskRewardRatio !== null && riskRewardRatio > 2) qualityScore += 5;
           }
@@ -552,6 +560,7 @@ export default function CollarTrackerTab() {
             vencimento: vencParaCalculo, diasUteis, cdiPeriodo,
             rating, tipo, custoTipo,
             distPutPct, distCallPct, riskRewardRatio, qualityScore,
+            isRiskFree,
           });
         }
       }
@@ -741,6 +750,15 @@ export default function CollarTrackerTab() {
             {hideNegative ? <ToggleRight className="w-3.5 h-3.5" /> : <ToggleLeft className="w-3.5 h-3.5" />}
             Ocultar negativos
           </button>
+          <button
+            onClick={() => setOnlyRiskFree(!onlyRiskFree)}
+            className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all",
+              onlyRiskFree
+                ? "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-500 text-emerald-700 dark:text-emerald-300 shadow-[0_0_12px_-2px_rgba(16,185,129,0.4)] ring-1 ring-emerald-400/50"
+                : "bg-muted border-border text-muted-foreground")}>
+            <ShieldCheck className={cn("w-3.5 h-3.5", onlyRiskFree && "animate-pulse")} />
+            Só Risco Zero
+          </button>
         </div>
         <p className="text-[9px] text-muted-foreground mt-2">
           📐 Zona ideal: PUT 5-15% abaixo · CALL 5-15% acima · Custo ≈ zero · Rent. &gt; CDI
@@ -839,6 +857,16 @@ export default function CollarTrackerTab() {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
                   </span>
+                )}
+
+                {/* Risk Free banner */}
+                {collar.isRiskFree && (
+                  <div className="mb-3 flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 border border-emerald-400/50 animate-pulse">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-300">
+                      🛡️ Estrutura Risco Zero — Lucro em todos os cenários
+                    </span>
+                  </div>
                 )}
 
                 {/* Header: badge + stock */}
@@ -1182,6 +1210,7 @@ export default function CollarTrackerTab() {
           if (filterTipo !== "Todos" && c.tipo !== filterTipo) return false;
           if (filterCusto !== "Todos" && c.custoTipo !== filterCusto) return false;
           if (hideNegative && c.rentAlta !== null && c.rentAlta < 0) return false;
+          if (onlyRiskFree && !c.isRiskFree) return false;
           return true;
         });
         const stockRow = rows.get(family.name);
@@ -1262,6 +1291,7 @@ export default function CollarTrackerTab() {
                     <table className="w-full text-xs">
                       <thead>
                         <tr className="border-b border-border text-[9px] uppercase tracking-wider text-muted-foreground">
+                          <th className="text-center py-2 px-1">🛡️</th>
                           <th className="text-center py-2 px-1">Tipo</th>
                           <th className="text-left py-2 px-2">V Call</th>
                           <th className="text-left py-2 px-2">C Put</th>
@@ -1284,7 +1314,11 @@ export default function CollarTrackerTab() {
                             onClick={() => setSelectedCollar({ ...c, familyName: family.name })}
                             className={cn("border-b border-border/30 hover:bg-muted/20 transition-colors cursor-pointer",
                             ci === 0 && "bg-emerald-50/50 dark:bg-emerald-950/10",
+                            c.isRiskFree && "bg-emerald-50/30 dark:bg-emerald-950/20",
                             selectedCollar?.callSymbol === c.callSymbol && selectedCollar?.putSymbol === c.putSymbol && "ring-2 ring-primary/50 bg-primary/5")}>
+                            <td className="py-2 px-1 text-center">
+                              {c.isRiskFree ? <ShieldCheck className="w-3.5 h-3.5 mx-auto text-emerald-500" /> : <span className="text-muted-foreground/30">—</span>}
+                            </td>
                             <td className="py-2 px-1 text-center">
                               <span className={cn("text-[8px] font-black px-1.5 py-0.5 rounded-full whitespace-nowrap",
                                 c.tipo === "Normal" ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300" :
