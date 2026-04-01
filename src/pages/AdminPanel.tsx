@@ -789,6 +789,24 @@ export default function AdminPanel() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
+                <Label className="text-xs font-black uppercase">Trocar Modelo</Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {EMAIL_TEMPLATE_OPTIONS.map(t => (
+                    <button
+                      key={t.value}
+                      onClick={() => {
+                        const data = buildEmailTemplate(t.value);
+                        setEmailSubject(data.subject);
+                        setEmailBody(data.body);
+                      }}
+                      className={cn("px-2.5 py-1 rounded-md border text-[10px] font-bold transition-all", t.color)}
+                    >
+                      {t.icon} {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
                 <Label className="text-xs font-black uppercase">Assunto</Label>
                 <Input value={emailSubject} onChange={e => setEmailSubject(e.target.value)} placeholder="Assunto do email..." />
               </div>
