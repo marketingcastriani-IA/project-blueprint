@@ -28,6 +28,8 @@ import {
   Save,
   ToggleLeft,
   ToggleRight,
+  Bell,
+  BellOff,
 } from "lucide-react";
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 import { statusConfig } from "@/hooks/useRtdBridge";
@@ -88,6 +90,10 @@ const CDI_ANUAL_DEFAULT = 14.15;
 const CDI_STORAGE_KEY = "box-tracker-cdi-anual";
 const IR_ACOES = 15;
 const IR_RENDA_FIXA = 22.5;
+const NOTIF_ENABLED_KEY = "box-tracker-notif-enabled";
+const NOTIF_THRESHOLD_KEY = "box-tracker-notif-threshold";
+const NOTIF_THRESHOLD_DEFAULT = 110;
+const NOTIF_COOLDOWN_MS = 60_000; // 1 min cooldown entre notificações
 
 function calcDiasUteis(vencimentoStr: string | null): number | null {
   if (!vencimentoStr) return null;
@@ -194,7 +200,49 @@ export default function BoxTracker() {
   const [editingCdi, setEditingCdi] = useState(false);
   const [cdiInput, setCdiInput] = useState(String(cdiAnual).replace(".", ","));
 
+  // ─── NOTIFICAÇÕES ──────────────────────────────────────────
+  const [notifEnabled, setNotifEnabled] = useState<boolean>(() => {
+    try { return localStorage.getItem(NOTIF_ENABLED_KEY) === "true"; } catch { return false; }
+  });
+  const [notifThreshold, setNotifThreshold] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(NOTIF_THRESHOLD_KEY);
+      return saved ? parseFloat(saved) : NOTIF_THRESHOLD_DEFAULT;
+    } catch { return NOTIF_THRESHOLD_DEFAULT; }
+  });
+  const [editingThreshold, setEditingThreshold] = useState(false);
+  const [thresholdInput, setThresholdInput] = useState(String(notifThreshold));
+  const lastNotifRef = useRef<number>(0);
+  const notifPermissionRef = useRef<NotificationPermission>("default");
+
+  // Request notification permission
+  const toggleNotifications = useCallback(async () => {
+    if (notifEnabled) {
+      setNotifEnabled(false);
+      localStorage.setItem(NOTIF_ENABLED_KEY, "false");
+      return;
+    }
+    if (!("Notification" in window)) {
+      alert("Seu navegador não suporta notificações push.");
+      return;
+    }
+    const permission = await Notification.requestPermission();
+    notifPermissionRef.current = permission;
+    if (permission === "granted") {
+      setNotifEnabled(true);
+      localStorage.setItem(NOTIF_ENABLED_KEY, "true");
+      new Notification("🔔 Alertas Box Ativados", {
+        body: `Você será notificado quando um box superar ${notifThreshold}% do CDI.`,
+        icon: "/favicon.ico",
+      });
+    } else {
+      alert("Permissão de notificação negada. Habilite nas configurações do navegador.");
+    }
+  }, [notifEnabled, notifThreshold]);
+
   const { status, rows, connect, addTicker: bridgeAddTicker } = useSharedRtdBridge();
+
+
 
   // Load vencimento from localStorage
   useEffect(() => {
@@ -460,6 +508,29 @@ export default function BoxTracker() {
   // Determine winner
   const winnerKey = topPairs.length > 0 ? `${topPairs[0].familyName}-${topPairs[0].strike}` : null;
 
+  // ─── NOTIFICAÇÃO PUSH: monitorar box acima do threshold ────
+  useEffect(() => {
+    if (!notifEnabled || !("Notification" in window) || Notification.permission !== "granted") return;
+    if (topPairs.length === 0) return;
+
+    const now = Date.now();
+    if (now - lastNotifRef.current < NOTIF_COOLDOWN_MS) return;
+
+    const best = topPairs[0];
+    if (best.lucroPercent === null || best.cdiPeriodo === null || best.cdiPeriodo <= 0) return;
+
+    const cdiPercent = (best.lucroPercent / best.cdiPeriodo) * 100;
+    
+    if (cdiPercent >= notifThreshold) {
+      lastNotifRef.current = now;
+      new Notification(`🚀 Box ${best.familyName} a ${cdiPercent.toFixed(0)}% do CDI!`, {
+        body: `Strike R$ ${best.strike.toFixed(2)} · Lucro ${best.lucroPercent.toFixed(2)}% · Meta: ${notifThreshold}% CDI`,
+        icon: "/favicon.ico",
+        tag: "box-tracker-alert",
+      } as NotificationOptions);
+    }
+  }, [topPairs, notifEnabled, notifThreshold]);
+
   // ─── RENDER ───────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-background text-foreground font-mono p-3 md:p-6">
@@ -616,6 +687,86 @@ export default function BoxTracker() {
             {descontarIRRendaFixa ? "ON" : "OFF"}
           </span>
         </button>
+
+        {/* 🔔 Alerta Push */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleNotifications}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-bold transition-all",
+              notifEnabled
+                ? "bg-blue-100 dark:bg-blue-950/40 border-blue-500/60 text-blue-700 dark:text-blue-300 shadow-[0_0_12px_rgba(59,130,246,0.3)]"
+                : "bg-muted/50 border-border text-muted-foreground"
+            )}
+          >
+            {notifEnabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
+            Alerta Push
+            <span className={cn(
+              "text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase",
+              notifEnabled ? "bg-blue-500 text-white" : "bg-muted-foreground/50 text-white"
+            )}>
+              {notifEnabled ? "ON" : "OFF"}
+            </span>
+          </button>
+
+          {/* Threshold editável */}
+          {notifEnabled && (
+            editingThreshold ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">≥</span>
+                <input
+                  type="text"
+                  value={thresholdInput}
+                  onChange={(e) => setThresholdInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const val = parseFloat(thresholdInput.replace(",", "."));
+                      if (!isNaN(val) && val > 0 && val <= 1000) {
+                        setNotifThreshold(val);
+                        localStorage.setItem(NOTIF_THRESHOLD_KEY, String(val));
+                        setEditingThreshold(false);
+                      }
+                    } else if (e.key === "Escape") {
+                      setThresholdInput(String(notifThreshold));
+                      setEditingThreshold(false);
+                    }
+                  }}
+                  className="w-16 bg-card border border-blue-400 dark:border-blue-500 rounded-lg px-2 py-1 text-sm text-center font-black text-blue-700 dark:text-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  autoFocus
+                />
+                <span className="text-xs font-bold text-blue-600 dark:text-blue-400">% CDI</span>
+                <button
+                  onClick={() => {
+                    const val = parseFloat(thresholdInput.replace(",", "."));
+                    if (!isNaN(val) && val > 0 && val <= 1000) {
+                      setNotifThreshold(val);
+                      localStorage.setItem(NOTIF_THRESHOLD_KEY, String(val));
+                      setEditingThreshold(false);
+                    }
+                  }}
+                  className="px-2 py-1 bg-blue-500 hover:bg-blue-400 text-white rounded-lg text-xs font-bold transition-colors"
+                >
+                  <Save className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={() => { setThresholdInput(String(notifThreshold)); setEditingThreshold(false); }}
+                  className="px-2 py-1 bg-muted hover:bg-muted/80 text-muted-foreground rounded-lg text-xs font-bold transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => { setThresholdInput(String(notifThreshold)); setEditingThreshold(true); }}
+                className="flex items-center gap-1.5 text-sm font-black text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors cursor-pointer"
+                title="Clique para editar o limite de alerta"
+              >
+                ≥ {notifThreshold}% CDI
+                <Pencil className="w-3 h-3 opacity-50" />
+              </button>
+            )
+          )}
+        </div>
       </div>
 
       {/* VENCIMENTO CARD */}
