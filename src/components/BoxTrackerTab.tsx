@@ -527,8 +527,7 @@ export default function BoxTracker() {
         body: `Strike R$ ${best.strike.toFixed(2)} · Lucro ${best.lucroPercent.toFixed(2)}% · Meta: ${notifThreshold}% CDI`,
         icon: "/favicon.ico",
         tag: "box-tracker-alert",
-        renotify: true,
-      });
+      } as NotificationOptions);
     }
   }, [topPairs, notifEnabled, notifThreshold]);
 
