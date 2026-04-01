@@ -17,6 +17,7 @@ import { calculateCDIReturn } from '@/lib/payoff';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
 import { generatePortfolioPdf } from '@/lib/pdf-generator';
+import ListSkeleton from '@/components/skeletons/ListSkeleton';
 
 interface ClosedAnalysis {
   id: string;
