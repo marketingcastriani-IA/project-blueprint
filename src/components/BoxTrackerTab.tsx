@@ -88,6 +88,10 @@ const CDI_ANUAL_DEFAULT = 14.15;
 const CDI_STORAGE_KEY = "box-tracker-cdi-anual";
 const IR_ACOES = 15;
 const IR_RENDA_FIXA = 22.5;
+const NOTIF_ENABLED_KEY = "box-tracker-notif-enabled";
+const NOTIF_THRESHOLD_KEY = "box-tracker-notif-threshold";
+const NOTIF_THRESHOLD_DEFAULT = 110;
+const NOTIF_COOLDOWN_MS = 60_000; // 1 min cooldown entre notificações
 
 function calcDiasUteis(vencimentoStr: string | null): number | null {
   if (!vencimentoStr) return null;
