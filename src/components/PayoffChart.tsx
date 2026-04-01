@@ -209,7 +209,7 @@ export default function PayoffChart({
               <ReferenceDot x={currentSpotPrice} y={currentPnL * factor} r={6} fill="hsl(var(--primary))" stroke="white" strokeWidth={2} className="animate-pulse" />
             )}
             
-            <ChartTooltip content={<CustomTooltip displayMode={displayMode} />} />
+            <ChartTooltip content={<CustomTooltip displayMode={displayMode} legs={legs} daysToExpiry={daysToExpiry} cdiRate={cdiRate} />} />
             
             {/* Áreas de Payoff (3 Cores) */}
             <Area type="monotone" dataKey="belowZero" stroke="none" fill="url(#lossGradient)" isAnimationActive={false} />
