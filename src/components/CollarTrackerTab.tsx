@@ -6,18 +6,22 @@
 // Custo = P_put - P_call (ideal: ~0 = collar financiado)
 // ============================================================
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import {
   Plus, Trash2, Upload, RefreshCw, ChevronDown, ChevronUp, Star,
   ClipboardPaste, X, Shield, Trophy, Wifi, WifiOff, AlertTriangle,
   TrendingUp, TrendingDown, Minus, CalendarIcon, Pencil, Save,
-  ToggleLeft, ToggleRight,
+  ToggleLeft, ToggleRight, BarChart3,
 } from "lucide-react";
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 import { statusConfig } from "@/hooks/useRtdBridge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import {
+  ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid,
+  ReferenceLine, ResponsiveContainer, Tooltip, ReferenceDot,
+} from "recharts";
 
 // ─── TIPOS ───────────────────────────────────────────────────
 type CollarTipo = "Normal" | "Baixa" | "ATM" | "Calendário";
