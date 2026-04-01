@@ -389,13 +389,53 @@ export default function CollarTrackerTab() {
             else if (count >= 1) rating = 2;
           }
 
-          // Tipo baseado no custo do collar
-          let tipo = "Collar";
-          if (custoCollar !== null) {
-            if (Math.abs(custoCollar) < 0.05) tipo = "Zero-Cost";
-            else if (custoCollar < 0) tipo = "Crédito";
-            else tipo = "Débito";
+          // Classificação do tipo de collar baseado nos strikes
+          let tipo: CollarTipo = "Normal";
+          const distPutPct = stockAsk !== null && stockAsk > 0 ? ((putStrike - stockAsk) / stockAsk) * 100 : null;
+          const distCallPct = stockAsk !== null && stockAsk > 0 ? ((callStrike - stockAsk) / stockAsk) * 100 : null;
+
+          if (callStrike < putStrike) {
+            // Call vendida ABAIXO da put = collar de baixa (bearish)
+            tipo = "Baixa";
+          } else if (distPutPct !== null && Math.abs(distPutPct) < 2) {
+            // Put muito próxima do preço = ATM collar (mais proteção)
+            tipo = "ATM";
+          } else {
+            // Normal: K_put < S₀ < K_call
+            tipo = "Normal";
           }
+
+          // Custo tipo
+          let custoTipo: CollarCusto = "Débito";
+          if (custoCollar !== null) {
+            if (Math.abs(custoCollar) < 0.05) custoTipo = "Zero-Cost";
+            else if (custoCollar < 0) custoTipo = "Crédito";
+          }
+
+          // Risk/reward ratio
+          const riskRewardRatio = (rentAlta !== null && rentBaixa !== null && rentBaixa !== 0)
+            ? Math.abs(rentAlta / rentBaixa) : null;
+
+          // Quality score (0-100) para auto-ranking inteligente
+          let qualityScore = 50;
+          if (rentAlta !== null && rentBaixa !== null && cdiPeriodo !== null) {
+            // +20 se rentAlta > CDI
+            if (rentAlta > cdiPeriodo) qualityScore += 20;
+            // +15 se rentBaixa > CDI (raro, excelente)
+            if (rentBaixa > cdiPeriodo) qualityScore += 15;
+            // +10 se collar zero-cost ou crédito
+            if (custoTipo === "Zero-Cost") qualityScore += 10;
+            if (custoTipo === "Crédito") qualityScore += 15;
+            // +10 se put 5-15% OTM (zona ideal)
+            if (distPutPct !== null && distPutPct >= -15 && distPutPct <= -5) qualityScore += 10;
+            // +10 se call 5-15% OTM (zona ideal)
+            if (distCallPct !== null && distCallPct >= 5 && distCallPct <= 15) qualityScore += 10;
+            // -20 se perda muito grande
+            if (rentBaixa < -10) qualityScore -= 20;
+            // +5 por bom risk/reward
+            if (riskRewardRatio !== null && riskRewardRatio > 2) qualityScore += 5;
+          }
+          qualityScore = Math.max(0, Math.min(100, qualityScore));
 
           results.push({
             callSymbol: call.symbol, putSymbol: put.symbol,
@@ -404,13 +444,14 @@ export default function CollarTrackerTab() {
             callBid, putAsk, stockAsk, stockUlt,
             custoCollar, rentBaixa, rentNeutra, rentAlta,
             vencimento: vencParaCalculo, diasUteis, cdiPeriodo,
-            rating, tipo,
+            rating, tipo, custoTipo,
+            distPutPct, distCallPct, riskRewardRatio, qualityScore,
           });
         }
       }
 
-      // Sort by best alta rentability
-      results.sort((a, b) => (b.rentAlta ?? -999) - (a.rentAlta ?? -999));
+      // Sort by qualityScore (melhor primeiro)
+      results.sort((a, b) => b.qualityScore - a.qualityScore);
       return results;
     },
     [rows, vencimentoManual, cdiAnual]
@@ -423,7 +464,7 @@ export default function CollarTrackerTab() {
     const best = collars.find((c) => c.rentAlta !== null && c.stockAsk !== null);
     if (best) bestPerFamily.push({ ...best, familyName: f.name });
   });
-  bestPerFamily.sort((a, b) => (b.rentAlta ?? 0) - (a.rentAlta ?? 0));
+  bestPerFamily.sort((a, b) => b.qualityScore - a.qualityScore);
   const topCollars = bestPerFamily.slice(0, 10);
 
   const isConnected = status === "connected";
