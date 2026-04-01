@@ -213,7 +213,6 @@ export default function BoxTracker() {
   const [editingThreshold, setEditingThreshold] = useState(false);
   const [thresholdInput, setThresholdInput] = useState(String(notifThreshold));
   const lastNotifRef = useRef<number>(0);
-  const notifPermissionRef2 = useRef<NotificationPermission | null>(null);
 
   // ─── HISTÓRICO DE ALERTAS ─────────────────────────────────
   interface AlertEntry {
