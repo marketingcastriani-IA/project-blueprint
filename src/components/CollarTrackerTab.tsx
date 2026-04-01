@@ -59,6 +59,7 @@ interface CollarResult {
   distCallPct: number | null;  // % distância call do preço (positivo = OTM)
   riskRewardRatio: number | null; // rentAlta / |rentBaixa| (quanto maior melhor)
   qualityScore: number; // 0-100 score composto
+  isRiskFree: boolean; // true se rentBaixa >= 0 && rentNeutra >= 0 && rentAlta >= 0
 }
 
 interface StockFamily {
