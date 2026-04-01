@@ -240,6 +240,8 @@ export default function BoxTracker() {
     }
   }, [notifEnabled, notifThreshold]);
 
+  const { status, rows, connect, addTicker: bridgeAddTicker } = useSharedRtdBridge();
+
 
 
   // Load vencimento from localStorage
