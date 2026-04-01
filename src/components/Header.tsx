@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, ShieldCheck, Briefcase, Settings, Zap, PieChart, HelpCircle, Sparkles, Palette, BookOpen, Radio, BarChart2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 export default function Header() {
@@ -16,6 +16,13 @@ export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collarEnabled, setCollarEnabled] = useState(() => localStorage.getItem('feature-collar-tracker') !== 'false');
+
+  useEffect(() => {
+    const handler = () => setCollarEnabled(localStorage.getItem('feature-collar-tracker') !== 'false');
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, []);
 
   // Primary nav items (always visible on desktop)
   const primaryNav = [
@@ -25,7 +32,7 @@ export default function Header() {
     { label: 'Diversificador', path: '/diversificador', icon: PieChart },
     { label: 'Tempo Real', path: '/dados-ao-vivo', icon: Radio },
     { label: 'Box Tracker', path: '/box-tracker', icon: BarChart2 },
-    { label: 'Collar Tracker', path: '/collar-tracker', icon: ShieldCheck },
+    ...(collarEnabled ? [{ label: 'Collar Tracker', path: '/collar-tracker', icon: ShieldCheck }] : []),
   ];
 
   // Secondary nav items (inside "More" dropdown on md, visible on xl+)
