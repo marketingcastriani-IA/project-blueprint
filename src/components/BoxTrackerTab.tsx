@@ -213,6 +213,25 @@ export default function BoxTracker() {
   const [editingThreshold, setEditingThreshold] = useState(false);
   const [thresholdInput, setThresholdInput] = useState(String(notifThreshold));
   const lastNotifRef = useRef<number>(0);
+  const notifPermissionRef = useRef<NotificationPermission | null>(null);
+
+  // ─── HISTÓRICO DE ALERTAS ─────────────────────────────────
+  interface AlertEntry {
+    id: string;
+    time: string;
+    familyName: string;
+    strike: number;
+    lucroPercent: number;
+    cdiPercent: number;
+  }
+  const ALERT_HISTORY_KEY = "box-tracker-alert-history";
+  const [alertHistory, setAlertHistory] = useState<AlertEntry[]>(() => {
+    try {
+      const saved = localStorage.getItem(ALERT_HISTORY_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  const [showAlertHistory, setShowAlertHistory] = useState(false);
   const notifPermissionRef = useRef<NotificationPermission>("default");
 
   // Request notification permission
