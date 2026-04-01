@@ -524,8 +524,14 @@ export default function CollarTrackerTab() {
             ? Math.abs(rentAlta / rentBaixa) : null;
 
           // Quality score (0-100) para auto-ranking inteligente
+          // Detectar Risco Zero: todos os cenários >= 0
+          const isRiskFree = rentAlta !== null && rentBaixa !== null && rentNeutra !== null
+            && rentBaixa >= -0.01 && rentNeutra >= -0.01 && rentAlta >= -0.01;
+
           let qualityScore = 50;
           if (rentAlta !== null && rentBaixa !== null && cdiPeriodo !== null) {
+            // RISCO ZERO: boost massivo (+30)
+            if (isRiskFree) qualityScore += 30;
             // +20 se rentAlta > CDI
             if (rentAlta > cdiPeriodo) qualityScore += 20;
             // +15 se rentBaixa > CDI (raro, excelente)
@@ -537,8 +543,8 @@ export default function CollarTrackerTab() {
             if (distPutPct !== null && distPutPct >= -15 && distPutPct <= -5) qualityScore += 10;
             // +10 se call 5-15% OTM (zona ideal)
             if (distCallPct !== null && distCallPct >= 5 && distCallPct <= 15) qualityScore += 10;
-            // -20 se perda muito grande
-            if (rentBaixa < -10) qualityScore -= 20;
+            // -20 se perda muito grande (mas não se riskFree)
+            if (!isRiskFree && rentBaixa < -10) qualityScore -= 20;
             // +5 por bom risk/reward
             if (riskRewardRatio !== null && riskRewardRatio > 2) qualityScore += 5;
           }
@@ -553,6 +559,7 @@ export default function CollarTrackerTab() {
             vencimento: vencParaCalculo, diasUteis, cdiPeriodo,
             rating, tipo, custoTipo,
             distPutPct, distCallPct, riskRewardRatio, qualityScore,
+            isRiskFree,
           });
         }
       }
