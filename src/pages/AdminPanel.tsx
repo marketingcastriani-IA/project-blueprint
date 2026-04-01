@@ -678,18 +678,11 @@ export default function AdminPanel() {
                         <Send className="h-3 w-3" /> Enviar Email para {u.display_name}
                       </Label>
                       <div className="flex gap-2 flex-wrap">
-                        <Button size="sm" variant="outline" onClick={() => openEmailForUser(u, 'promo')} className="h-8 px-3 text-[10px] font-bold border-primary/30 hover:bg-primary/10">
-                          🔥 Promoção
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => openEmailForUser(u, 'renewal')} className="h-8 px-3 text-[10px] font-bold border-warning/30 text-warning hover:bg-warning/10">
-                          ⚠️ Renovação
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => openEmailForUser(u, 'news')} className="h-8 px-3 text-[10px] font-bold border-success/30 text-success hover:bg-success/10">
-                          🚀 Novidades
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => openEmailForUser(u, 'custom')} className="h-8 px-3 text-[10px] font-bold hover:bg-accent">
-                          ✏️ Personalizado
-                        </Button>
+                        {EMAIL_TEMPLATE_OPTIONS.slice(0, 6).map(t => (
+                          <Button key={t.value} size="sm" variant="outline" onClick={() => openEmailForUser(u, t.value)} className={cn("h-8 px-3 text-[10px] font-bold", t.color)}>
+                            {t.icon} {t.label}
+                          </Button>
+                        ))}
                       </div>
                     </div>
                   </div>
