@@ -4,7 +4,7 @@ import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { BookOpen, TrendingUp, Shield, BarChart3, Zap, Target, DollarSign, Activity, ArrowUpDown } from 'lucide-react';
+import { BookOpen, TrendingUp, Shield, BarChart3, Zap, Target, DollarSign, Activity, ArrowUpDown, TrendingDown, Umbrella, Hexagon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface GreekRow {
