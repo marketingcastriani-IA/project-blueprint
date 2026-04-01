@@ -6,7 +6,8 @@ import {
   BookOpen, Upload, BarChart3, History, Briefcase, TrendingUp, 
   Zap, Target, ArrowRight, CheckCircle2, AlertTriangle, HelpCircle,
   Camera, Brain, PieChart, Calculator, Shield, Eye, Download,
-  Radio, Wifi, Activity, Trophy, Box, Settings, Terminal
+  Radio, Wifi, Activity, Trophy, Box, Settings, Terminal,
+  Keyboard, Palette, BookOpenCheck, Lock, Bell, Layers
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
