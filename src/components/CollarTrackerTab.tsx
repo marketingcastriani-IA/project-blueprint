@@ -802,7 +802,13 @@ export default function CollarTrackerTab() {
 
       {/* FAMILIES */}
       {families.map((family) => {
-        const collars = calculateCollars(family);
+        const allCollars = calculateCollars(family);
+        const collars = allCollars.filter((c) => {
+          if (filterTipo !== "Todos" && c.tipo !== filterTipo) return false;
+          if (filterCusto !== "Todos" && c.custoTipo !== filterCusto) return false;
+          if (hideNegative && c.rentAlta !== null && c.rentAlta < 0) return false;
+          return true;
+        });
         const stockRow = rows.get(family.name);
         const stockPrice = stockRow?.ultimo;
         const calls = family.tickers.filter((t) => t.type === "CALL");
