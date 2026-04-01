@@ -1253,8 +1253,11 @@ export default function CollarTrackerTab() {
                       </thead>
                       <tbody>
                         {collars.map((c, ci) => (
-                          <tr key={ci} className={cn("border-b border-border/30 hover:bg-muted/20 transition-colors",
-                            ci === 0 && "bg-emerald-50/50 dark:bg-emerald-950/10")}>
+                          <tr key={ci}
+                            onClick={() => setSelectedCollar({ ...c, familyName: family.name })}
+                            className={cn("border-b border-border/30 hover:bg-muted/20 transition-colors cursor-pointer",
+                            ci === 0 && "bg-emerald-50/50 dark:bg-emerald-950/10",
+                            selectedCollar?.callSymbol === c.callSymbol && selectedCollar?.putSymbol === c.putSymbol && "ring-2 ring-primary/50 bg-primary/5")}>
                             <td className="py-2 px-1 text-center">
                               <span className={cn("text-[8px] font-black px-1.5 py-0.5 rounded-full whitespace-nowrap",
                                 c.tipo === "Normal" ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300" :
