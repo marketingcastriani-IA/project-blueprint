@@ -1,49 +1,56 @@
 
 
-# Payoff Conjunto — Nova Página PRO
+# Plano: Rastreador de Collar (Collar Tracker)
 
-## Resumo
-Criar uma nova página `/payoff-conjunto` acessível via menu principal, exclusiva para usuários PRO. A página permite selecionar múltiplas análises salvas do histórico e sobrepor seus gráficos de payoff num único chart, com uma curva consolidada (soma).
+## Objetivo
+Criar uma nova aba "Collar Tracker" que rastreia em tempo real os melhores collars para uma ação escolhida, usando dados do RTD Bridge — similar ao Box Tracker, mas para a estratégia Collar (Ação comprada + Put comprada + Call vendida). Ativável/desativável pelo Admin Panel.
 
-## O que o usuário verá
+## Referência Visual (das imagens enviadas)
+Cada card de collar mostra:
+- **Ação**: ticker + preço atual + data
+- **V Call**: ticker da call vendida, strike, vencimento, valor
+- **C Put**: ticker da put comprada, strike, vencimento, valor
+- **Coeficiente**: Preço Ação + Preço Put - Preço Call
+- **Rentabilidade**: 3 cenários (↓ baixa, ↔ neutro, ↑ alta)
+- **Meses**, **CDI Período**, **Rating** (estrelas), **Tipo**
 
-1. Nova aba no menu principal: **"Payoff Conjunto"** (ícone Layers)
-2. Página com:
-   - Lista de análises ativas do usuário (checkboxes para selecionar)
-   - Gráfico Recharts com uma linha de payoff por estratégia selecionada (cores distintas)
-   - Linha consolidada (soma de todos os payoffs) em destaque
-   - Legenda com nome de cada estratégia e cor correspondente
-   - Métricas consolidadas: Lucro Máx, Risco Máx, Breakevens
-3. Bloqueio para usuários FREE com CTA para assinar PRO
+## Arquivos a Criar/Modificar
 
-## Arquivos a criar/editar
+### 1. Novo componente: `src/components/CollarTrackerTab.tsx`
+- Estrutura similar ao BoxTrackerTab (usa `useSharedRtdBridge`)
+- O usuário adiciona uma família de ativo (ex: PETR4) e os tickers de calls e puts
+- Para cada par call/put com mesmo ou diferente vencimento, calcula:
+  - **Coeficiente** = Preço Ação (Ask) + Preço Put (Ask) - Preço Call (Bid)
+  - **Rent. Baixa** = (Strike Put - Coeficiente) / Coeficiente × 100
+  - **Rent. Alta** = (Strike Call - Coeficiente) / Coeficiente × 100
+  - **Rent. Neutra** = média ou cenário de preço mantido
+- Ranking por melhor rentabilidade vs CDI do período
+- Cards com estilo profissional (bordas, sombras, relevo) seguindo o padrão atual
+- Filtro por código da ação
+- Indicador de Rating baseado na eficiência vs CDI
 
-### 1. `src/pages/PayoffConjunto.tsx` (novo)
-- Busca análises ativas do usuário no Supabase (analyses + legs)
-- Checkboxes para selecionar quais estratégias sobrepor
-- Gera payoff curve para cada análise selecionada via `generatePayoffCurve()`
-- Calcula curva consolidada somando `profitAtExpiry` ponto a ponto
-- Gráfico `ComposedChart` com:
-  - Uma `<Line>` por estratégia (cores automáticas do array de cores)
-  - Uma `<Line>` grossa tracejada para o consolidado
-  - `<ReferenceLine y={0}>`
-- Cards de métricas consolidadas
-- Gate PRO: se `planType !== 'pro'`, mostra overlay com botão "Assine PRO"
+### 2. Nova página: `src/pages/CollarTracker.tsx`
+- Similar ao `BoxTracker.tsx`: verifica acesso PRO/Admin
+- Renderiza `CollarTrackerTab` dentro do `ProfessionalLayout`
 
-### 2. `src/components/Header.tsx` (editar)
-- Adicionar item no `navItems`: `{ label: 'Payoff Conjunto', path: '/payoff-conjunto', icon: Layers }`
+### 3. Modificar: `src/App.tsx`
+- Adicionar rota `/collar-tracker`
 
-### 3. `src/App.tsx` (editar)
-- Importar e adicionar rota: `<Route path="/payoff-conjunto" element={<PayoffConjunto />} />`
+### 4. Modificar: `src/components/Header.tsx`
+- Adicionar item "Collar Tracker" na navegação primária (com ícone Shield ou similar)
 
-### 4. `src/pages/Index.tsx` (editar)
-- Adicionar "Payoff Conjunto de Estratégias" na lista de features PRO
+### 5. Modificar: `src/pages/AdminPanel.tsx`
+- Adicionar toggle para ativar/desativar a aba Collar Tracker (persistido no Supabase ou localStorage)
+- Quando desativado, o item não aparece no menu e a rota redireciona
 
 ## Detalhes Técnicos
 
-- Reutiliza `generatePayoffCurve()` de `src/lib/payoff.ts` para cada análise
-- Normaliza os pontos para o mesmo eixo X (range unificado baseado no min/max de todas as estratégias)
-- Array de 8 cores para distinguir cada estratégia
-- Consolidado = soma dos `profitAtExpiry` de todas as curvas no mesmo ponto X
-- Controle de acesso via `useAccessControl()` — bloqueia se `planType === 'free'`
+- **Dados RTD utilizados**: ULT (último preço), PEX (strike), VEN (vencimento), OCP (oferta compra), OVD (oferta venda)
+- **Cálculo de dias úteis e CDI do período**: reutilizar funções do BoxTrackerTab
+- **Persistência**: famílias de ativos salvas em localStorage (mesmo padrão do Box Tracker)
+- **3 cenários de rentabilidade**:
+  - ↓ = lucro se preço cai até strike da put
+  - ↑ = lucro se preço sobe até strike da call  
+  - ↔ = lucro se preço fica no coeficiente (neutro)
+- **Rating**: ★★★ se rent. > CDI em todos cenários, ★★ se parcial, ★ se abaixo
 
