@@ -459,6 +459,11 @@ export default function BoxTracker() {
         const strikeRtdRaw = callRow?.strike ?? putRow?.strike ?? null;
         const strikeRtd = (strikeRtdRaw && strikeRtdRaw > 0) ? strikeRtdRaw : null;
         const strikeReal = strikeRtd ?? tickerStrike;
+
+        // Debug: log strike source for troubleshooting
+        if (call?.symbol || put?.symbol) {
+          console.log(`[BOX STRIKE DEBUG] ${call?.symbol ?? put?.symbol}: RTD PEX=${strikeRtdRaw}, tickerParsed=${tickerStrike}, using=${strikeReal} (source: ${strikeRtd ? 'RTD' : 'TICKER'})`);
+        }
         const vencimento = callRow?.ven ?? putRow?.ven ?? null;
 
         // Custo = (Preço_Ação + Preço_Put) - Preço_Call
