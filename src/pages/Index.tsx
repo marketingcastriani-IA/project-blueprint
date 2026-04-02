@@ -438,6 +438,7 @@ export default function Index() {
               <h3 className="text-2xl font-black tracking-tight">FREE</h3>
               <p className="text-4xl font-black tracking-tighter">R$ 0<span className="text-sm text-muted-foreground font-medium">/mês</span></p>
               <p className="text-sm text-primary font-bold">✨ 7 dias com acesso TOTAL</p>
+              <p className="text-[10px] text-muted-foreground">* Após o trial, apenas recursos básicos ficam disponíveis.</p>
             </div>
             <ul className="space-y-3">
               <PricingItem included label="7 dias grátis — acesso completo" highlight />

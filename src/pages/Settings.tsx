@@ -158,15 +158,15 @@ export default function Settings() {
         </Card>
 
         <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
-          <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-2 border-[hsl(190,90%,50%)]/30 bg-[hsl(222,47%,11%)] shadow-[0_0_40px_hsl(190,90%,50%,0.15)]">
+          <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-2 border-primary/30 bg-card shadow-[0_0_40px_hsl(var(--primary)/0.15)]">
             <div className="flex flex-col items-center pt-8 pb-4 px-6">
-              <Crown className="h-12 w-12 text-[hsl(190,90%,50%)] mb-4" />
+              <Crown className="h-12 w-12 text-primary mb-4" />
               <DialogHeader className="text-center">
-                <DialogTitle className="text-2xl font-black tracking-tight text-white">
+                <DialogTitle className="text-2xl font-black tracking-tight text-foreground">
                   {access.trialExpired ? 'Renovar Plano PRO' : 'TORNE-SE PRO X'}
                 </DialogTitle>
-                <DialogDescription className="text-[hsl(190,90%,50%)] font-black text-3xl tracking-tighter mt-2">
-                  R$ {proPrice.toFixed(2).replace('.', ',')}<span className="text-base font-medium text-[hsl(220,15%,60%)]">/mês</span>
+                <DialogDescription className="text-primary font-black text-3xl tracking-tighter mt-2">
+                  R$ {proPrice.toFixed(2).replace('.', ',')}<span className="text-base font-medium text-muted-foreground">/mês</span>
                 </DialogDescription>
               </DialogHeader>
             </div>
@@ -174,8 +174,8 @@ export default function Settings() {
               <div className="space-y-3">
                 {proFeatures.map((f, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-[hsl(190,90%,50%)] shrink-0" />
-                    <span className="text-sm font-bold text-[hsl(220,15%,85%)]">{f.title}</span>
+                    <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                    <span className="text-sm font-bold text-foreground">{f.title}</span>
                   </div>
                 ))}
               </div>
@@ -183,7 +183,7 @@ export default function Settings() {
               <Button 
                 onClick={handleUpgrade} 
                 disabled={upgrading} 
-                className="w-full h-14 text-lg font-black bg-[hsl(190,90%,50%)] hover:bg-[hsl(190,90%,45%)] text-[hsl(222,47%,11%)] shadow-[0_0_20px_hsl(190,90%,50%,0.4)] rounded-xl"
+                className="w-full h-14 text-lg font-black shadow-lg shadow-primary/30 rounded-xl"
               >
                 {upgrading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <Crown className="mr-2 h-6 w-6" />}
                 Assinar Agora

@@ -44,7 +44,7 @@ serve(async (req) => {
         price = Number(settings.value.price);
       }
     } catch (e) {
-      console.log("[mercado-pago-checkout] Usando preço padrão de R$ 19.90");
+      console.log("[mercado-pago-checkout] Usando preço padrão de R$ 149.90");
     }
 
     const MP_ACCESS_TOKEN = Deno.env.get("MP_ACCESS_TOKEN")
