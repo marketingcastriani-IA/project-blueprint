@@ -297,7 +297,14 @@ export default function Dashboard() {
     setInputMode('manual');
   }, [isLimitReached, user]);
 
-  if (authLoading || access.status === 'loading') return null;
+  if (authLoading || access.status === 'loading') return (
+    <ProfessionalLayout>
+      <Header />
+      <main className="container py-6">
+        <DashboardSkeleton />
+      </main>
+    </ProfessionalLayout>
+  );
   if (!user) return <Navigate to="/auth" replace />;
 
   if (access.status === 'pending' || access.status === 'rejected' || access.status === 'expired') {
