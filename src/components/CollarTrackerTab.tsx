@@ -22,6 +22,9 @@ import {
   ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid,
   ReferenceLine, ResponsiveContainer, Tooltip, ReferenceDot,
 } from "recharts";
+import trophyGold from "@/assets/trophy-gold.png";
+import trophySilver from "@/assets/trophy-silver.png";
+import trophyBronze from "@/assets/trophy-bronze.png";
 
 // ─── TIPOS ───────────────────────────────────────────────────
 type CollarTipo = "Normal" | "Baixa" | "ATM" | "Calendário";
