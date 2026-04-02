@@ -97,13 +97,16 @@ export default function Settings() {
   if (!user) return <Navigate to="/auth" replace />;
 
   const proFeatures = [
-    { icon: Zap, title: "Simulações ILIMITADAS", desc: "Analise quantas estruturas quiser sem restrições." },
-    { icon: Camera, title: "OCR de Imagem (IA)", desc: "Transforme prints da corretora em payoff instantâneo." },
-    { icon: Bot, title: "Análise Profunda com IA", desc: "Relatórios quantitativos e vereditos profissionais." },
-    { icon: Briefcase, title: "Portfólio e P&L", desc: "Acompanhe o lucro real de todas as suas operações." },
-    { icon: History, title: "Histórico Completo", desc: "Salve e revise suas estratégias a qualquer momento." },
-    { icon: Radio, title: "Estrutura em Tempo Real", desc: "Conexão direta ao Profit RTD — acompanhe preços ao vivo." },
-    { icon: Shield, title: "Suporte Prioritário", desc: "Atendimento exclusivo para assinantes PRO." },
+    { icon: Zap, title: "Simulações ILIMITADAS" },
+    { icon: Camera, title: "OCR de Imagem (IA)" },
+    { icon: Bot, title: "Análise Profunda com IA" },
+    { icon: Briefcase, title: "Portfólio e P&L" },
+    { icon: History, title: "Histórico Completo" },
+    { icon: Radio, title: "Tempo Real com Profit RTD" },
+    { icon: Crown, title: "Rastreadores Box & Collar" },
+    { icon: Crown, title: "Calculadora CDI x Opções" },
+    { icon: Crown, title: "Diversificador de Carteira" },
+    { icon: Shield, title: "Suporte Prioritário" },
   ];
 
   return (
