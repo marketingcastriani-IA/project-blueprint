@@ -600,21 +600,30 @@ export default function BoxTracker() {
 
   // ─── RENDER ───────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-background text-foreground font-mono p-3 md:p-6">
+    <div className="min-h-screen bg-background text-foreground font-sans p-3 md:p-6">
       {/* HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-primary flex items-center gap-2">
-            <BarChart2 className="w-5 h-5 md:w-6 md:h-6" />
+          <h1 className="text-xl md:text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2.5">
+            <span className="p-2 rounded-xl bg-primary/10">
+              <BarChart2 className="w-5 h-5 md:w-6 md:h-6 text-primary" />
+            </span>
             Rastreador de Box
           </h1>
-          <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
-            Custo = (Ação + Put) - Call · Lucro = Strike - Custo
+          <p className="text-[11px] md:text-xs text-muted-foreground mt-1.5 font-medium">
+            Custo = (Ação + Put) − Call · Lucro = Strike − Custo
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold ${statusCfg.color}`}>
+          <div className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-semibold transition-all",
+            isConnected
+              ? "bg-success/10 border-success/30 text-success"
+              : status === "error"
+              ? "bg-destructive/10 border-destructive/30 text-destructive"
+              : "bg-muted border-border text-muted-foreground"
+          )}>
             {status === "connected" ? (
               <Wifi className="w-3.5 h-3.5" />
             ) : status === "error" ? (
@@ -626,14 +635,14 @@ export default function BoxTracker() {
             )}
             {statusCfg.label}
             {isConnected && (
-              <span className="text-emerald-600 dark:text-emerald-400">· {rows.size} tickers</span>
+              <span className="text-success font-bold">· {rows.size} tickers</span>
             )}
           </div>
 
           {!isConnected && status !== "connecting" && (
             <button
               onClick={connect}
-              className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-400 text-white rounded-lg text-sm font-bold transition-colors"
+              className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full text-sm font-bold transition-all shadow-md hover:shadow-lg active:scale-[0.97]"
             >
               <RefreshCw className="w-4 h-4" />
               Conectar Bridge
@@ -644,7 +653,7 @@ export default function BoxTracker() {
 
       {/* Bridge not connected warning */}
       {!isConnected && status !== "connecting" && (
-        <div className="mb-5 bg-warning/10 border border-warning/30 rounded-xl p-4 text-sm">
+        <div className="mb-5 bg-warning/5 border border-warning/20 rounded-2xl p-4 text-sm backdrop-blur-sm">
           <div className="flex items-center gap-2 text-warning font-bold mb-1">
             <AlertTriangle className="w-4 h-4" />
             Bridge RTD não conectado
@@ -655,135 +664,135 @@ export default function BoxTracker() {
         </div>
       )}
 
-      {/* IR TOGGLES + CDI ANUAL EDITÁVEL */}
-      <div className="mb-5 flex flex-col gap-3">
-        {/* CDI Anual Editável */}
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-amber-300 dark:border-amber-500/50 bg-amber-50 dark:bg-amber-950/30">
-          <span className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider whitespace-nowrap">📊 CDI Anual:</span>
-          {editingCdi ? (
-            <div className="flex items-center gap-1.5">
-              <input
-                type="text"
-                value={cdiInput}
-                onChange={(e) => setCdiInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
+      {/* CONTROLS GRID — CDI + IR + Alertas */}
+      <div className="mb-6 space-y-3">
+        {/* Row 1: CDI + IR toggles */}
+        <div className="flex flex-col sm:flex-row gap-2.5">
+          {/* CDI Anual */}
+          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-border bg-card shadow-sm">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">CDI Anual</span>
+            {editingCdi ? (
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  value={cdiInput}
+                  onChange={(e) => setCdiInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const val = parseFloat(cdiInput.replace(",", "."));
+                      if (!isNaN(val) && val > 0 && val < 100) {
+                        setCdiAnual(val);
+                        localStorage.setItem(CDI_STORAGE_KEY, String(val));
+                        setEditingCdi(false);
+                      }
+                    } else if (e.key === "Escape") {
+                      setCdiInput(String(cdiAnual).replace(".", ","));
+                      setEditingCdi(false);
+                    }
+                  }}
+                  className="w-20 bg-background border border-primary/40 rounded-lg px-2 py-1 text-sm text-center font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  autoFocus
+                />
+                <span className="text-sm font-medium text-muted-foreground">%</span>
+                <button
+                  onClick={() => {
                     const val = parseFloat(cdiInput.replace(",", "."));
                     if (!isNaN(val) && val > 0 && val < 100) {
                       setCdiAnual(val);
                       localStorage.setItem(CDI_STORAGE_KEY, String(val));
                       setEditingCdi(false);
                     }
-                  } else if (e.key === "Escape") {
-                    setCdiInput(String(cdiAnual).replace(".", ","));
-                    setEditingCdi(false);
-                  }
-                }}
-                className="w-20 bg-card border border-amber-400 dark:border-amber-500 rounded-lg px-2 py-1 text-sm text-center font-black text-amber-700 dark:text-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                autoFocus
-              />
-              <span className="text-sm font-bold text-amber-600 dark:text-amber-400">%</span>
+                  }}
+                  className="p-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors active:scale-95"
+                >
+                  <Save className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={() => { setCdiInput(String(cdiAnual).replace(".", ",")); setEditingCdi(false); }}
+                  className="p-1.5 bg-muted hover:bg-muted/80 text-muted-foreground rounded-lg transition-colors active:scale-95"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ) : (
               <button
-                onClick={() => {
-                  const val = parseFloat(cdiInput.replace(",", "."));
-                  if (!isNaN(val) && val > 0 && val < 100) {
-                    setCdiAnual(val);
-                    localStorage.setItem(CDI_STORAGE_KEY, String(val));
-                    setEditingCdi(false);
-                  }
-                }}
-                className="px-2 py-1 bg-amber-500 hover:bg-amber-400 text-white rounded-lg text-xs font-bold transition-colors"
+                onClick={() => { setCdiInput(String(cdiAnual).replace(".", ",")); setEditingCdi(true); }}
+                className="flex items-center gap-1.5 text-lg font-extrabold text-primary hover:text-primary/80 transition-colors cursor-pointer"
+                title="Clique para editar a taxa CDI anual"
               >
-                <Save className="w-3 h-3" />
+                {String(cdiAnual).replace(".", ",")}%
+                <Pencil className="w-3 h-3 opacity-40" />
               </button>
-              <button
-                onClick={() => { setCdiInput(String(cdiAnual).replace(".", ",")); setEditingCdi(false); }}
-                className="px-2 py-1 bg-muted hover:bg-muted/80 text-muted-foreground rounded-lg text-xs font-bold transition-colors"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => { setCdiInput(String(cdiAnual).replace(".", ",")); setEditingCdi(true); }}
-              className="flex items-center gap-1.5 text-lg font-black text-amber-600 dark:text-amber-400 hover:text-amber-500 dark:hover:text-amber-300 transition-colors cursor-pointer"
-              title="Clique para editar a taxa CDI anual"
-            >
-              {String(cdiAnual).replace(".", ",")}%
-              <Pencil className="w-3.5 h-3.5 opacity-50" />
-            </button>
-          )}
+            )}
+          </div>
+
+          {/* IR Toggles */}
+          <button
+            onClick={() => setDescontarIRAcoes(!descontarIRAcoes)}
+            className={cn(
+              "flex items-center gap-2 px-4 py-3 rounded-2xl border text-xs font-semibold transition-all active:scale-[0.97] flex-1 sm:flex-auto min-w-0",
+              descontarIRAcoes
+                ? "bg-success/10 border-success/30 text-success shadow-sm"
+                : "bg-destructive/5 border-destructive/20 text-destructive"
+            )}
+          >
+            {descontarIRAcoes ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+            IR Ações {IR_ACOES}%
+            <span className={cn(
+              "text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider",
+              descontarIRAcoes ? "bg-success/20 text-success" : "bg-destructive/15 text-destructive"
+            )}>
+              {descontarIRAcoes ? "ON" : "OFF"}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setDescontarIRRendaFixa(!descontarIRRendaFixa)}
+            className={cn(
+              "flex items-center gap-2 px-4 py-3 rounded-2xl border text-xs font-semibold transition-all active:scale-[0.97] flex-1 sm:flex-auto min-w-0",
+              descontarIRRendaFixa
+                ? "bg-success/10 border-success/30 text-success shadow-sm"
+                : "bg-destructive/5 border-destructive/20 text-destructive"
+            )}
+          >
+            {descontarIRRendaFixa ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+            IR Renda Fixa {IR_RENDA_FIXA}%
+            <span className={cn(
+              "text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider",
+              descontarIRRendaFixa ? "bg-success/20 text-success" : "bg-destructive/15 text-destructive"
+            )}>
+              {descontarIRRendaFixa ? "ON" : "OFF"}
+            </span>
+          </button>
         </div>
 
-        {/* IR Toggles row */}
-        <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => setDescontarIRAcoes(!descontarIRAcoes)}
-          className={cn(
-            "flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border text-[11px] sm:text-xs font-bold transition-all flex-1 sm:flex-auto min-w-0",
-            descontarIRAcoes
-              ? "bg-emerald-100 dark:bg-emerald-950/40 border-emerald-500/60 text-emerald-700 dark:text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.3)] animate-pulse"
-              : "bg-red-50 dark:bg-red-950/20 border-red-400/40 text-red-600 dark:text-red-400"
-          )}
-        >
-          {descontarIRAcoes ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
-          IR Ações {IR_ACOES}%
-          <span className={cn(
-            "text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase",
-            descontarIRAcoes ? "bg-emerald-500 text-white" : "bg-red-400 text-white"
-          )}>
-            {descontarIRAcoes ? "ON" : "OFF"}
-          </span>
-        </button>
-
-        {/* IR Renda Fixa */}
-        <button
-          onClick={() => setDescontarIRRendaFixa(!descontarIRRendaFixa)}
-          className={cn(
-            "flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border text-[11px] sm:text-xs font-bold transition-all flex-1 sm:flex-auto min-w-0",
-            descontarIRRendaFixa
-              ? "bg-emerald-100 dark:bg-emerald-950/40 border-emerald-500/60 text-emerald-700 dark:text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.3)] animate-pulse"
-              : "bg-red-50 dark:bg-red-950/20 border-red-400/40 text-red-600 dark:text-red-400"
-          )}
-        >
-          {descontarIRRendaFixa ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
-          IR Renda Fixa {IR_RENDA_FIXA}%
-          <span className={cn(
-            "text-[9px] px-1.5 py-0.5 rounded-full font-black uppercase",
-            descontarIRRendaFixa ? "bg-emerald-500 text-white" : "bg-red-400 text-white"
-          )}>
-            {descontarIRRendaFixa ? "ON" : "OFF"}
-          </span>
-        </button>
-        </div>
-
-        {/* 🔔 Alerta Push — DESTAQUE */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        {/* Row 2: Push Alert + Meta + Histórico */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
           <button
             onClick={toggleNotifications}
             className={cn(
-              "flex items-center gap-2.5 px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl border-2 text-xs sm:text-sm font-black transition-all relative overflow-hidden w-full sm:w-auto",
+              "flex items-center gap-3 px-5 py-3 rounded-2xl border-2 text-sm font-bold transition-all relative overflow-hidden w-full sm:w-auto active:scale-[0.97]",
               notifEnabled
-                ? "bg-emerald-500/20 border-emerald-400 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)]"
-                : "bg-red-500/10 border-red-400/50 text-red-400 hover:border-red-400 hover:bg-red-500/20"
+                ? "bg-success/10 border-success/40 text-success shadow-[0_0_20px_hsl(var(--success)/0.15)]"
+                : "bg-card border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
             )}
           >
             {notifEnabled && (
-              <span className="absolute top-1.5 right-1.5 flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+              <span className="absolute top-2 right-2 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success"></span>
               </span>
             )}
-            {notifEnabled ? <Bell className="w-5 h-5 animate-pulse" /> : <BellOff className="w-5 h-5" />}
+            {notifEnabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
             <span className="flex flex-col items-start leading-tight">
-              <span className="text-xs uppercase tracking-wider">Alerta Push</span>
-              <span className="text-[9px] font-normal opacity-70">
-                {notifEnabled ? "📱 Notificações ativas no celular" : "Clique para ativar alertas"}
+              <span className="text-xs font-bold">Alerta Push</span>
+              <span className="text-[10px] font-normal opacity-60">
+                {notifEnabled ? "Notificações ativas" : "Clique para ativar"}
               </span>
             </span>
             <span className={cn(
-              "text-[10px] px-2 py-1 rounded-full font-black uppercase ml-1",
-              notifEnabled ? "bg-emerald-500 text-white" : "bg-red-500/80 text-white"
+              "text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ml-auto",
+              notifEnabled ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"
             )}>
               {notifEnabled ? "ON" : "OFF"}
             </span>
@@ -792,8 +801,8 @@ export default function BoxTracker() {
           {/* Threshold editável */}
           {notifEnabled && (
             editingThreshold ? (
-              <div className="flex items-center gap-1.5 bg-card/80 px-3 py-2 rounded-xl border border-emerald-400/30">
-                <span className="text-xs text-muted-foreground font-bold">Alertar quando ≥</span>
+              <div className="flex items-center gap-1.5 bg-card px-4 py-2.5 rounded-2xl border border-success/20">
+                <span className="text-xs text-muted-foreground font-medium">Meta ≥</span>
                 <input
                   type="text"
                   value={thresholdInput}
@@ -811,10 +820,10 @@ export default function BoxTracker() {
                       setEditingThreshold(false);
                     }
                   }}
-                  className="w-16 bg-card border border-emerald-400 rounded-lg px-2 py-1 text-sm text-center font-black text-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  className="w-16 bg-background border border-success/30 rounded-lg px-2 py-1 text-sm text-center font-bold text-success focus:outline-none focus:ring-2 focus:ring-success/30"
                   autoFocus
                 />
-                <span className="text-xs font-bold text-emerald-400">% CDI</span>
+                <span className="text-xs font-medium text-success">% CDI</span>
                 <button
                   onClick={() => {
                     const val = parseFloat(thresholdInput.replace(",", "."));
@@ -824,13 +833,13 @@ export default function BoxTracker() {
                       setEditingThreshold(false);
                     }
                   }}
-                  className="px-2 py-1 bg-emerald-500 hover:bg-emerald-400 text-white rounded-lg text-xs font-bold transition-colors"
+                  className="p-1.5 bg-success hover:bg-success/90 text-success-foreground rounded-lg transition-colors active:scale-95"
                 >
                   <Save className="w-3 h-3" />
                 </button>
                 <button
                   onClick={() => { setThresholdInput(String(notifThreshold)); setEditingThreshold(false); }}
-                  className="px-2 py-1 bg-muted hover:bg-muted/80 text-muted-foreground rounded-lg text-xs font-bold transition-colors"
+                  className="p-1.5 bg-muted hover:bg-muted/80 text-muted-foreground rounded-lg transition-colors active:scale-95"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -838,11 +847,11 @@ export default function BoxTracker() {
             ) : (
               <button
                 onClick={() => { setThresholdInput(String(notifThreshold)); setEditingThreshold(true); }}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-dashed border-emerald-400/40 text-sm font-black text-emerald-400 hover:border-emerald-400 hover:bg-emerald-500/10 transition-all cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-dashed border-success/30 text-sm font-bold text-success hover:border-success/50 hover:bg-success/5 transition-all cursor-pointer active:scale-[0.97]"
                 title="Clique para definir o limite de alerta em % do CDI"
               >
-                🎯 Meta: ≥ {notifThreshold}% CDI
-                <Pencil className="w-3.5 h-3.5 opacity-50" />
+                🎯 ≥ {notifThreshold}% CDI
+                <Pencil className="w-3 h-3 opacity-40" />
               </button>
             )
           )}
@@ -852,10 +861,10 @@ export default function BoxTracker() {
             <button
               onClick={() => setShowAlertHistory(!showAlertHistory)}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-xs font-bold transition-all",
+                "flex items-center gap-1.5 px-4 py-2.5 rounded-2xl border text-xs font-semibold transition-all active:scale-[0.97]",
                 showAlertHistory
-                  ? "bg-emerald-500/20 border-emerald-400/50 text-emerald-400"
-                  : "bg-muted/50 border-border text-muted-foreground hover:text-foreground"
+                  ? "bg-success/10 border-success/30 text-success"
+                  : "bg-card border-border text-muted-foreground hover:text-foreground"
               )}
             >
               🕐 Histórico ({alertHistory.length})
@@ -866,9 +875,9 @@ export default function BoxTracker() {
 
         {/* Painel de Histórico de Alertas */}
         {showAlertHistory && alertHistory.length > 0 && (
-          <div className="glass-card rounded-xl p-4 mb-5 animate-fade-in">
+          <div className="rounded-2xl border border-border bg-card p-4 animate-fade-in shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-black text-foreground flex items-center gap-2">
+              <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                 🔔 Histórico de Alertas
               </h3>
               <button
@@ -876,48 +885,49 @@ export default function BoxTracker() {
                   setAlertHistory([]);
                   localStorage.removeItem(ALERT_HISTORY_KEY);
                 }}
-                className="text-[10px] px-2 py-1 rounded-lg bg-destructive/10 text-destructive hover:bg-destructive/20 font-bold transition-colors"
+                className="text-[10px] text-destructive hover:underline font-medium"
               >
-                Limpar
+                Limpar tudo
               </button>
             </div>
-            <div className="max-h-48 overflow-y-auto space-y-1.5">
-              {alertHistory.map((a) => (
-                <div key={a.id} className="flex flex-wrap items-center justify-between gap-1.5 px-3 py-2 rounded-lg bg-muted/30 border border-border/50 text-xs">
-                  <span className="text-muted-foreground font-mono">{a.time}</span>
-                  <span className="font-bold text-foreground">{a.familyName}</span>
-                  <span className="font-mono">R$ {a.strike.toFixed(2)}</span>
-                  <span className="font-bold text-success">{a.lucroPercent.toFixed(2)}%</span>
-                  <span className="font-black text-primary">{a.cdiPercent}% CDI</span>
+            <div className="space-y-1.5 max-h-48 overflow-y-auto">
+              {alertHistory.map((entry) => (
+                <div key={entry.id} className="flex flex-wrap items-center gap-2 text-[11px] px-3 py-2 rounded-xl bg-muted/50 border border-border/50">
+                  <span className="text-muted-foreground">{entry.time}</span>
+                  <span className="font-bold text-foreground">{entry.familyName}</span>
+                  <span className="text-muted-foreground">Strike {formatBRL(entry.strike)}</span>
+                  <span className="font-bold text-success">{entry.cdiPercent}% CDI</span>
                 </div>
               ))}
             </div>
           </div>
         )}
       </div>
-      <div className="mb-5">
+
+      {/* DATA DE VENCIMENTO */}
+      <div className="mb-6">
         <div className={cn(
-          "rounded-xl border p-4 transition-all",
+          "rounded-2xl border p-5 transition-all shadow-sm",
           vencSaved
-            ? "bg-orange-50 dark:bg-orange-950/20 border-orange-400/50"
-            : "bg-card border-border shadow-md"
+            ? "bg-card border-warning/30"
+            : "bg-card border-border"
         )}>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-black text-orange-600 dark:text-orange-400 flex items-center gap-2 uppercase tracking-wider">
-              <CalendarIcon className="w-4 h-4" />
-              📅 Data de Vencimento
+            <h3 className="text-xs font-bold text-muted-foreground flex items-center gap-2 uppercase tracking-widest">
+              <CalendarIcon className="w-4 h-4 text-warning" />
+              Data de Vencimento
             </h3>
             {vencSaved && (
               <div className="flex gap-2">
                 <button
                   onClick={handleEditVenc}
-                  className="flex items-center gap-1 px-3 py-1 text-xs bg-amber-100 dark:bg-amber-700/40 hover:bg-amber-200 dark:hover:bg-amber-600/50 border border-amber-400/50 rounded-lg text-amber-700 dark:text-amber-300 font-bold transition-colors"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs bg-card hover:bg-muted border border-border rounded-full text-foreground font-semibold transition-all active:scale-95"
                 >
                   <Pencil className="w-3 h-3" /> Editar
                 </button>
                 <button
                   onClick={handleDeleteVenc}
-                  className="flex items-center gap-1 px-3 py-1 text-xs bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-800/50 border border-red-400/50 rounded-lg text-red-600 dark:text-red-400 font-bold transition-colors"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs bg-card hover:bg-destructive/10 border border-destructive/20 rounded-full text-destructive font-semibold transition-all active:scale-95"
                 >
                   <Trash2 className="w-3 h-3" /> Excluir
                 </button>
@@ -928,16 +938,16 @@ export default function BoxTracker() {
           {vencSaved && !editingVenc ? (
             <div className="flex flex-wrap items-center gap-4 md:gap-6">
               <div>
-                <p className="text-2xl md:text-3xl font-black text-orange-600 dark:text-orange-300">{vencimentoManual}</p>
+                <p className="text-3xl md:text-4xl font-extrabold text-foreground tracking-tight">{vencimentoManual}</p>
                 {diasUteisVenc !== null && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    <span className="text-amber-600 dark:text-amber-400 font-bold">{diasUteisVenc}</span> dias úteis restantes
+                  <p className="text-sm text-muted-foreground mt-1.5 font-medium">
+                    <span className="text-warning font-bold">{diasUteisVenc}</span> dias úteis restantes
                     {diasUteisVenc > 0 && (
                       <span className="ml-2">
-                        · CDI do período: <span className="text-amber-600 dark:text-amber-300 font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc, cdiAnual))}</span>
+                        · CDI do período: <span className="text-primary font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc, cdiAnual))}</span>
                         {descontarIRRendaFixa && (
                           <span className="ml-1 text-muted-foreground">
-                            (líq: <span className="text-emerald-600 dark:text-emerald-400 font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc, cdiAnual) * (1 - IR_RENDA_FIXA / 100))}</span>)
+                            (líq: <span className="text-success font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc, cdiAnual) * (1 - IR_RENDA_FIXA / 100))}</span>)
                           </span>
                         )}
                       </span>
@@ -948,20 +958,20 @@ export default function BoxTracker() {
             </div>
           ) : (
             <div className="flex flex-wrap items-end gap-3">
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Selecione a data</label>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Selecione a data</label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <button
                       className={cn(
-                        "flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-bold transition-all w-[220px] justify-start",
+                        "flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all w-[220px] justify-start active:scale-[0.97]",
                         vencimentoManual
-                          ? "bg-card border-orange-500/60 text-orange-600 dark:text-orange-300"
-                          : "bg-card border-border text-muted-foreground animate-pulse"
+                          ? "bg-card border-warning/40 text-foreground"
+                          : "bg-card border-border text-muted-foreground"
                       )}
                     >
-                      <CalendarIcon className="w-4 h-4" />
-                      {vencimentoManual || "⚠️ Selecionar data"}
+                      <CalendarIcon className="w-4 h-4 text-warning" />
+                      {vencimentoManual || "Selecionar data"}
                     </button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -981,18 +991,18 @@ export default function BoxTracker() {
               {vencimentoManual && (
                 <>
                   {diasUteisVenc !== null && (
-                    <div className="text-sm text-muted-foreground">
-                      <span className="text-amber-600 dark:text-amber-400 font-bold">{diasUteisVenc}</span> dias úteis
+                    <div className="text-sm text-muted-foreground font-medium">
+                      <span className="text-warning font-bold">{diasUteisVenc}</span> dias úteis
                       {diasUteisVenc > 0 && (
                         <span className="ml-2">
-                          · CDI: <span className="text-amber-600 dark:text-amber-300 font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc, cdiAnual))}</span>
+                          · CDI: <span className="text-primary font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc, cdiAnual))}</span>
                         </span>
                       )}
                     </div>
                   )}
                   <button
                     onClick={handleSaveVenc}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 rounded-lg text-sm font-black text-white transition-all shadow-lg"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 rounded-full text-sm font-bold text-primary-foreground transition-all shadow-md hover:shadow-lg active:scale-[0.97]"
                   >
                     <Save className="w-4 h-4" />
                     Salvar Vencimento
@@ -1006,7 +1016,7 @@ export default function BoxTracker() {
 
       {/* WINNER CARDS - Top 1 de cada ação */}
       {topPairs.length > 0 && (
-        <div className={cn("grid gap-3 mb-5", topPairs.length === 1 ? "grid-cols-1" : topPairs.length === 2 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-3")}>
+        <div className={cn("grid gap-4 mb-6", topPairs.length === 1 ? "grid-cols-1" : topPairs.length === 2 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-3")}>
           {topPairs.map((pair, i) => {
             const isWinner = i === 0;
             const lucroDisplay = descontarIRAcoes ? pair.lucroLiqAcoes : pair.lucro;
@@ -1018,71 +1028,72 @@ export default function BoxTracker() {
               <div
                 key={`top-${i}`}
                 className={cn(
-                  "relative overflow-hidden rounded-xl border-2 p-4 transition-all duration-300",
+                  "relative overflow-hidden rounded-2xl border p-5 transition-all duration-300",
                   isWinner
-                    ? "bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30 border-emerald-500 dark:border-emerald-400 shadow-[0_0_30px_-5px_rgba(16,185,129,0.4)] ring-2 ring-emerald-400/30 dark:ring-emerald-400/20 hover:shadow-[0_0_40px_-5px_rgba(16,185,129,0.5)] hover:scale-[1.01]"
-                    : i === 1
-                    ? "bg-card border-border/80 hover:border-muted-foreground/30 hover:shadow-md"
-                    : "bg-card border-border/80 hover:border-muted-foreground/30 hover:shadow-md"
+                    ? "bg-card border-success/40 shadow-[0_0_30px_hsl(var(--success)/0.15)] ring-1 ring-success/20 hover:shadow-[0_0_40px_hsl(var(--success)/0.2)]"
+                    : "bg-card border-border hover:border-muted-foreground/30 hover:shadow-md"
                 )}
               >
                 {isWinner && (
-                  <span className="absolute top-3 right-3 flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+                  <span className="absolute top-3 right-3 flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success" />
                   </span>
                 )}
-                <div className="flex items-center gap-2 mb-2">
-                  <Trophy
-                    className={cn("w-5 h-5", 
-                      isWinner ? "text-emerald-500" : i === 1 ? "text-gray-400" : "text-amber-600"
-                    )}
-                  />
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-bold">
-                    {i === 0 ? "🥇 Melhor Box" : i === 1 ? "🥈 2º Melhor" : "🥉 3º Melhor"}
+                <div className="flex items-center gap-2.5 mb-3">
+                  <span className={cn(
+                    "p-1.5 rounded-lg",
+                    isWinner ? "bg-success/10" : "bg-muted"
+                  )}>
+                    <Trophy className={cn("w-4 h-4", 
+                      isWinner ? "text-success" : "text-muted-foreground"
+                    )} />
+                  </span>
+                  <span className="text-xs text-muted-foreground uppercase tracking-widest font-bold">
+                    {i === 0 ? "Melhor Box" : i === 1 ? "2º Melhor" : "3º Melhor"}
                   </span>
                 </div>
 
-                <div className="flex flex-wrap items-baseline gap-2 mb-1">
-                  <span className="text-lg font-black text-foreground">{pair.familyName}</span>
-                  <span className="text-xs text-muted-foreground">Strike {formatBRL((pair.strikeRtd && pair.strikeRtd > 0) ? pair.strikeRtd : pair.strike)}</span>
+                <div className="flex flex-wrap items-baseline gap-2 mb-1.5">
+                  <span className="text-xl font-extrabold text-foreground tracking-tight">{pair.familyName}</span>
+                  <span className="text-xs text-muted-foreground font-medium">Strike {formatBRL((pair.strikeRtd && pair.strikeRtd > 0) ? pair.strikeRtd : pair.strike)}</span>
                   {pair.vencimento && (
-                    <span className="text-xs text-amber-600 dark:text-amber-400/70 ml-1">· {pair.vencimento}</span>
+                    <span className="text-xs text-warning font-medium ml-1">· {pair.vencimento}</span>
                   )}
                 </div>
 
-                <div className="flex items-center gap-3 text-sm">
-                  <span className="text-muted-foreground">
-                    Call: <span className="text-blue-600 dark:text-blue-300 font-bold">{pair.callSymbol ?? "—"}</span>
+                <div className="flex items-center gap-4 text-sm mb-4">
+                  <span className="text-muted-foreground font-medium">
+                    Call: <span className="text-primary font-bold">{pair.callSymbol ?? "—"}</span>
                   </span>
-                  <span className="text-muted-foreground">
-                    Put: <span className="text-red-600 dark:text-red-300 font-bold">{pair.putSymbol ?? "—"}</span>
+                  <span className="text-muted-foreground font-medium">
+                    Put: <span className="text-destructive font-bold">{pair.putSymbol ?? "—"}</span>
                   </span>
                 </div>
 
-                <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 pt-3 border-t border-border/50">
                   <div>
-                    <p className="text-[9px] text-muted-foreground uppercase">Custo</p>
-                    <p className="text-sm font-bold text-orange-600 dark:text-orange-400">{formatBRL(pair.compraBox)}</p>
+                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Custo</p>
+                    <p className="text-sm font-bold text-warning">{formatBRL(pair.compraBox)}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] text-muted-foreground uppercase">Lucro (1){descontarIRAcoes ? " líq" : ""}</p>
-                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{formatBRL(lucroDisplay)}</p>
+                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Lucro (1){descontarIRAcoes ? " líq" : ""}</p>
+                    <p className="text-sm font-bold text-success">{formatBRL(lucroDisplay)}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] text-muted-foreground uppercase">Total ({quantidade}x)</p>
-                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-300">{formatBRL(lucroTotalDisplay)}</p>
+                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Total ({quantidade}x)</p>
+                    <p className="text-sm font-bold text-success">{formatBRL(lucroTotalDisplay)}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] text-muted-foreground uppercase">CDI Per.{descontarIRRendaFixa ? " líq" : ""}</p>
-                    <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}</p>
+                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">CDI Per.{descontarIRRendaFixa ? " líq" : ""}</p>
+                    <p className="text-sm font-bold text-warning">{cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] text-muted-foreground uppercase">Retorno{descontarIRAcoes ? " líq" : ""}</p>
-                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-300">{formatPercent(lucroPercentDisplay)}</p>
+                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Retorno{descontarIRAcoes ? " líq" : ""}</p>
+                    <p className="text-sm font-bold text-success">{formatPercent(lucroPercentDisplay)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[9px] text-muted-foreground uppercase">% do CDI</p>
+                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">% do CDI</p>
                     {(() => {
                       const pctCdi = cdiDisplay && cdiDisplay > 0 ? ((lucroPercentDisplay ?? 0) / cdiDisplay) * 100 : null;
                       if (pctCdi === null) return <p className="text-sm text-muted-foreground">—</p>;
@@ -1090,14 +1101,14 @@ export default function BoxTracker() {
                       return (
                         <>
                           <p className={cn(
-                            "text-2xl font-black",
-                            isAbove ? "text-emerald-500 dark:text-emerald-300" : "text-red-500"
+                            "text-2xl font-extrabold tracking-tight",
+                            isAbove ? "text-success" : "text-destructive"
                           )}>
                             {pctCdi.toFixed(0).replace(".", ",")}%
                           </p>
                           <span className={cn(
-                            "text-[9px] font-bold",
-                            isAbove ? "text-emerald-600 dark:text-emerald-500" : "text-red-500"
+                            "text-[9px] font-semibold",
+                            isAbove ? "text-success" : "text-destructive"
                           )}>
                             {isAbove ? `▲ ${(pctCdi - 100).toFixed(0)}% acima` : `▼ ${(100 - pctCdi).toFixed(0)}% abaixo`} do CDI
                           </span>
@@ -1114,26 +1125,28 @@ export default function BoxTracker() {
 
       {/* TOP 10 TABLE — Top 1 de cada ação */}
       {topPairs.length > 0 && (
-        <div className="mb-5 bg-card border border-border rounded-xl p-4">
-          <h2 className="text-sm font-bold text-primary mb-3 flex items-center gap-2">
-            <Star className="w-4 h-4 text-amber-500" />
-            🏆 Ranking · Melhor Box por Ação
+        <div className="mb-6 bg-card border border-border rounded-2xl p-5 shadow-sm">
+          <h2 className="text-xs font-bold text-muted-foreground mb-4 flex items-center gap-2 uppercase tracking-widest">
+            <span className="p-1.5 rounded-lg bg-warning/10">
+              <Star className="w-3.5 h-3.5 text-warning" />
+            </span>
+            Ranking · Melhor Box por Ação
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="text-muted-foreground border-b border-border">
-                  <th className="text-left py-2 pr-2">#</th>
-                  <th className="text-left py-2 pr-2">Ativo</th>
-                  <th className="text-left py-2 pr-2 text-blue-600 dark:text-blue-400">CALL</th>
-                  <th className="text-left py-2 pr-2 text-red-600 dark:text-red-400">PUT</th>
-                  <th className="text-right py-2 pr-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm">Strike</th>
-                  <th className="text-right py-2 pr-2 text-orange-600 dark:text-orange-400">Custo</th>
-                  <th className="text-right py-2 pr-2">Lucro</th>
-                  <th className="text-right py-2 pr-2">Total</th>
-                  <th className="text-right py-2 pr-2">Lucro %</th>
-                  <th className="text-right py-2 pr-2 text-amber-600 dark:text-amber-400">CDI Per.</th>
-                  <th className="text-center py-2 pr-2 text-emerald-600 dark:text-emerald-400 font-bold">% do CDI</th>
+                <tr className="text-muted-foreground border-b border-border text-[10px] uppercase tracking-wider">
+                  <th className="text-left py-2.5 pr-2 font-semibold">#</th>
+                  <th className="text-left py-2.5 pr-2 font-semibold">Ativo</th>
+                  <th className="text-left py-2.5 pr-2 font-semibold text-primary">CALL</th>
+                  <th className="text-left py-2.5 pr-2 font-semibold text-destructive">PUT</th>
+                  <th className="text-right py-2.5 pr-2 font-semibold bg-muted rounded-sm">Strike</th>
+                  <th className="text-right py-2.5 pr-2 font-semibold text-warning">Custo</th>
+                  <th className="text-right py-2.5 pr-2 font-semibold">Lucro</th>
+                  <th className="text-right py-2.5 pr-2 font-semibold">Total</th>
+                  <th className="text-right py-2.5 pr-2 font-semibold">Lucro %</th>
+                  <th className="text-right py-2.5 pr-2 font-semibold text-warning">CDI Per.</th>
+                  <th className="text-center py-2.5 pr-2 font-bold text-success">% do CDI</th>
                 </tr>
               </thead>
               <tbody>
@@ -1144,24 +1157,24 @@ export default function BoxTracker() {
                   const cdiDisplay = descontarIRRendaFixa ? p.cdiPeriodoLiq : p.cdiPeriodo;
                   const isFirst = i === 0;
                   return (
-                    <tr key={`rank-${i}`} className={cn("border-b border-border/50 hover:bg-muted/50", isFirst && "bg-emerald-50/50 dark:bg-emerald-950/20")}>
-                      <td className="py-2 pr-2 text-muted-foreground font-bold">{i + 1}º</td>
-                      <td className="py-2 pr-2 font-bold text-foreground">{p.familyName}</td>
-                      <td className="py-2 pr-2 text-blue-600 dark:text-blue-300">{p.callSymbol}</td>
-                      <td className="py-2 pr-2 text-red-600 dark:text-red-300">{p.putSymbol}</td>
-                      <td className="py-2 pr-2 text-right bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-semibold">{formatBRL((p.strikeRtd && p.strikeRtd > 0) ? p.strikeRtd : p.strike)}</td>
-                      <td className="py-2 pr-2 text-right text-orange-600 dark:text-orange-400">{formatBRL(p.compraBox)}</td>
-                      <td className="py-2 pr-2 text-right text-emerald-600 dark:text-emerald-400">{formatBRL(lucroDisplay)}</td>
-                      <td className="py-2 pr-2 text-right text-emerald-600 dark:text-emerald-300 font-semibold">{formatBRL(lucroTotalDisplay)}</td>
-                      <td className="py-2 pr-2 text-right font-bold text-emerald-600 dark:text-emerald-300">{formatPercent(lucroPercentDisplay)}</td>
-                      <td className="py-2 pr-2 text-right text-amber-600 dark:text-amber-400">{cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}</td>
-                      <td className="py-2 pr-2 text-center">
+                    <tr key={`rank-${i}`} className={cn("border-b border-border/30 hover:bg-muted/40 transition-colors", isFirst && "bg-success/5")}>
+                      <td className="py-2.5 pr-2 text-muted-foreground font-bold">{i + 1}º</td>
+                      <td className="py-2.5 pr-2 font-bold text-foreground">{p.familyName}</td>
+                      <td className="py-2.5 pr-2 text-primary font-medium">{p.callSymbol}</td>
+                      <td className="py-2.5 pr-2 text-destructive font-medium">{p.putSymbol}</td>
+                      <td className="py-2.5 pr-2 text-right bg-muted/50 text-foreground font-semibold">{formatBRL((p.strikeRtd && p.strikeRtd > 0) ? p.strikeRtd : p.strike)}</td>
+                      <td className="py-2.5 pr-2 text-right text-warning">{formatBRL(p.compraBox)}</td>
+                      <td className="py-2.5 pr-2 text-right text-success">{formatBRL(lucroDisplay)}</td>
+                      <td className="py-2.5 pr-2 text-right text-success font-semibold">{formatBRL(lucroTotalDisplay)}</td>
+                      <td className="py-2.5 pr-2 text-right font-bold text-success">{formatPercent(lucroPercentDisplay)}</td>
+                      <td className="py-2.5 pr-2 text-right text-warning">{cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}</td>
+                      <td className="py-2.5 pr-2 text-center">
                         {(() => {
                           const pctCdi = cdiDisplay && cdiDisplay > 0 ? ((lucroPercentDisplay ?? 0) / cdiDisplay) * 100 : null;
                           if (pctCdi === null) return "—";
                           const isAbove = pctCdi >= 100;
                           return (
-                            <span className={cn("font-black text-sm", isAbove ? "text-emerald-500 dark:text-emerald-300" : "text-red-500")}>
+                            <span className={cn("font-extrabold text-sm", isAbove ? "text-success" : "text-destructive")}>
                               {pctCdi.toFixed(0)}%
                             </span>
                           );
@@ -1177,15 +1190,15 @@ export default function BoxTracker() {
       )}
 
       {/* CONTROLES: Quantidade e Adicionar Família */}
-      <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-5 items-stretch sm:items-end">
-        <div className="flex flex-col gap-1">
-          <label className="text-[10px] text-orange-600 dark:text-orange-400/70 uppercase tracking-wider font-bold">Quantidade</label>
+      <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-6 items-stretch sm:items-end">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Quantidade</label>
           <input
             type="number"
             value={quantidade}
             onChange={(e) => setQuantidade(Math.max(1, parseInt(e.target.value) || 1))}
             min={1}
-            className="w-full sm:w-24 bg-card border border-border rounded-lg px-3 py-2 text-sm text-center font-bold text-orange-600 dark:text-orange-300 focus:outline-none focus:border-primary transition-colors"
+            className="w-full sm:w-24 bg-card border border-border rounded-xl px-3 py-2.5 text-sm text-center font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
           />
         </div>
         <div className="flex gap-2 flex-1">
@@ -1195,11 +1208,11 @@ export default function BoxTracker() {
             onChange={(e) => setNewFamilyName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addFamily()}
             placeholder="Ticker do ativo (ex: PETR4, BBDC4...)"
-            className="flex-1 bg-card border border-border rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary transition-colors placeholder-muted-foreground"
+            className="flex-1 bg-card border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all placeholder-muted-foreground"
           />
           <button
             onClick={addFamily}
-            className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-400 text-white rounded-lg text-sm font-bold transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full text-sm font-bold transition-all shadow-md hover:shadow-lg active:scale-[0.97]"
           >
             <Plus className="w-4 h-4" />
             Adicionar
