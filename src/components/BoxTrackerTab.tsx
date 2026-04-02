@@ -883,7 +883,7 @@ export default function BoxTracker() {
             </div>
             <div className="max-h-48 overflow-y-auto space-y-1.5">
               {alertHistory.map((a) => (
-                <div key={a.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-muted/30 border border-border/50 text-xs">
+                <div key={a.id} className="flex flex-wrap items-center justify-between gap-1.5 px-3 py-2 rounded-lg bg-muted/30 border border-border/50 text-xs">
                   <span className="text-muted-foreground font-mono">{a.time}</span>
                   <span className="font-bold text-foreground">{a.familyName}</span>
                   <span className="font-mono">R$ {a.strike.toFixed(2)}</span>
