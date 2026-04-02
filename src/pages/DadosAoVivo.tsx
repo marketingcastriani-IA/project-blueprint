@@ -35,9 +35,18 @@ import { cn } from "@/lib/utils";
 // ─── Types & Hook (shared) ───────────────────────────────────────────────────
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 import { statusConfig, type ConStatus, type RtdRow } from "@/hooks/useRtdBridge";
+import { extractStrikeFromTicker } from "@/lib/b3-utils";
 
 const fmt = (v: number | null, d = 2) =>
   v !== null && v !== undefined ? v.toFixed(d) : "—";
+
+/** Get best strike: RTD PEX > 0 first, then ticker-parsed fallback */
+const getStrike = (row: RtdRow): number | null => {
+  if (row.strike !== null && row.strike > 0) return row.strike;
+  if (row.tipo === "stock") return null;
+  const parsed = extractStrikeFromTicker(row.ticker);
+  return parsed > 0 ? parsed : null;
+};
 
 // ─── Date Picker ─────────────────────────────────────────────────────────────
 
@@ -229,7 +238,7 @@ export default function DadosAoVivo() {
         side: r.lado,
         option_type: r.tipo,
         asset: r.ticker,
-        strike: r.tipo === 'stock' ? 0 : (r.strike ?? 0),
+        strike: r.tipo === 'stock' ? 0 : (getStrike(r) ?? 0),
         price: r.precoEntrada ?? r.ultimo ?? r.ofCompra ?? r.ofVenda ?? 0,
         quantity: r.quantidade,
         expiry_date: r.expiryDate,
@@ -570,7 +579,7 @@ export default function DadosAoVivo() {
                             </Select>
                           </TableCell>
                           <TableCell className="text-right font-mono font-semibold">{fmt(row.ultimo)}</TableCell>
-                          <TableCell className="text-right font-mono">{fmt(row.strike)}</TableCell>
+                          <TableCell className="text-right font-mono">{fmt(getStrike(row))}</TableCell>
                           <TableCell className="text-right font-mono">{fmt(row.negocios, 0)}</TableCell>
                           <TableCell className="text-right font-mono">{fmt(row.ofCompra)}</TableCell>
                           <TableCell className="text-right font-mono">{fmt(row.ofVenda)}</TableCell>
