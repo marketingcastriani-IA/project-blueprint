@@ -656,7 +656,7 @@ export default function BoxTracker() {
       )}
 
       {/* IR TOGGLES + CDI ANUAL EDITÁVEL */}
-      <div className="mb-5 flex flex-col sm:flex-row gap-3 flex-wrap">
+      <div className="mb-5 flex flex-col gap-3">
         {/* CDI Anual Editável */}
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-amber-300 dark:border-amber-500/50 bg-amber-50 dark:bg-amber-950/30">
           <span className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider whitespace-nowrap">📊 CDI Anual:</span>
