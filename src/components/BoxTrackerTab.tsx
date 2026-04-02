@@ -715,7 +715,8 @@ export default function BoxTracker() {
           )}
         </div>
 
-        {/* IR Ações */}
+        {/* IR Toggles row */}
+        <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setDescontarIRAcoes(!descontarIRAcoes)}
           className={cn(
