@@ -6,6 +6,9 @@
 // ============================================================
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import trophyGold from "@/assets/trophy-gold.png";
+import trophySilver from "@/assets/trophy-silver.png";
+import trophyBronze from "@/assets/trophy-bronze.png";
 import { format } from "date-fns";
 import {
   Plus,
