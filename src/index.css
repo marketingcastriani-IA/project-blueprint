@@ -28,8 +28,8 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
     
-    /* Success: Oplab Chart Green */
-    --success: 160 84% 39%;
+    /* Success: Rich Emerald Green (Fiqon palette) */
+    --success: 160 65% 29%;
     --success-foreground: 0 0% 100%;
     
     --warning: 38 92% 50%;
