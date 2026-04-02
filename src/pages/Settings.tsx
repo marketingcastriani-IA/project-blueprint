@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Lock, Mail, LogOut, Shield, CheckCircle2, Crown, CreditCard, Sparkles, Zap, Camera, Bot, History, Briefcase, MessageSquare, ExternalLink, Radio } from 'lucide-react';
+import { Loader2, Lock, Mail, LogOut, Shield, CheckCircle2, Crown, CreditCard, Sparkles, Zap, Camera, Bot, History, Briefcase, MessageSquare, ExternalLink, Radio, ArrowRight } from 'lucide-react';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import { useProPrice } from '@/hooks/useProPrice';
 
@@ -26,14 +26,17 @@ export default function Settings() {
   const { proPrice } = useProPrice();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
+  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
-      toast.success("Pagamento aprovado!", { description: "Seu plano PRO será liberado em instantes." });
+      setShowPaymentSuccess(true);
+      window.history.replaceState({}, '', '/settings');
     } else if (params.get('payment') === 'failure') {
       toast.error("Pagamento não concluído", { description: "Houve um problema com a transação." });
+      window.history.replaceState({}, '', '/settings');
     } else if (params.get('upgrade') === 'true') {
-      // Auto-trigger checkout when coming from email CTA
       handleUpgrade();
       window.history.replaceState({}, '', '/settings');
     }
@@ -158,15 +161,15 @@ export default function Settings() {
         </Card>
 
         <Dialog open={showUpgradeModal} onOpenChange={setShowUpgradeModal}>
-          <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-2 border-[hsl(190,90%,50%)]/30 bg-[hsl(222,47%,11%)] shadow-[0_0_40px_hsl(190,90%,50%,0.15)]">
+          <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-2 border-primary/30 bg-card shadow-[0_0_40px_hsl(var(--primary)/0.15)]">
             <div className="flex flex-col items-center pt-8 pb-4 px-6">
-              <Crown className="h-12 w-12 text-[hsl(190,90%,50%)] mb-4" />
+              <Crown className="h-12 w-12 text-primary mb-4" />
               <DialogHeader className="text-center">
-                <DialogTitle className="text-2xl font-black tracking-tight text-white">
+                <DialogTitle className="text-2xl font-black tracking-tight text-foreground">
                   {access.trialExpired ? 'Renovar Plano PRO' : 'TORNE-SE PRO X'}
                 </DialogTitle>
-                <DialogDescription className="text-[hsl(190,90%,50%)] font-black text-3xl tracking-tighter mt-2">
-                  R$ {proPrice.toFixed(2).replace('.', ',')}<span className="text-base font-medium text-[hsl(220,15%,60%)]">/mês</span>
+                <DialogDescription className="text-primary font-black text-3xl tracking-tighter mt-2">
+                  R$ {proPrice.toFixed(2).replace('.', ',')}<span className="text-base font-medium text-muted-foreground">/mês</span>
                 </DialogDescription>
               </DialogHeader>
             </div>
@@ -174,8 +177,8 @@ export default function Settings() {
               <div className="space-y-3">
                 {proFeatures.map((f, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-[hsl(190,90%,50%)] shrink-0" />
-                    <span className="text-sm font-bold text-[hsl(220,15%,85%)]">{f.title}</span>
+                    <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                    <span className="text-sm font-bold text-foreground">{f.title}</span>
                   </div>
                 ))}
               </div>
@@ -183,10 +186,47 @@ export default function Settings() {
               <Button 
                 onClick={handleUpgrade} 
                 disabled={upgrading} 
-                className="w-full h-14 text-lg font-black bg-[hsl(190,90%,50%)] hover:bg-[hsl(190,90%,45%)] text-[hsl(222,47%,11%)] shadow-[0_0_20px_hsl(190,90%,50%,0.4)] rounded-xl"
+                className="w-full h-14 text-lg font-black shadow-lg shadow-primary/30 rounded-xl"
               >
                 {upgrading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <Crown className="mr-2 h-6 w-6" />}
                 Assinar Agora
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Payment Success Celebration */}
+        <Dialog open={showPaymentSuccess} onOpenChange={setShowPaymentSuccess}>
+          <DialogContent className="sm:max-w-[450px] text-center border-2 border-primary/30">
+            <div className="flex flex-col items-center py-6 space-y-5">
+              <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
+                <Crown className="h-10 w-10 text-primary" />
+              </div>
+              <DialogHeader className="text-center">
+                <DialogTitle className="text-2xl font-black tracking-tight">🎉 Pagamento Aprovado!</DialogTitle>
+                <DialogDescription className="text-base mt-2">
+                  Seu plano <strong className="text-primary">PRO</strong> será ativado em instantes. Aproveite todas as funcionalidades!
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3 w-full px-4">
+                <div className="flex items-center gap-3 text-sm">
+                  <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                  <span className="font-bold text-foreground">Simulações ilimitadas com IA</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                  <span className="font-bold text-foreground">Rastreadores ao vivo (Box & Collar)</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                  <span className="font-bold text-foreground">Tempo Real com Profit RTD</span>
+                </div>
+              </div>
+              <Button 
+                className="w-full h-12 font-black shadow-lg shadow-primary/30"
+                onClick={() => { setShowPaymentSuccess(false); navigate('/dashboard'); }}
+              >
+                IR PARA O DASHBOARD <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </div>
           </DialogContent>

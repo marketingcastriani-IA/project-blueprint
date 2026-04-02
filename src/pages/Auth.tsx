@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,7 +22,11 @@ export default function Auth() {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  if (loading) return null;
+  if (loading) return (
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </div>
+  );
   if (user) return <Navigate to="/dashboard" replace />;
 
   if (showConfirmation) {
@@ -155,8 +160,30 @@ export default function Auth() {
           </form>
           {isSignUp && (
             <p className="text-xs text-center text-muted-foreground">
-              🎁 Ao criar sua conta, você ganha <strong className="text-primary">3 simulações gratuitas</strong> para testar a plataforma!
+              🎁 Ao criar sua conta, você ganha <strong className="text-primary">7 dias grátis com acesso total</strong> a todas as funcionalidades PRO!
             </p>
+          )}
+          {!isSignUp && (
+            <button
+              onClick={async () => {
+                if (!email) {
+                  toast.error('Digite seu e-mail primeiro');
+                  return;
+                }
+                try {
+                  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: `${window.location.origin}/settings`,
+                  });
+                  if (error) throw error;
+                  toast.success('E-mail de recuperação enviado!', { description: `Verifique a caixa de entrada de ${email}` });
+                } catch (err: any) {
+                  toast.error(err.message || 'Erro ao enviar e-mail de recuperação');
+                }
+              }}
+              className="text-xs text-muted-foreground hover:text-primary hover:underline transition-colors block mx-auto"
+            >
+              Esqueceu sua senha?
+            </button>
           )}
           <div className="text-center text-sm text-muted-foreground font-medium">
             {isSignUp ? 'Já tem conta?' : 'Não tem conta?'}{' '}

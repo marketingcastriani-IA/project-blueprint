@@ -32,7 +32,7 @@ serve(async (req) => {
     console.log(`[mercado-pago-checkout] URL de retorno: ${backUrl}`);
 
     // Busca preço atualizado ou usa padrão
-    let price = 19.90
+    let price = 149.90
     try {
       const { data: settings } = await supabaseClient
         .from('site_settings')
@@ -44,7 +44,7 @@ serve(async (req) => {
         price = Number(settings.value.price);
       }
     } catch (e) {
-      console.log("[mercado-pago-checkout] Usando preço padrão de R$ 19.90");
+      console.log("[mercado-pago-checkout] Usando preço padrão de R$ 149.90");
     }
 
     const MP_ACCESS_TOKEN = Deno.env.get("MP_ACCESS_TOKEN")
