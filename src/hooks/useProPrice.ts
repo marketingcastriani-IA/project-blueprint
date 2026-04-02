@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-const DEFAULT_PRICE = 149.90;
+const DEFAULT_PRICE = 14.90;
 
 /**
  * Hook to fetch the PRO plan price from site_settings.
