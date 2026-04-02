@@ -1032,8 +1032,8 @@ export default function BoxTracker() {
 
             // Capital needed for assembly
             const capitalAcao = pair.stockAsk !== null ? pair.stockAsk * quantidade : null;
-            const capitalPut = pair.putAsk !== null ? pair.putAsk * quantidade * 100 : null;
-            const creditoCall = pair.callBid !== null ? pair.callBid * quantidade * 100 : null;
+            const capitalPut = pair.putAsk !== null ? pair.putAsk * quantidade : null;
+            const creditoCall = pair.callBid !== null ? pair.callBid * quantidade : null;
             const capitalTotal = capitalAcao !== null && capitalPut !== null && creditoCall !== null
               ? capitalAcao + capitalPut - creditoCall
               : null;
