@@ -740,7 +740,7 @@ export default function BoxTracker() {
         <button
           onClick={() => setDescontarIRRendaFixa(!descontarIRRendaFixa)}
           className={cn(
-            "flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-bold transition-all",
+            "flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border text-[11px] sm:text-xs font-bold transition-all flex-1 sm:flex-auto min-w-0",
             descontarIRRendaFixa
               ? "bg-emerald-100 dark:bg-emerald-950/40 border-emerald-500/60 text-emerald-700 dark:text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.3)] animate-pulse"
               : "bg-red-50 dark:bg-red-950/20 border-red-400/40 text-red-600 dark:text-red-400"
