@@ -32,7 +32,7 @@ serve(async (req) => {
     console.log(`[mercado-pago-checkout] URL de retorno: ${backUrl}`);
 
     // Busca preço atualizado ou usa padrão
-    let price = 19.90
+    let price = 149.90
     try {
       const { data: settings } = await supabaseClient
         .from('site_settings')
