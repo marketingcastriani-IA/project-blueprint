@@ -22,6 +22,9 @@ import {
   ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid,
   ReferenceLine, ResponsiveContainer, Tooltip, ReferenceDot,
 } from "recharts";
+import trophyGold from "@/assets/trophy-gold.png";
+import trophySilver from "@/assets/trophy-silver.png";
+import trophyBronze from "@/assets/trophy-bronze.png";
 
 // ─── TIPOS ───────────────────────────────────────────────────
 type CollarTipo = "Normal" | "Baixa" | "ATM" | "Calendário";
@@ -630,12 +633,14 @@ export default function CollarTrackerTab() {
 
   // ─── RENDER ───────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-background text-foreground font-mono p-3 md:p-6">
+    <div className="min-h-screen bg-background text-foreground font-sans p-3 md:p-6">
       {/* HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-primary flex items-center gap-2">
-            <Shield className="w-5 h-5 md:w-6 md:h-6" />
+          <h1 className="text-xl md:text-2xl font-extrabold tracking-tight text-foreground flex items-center gap-2.5">
+            <span className="p-2 rounded-xl bg-primary/10">
+              <Shield className="w-5 h-5 md:w-6 md:h-6 text-primary" />
+            </span>
             Rastreador de Collar
           </h1>
           <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
