@@ -26,14 +26,17 @@ export default function Settings() {
   const { proPrice } = useProPrice();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
+  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment') === 'success') {
-      toast.success("Pagamento aprovado!", { description: "Seu plano PRO será liberado em instantes." });
+      setShowPaymentSuccess(true);
+      window.history.replaceState({}, '', '/settings');
     } else if (params.get('payment') === 'failure') {
       toast.error("Pagamento não concluído", { description: "Houve um problema com a transação." });
+      window.history.replaceState({}, '', '/settings');
     } else if (params.get('upgrade') === 'true') {
-      // Auto-trigger checkout when coming from email CTA
       handleUpgrade();
       window.history.replaceState({}, '', '/settings');
     }

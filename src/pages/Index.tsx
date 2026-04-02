@@ -490,6 +490,30 @@ export default function Index() {
         </div>
       </section>
 
+      {/* FAQ INLINE */}
+      <section className="container py-24">
+        <div className="text-center mb-16 space-y-4">
+          <Badge variant="outline" className="border-primary/30 text-primary font-bold">DÚVIDAS</Badge>
+          <h2 className="text-4xl sm:text-5xl font-black tracking-tighter">Perguntas Frequentes</h2>
+        </div>
+        <div className="max-w-3xl mx-auto space-y-4">
+          {[
+            { q: 'Preciso instalar alguma coisa?', a: 'Não! O Opções PRO X funciona 100% no navegador — desktop ou celular. Basta criar sua conta e começar.' },
+            { q: 'O que acontece depois dos 7 dias grátis?', a: 'Após o trial, você mantém acesso a recursos básicos (entrada manual, payoff, métricas). Para OCR com IA, portfólio, tempo real e rastreadores, assine o plano PRO.' },
+            { q: 'Como funciona o OCR por imagem?', a: 'Tire um print da tela da sua corretora (Profit, FlexScan, etc.) e faça upload. Nossa IA extrai automaticamente os strikes, prêmios e quantidades.' },
+            { q: 'Posso cancelar a qualquer momento?', a: 'Sim. Não há contrato de fidelidade. Se não renovar, seu acesso volta ao plano FREE ao final do período.' },
+          ].map((faq, i) => (
+            <details key={i} className="group border border-border/60 rounded-xl overflow-hidden bg-card">
+              <summary className="flex items-center justify-between p-5 cursor-pointer font-bold text-sm hover:bg-muted/30 transition-colors list-none">
+                {faq.q}
+                <ChevronUp className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="px-5 pb-5 text-sm text-muted-foreground leading-relaxed">{faq.a}</div>
+            </details>
+          ))}
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="border-t border-border/40 bg-muted/20 py-12">
         <div className="container text-center space-y-6">
