@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import { ProfessionalLayout, ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
 import { Input } from '@/components/ui/input';
@@ -6,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Calculator, TrendingUp, Percent, Calendar, DollarSign, Scale, ArrowRight, Info } from 'lucide-react';
+import { Calculator, TrendingUp, Percent, Calendar, DollarSign, Scale, ArrowRight, Info, Zap } from 'lucide-react';
 import { calcDiasUteis, calcCdiPeriodo, formatPercent } from '@/lib/b3-utils';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -15,6 +16,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useAccessControl } from '@/hooks/useAccessControl';
 
 // IR regressivo para renda fixa
 function getIRRate(diasCorridos: number): number {
