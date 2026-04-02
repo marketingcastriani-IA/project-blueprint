@@ -1,52 +1,98 @@
-# Melhorias Visuais, de Sistema e Funcionalidades Inovadoras — OpçõesX
+# Varredura Completa — Melhorias para o Opções PRO X
 
-## O que o app já tem
+## Resumo
 
-O OpçõesX já possui: análise de estruturas via imagem/manual, payoff chart, gregas (Black-Scholes), rastreador de Box e Collar em tempo real, portfólio com P&L, diversificador, dados ao vivo via RTD Bridge, análise por IA, e push notifications para Box. É um produto maduro.
-
----
-
-## A. MELHORIAS VISUAIS
-
-### A1. Dark Mode Glass Morphism nos Cards
-
-Os cards atuais usam `bg-gradient-to-br from-card/80 to-card/40` — funcional, mas plano. Adicionar efeito glassmorphism mais pronunciado com `backdrop-blur-2xl`, bordas sutis com gradiente, e micro-sombras internas para dar profundidade real, alinhado ao design language vibrante já existente.
-
-### A2. Animações de Transição entre Páginas
-
-Atualmente não há transição entre rotas — o conteúdo aparece abruptamente. Adicionar `framer-motion` com `AnimatePresence` no `App.tsx` para fade+slide suave entre páginas (200ms).
-
-### A3. Skeleton Loaders em todas as Páginas
-
-Portfolio, History, Dashboard e DadosAoVivo mostram `Loader2` spinner genérico. Substituir por skeletons que imitam o layout real (cards, tabelas, gráficos) para percepção de velocidade.
-
-### A4. Microinterações nos Botões de Ação
-
-Botões como "Salvar", "Analisar IA" e "Calcular" não têm feedback tátil além do hover. Adicionar scale(0.97) no click, ripple effect sutil, e ícone animado de confirmação (checkmark que desenha).
-
-### A5. Gráfico de Payoff com Gradiente e Tooltip Rico
-
-O PayoffChart atual é funcional mas básico. Adicionar gradiente de preenchimento (verde acima de zero, vermelho abaixo), tooltip com todas as gregas no ponto, e linha vertical de "preço atual" com label.
+Analisei todo o sistema: landing page, dashboard, trackers, portfólio, header, FAQ, calculadora e configurações. Identifiquei melhorias divididas em 3 categorias: Landing Page (funcionalidades ausentes), UX/Visual e Sistema.
 
 ---
 
-## B. MELHORIAS DE SISTEMA
+## A. LANDING PAGE — Funcionalidades Novas Ausentes
 
-### B1. Modo Offline / PWA Completo
+A landing page atual apresenta OCR, Payoff, CDI, Portfólio, Diversificador, Manual e Tempo Real. Porém faltam seções para funcionalidades já existentes:
 
-Registrar Service Worker, adicionar `manifest.json`, cachear assets. O usuário poderá instalar o app no celular e acessar análises salvas offline. Isso também habilita as push notifications de forma mais robusta.
+### A1. Seção "Rastreador de Box x CDI" com screenshot
 
-### B2. Atalhos de Teclado (Power User)
+O Box Tracker foi completamente redesenhado com troféus 3D e instruções de montagem, mas a landing page NÃO tem screenshot dele. Adicionar uma seção dedicada com screenshot e badge "🔴 AO VIVO" + "PRO", mostrando o ranking de melhores boxes.
 
-Adicionar shortcuts: `Ctrl+S` salvar análise, `Ctrl+Enter` analisar IA, `N` nova análise, `Esc` fechar modais. Exibir dica de atalho nos tooltips dos botões.
 
-### B3. Export Avançado
 
-Além do PDF atual, permitir exportar para Excel (.xlsx) com abas separadas (Resumo, Pernas, Payoff Data, Gregas). Útil para quem precisa importar em planilhas próprias.
+### A3. Seção "Calculadora CDI x Opções"
 
-### B4. Histórico de Alertas do Box Tracker
+Funcionalidade nova (marcada com "NOVO" no header) sem presença na landing. Adicionar seção com screenshot mostrando a comparação CDI vs estrutura.
 
-As notificações push atuais não ficam registradas. Criar um painel de "Histórico de Alertas" mostrando horário, ativo, % CDI, e strike do box que disparou o alerta.
+### A4. Atualizar tabela de preços (Pricing)
+
+A lista de features PRO não menciona:  Calculadora CDI x Opções, nem Push Notifications. Adicionar esses itens na coluna PRO.
+
+### A5. Seção de Depoimentos / Social Proof
+
+Não existe nenhum depoimento ou prova social. Adicionar seção com 3-4 cards de depoimentos (podem ser fictícios/placeholder inicialmente) para aumentar conversão.
+
+### A6. Seção "Como Funciona" em 3 passos
+
+Falta um fluxo visual simplificado: "1. Tire um print → 2. IA analisa → 3. Veja payoff e métricas". Aumenta clareza para visitantes novos.
 
 ---
 
+## B. MELHORIAS VISUAIS / UX
+
+### B1. Contraste no modo Branco — Auditoria completa
+
+Problemas já corrigidos no History, mas podem existir em outras páginas (Portfolio, Dashboard cards, Diversificador). Varrer todas as páginas garantindo `text-foreground` em vez de `text-white` hardcoded.
+
+### B2. Footer duplicado
+
+O `App.tsx` tem um footer fixo com aviso legal E a landing page tem seu próprio footer. Quando logado, o footer do App.tsx aparece em todas as páginas. Unificar para evitar redundância.
+
+### B3. Nome inconsistente na landing
+
+A seção de comparação diz "OpçõesX vs. Planilhas" mas a marca oficial é "Opções PRO X". Corrigir para manter branding consistente.
+
+### B4. Loading states inconsistentes
+
+Dashboard usa `return null` durante loading (flash branco). Deveria mostrar skeleton loader como já existe em History e Portfolio.
+
+---
+
+## C. MELHORIAS DE SISTEMA
+
+### C1. SEO e Meta Tags
+
+O `index.html` provavelmente não tem Open Graph tags, description, etc. Adicionar meta tags para compartilhamento em redes sociais e SEO básico.
+
+### C2. Botão "Voltar ao Topo" na landing page
+
+A landing page é longa. Adicionar botão flutuante de scroll-to-top que aparece após scroll.
+
+### C3. CTA flutuante na landing (mobile)
+
+Em mobile, o botão "7 Dias Grátis" some ao scrollar. Adicionar barra fixa no bottom com CTA persistente.
+
+---
+
+## Plano de Implementação (Priorizado)
+
+
+| Prioridade | Item                                             | Impacto                  |
+| ---------- | ------------------------------------------------ | ------------------------ |
+| 1          | A1-A3: Screenshots das features novas na landing | Alto — conversão         |
+| 2          | A4: Atualizar pricing com features novas         | Alto — conversão         |
+| 3          | A6: Seção "Como Funciona" 3 passos               | Alto — clareza           |
+| 4          | B3: Corrigir nome "OpçõesX" → "Opções PRO X"     | Médio — branding         |
+| 5          | B2: Remover footer duplicado                     | Baixo — cleanup          |
+| 6          | A5: Social proof / depoimentos                   | Alto — conversão         |
+| 7          | B1: Auditoria contraste modo Branco              | Médio — acessibilidade   |
+| 8          | C1: Meta tags SEO/OG                             | Médio — marketing        |
+| 9          | C3: CTA flutuante mobile                         | Médio — conversão mobile |
+| 10         | B4: Skeleton no Dashboard                        | Baixo — polish           |
+
+
+---
+
+## Detalhes Técnicos
+
+- **Landing page**: Todas as alterações em `src/pages/Index.tsx`
+- **Screenshots**: Serão necessários novos screenshots em `public/assets/` para Box Tracker, Collar Tracker e Calculadora CDI
+- **Footer**: Remover o footer hardcoded do `App.tsx` (linha ~80) e manter apenas o da landing page
+- **Branding**: Buscar/substituir "OpçõesX" por "Opções PRO X" em toda a codebase
+- **Meta tags**: Editar `index.html` com og:title, og:description, og:image
