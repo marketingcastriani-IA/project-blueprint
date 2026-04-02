@@ -1016,7 +1016,7 @@ export default function BoxTracker() {
 
       {/* WINNER CARDS - Top 1 de cada ação */}
       {topPairs.length > 0 && (
-        <div className={cn("grid gap-3 mb-5", topPairs.length === 1 ? "grid-cols-1" : topPairs.length === 2 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-3")}>
+        <div className={cn("grid gap-4 mb-6", topPairs.length === 1 ? "grid-cols-1" : topPairs.length === 2 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-3")}>
           {topPairs.map((pair, i) => {
             const isWinner = i === 0;
             const lucroDisplay = descontarIRAcoes ? pair.lucroLiqAcoes : pair.lucro;
@@ -1028,71 +1028,72 @@ export default function BoxTracker() {
               <div
                 key={`top-${i}`}
                 className={cn(
-                  "relative overflow-hidden rounded-xl border-2 p-4 transition-all duration-300",
+                  "relative overflow-hidden rounded-2xl border p-5 transition-all duration-300",
                   isWinner
-                    ? "bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30 border-emerald-500 dark:border-emerald-400 shadow-[0_0_30px_-5px_rgba(16,185,129,0.4)] ring-2 ring-emerald-400/30 dark:ring-emerald-400/20 hover:shadow-[0_0_40px_-5px_rgba(16,185,129,0.5)] hover:scale-[1.01]"
-                    : i === 1
-                    ? "bg-card border-border/80 hover:border-muted-foreground/30 hover:shadow-md"
-                    : "bg-card border-border/80 hover:border-muted-foreground/30 hover:shadow-md"
+                    ? "bg-card border-success/40 shadow-[0_0_30px_hsl(var(--success)/0.15)] ring-1 ring-success/20 hover:shadow-[0_0_40px_hsl(var(--success)/0.2)]"
+                    : "bg-card border-border hover:border-muted-foreground/30 hover:shadow-md"
                 )}
               >
                 {isWinner && (
-                  <span className="absolute top-3 right-3 flex h-3 w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
+                  <span className="absolute top-3 right-3 flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success" />
                   </span>
                 )}
-                <div className="flex items-center gap-2 mb-2">
-                  <Trophy
-                    className={cn("w-5 h-5", 
-                      isWinner ? "text-emerald-500" : i === 1 ? "text-gray-400" : "text-amber-600"
-                    )}
-                  />
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider font-bold">
-                    {i === 0 ? "🥇 Melhor Box" : i === 1 ? "🥈 2º Melhor" : "🥉 3º Melhor"}
+                <div className="flex items-center gap-2.5 mb-3">
+                  <span className={cn(
+                    "p-1.5 rounded-lg",
+                    isWinner ? "bg-success/10" : "bg-muted"
+                  )}>
+                    <Trophy className={cn("w-4 h-4", 
+                      isWinner ? "text-success" : "text-muted-foreground"
+                    )} />
+                  </span>
+                  <span className="text-xs text-muted-foreground uppercase tracking-widest font-bold">
+                    {i === 0 ? "Melhor Box" : i === 1 ? "2º Melhor" : "3º Melhor"}
                   </span>
                 </div>
 
-                <div className="flex flex-wrap items-baseline gap-2 mb-1">
-                  <span className="text-lg font-black text-foreground">{pair.familyName}</span>
-                  <span className="text-xs text-muted-foreground">Strike {formatBRL((pair.strikeRtd && pair.strikeRtd > 0) ? pair.strikeRtd : pair.strike)}</span>
+                <div className="flex flex-wrap items-baseline gap-2 mb-1.5">
+                  <span className="text-xl font-extrabold text-foreground tracking-tight">{pair.familyName}</span>
+                  <span className="text-xs text-muted-foreground font-medium">Strike {formatBRL((pair.strikeRtd && pair.strikeRtd > 0) ? pair.strikeRtd : pair.strike)}</span>
                   {pair.vencimento && (
-                    <span className="text-xs text-amber-600 dark:text-amber-400/70 ml-1">· {pair.vencimento}</span>
+                    <span className="text-xs text-warning font-medium ml-1">· {pair.vencimento}</span>
                   )}
                 </div>
 
-                <div className="flex items-center gap-3 text-sm">
-                  <span className="text-muted-foreground">
-                    Call: <span className="text-blue-600 dark:text-blue-300 font-bold">{pair.callSymbol ?? "—"}</span>
+                <div className="flex items-center gap-4 text-sm mb-4">
+                  <span className="text-muted-foreground font-medium">
+                    Call: <span className="text-primary font-bold">{pair.callSymbol ?? "—"}</span>
                   </span>
-                  <span className="text-muted-foreground">
-                    Put: <span className="text-red-600 dark:text-red-300 font-bold">{pair.putSymbol ?? "—"}</span>
+                  <span className="text-muted-foreground font-medium">
+                    Put: <span className="text-destructive font-bold">{pair.putSymbol ?? "—"}</span>
                   </span>
                 </div>
 
-                <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 pt-3 border-t border-border/50">
                   <div>
-                    <p className="text-[9px] text-muted-foreground uppercase">Custo</p>
-                    <p className="text-sm font-bold text-orange-600 dark:text-orange-400">{formatBRL(pair.compraBox)}</p>
+                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Custo</p>
+                    <p className="text-sm font-bold text-warning">{formatBRL(pair.compraBox)}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] text-muted-foreground uppercase">Lucro (1){descontarIRAcoes ? " líq" : ""}</p>
-                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{formatBRL(lucroDisplay)}</p>
+                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Lucro (1){descontarIRAcoes ? " líq" : ""}</p>
+                    <p className="text-sm font-bold text-success">{formatBRL(lucroDisplay)}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] text-muted-foreground uppercase">Total ({quantidade}x)</p>
-                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-300">{formatBRL(lucroTotalDisplay)}</p>
+                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Total ({quantidade}x)</p>
+                    <p className="text-sm font-bold text-success">{formatBRL(lucroTotalDisplay)}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] text-muted-foreground uppercase">CDI Per.{descontarIRRendaFixa ? " líq" : ""}</p>
-                    <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}</p>
+                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">CDI Per.{descontarIRRendaFixa ? " líq" : ""}</p>
+                    <p className="text-sm font-bold text-warning">{cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] text-muted-foreground uppercase">Retorno{descontarIRAcoes ? " líq" : ""}</p>
-                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-300">{formatPercent(lucroPercentDisplay)}</p>
+                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Retorno{descontarIRAcoes ? " líq" : ""}</p>
+                    <p className="text-sm font-bold text-success">{formatPercent(lucroPercentDisplay)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[9px] text-muted-foreground uppercase">% do CDI</p>
+                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">% do CDI</p>
                     {(() => {
                       const pctCdi = cdiDisplay && cdiDisplay > 0 ? ((lucroPercentDisplay ?? 0) / cdiDisplay) * 100 : null;
                       if (pctCdi === null) return <p className="text-sm text-muted-foreground">—</p>;
@@ -1100,14 +1101,14 @@ export default function BoxTracker() {
                       return (
                         <>
                           <p className={cn(
-                            "text-2xl font-black",
-                            isAbove ? "text-emerald-500 dark:text-emerald-300" : "text-red-500"
+                            "text-2xl font-extrabold tracking-tight",
+                            isAbove ? "text-success" : "text-destructive"
                           )}>
                             {pctCdi.toFixed(0).replace(".", ",")}%
                           </p>
                           <span className={cn(
-                            "text-[9px] font-bold",
-                            isAbove ? "text-emerald-600 dark:text-emerald-500" : "text-red-500"
+                            "text-[9px] font-semibold",
+                            isAbove ? "text-success" : "text-destructive"
                           )}>
                             {isAbove ? `▲ ${(pctCdi - 100).toFixed(0)}% acima` : `▼ ${(100 - pctCdi).toFixed(0)}% abaixo`} do CDI
                           </span>
