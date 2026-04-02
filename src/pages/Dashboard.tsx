@@ -395,6 +395,49 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background pb-16">
       <Header />
+      
+      {/* Banner fixo para usuários free */}
+      {access.planType === 'free' && access.daysRemaining !== null && (
+        <div className={cn(
+          "sticky top-14 z-40 border-b",
+          isLimitReached 
+            ? "bg-destructive text-destructive-foreground" 
+            : access.daysRemaining <= 2
+              ? "bg-gradient-to-r from-destructive to-destructive/80 text-destructive-foreground"
+              : "bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-500 text-black"
+        )}>
+          <div className="container flex items-center justify-between gap-3 px-4 py-2.5">
+            <div className="flex items-center gap-2 min-w-0">
+              {isLimitReached ? (
+                <Lock className="h-4 w-4 shrink-0" />
+              ) : (
+                <AlertTriangle className="h-4 w-4 shrink-0 animate-pulse" />
+              )}
+              <p className="text-xs sm:text-sm font-black uppercase tracking-wide truncate">
+                {isLimitReached 
+                  ? "Seu trial expirou — assine PRO para continuar"
+                  : access.daysRemaining <= 2
+                    ? `⚠️ Último${access.daysRemaining !== 1 ? 's' : ''} ${access.daysRemaining} dia${access.daysRemaining !== 1 ? 's' : ''} de trial! Não perca seu acesso`
+                    : `🕐 ${access.daysRemaining} dias restantes no seu trial gratuito`}
+              </p>
+            </div>
+            <Button 
+              onClick={() => navigate('/settings')} 
+              size="sm"
+              className={cn(
+                "shrink-0 font-black uppercase tracking-widest text-[10px] sm:text-xs",
+                isLimitReached || access.daysRemaining <= 2
+                  ? "bg-white text-destructive hover:bg-white/90 shadow-lg animate-pulse"
+                  : "bg-black text-yellow-400 hover:bg-black/80 shadow-lg"
+              )}
+            >
+              <Zap className="h-3 w-3 mr-1 fill-current" />
+              ASSINAR PRO — R$ 14,90
+            </Button>
+          </div>
+        </div>
+      )}
+
       <main className="container px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in">
         <PortfolioSummary userId={user.id} />
 
