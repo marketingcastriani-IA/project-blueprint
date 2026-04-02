@@ -1060,7 +1060,7 @@ export default function BoxTracker() {
                   </span>
                 </div>
 
-                <div className="mt-3 grid grid-cols-3 md:grid-cols-6 gap-2">
+                <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
                   <div>
                     <p className="text-[9px] text-muted-foreground uppercase">Custo</p>
                     <p className="text-sm font-bold text-orange-600 dark:text-orange-400">{formatBRL(pair.compraBox)}</p>
