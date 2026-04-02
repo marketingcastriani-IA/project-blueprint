@@ -282,7 +282,7 @@ export default function Index() {
               <p className="text-muted-foreground">Rastreie automaticamente os melhores boxes da B3 em tempo real. Ranking com troféus 3D, % do CDI e instruções de montagem passo a passo.</p>
             </div>
             <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)]">
-              <img src="/assets/screenshot-box-tracker.png" alt="Rastreador de Box x CDI — Ranking ao Vivo" className="w-full h-auto" loading="lazy" />
+              <img src="/assets/box-tracker-winner.png" alt="Rastreador de Box x CDI — Ranking ao Vivo" className="w-full h-auto" loading="lazy" />
             </div>
           </div>
 
@@ -297,7 +297,7 @@ export default function Index() {
               <p className="text-muted-foreground">Compare o rendimento de qualquer estratégia com a renda fixa. Simule capital, prazo e taxa para saber se o risco vale a pena.</p>
             </div>
             <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)]">
-              <img src="/assets/screenshot-calculadora-cdi.png" alt="Calculadora CDI x Opções" className="w-full h-auto" loading="lazy" />
+              <img src="/assets/calculadora-cdi.png" alt="Calculadora CDI x Opções" className="w-full h-auto" loading="lazy" />
             </div>
           </div>
         </div>
