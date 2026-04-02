@@ -209,10 +209,10 @@ export default function History() {
         onClick={() => navigate(`/analysis/${a.id}`)}
       >
         {/* Dark header strip */}
-        <div className="bg-gradient-to-r from-[hsl(222,47%,11%)] to-[hsl(222,47%,18%)] dark:from-[hsl(222,47%,6%)] dark:to-[hsl(222,47%,12%)] px-4 py-3">
+        <div className="bg-gradient-to-r from-primary to-primary/80 px-4 py-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 flex-1 min-w-0">
-              <span className="font-extrabold text-base text-white truncate tracking-tight">{a.name}</span>
+              <span className="font-extrabold text-base text-primary-foreground truncate tracking-tight">{a.name}</span>
               {m?.isRiskFree && (
                 <Badge className="text-[9px] font-black bg-success/20 text-success border-success/40 gap-0.5 px-1.5">
                   <ShieldCheck className="h-2.5 w-2.5" /> Zero
@@ -220,18 +220,18 @@ export default function History() {
               )}
             </div>
             <div className="text-right shrink-0">
-              <span className="text-[10px] text-white/40 block">Investido</span>
-              <span className="text-white font-bold text-sm font-mono">
+              <span className="text-[10px] text-primary-foreground/60 block">Investido</span>
+              <span className="text-primary-foreground font-bold text-sm font-mono">
                 R$<span className="text-lg">{Math.abs(investido).toFixed(2)}</span>
               </span>
             </div>
           </div>
           <div className="flex items-center justify-between mt-1">
-            <span className="text-[10px] text-white/40 uppercase tracking-wider">
+            <span className="text-[10px] text-primary-foreground/60 uppercase tracking-wider">
               {a.underlying_asset || legs[0]?.asset || '—'}
             </span>
             {a.expiry_date && (
-              <span className="text-[10px] text-white/50">
+              <span className="text-[10px] text-primary-foreground/70">
                 Venc: {(() => {
                   const [y, mo, d] = a.expiry_date!.split('-').map(Number);
                   return new Date(y, mo - 1, d).toLocaleDateString('pt-BR');
