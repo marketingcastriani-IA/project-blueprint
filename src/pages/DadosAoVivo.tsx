@@ -40,6 +40,14 @@ import { extractStrikeFromTicker } from "@/lib/b3-utils";
 const fmt = (v: number | null, d = 2) =>
   v !== null && v !== undefined ? v.toFixed(d) : "—";
 
+/** Get best strike: RTD PEX > 0 first, then ticker-parsed fallback */
+const getStrike = (row: RtdRow): number | null => {
+  if (row.strike !== null && row.strike > 0) return row.strike;
+  if (row.tipo === "stock") return null;
+  const parsed = extractStrikeFromTicker(row.ticker);
+  return parsed > 0 ? parsed : null;
+};
+
 // ─── Date Picker ─────────────────────────────────────────────────────────────
 
 function InlineDatePicker({ date, onChange }: { date?: Date; onChange: (date?: Date) => void }) {
