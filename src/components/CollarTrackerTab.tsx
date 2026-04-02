@@ -633,7 +633,7 @@ export default function CollarTrackerTab() {
 
   // ─── RENDER ───────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-background text-foreground font-mono p-3 md:p-6">
+    <div className="min-h-screen bg-background text-foreground font-sans p-3 md:p-6">
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <div>
