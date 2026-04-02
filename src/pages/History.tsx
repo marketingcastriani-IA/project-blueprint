@@ -315,7 +315,7 @@ export default function History() {
                 {legs.length} perna{legs.length > 1 ? 's' : ''}
               </Badge>
               {m?.strategyLabel && (
-                <Badge variant="outline" className="text-[10px] border-accent/30 text-accent-foreground font-bold bg-accent/10">
+              <Badge variant="outline" className="text-[10px] border-primary/30 text-foreground font-bold bg-primary/10">
                   {m.strategyLabel}
                 </Badge>
               )}
