@@ -1125,26 +1125,28 @@ export default function BoxTracker() {
 
       {/* TOP 10 TABLE — Top 1 de cada ação */}
       {topPairs.length > 0 && (
-        <div className="mb-5 bg-card border border-border rounded-xl p-4">
-          <h2 className="text-sm font-bold text-primary mb-3 flex items-center gap-2">
-            <Star className="w-4 h-4 text-amber-500" />
-            🏆 Ranking · Melhor Box por Ação
+        <div className="mb-6 bg-card border border-border rounded-2xl p-5 shadow-sm">
+          <h2 className="text-xs font-bold text-muted-foreground mb-4 flex items-center gap-2 uppercase tracking-widest">
+            <span className="p-1.5 rounded-lg bg-warning/10">
+              <Star className="w-3.5 h-3.5 text-warning" />
+            </span>
+            Ranking · Melhor Box por Ação
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="text-muted-foreground border-b border-border">
-                  <th className="text-left py-2 pr-2">#</th>
-                  <th className="text-left py-2 pr-2">Ativo</th>
-                  <th className="text-left py-2 pr-2 text-blue-600 dark:text-blue-400">CALL</th>
-                  <th className="text-left py-2 pr-2 text-red-600 dark:text-red-400">PUT</th>
-                  <th className="text-right py-2 pr-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-sm">Strike</th>
-                  <th className="text-right py-2 pr-2 text-orange-600 dark:text-orange-400">Custo</th>
-                  <th className="text-right py-2 pr-2">Lucro</th>
-                  <th className="text-right py-2 pr-2">Total</th>
-                  <th className="text-right py-2 pr-2">Lucro %</th>
-                  <th className="text-right py-2 pr-2 text-amber-600 dark:text-amber-400">CDI Per.</th>
-                  <th className="text-center py-2 pr-2 text-emerald-600 dark:text-emerald-400 font-bold">% do CDI</th>
+                <tr className="text-muted-foreground border-b border-border text-[10px] uppercase tracking-wider">
+                  <th className="text-left py-2.5 pr-2 font-semibold">#</th>
+                  <th className="text-left py-2.5 pr-2 font-semibold">Ativo</th>
+                  <th className="text-left py-2.5 pr-2 font-semibold text-primary">CALL</th>
+                  <th className="text-left py-2.5 pr-2 font-semibold text-destructive">PUT</th>
+                  <th className="text-right py-2.5 pr-2 font-semibold bg-muted rounded-sm">Strike</th>
+                  <th className="text-right py-2.5 pr-2 font-semibold text-warning">Custo</th>
+                  <th className="text-right py-2.5 pr-2 font-semibold">Lucro</th>
+                  <th className="text-right py-2.5 pr-2 font-semibold">Total</th>
+                  <th className="text-right py-2.5 pr-2 font-semibold">Lucro %</th>
+                  <th className="text-right py-2.5 pr-2 font-semibold text-warning">CDI Per.</th>
+                  <th className="text-center py-2.5 pr-2 font-bold text-success">% do CDI</th>
                 </tr>
               </thead>
               <tbody>
@@ -1155,24 +1157,24 @@ export default function BoxTracker() {
                   const cdiDisplay = descontarIRRendaFixa ? p.cdiPeriodoLiq : p.cdiPeriodo;
                   const isFirst = i === 0;
                   return (
-                    <tr key={`rank-${i}`} className={cn("border-b border-border/50 hover:bg-muted/50", isFirst && "bg-emerald-50/50 dark:bg-emerald-950/20")}>
-                      <td className="py-2 pr-2 text-muted-foreground font-bold">{i + 1}º</td>
-                      <td className="py-2 pr-2 font-bold text-foreground">{p.familyName}</td>
-                      <td className="py-2 pr-2 text-blue-600 dark:text-blue-300">{p.callSymbol}</td>
-                      <td className="py-2 pr-2 text-red-600 dark:text-red-300">{p.putSymbol}</td>
-                      <td className="py-2 pr-2 text-right bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 font-semibold">{formatBRL((p.strikeRtd && p.strikeRtd > 0) ? p.strikeRtd : p.strike)}</td>
-                      <td className="py-2 pr-2 text-right text-orange-600 dark:text-orange-400">{formatBRL(p.compraBox)}</td>
-                      <td className="py-2 pr-2 text-right text-emerald-600 dark:text-emerald-400">{formatBRL(lucroDisplay)}</td>
-                      <td className="py-2 pr-2 text-right text-emerald-600 dark:text-emerald-300 font-semibold">{formatBRL(lucroTotalDisplay)}</td>
-                      <td className="py-2 pr-2 text-right font-bold text-emerald-600 dark:text-emerald-300">{formatPercent(lucroPercentDisplay)}</td>
-                      <td className="py-2 pr-2 text-right text-amber-600 dark:text-amber-400">{cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}</td>
-                      <td className="py-2 pr-2 text-center">
+                    <tr key={`rank-${i}`} className={cn("border-b border-border/30 hover:bg-muted/40 transition-colors", isFirst && "bg-success/5")}>
+                      <td className="py-2.5 pr-2 text-muted-foreground font-bold">{i + 1}º</td>
+                      <td className="py-2.5 pr-2 font-bold text-foreground">{p.familyName}</td>
+                      <td className="py-2.5 pr-2 text-primary font-medium">{p.callSymbol}</td>
+                      <td className="py-2.5 pr-2 text-destructive font-medium">{p.putSymbol}</td>
+                      <td className="py-2.5 pr-2 text-right bg-muted/50 text-foreground font-semibold">{formatBRL((p.strikeRtd && p.strikeRtd > 0) ? p.strikeRtd : p.strike)}</td>
+                      <td className="py-2.5 pr-2 text-right text-warning">{formatBRL(p.compraBox)}</td>
+                      <td className="py-2.5 pr-2 text-right text-success">{formatBRL(lucroDisplay)}</td>
+                      <td className="py-2.5 pr-2 text-right text-success font-semibold">{formatBRL(lucroTotalDisplay)}</td>
+                      <td className="py-2.5 pr-2 text-right font-bold text-success">{formatPercent(lucroPercentDisplay)}</td>
+                      <td className="py-2.5 pr-2 text-right text-warning">{cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}</td>
+                      <td className="py-2.5 pr-2 text-center">
                         {(() => {
                           const pctCdi = cdiDisplay && cdiDisplay > 0 ? ((lucroPercentDisplay ?? 0) / cdiDisplay) * 100 : null;
                           if (pctCdi === null) return "—";
                           const isAbove = pctCdi >= 100;
                           return (
-                            <span className={cn("font-black text-sm", isAbove ? "text-emerald-500 dark:text-emerald-300" : "text-red-500")}>
+                            <span className={cn("font-extrabold text-sm", isAbove ? "text-success" : "text-destructive")}>
                               {pctCdi.toFixed(0)}%
                             </span>
                           );
@@ -1188,15 +1190,15 @@ export default function BoxTracker() {
       )}
 
       {/* CONTROLES: Quantidade e Adicionar Família */}
-      <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-5 items-stretch sm:items-end">
-        <div className="flex flex-col gap-1">
-          <label className="text-[10px] text-orange-600 dark:text-orange-400/70 uppercase tracking-wider font-bold">Quantidade</label>
+      <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-6 items-stretch sm:items-end">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Quantidade</label>
           <input
             type="number"
             value={quantidade}
             onChange={(e) => setQuantidade(Math.max(1, parseInt(e.target.value) || 1))}
             min={1}
-            className="w-full sm:w-24 bg-card border border-border rounded-lg px-3 py-2 text-sm text-center font-bold text-orange-600 dark:text-orange-300 focus:outline-none focus:border-primary transition-colors"
+            className="w-full sm:w-24 bg-card border border-border rounded-xl px-3 py-2.5 text-sm text-center font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
           />
         </div>
         <div className="flex gap-2 flex-1">
@@ -1206,11 +1208,11 @@ export default function BoxTracker() {
             onChange={(e) => setNewFamilyName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addFamily()}
             placeholder="Ticker do ativo (ex: PETR4, BBDC4...)"
-            className="flex-1 bg-card border border-border rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-primary transition-colors placeholder-muted-foreground"
+            className="flex-1 bg-card border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all placeholder-muted-foreground"
           />
           <button
             onClick={addFamily}
-            className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-400 text-white rounded-lg text-sm font-bold transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full text-sm font-bold transition-all shadow-md hover:shadow-lg active:scale-[0.97]"
           >
             <Plus className="w-4 h-4" />
             Adicionar
