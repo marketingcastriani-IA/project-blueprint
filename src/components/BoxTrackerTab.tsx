@@ -656,7 +656,7 @@ export default function BoxTracker() {
       )}
 
       {/* IR TOGGLES + CDI ANUAL EDITÁVEL */}
-      <div className="mb-5 flex flex-col sm:flex-row gap-3 flex-wrap">
+      <div className="mb-5 flex flex-col gap-3">
         {/* CDI Anual Editável */}
         <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-amber-300 dark:border-amber-500/50 bg-amber-50 dark:bg-amber-950/30">
           <span className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider whitespace-nowrap">📊 CDI Anual:</span>
@@ -715,11 +715,12 @@ export default function BoxTracker() {
           )}
         </div>
 
-        {/* IR Ações */}
+        {/* IR Toggles row */}
+        <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setDescontarIRAcoes(!descontarIRAcoes)}
           className={cn(
-            "flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-bold transition-all",
+            "flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border text-[11px] sm:text-xs font-bold transition-all flex-1 sm:flex-auto min-w-0",
             descontarIRAcoes
               ? "bg-emerald-100 dark:bg-emerald-950/40 border-emerald-500/60 text-emerald-700 dark:text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.3)] animate-pulse"
               : "bg-red-50 dark:bg-red-950/20 border-red-400/40 text-red-600 dark:text-red-400"
@@ -739,7 +740,7 @@ export default function BoxTracker() {
         <button
           onClick={() => setDescontarIRRendaFixa(!descontarIRRendaFixa)}
           className={cn(
-            "flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-bold transition-all",
+            "flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border text-[11px] sm:text-xs font-bold transition-all flex-1 sm:flex-auto min-w-0",
             descontarIRRendaFixa
               ? "bg-emerald-100 dark:bg-emerald-950/40 border-emerald-500/60 text-emerald-700 dark:text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.3)] animate-pulse"
               : "bg-red-50 dark:bg-red-950/20 border-red-400/40 text-red-600 dark:text-red-400"
@@ -754,13 +755,14 @@ export default function BoxTracker() {
             {descontarIRRendaFixa ? "ON" : "OFF"}
           </span>
         </button>
+        </div>
 
         {/* 🔔 Alerta Push — DESTAQUE */}
-        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <button
             onClick={toggleNotifications}
             className={cn(
-              "flex items-center gap-2.5 px-5 py-3 rounded-xl border-2 text-sm font-black transition-all relative overflow-hidden",
+              "flex items-center gap-2.5 px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl border-2 text-xs sm:text-sm font-black transition-all relative overflow-hidden w-full sm:w-auto",
               notifEnabled
                 ? "bg-emerald-500/20 border-emerald-400 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)]"
                 : "bg-red-500/10 border-red-400/50 text-red-400 hover:border-red-400 hover:bg-red-500/20"
@@ -881,7 +883,7 @@ export default function BoxTracker() {
             </div>
             <div className="max-h-48 overflow-y-auto space-y-1.5">
               {alertHistory.map((a) => (
-                <div key={a.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-muted/30 border border-border/50 text-xs">
+                <div key={a.id} className="flex flex-wrap items-center justify-between gap-1.5 px-3 py-2 rounded-lg bg-muted/30 border border-border/50 text-xs">
                   <span className="text-muted-foreground font-mono">{a.time}</span>
                   <span className="font-bold text-foreground">{a.familyName}</span>
                   <span className="font-mono">R$ {a.strike.toFixed(2)}</span>
@@ -1058,7 +1060,7 @@ export default function BoxTracker() {
                   </span>
                 </div>
 
-                <div className="mt-3 grid grid-cols-3 md:grid-cols-6 gap-2">
+                <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
                   <div>
                     <p className="text-[9px] text-muted-foreground uppercase">Custo</p>
                     <p className="text-sm font-bold text-orange-600 dark:text-orange-400">{formatBRL(pair.compraBox)}</p>
@@ -1320,7 +1322,7 @@ function FamilyCard({
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-muted/50 border-b border-border">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 sm:px-4 py-3 bg-muted/50 border-b border-border">
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={() => onToggleExpand(family.id)}
@@ -1352,7 +1354,7 @@ function FamilyCard({
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <input
             ref={fileRef}
             type="file"
