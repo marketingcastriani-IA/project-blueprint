@@ -6,6 +6,9 @@
 // ============================================================
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import trophyGold from "@/assets/trophy-gold.png";
+import trophySilver from "@/assets/trophy-silver.png";
+import trophyBronze from "@/assets/trophy-bronze.png";
 import { format } from "date-fns";
 import {
   Plus,
@@ -1023,98 +1026,170 @@ export default function BoxTracker() {
             const lucroTotalDisplay = descontarIRAcoes ? pair.lucroLiqAcoesTotal : pair.lucroTotal;
             const lucroPercentDisplay = descontarIRAcoes ? pair.lucroLiqAcoesPercent : pair.lucroPercent;
             const cdiDisplay = descontarIRRendaFixa ? pair.cdiPeriodoLiq : pair.cdiPeriodo;
+            const trophyImg = i === 0 ? trophyGold : i === 1 ? trophySilver : trophyBronze;
+            const pctCdi = cdiDisplay && cdiDisplay > 0 ? ((lucroPercentDisplay ?? 0) / cdiDisplay) * 100 : null;
+            const isAboveCdi = pctCdi !== null && pctCdi >= 100;
+
+            // Capital needed for assembly
+            const capitalAcao = pair.stockAsk !== null ? pair.stockAsk * quantidade : null;
+            const capitalPut = pair.putAsk !== null ? pair.putAsk * quantidade * 100 : null;
+            const creditoCall = pair.callBid !== null ? pair.callBid * quantidade * 100 : null;
+            const capitalTotal = capitalAcao !== null && capitalPut !== null && creditoCall !== null
+              ? capitalAcao + capitalPut - creditoCall
+              : null;
 
             return (
               <div
                 key={`top-${i}`}
                 className={cn(
-                  "relative overflow-hidden rounded-2xl border p-5 transition-all duration-300",
+                  "relative overflow-hidden rounded-2xl border transition-all duration-300",
                   isWinner
-                    ? "bg-card border-success/40 shadow-[0_0_30px_hsl(var(--success)/0.15)] ring-1 ring-success/20 hover:shadow-[0_0_40px_hsl(var(--success)/0.2)]"
+                    ? "bg-card border-success/40 shadow-[0_0_30px_hsl(var(--success)/0.15)] ring-1 ring-success/20"
                     : "bg-card border-border hover:border-muted-foreground/30 hover:shadow-md"
                 )}
               >
-                {isWinner && (
-                  <span className="absolute top-3 right-3 flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success" />
-                  </span>
-                )}
-                <div className="flex items-center gap-2.5 mb-3">
-                  <span className={cn(
-                    "p-1.5 rounded-lg",
-                    isWinner ? "bg-success/10" : "bg-muted"
-                  )}>
-                    <Trophy className={cn("w-4 h-4", 
-                      isWinner ? "text-success" : "text-muted-foreground"
-                    )} />
-                  </span>
-                  <span className="text-xs text-muted-foreground uppercase tracking-widest font-bold">
-                    {i === 0 ? "Melhor Box" : i === 1 ? "2º Melhor" : "3º Melhor"}
-                  </span>
-                </div>
-
-                <div className="flex flex-wrap items-baseline gap-2 mb-1.5">
-                  <span className="text-xl font-extrabold text-foreground tracking-tight">{pair.familyName}</span>
-                  <span className="text-xs text-muted-foreground font-medium">Strike {formatBRL((pair.strikeRtd && pair.strikeRtd > 0) ? pair.strikeRtd : pair.strike)}</span>
-                  {pair.vencimento && (
-                    <span className="text-xs text-warning font-medium ml-1">· {pair.vencimento}</span>
+                {/* Header with trophy */}
+                <div className={cn(
+                  "flex items-center gap-3 px-5 py-3",
+                  isWinner ? "bg-success/5" : "bg-muted/30"
+                )}>
+                  <img
+                    src={trophyImg}
+                    alt={i === 0 ? "1º lugar" : i === 1 ? "2º lugar" : "3º lugar"}
+                    className="w-10 h-10 object-contain drop-shadow-lg"
+                    loading="lazy"
+                    width={512}
+                    height={512}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold block">
+                      {i === 0 ? "Melhor Box" : i === 1 ? "2º Melhor" : "3º Melhor"}
+                    </span>
+                    <span className="text-xl font-extrabold text-foreground tracking-tight">{pair.familyName}</span>
+                  </div>
+                  {isWinner && (
+                    <span className="flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-success opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success" />
+                    </span>
                   )}
+                  {/* % CDI big display */}
+                  <div className="text-right shrink-0">
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-wider block">% CDI</span>
+                    {pctCdi !== null ? (
+                      <>
+                        <span className={cn("text-3xl font-extrabold tracking-tighter", isAboveCdi ? "text-success" : "text-destructive")}>
+                          {pctCdi.toFixed(0)}%
+                        </span>
+                        <span className={cn("text-[9px] font-semibold block", isAboveCdi ? "text-success" : "text-destructive")}>
+                          {isAboveCdi ? `▲ ${(pctCdi - 100).toFixed(0)}% acima` : `▼ ${(100 - pctCdi).toFixed(0)}% abaixo`}
+                        </span>
+                      </>
+                    ) : <span className="text-lg text-muted-foreground">—</span>}
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-4 text-sm mb-4">
-                  <span className="text-muted-foreground font-medium">
-                    Call: <span className="text-primary font-bold">{pair.callSymbol ?? "—"}</span>
-                  </span>
-                  <span className="text-muted-foreground font-medium">
-                    Put: <span className="text-destructive font-bold">{pair.putSymbol ?? "—"}</span>
-                  </span>
-                </div>
+                <div className="px-5 py-4 space-y-4">
+                  {/* Strike + Vencimento */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="px-3 py-1 rounded-lg bg-muted text-sm font-bold text-foreground">
+                      Strike {formatBRL((pair.strikeRtd && pair.strikeRtd > 0) ? pair.strikeRtd : pair.strike)}
+                    </span>
+                    {pair.vencimento && (
+                      <span className="px-3 py-1 rounded-lg bg-warning/10 text-sm font-medium text-warning">
+                        📅 {pair.vencimento}
+                      </span>
+                    )}
+                    {pair.diasUteis !== null && (
+                      <span className="text-xs text-muted-foreground">
+                        {pair.diasUteis} dias úteis
+                      </span>
+                    )}
+                  </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 pt-3 border-t border-border/50">
-                  <div>
-                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Custo</p>
-                    <p className="text-sm font-bold text-warning">{formatBRL(pair.compraBox)}</p>
+                  {/* 🔧 COMO MONTAR — 3 pontas */}
+                  <div className="rounded-xl border border-border bg-muted/20 p-3.5">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-2.5 flex items-center gap-1.5">
+                      🔧 Como montar este Box
+                    </p>
+                    <div className="space-y-2">
+                      {/* Ponta 1: Comprar Ação */}
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[10px] font-bold">1</span>
+                          <span className="font-medium text-foreground">Comprar <span className="font-bold">{pair.familyName}</span></span>
+                        </div>
+                        <div className="text-right font-mono">
+                          <span className="font-bold text-foreground">{pair.stockAsk !== null ? formatBRL(pair.stockAsk) : "—"}</span>
+                          {capitalAcao !== null && (
+                            <span className="text-[10px] text-muted-foreground block">
+                              {quantidade}x = {formatBRL(capitalAcao)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {/* Ponta 2: Vender CALL */}
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[10px] font-bold">2</span>
+                          <span className="font-medium text-foreground">Vender <span className="font-bold text-primary">{pair.callSymbol ?? "—"}</span></span>
+                        </div>
+                        <div className="text-right font-mono">
+                          <span className="font-bold text-success">{pair.callBid !== null ? formatBRL(pair.callBid) : "—"}</span>
+                          {creditoCall !== null && (
+                            <span className="text-[10px] text-success block">
+                              +{formatBRL(creditoCall)} crédito
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {/* Ponta 3: Comprar PUT */}
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-full bg-destructive/15 text-destructive flex items-center justify-center text-[10px] font-bold">3</span>
+                          <span className="font-medium text-foreground">Comprar <span className="font-bold text-destructive">{pair.putSymbol ?? "—"}</span></span>
+                        </div>
+                        <div className="text-right font-mono">
+                          <span className="font-bold text-foreground">{pair.putAsk !== null ? formatBRL(pair.putAsk) : "—"}</span>
+                          {capitalPut !== null && (
+                            <span className="text-[10px] text-muted-foreground block">
+                              {quantidade}x = {formatBRL(capitalPut)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {/* Total */}
+                      <div className="flex items-center justify-between text-sm pt-2 border-t border-border/50">
+                        <span className="font-bold text-muted-foreground uppercase text-[10px] tracking-wider">Capital necessário</span>
+                        <span className="font-extrabold text-foreground text-base font-mono">
+                          {capitalTotal !== null ? formatBRL(capitalTotal) : "—"}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Lucro (1){descontarIRAcoes ? " líq" : ""}</p>
-                    <p className="text-sm font-bold text-success">{formatBRL(lucroDisplay)}</p>
-                  </div>
-                  <div>
-                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Total ({quantidade}x)</p>
-                    <p className="text-sm font-bold text-success">{formatBRL(lucroTotalDisplay)}</p>
-                  </div>
-                  <div>
-                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">CDI Per.{descontarIRRendaFixa ? " líq" : ""}</p>
-                    <p className="text-sm font-bold text-warning">{cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Retorno{descontarIRAcoes ? " líq" : ""}</p>
-                    <p className="text-sm font-bold text-success">{formatPercent(lucroPercentDisplay)}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">% do CDI</p>
-                    {(() => {
-                      const pctCdi = cdiDisplay && cdiDisplay > 0 ? ((lucroPercentDisplay ?? 0) / cdiDisplay) * 100 : null;
-                      if (pctCdi === null) return <p className="text-sm text-muted-foreground">—</p>;
-                      const isAbove = pctCdi >= 100;
-                      return (
-                        <>
-                          <p className={cn(
-                            "text-2xl font-extrabold tracking-tight",
-                            isAbove ? "text-success" : "text-destructive"
-                          )}>
-                            {pctCdi.toFixed(0).replace(".", ",")}%
-                          </p>
-                          <span className={cn(
-                            "text-[9px] font-semibold",
-                            isAbove ? "text-success" : "text-destructive"
-                          )}>
-                            {isAbove ? `▲ ${(pctCdi - 100).toFixed(0)}% acima` : `▼ ${(100 - pctCdi).toFixed(0)}% abaixo`} do CDI
-                          </span>
-                        </>
-                      );
-                    })()}
+
+                  {/* Métricas Grid */}
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 pt-3 border-t border-border/30">
+                    <div>
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Custo Box</p>
+                      <p className="text-sm font-bold text-warning">{formatBRL(pair.compraBox)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Lucro (1){descontarIRAcoes ? " líq" : ""}</p>
+                      <p className="text-sm font-bold text-success">{formatBRL(lucroDisplay)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Total ({quantidade}x)</p>
+                      <p className="text-sm font-bold text-success">{formatBRL(lucroTotalDisplay)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">CDI Per.{descontarIRRendaFixa ? " líq" : ""}</p>
+                      <p className="text-sm font-bold text-warning">{cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Retorno{descontarIRAcoes ? " líq" : ""}</p>
+                      <p className="text-sm font-bold text-success">{formatPercent(lucroPercentDisplay)}</p>
+                    </div>
                   </div>
                 </div>
               </div>
