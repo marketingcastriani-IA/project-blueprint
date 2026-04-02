@@ -23,7 +23,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2, Info, AlertTriangle, Calendar, Percent, Trash2, CheckCircle2, Download, Calculator, ArrowRight } from 'lucide-react';
+import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2, Info, AlertTriangle, Calendar, Percent, Trash2, CheckCircle2, Download, Calculator, ArrowRight, Zap } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, SectionDivider, ProfessionalLayout } from '@/components/ProfessionalLayout';
@@ -395,6 +395,49 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background pb-16">
       <Header />
+      
+      {/* Banner fixo para usuários free */}
+      {access.planType === 'free' && access.daysRemaining !== null && (
+        <div className={cn(
+          "sticky top-14 z-40 border-b",
+          isLimitReached 
+            ? "bg-destructive text-destructive-foreground" 
+            : access.daysRemaining <= 2
+              ? "bg-gradient-to-r from-destructive to-destructive/80 text-destructive-foreground"
+              : "bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-500 text-black"
+        )}>
+          <div className="container flex items-center justify-between gap-3 px-4 py-2.5">
+            <div className="flex items-center gap-2 min-w-0">
+              {isLimitReached ? (
+                <Lock className="h-4 w-4 shrink-0" />
+              ) : (
+                <AlertTriangle className="h-4 w-4 shrink-0 animate-pulse" />
+              )}
+              <p className="text-xs sm:text-sm font-black uppercase tracking-wide truncate">
+                {isLimitReached 
+                  ? "Seu trial expirou — assine PRO para continuar"
+                  : access.daysRemaining <= 2
+                    ? `⚠️ Último${access.daysRemaining !== 1 ? 's' : ''} ${access.daysRemaining} dia${access.daysRemaining !== 1 ? 's' : ''} de trial! Não perca seu acesso`
+                    : `🕐 ${access.daysRemaining} dias restantes no seu trial gratuito`}
+              </p>
+            </div>
+            <Button 
+              onClick={() => navigate('/settings')} 
+              size="sm"
+              className={cn(
+                "shrink-0 font-black uppercase tracking-widest text-[10px] sm:text-xs",
+                isLimitReached || access.daysRemaining <= 2
+                  ? "bg-white text-destructive hover:bg-white/90 shadow-lg animate-pulse"
+                  : "bg-black text-yellow-400 hover:bg-black/80 shadow-lg"
+              )}
+            >
+              <Zap className="h-3 w-3 mr-1 fill-current" />
+              ASSINAR PRO — R$ 14,90
+            </Button>
+          </div>
+        </div>
+      )}
+
       <main className="container px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 animate-fade-in">
         <PortfolioSummary userId={user.id} />
 
@@ -426,37 +469,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {access.planType === 'free' && access.daysRemaining !== null && (
-          <Card className={cn("border-2 transition-all", isLimitReached ? "border-destructive bg-destructive/5" : "border-primary/30 bg-primary/5")}>
-            <CardContent className="py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className={cn("p-2 rounded-lg", isLimitReached ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary")}>
-                  {isLimitReached ? <Lock className="h-5 w-5" /> : <Calendar className="h-5 w-5" />}
-                </div>
-                <div>
-                  <p className="text-sm font-black uppercase tracking-tight">
-                    {isLimitReached ? "Período de Teste Expirado" : "Período de Teste Gratuito"}
-                  </p>
-                  <p className="text-xs text-muted-foreground font-medium">
-                    {isLimitReached 
-                      ? "Seus 7 dias gratuitos acabaram. Assine o PRO para continuar!" 
-                      : `Restam ${access.daysRemaining} dia${access.daysRemaining !== 1 ? 's' : ''} do seu teste gratuito de 7 dias.`}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                {!isLimitReached && (
-                  <Badge variant="outline" className="border-primary/30 text-primary font-black text-lg px-4 py-1">
-                    {access.daysRemaining} dia{access.daysRemaining !== 1 ? 's' : ''}
-                  </Badge>
-                )}
-                <Button onClick={() => navigate('/settings')} variant={isLimitReached ? "default" : "outline"} className={cn("font-bold", isLimitReached && "animate-pulse shadow-lg shadow-primary/30")}>
-                  <Crown className="mr-2 h-4 w-4" /> {isLimitReached ? "ASSINAR PRO" : "Ver PRO"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <ProfessionalHeader
