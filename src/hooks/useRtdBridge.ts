@@ -307,7 +307,7 @@ export function useRtdBridge() {
               next.set(ticker, {
                 ticker,
                 ultimo: numberField(lookup, PROFIT_FIELD_ALIASES.ultimo, existing?.ultimo),
-                strike: numberField(lookup, PROFIT_FIELD_ALIASES.strike, existing?.strike),
+                strike: numberField(lookup, PROFIT_FIELD_ALIASES.strike, existing?.strike, true),
                 negocios: numberField(lookup, PROFIT_FIELD_ALIASES.negocios, existing?.negocios),
                 ofCompra: numberField(lookup, PROFIT_FIELD_ALIASES.ofCompra, existing?.ofCompra, true),
                 ofVenda: numberField(lookup, PROFIT_FIELD_ALIASES.ofVenda, existing?.ofVenda, true),
