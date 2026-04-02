@@ -147,16 +147,39 @@ export default function Settings() {
             </div>
 
             {access.planType === 'free' && (
-              <div className="p-6 rounded-2xl bg-primary/5 border border-primary/20 space-y-4">
+              <div className="p-6 rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 to-primary/5 space-y-5 shadow-[0_0_40px_-10px_hsl(var(--primary)/0.3)]">
                 <div className="flex items-center gap-3">
-                  <Sparkles className="h-6 w-6 text-primary" />
-                  <h3 className="text-lg font-black">Upgrade para PRO</h3>
+                  <Crown className="h-8 w-8 text-primary animate-pulse" />
+                  <div>
+                    <h3 className="text-xl font-black text-foreground">Assine a versão PRO</h3>
+                    <p className="text-primary font-black text-2xl">
+                      R$ {proPrice.toFixed(2).replace('.', ',')}<span className="text-sm font-medium text-muted-foreground">/mês</span>
+                    </p>
+                  </div>
                 </div>
-                <p className="text-sm text-muted-foreground font-medium">
-                  Libere o poder total da plataforma e opere como um profissional por apenas <strong>R$ {proPrice.toFixed(2)}/mês</strong>.
-                </p>
-                <Button onClick={() => setShowUpgradeModal(true)} className="w-full h-12 font-black shadow-lg shadow-primary/30">
-                  <Zap className="mr-2 h-5 w-5" /> VER BENEFÍCIOS E ASSINAR
+                {access.daysRemaining !== null && access.daysRemaining > 0 && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-warning/10 border border-warning/30">
+                    <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
+                    <span className="text-sm font-bold text-warning">
+                      Seu trial expira em {access.daysRemaining} dia{access.daysRemaining !== 1 ? 's' : ''}! Assine para não perder acesso.
+                    </span>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {proFeatures.map((f, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                      <span className="text-sm font-bold text-foreground">{f.title}</span>
+                    </div>
+                  ))}
+                </div>
+                <Button 
+                  onClick={handleUpgrade} 
+                  disabled={upgrading}
+                  className="w-full h-14 text-lg font-black shadow-lg shadow-primary/30 rounded-xl animate-pulse hover:animate-none"
+                >
+                  {upgrading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <Crown className="mr-2 h-6 w-6" />}
+                  ASSINAR PRO AGORA
                 </Button>
               </div>
             )}
