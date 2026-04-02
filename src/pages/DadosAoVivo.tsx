@@ -579,7 +579,7 @@ export default function DadosAoVivo() {
                             </Select>
                           </TableCell>
                           <TableCell className="text-right font-mono font-semibold">{fmt(row.ultimo)}</TableCell>
-                          <TableCell className="text-right font-mono">{fmt(row.strike)}</TableCell>
+                          <TableCell className="text-right font-mono">{fmt(getStrike(row))}</TableCell>
                           <TableCell className="text-right font-mono">{fmt(row.negocios, 0)}</TableCell>
                           <TableCell className="text-right font-mono">{fmt(row.ofCompra)}</TableCell>
                           <TableCell className="text-right font-mono">{fmt(row.ofVenda)}</TableCell>
