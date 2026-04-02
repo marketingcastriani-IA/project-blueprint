@@ -469,37 +469,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {access.planType === 'free' && access.daysRemaining !== null && (
-          <Card className={cn("border-2 transition-all", isLimitReached ? "border-destructive bg-destructive/5" : "border-primary/30 bg-primary/5")}>
-            <CardContent className="py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className={cn("p-2 rounded-lg", isLimitReached ? "bg-destructive/10 text-destructive" : "bg-primary/10 text-primary")}>
-                  {isLimitReached ? <Lock className="h-5 w-5" /> : <Calendar className="h-5 w-5" />}
-                </div>
-                <div>
-                  <p className="text-sm font-black uppercase tracking-tight">
-                    {isLimitReached ? "Período de Teste Expirado" : "Período de Teste Gratuito"}
-                  </p>
-                  <p className="text-xs text-muted-foreground font-medium">
-                    {isLimitReached 
-                      ? "Seus 7 dias gratuitos acabaram. Assine o PRO para continuar!" 
-                      : `Restam ${access.daysRemaining} dia${access.daysRemaining !== 1 ? 's' : ''} do seu teste gratuito de 7 dias.`}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                {!isLimitReached && (
-                  <Badge variant="outline" className="border-primary/30 text-primary font-black text-lg px-4 py-1">
-                    {access.daysRemaining} dia{access.daysRemaining !== 1 ? 's' : ''}
-                  </Badge>
-                )}
-                <Button onClick={() => navigate('/settings')} variant={isLimitReached ? "default" : "outline"} className={cn("font-bold", isLimitReached && "animate-pulse shadow-lg shadow-primary/30")}>
-                  <Crown className="mr-2 h-4 w-4" /> {isLimitReached ? "ASSINAR PRO" : "Ver PRO"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <ProfessionalHeader
