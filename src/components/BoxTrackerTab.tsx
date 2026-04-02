@@ -755,9 +755,10 @@ export default function BoxTracker() {
             {descontarIRRendaFixa ? "ON" : "OFF"}
           </span>
         </button>
+        </div>
 
         {/* 🔔 Alerta Push — DESTAQUE */}
-        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <button
             onClick={toggleNotifications}
             className={cn(
