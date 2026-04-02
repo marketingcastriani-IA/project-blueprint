@@ -195,6 +195,43 @@ export default function Settings() {
           </DialogContent>
         </Dialog>
 
+        {/* Payment Success Celebration */}
+        <Dialog open={showPaymentSuccess} onOpenChange={setShowPaymentSuccess}>
+          <DialogContent className="sm:max-w-[450px] text-center border-2 border-primary/30">
+            <div className="flex flex-col items-center py-6 space-y-5">
+              <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
+                <Crown className="h-10 w-10 text-primary" />
+              </div>
+              <DialogHeader className="text-center">
+                <DialogTitle className="text-2xl font-black tracking-tight">🎉 Pagamento Aprovado!</DialogTitle>
+                <DialogDescription className="text-base mt-2">
+                  Seu plano <strong className="text-primary">PRO</strong> será ativado em instantes. Aproveite todas as funcionalidades!
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3 w-full px-4">
+                <div className="flex items-center gap-3 text-sm">
+                  <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                  <span className="font-bold text-foreground">Simulações ilimitadas com IA</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                  <span className="font-bold text-foreground">Rastreadores ao vivo (Box & Collar)</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
+                  <span className="font-bold text-foreground">Tempo Real com Profit RTD</span>
+                </div>
+              </div>
+              <Button 
+                className="w-full h-12 font-black shadow-lg shadow-primary/30"
+                onClick={() => { setShowPaymentSuccess(false); navigate('/dashboard'); }}
+              >
+                IR PARA O DASHBOARD <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Seção de Suporte e Contato */}
         <Card className="border-2 border-info/30 bg-info/5">
           <CardHeader>
