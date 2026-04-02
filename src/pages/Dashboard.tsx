@@ -26,7 +26,8 @@ import { toast } from 'sonner';
 import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2, Info, AlertTriangle, Calendar, Percent, Trash2, CheckCircle2, Download, Calculator, ArrowRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
-import { ProfessionalHeader, SectionDivider } from '@/components/ProfessionalLayout';
+import { ProfessionalHeader, SectionDivider, ProfessionalLayout } from '@/components/ProfessionalLayout';
+import DashboardSkeleton from '@/components/skeletons/DashboardSkeleton';
 import AIInsights from '@/components/AIInsights';
 import { generateAnalysisPdf } from '@/lib/pdf-generator';
 
@@ -297,7 +298,14 @@ export default function Dashboard() {
     setInputMode('manual');
   }, [isLimitReached, user]);
 
-  if (authLoading || access.status === 'loading') return null;
+  if (authLoading || access.status === 'loading') return (
+    <ProfessionalLayout>
+      <Header />
+      <main className="container py-6">
+        <DashboardSkeleton />
+      </main>
+    </ProfessionalLayout>
+  );
   if (!user) return <Navigate to="/auth" replace />;
 
   if (access.status === 'pending' || access.status === 'rejected' || access.status === 'expired') {
