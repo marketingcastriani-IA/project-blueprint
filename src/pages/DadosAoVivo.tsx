@@ -238,7 +238,7 @@ export default function DadosAoVivo() {
         side: r.lado,
         option_type: r.tipo,
         asset: r.ticker,
-        strike: r.tipo === 'stock' ? 0 : (r.strike ?? 0),
+        strike: r.tipo === 'stock' ? 0 : (getStrike(r) ?? 0),
         price: r.precoEntrada ?? r.ultimo ?? r.ofCompra ?? r.ofVenda ?? 0,
         quantity: r.quantidade,
         expiry_date: r.expiryDate,
