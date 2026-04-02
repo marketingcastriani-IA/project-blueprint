@@ -67,6 +67,11 @@ export default function AccessBlocked({ status }: AccessBlockedProps) {
     { icon: History, label: 'Histórico completo' },
     { icon: Briefcase, label: 'Portfólio de operações' },
     { icon: Zap, label: 'Simulações ilimitadas' },
+    { icon: Crown, label: 'Rastreadores Box & Collar ao vivo' },
+    { icon: Crown, label: 'Tempo Real com Profit RTD' },
+    { icon: Crown, label: 'Calculadora CDI x Opções' },
+    { icon: Crown, label: 'Diversificador de carteira' },
+    { icon: Crown, label: 'Suporte prioritário' },
   ];
 
   return (
