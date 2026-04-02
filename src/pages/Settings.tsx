@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Lock, Mail, LogOut, Shield, CheckCircle2, Crown, CreditCard, Sparkles, Zap, Camera, Bot, History, Briefcase, MessageSquare, ExternalLink, Radio, ArrowRight } from 'lucide-react';
+import { Loader2, Lock, Mail, LogOut, Shield, CheckCircle2, Crown, CreditCard, Sparkles, Zap, Camera, Bot, History, Briefcase, MessageSquare, ExternalLink, Radio, ArrowRight, AlertTriangle } from 'lucide-react';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import { useProPrice } from '@/hooks/useProPrice';
 
