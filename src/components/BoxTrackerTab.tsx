@@ -762,7 +762,7 @@ export default function BoxTracker() {
           <button
             onClick={toggleNotifications}
             className={cn(
-              "flex items-center gap-2.5 px-5 py-3 rounded-xl border-2 text-sm font-black transition-all relative overflow-hidden",
+              "flex items-center gap-2.5 px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl border-2 text-xs sm:text-sm font-black transition-all relative overflow-hidden w-full sm:w-auto",
               notifEnabled
                 ? "bg-emerald-500/20 border-emerald-400 text-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)]"
                 : "bg-red-500/10 border-red-400/50 text-red-400 hover:border-red-400 hover:bg-red-500/20"
