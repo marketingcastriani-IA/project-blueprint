@@ -32,6 +32,9 @@ function calcDiasCorridos(start: Date, end: Date): number {
 }
 
 export default function CalculadoraRendaFixa() {
+  const navigate = useNavigate();
+  const accessControl = useAccessControl();
+  const isPro = accessControl.planType === 'pro' || accessControl.isAdmin || (!accessControl.trialExpired && accessControl.status === 'approved');
   const [capital, setCapital] = useState<string>('100000');
   const [cdiAnual, setCdiAnual] = useState<string>('14.15');
   const [percentCdi, setPercentCdi] = useState<string>('100');
