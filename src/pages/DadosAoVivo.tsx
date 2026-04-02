@@ -673,8 +673,8 @@ export default function DadosAoVivo() {
                     className="rounded-2xl overflow-hidden border-2 border-primary/50 bg-card transition-all duration-300 hover:-translate-y-2 shadow-[0_8px_30px_-4px_hsl(var(--primary)/0.15),0_2px_8px_-2px_hsl(var(--primary)/0.1)] hover:shadow-[0_20px_50px_-8px_hsl(var(--primary)/0.25),0_4px_12px_-4px_hsl(var(--primary)/0.15)] hover:border-primary/70"
                     style={{ transform: 'perspective(800px) rotateX(1deg)', transformStyle: 'preserve-3d' }}
                   >
-                    {/* ── Dark header strip ── */}
-                    <div className="bg-gradient-to-r from-[hsl(222,47%,11%)] to-[hsl(222,47%,18%)] dark:from-[hsl(222,47%,6%)] dark:to-[hsl(222,47%,12%)] px-4 py-3">
+                    {/* ── Header strip ── */}
+                    <div className="bg-gradient-to-r from-muted to-muted/80 px-4 py-3">
                       <div className="flex items-center justify-between gap-2">
                         {editingNameId === op.id ? (
                           <div className="flex items-center gap-1 flex-1">
@@ -682,21 +682,21 @@ export default function DadosAoVivo() {
                               value={editNameValue}
                               onChange={(e) => setEditNameValue(e.target.value)}
                               onKeyDown={(e) => e.key === 'Enter' && handleRename(op.id)}
-                              className="h-7 text-xs flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                              className="h-7 text-xs flex-1 bg-background/50 border-border text-foreground placeholder:text-muted-foreground"
                               autoFocus
                             />
-                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-white hover:bg-white/10"
+                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-foreground hover:bg-background/30"
                               onClick={() => handleRename(op.id)}>OK</Button>
-                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-white/60 hover:bg-white/10"
+                            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-muted-foreground hover:bg-background/30"
                               onClick={() => setEditingNameId(null)}>✕</Button>
                           </div>
                         ) : (
                           <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                            <span className="font-extrabold text-base text-white truncate tracking-tight">{op.name}</span>
+                            <span className="font-extrabold text-base text-foreground truncate tracking-tight">{op.name}</span>
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="h-5 w-5 shrink-0 text-white/50 hover:text-white hover:bg-white/10"
+                              className="h-5 w-5 shrink-0 text-muted-foreground hover:text-foreground hover:bg-background/30"
                               onClick={() => { setEditingNameId(op.id); setEditNameValue(op.name); }}
                             >
                               <Edit className="w-3 h-3" />
@@ -705,20 +705,20 @@ export default function DadosAoVivo() {
                         )}
                         {/* Invested value in header */}
                         <div className="text-right shrink-0">
-                          <span className="text-[10px] text-white/40 block">Investido</span>
-                          <span className="text-white font-bold text-sm font-mono">
+                          <span className="text-[10px] text-muted-foreground block">Investido</span>
+                          <span className="text-foreground font-bold text-sm font-mono">
                             R$<span className="text-lg">{Math.abs(op.investido).toFixed(2)}</span>
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center justify-between mt-1">
-                        <span className="text-[10px] text-white/40 uppercase tracking-wider">
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
                           {op.underlying_asset || op.legs?.[0]?.asset || '—'}
                         </span>
                         {op.temDadoVivo && (
                           <span className={cn(
                             "flex items-center gap-1 text-xs font-bold",
-                            isProfit ? "text-[hsl(160,84%,50%)]" : isLoss ? "text-[hsl(0,84%,65%)]" : "text-white/60"
+                            isProfit ? "text-success" : isLoss ? "text-destructive" : "text-muted-foreground"
                           )}>
                             {isProfit ? <TrendingUp className="w-3 h-3" /> : isLoss ? <TrendingDown className="w-3 h-3" /> : null}
                             {isProfit ? '+' : ''}{op.pctLucro.toFixed(2)}%

@@ -102,6 +102,23 @@ serve(async (req) => {
     if (isApproved && userId) {
       console.log(`[mercado-pago-webhook] Liberando acesso PRO para: ${userId}`)
 
+      // Idempotency check: skip if purchased_at was updated < 5 min ago
+      const { data: existing } = await supabaseAdmin
+        .from('user_access')
+        .select('purchased_at')
+        .eq('user_id', userId)
+        .maybeSingle()
+
+      if (existing?.purchased_at) {
+        const lastPurchase = new Date(existing.purchased_at).getTime()
+        if (Date.now() - lastPurchase < 5 * 60 * 1000) {
+          console.log(`[mercado-pago-webhook] ⚠️ Pagamento duplicado ignorado para ${userId} (purchased_at < 5min)`)
+          return new Response(JSON.stringify({ received: true, skipped: 'duplicate' }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          })
+        }
+      }
+
       // 1. Atualizar acesso no banco (upsert para garantir que funcione mesmo sem registro prévio)
       const now = new Date();
       const expiresAt = new Date(now.getTime() + 31 * 24 * 60 * 60 * 1000);

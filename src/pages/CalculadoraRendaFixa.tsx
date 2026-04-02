@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import { ProfessionalLayout, ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
 import { Input } from '@/components/ui/input';
@@ -6,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Calculator, TrendingUp, Percent, Calendar, DollarSign, Scale, ArrowRight, Info } from 'lucide-react';
+import { Calculator, TrendingUp, Percent, Calendar, DollarSign, Scale, ArrowRight, Info, Zap } from 'lucide-react';
 import { calcDiasUteis, calcCdiPeriodo, formatPercent } from '@/lib/b3-utils';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -15,6 +16,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useAccessControl } from '@/hooks/useAccessControl';
 
 // IR regressivo para renda fixa
 function getIRRate(diasCorridos: number): number {
@@ -30,6 +32,9 @@ function calcDiasCorridos(start: Date, end: Date): number {
 }
 
 export default function CalculadoraRendaFixa() {
+  const navigate = useNavigate();
+  const accessControl = useAccessControl();
+  const isPro = accessControl.planType === 'pro' || accessControl.isAdmin || (!accessControl.trialExpired && accessControl.status === 'approved');
   const [capital, setCapital] = useState<string>('100000');
   const [cdiAnual, setCdiAnual] = useState<string>('14.15');
   const [percentCdi, setPercentCdi] = useState<string>('100');
@@ -98,6 +103,26 @@ export default function CalculadoraRendaFixa() {
       comparacao,
     };
   }, [capital, cdiAnual, percentCdi, dataInicio, dataVencimento, incluirIR, lucroEstrutura]);
+
+  if (!isPro) {
+    return (
+      <ProfessionalLayout>
+        <Header />
+        <main className="container py-20 text-center space-y-6">
+          <div className="p-4 rounded-2xl bg-primary/10 inline-flex">
+            <Calculator className="w-12 h-12 text-primary" />
+          </div>
+          <h1 className="text-3xl font-black tracking-tight">Calculadora Renda Fixa — Recurso PRO</h1>
+          <p className="text-muted-foreground max-w-md mx-auto">
+            A calculadora de renda fixa com comparação CDI é exclusiva para assinantes do plano PRO.
+          </p>
+          <Button size="lg" className="font-black shadow-lg shadow-primary/20" onClick={() => navigate('/settings')}>
+            Assinar PRO <Zap className="ml-2 h-5 w-5" />
+          </Button>
+        </main>
+      </ProfessionalLayout>
+    );
+  }
 
   return (
     <ProfessionalLayout>
