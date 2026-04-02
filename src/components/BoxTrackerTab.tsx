@@ -1322,7 +1322,7 @@ function FamilyCard({
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-muted/50 border-b border-border">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 sm:px-4 py-3 bg-muted/50 border-b border-border">
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={() => onToggleExpand(family.id)}
