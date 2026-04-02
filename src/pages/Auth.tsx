@@ -160,8 +160,30 @@ export default function Auth() {
           </form>
           {isSignUp && (
             <p className="text-xs text-center text-muted-foreground">
-              🎁 Ao criar sua conta, você ganha <strong className="text-primary">3 simulações gratuitas</strong> para testar a plataforma!
+              🎁 Ao criar sua conta, você ganha <strong className="text-primary">7 dias grátis com acesso total</strong> a todas as funcionalidades PRO!
             </p>
+          )}
+          {!isSignUp && (
+            <button
+              onClick={async () => {
+                if (!email) {
+                  toast.error('Digite seu e-mail primeiro');
+                  return;
+                }
+                try {
+                  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: `${window.location.origin}/settings`,
+                  });
+                  if (error) throw error;
+                  toast.success('E-mail de recuperação enviado!', { description: `Verifique a caixa de entrada de ${email}` });
+                } catch (err: any) {
+                  toast.error(err.message || 'Erro ao enviar e-mail de recuperação');
+                }
+              }}
+              className="text-xs text-muted-foreground hover:text-primary hover:underline transition-colors block mx-auto"
+            >
+              Esqueceu sua senha?
+            </button>
           )}
           <div className="text-center text-sm text-muted-foreground font-medium">
             {isSignUp ? 'Já tem conta?' : 'Não tem conta?'}{' '}
