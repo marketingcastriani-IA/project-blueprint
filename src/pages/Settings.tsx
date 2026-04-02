@@ -213,7 +213,7 @@ export default function Settings() {
                 <Button 
                   variant="outline" 
                   className="border-info/40 text-info hover:bg-info/10 font-bold w-full sm:w-auto"
-                  onClick={() => window.location.href = 'mailto:falecomopcoesprox@gmail.com?subject=Suporte OpçõesX'}
+                  onClick={() => window.location.href = 'mailto:falecomopcoesprox@gmail.com?subject=Suporte Opções PRO X'}
                 >
                   ABRIR CHAMADO <ExternalLink className="ml-2 h-4 w-4" />
                 </Button>

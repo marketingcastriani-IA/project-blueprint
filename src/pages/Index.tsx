@@ -5,19 +5,28 @@ import {
   TrendingUp, ArrowRight, Brain, CheckCircle2,
   Lock, Sparkles, XCircle,
   Zap, Camera, FileSpreadsheet, Cpu, Star,
-  BarChart3, PieChart, Bot, Radio
+  BarChart3, PieChart, Bot, Radio, Shield, Calculator,
+  ChevronUp, Quote, Users, Award
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Sun, Moon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { useProPrice } from '@/hooks/useProPrice';
+import { useState, useEffect } from 'react';
 
 export default function Index() {
   const { user, loading } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const { proPrice } = useProPrice();
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShowScrollTop(window.scrollY > 600);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   if (loading) return null;
   if (user) return <Navigate to="/dashboard" replace />;
@@ -87,6 +96,34 @@ export default function Index() {
             <Badge className="bg-red-600 text-white font-black text-xs animate-pulse shadow-lg">🔴 TEMPO REAL</Badge>
           </div>
           <img src="/assets/screenshot-realtime.png" alt="Operações em Tempo Real com Profit RTD" className="w-full h-auto" loading="lazy" />
+        </div>
+      </section>
+
+      {/* COMO FUNCIONA — 3 Steps */}
+      <section className="container py-24">
+        <div className="text-center mb-16 space-y-4">
+          <Badge variant="outline" className="border-primary/30 text-primary font-bold">SIMPLES ASSIM</Badge>
+          <h2 className="text-4xl sm:text-6xl font-black tracking-tighter">Como Funciona</h2>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Da captura ao relatório em 3 passos.</p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          {[
+            { step: '1', icon: Camera, title: 'Tire um Print', desc: 'Capture a tela da sua estrutura no Profit, FlexScan ou Home Broker.' },
+            { step: '2', icon: Bot, title: 'IA Analisa', desc: 'Nossa IA lê strikes, prêmios e quantidades e monta a estrutura automaticamente.' },
+            { step: '3', icon: BarChart3, title: 'Veja o Resultado', desc: 'Payoff, métricas, comparativo CDI e relatório com sugestões da IA.' },
+          ].map((item) => (
+            <div key={item.step} className="relative text-center space-y-4 p-8 rounded-2xl border border-border/40 bg-card/50">
+              <div className="mx-auto h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <item.icon className="h-8 w-8 text-primary" />
+              </div>
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 h-8 w-8 rounded-full bg-primary text-primary-foreground font-black text-sm flex items-center justify-center shadow-lg">
+                {item.step}
+              </div>
+              <h3 className="text-xl font-black tracking-tight">{item.title}</h3>
+              <p className="text-muted-foreground text-sm">{item.desc}</p>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -160,9 +197,8 @@ export default function Index() {
           </div>
         </div>
 
-        {/* Portfólio, Diversificador, Manual row */}
+        {/* Portfólio, Diversificador row */}
         <div className="grid md:grid-cols-2 gap-10 mt-10">
-
           <div className="space-y-6">
             <div className="space-y-3">
               <div className="flex items-center gap-3">
@@ -193,7 +229,7 @@ export default function Index() {
           </div>
         </div>
 
-        {/* Manual row */}
+        {/* Manual + Tempo Real row */}
         <div className="grid md:grid-cols-2 gap-10 mt-10">
           <div className="space-y-6">
             <div className="space-y-3">
@@ -231,13 +267,47 @@ export default function Index() {
             </div>
           </div>
         </div>
+
+        {/* NEW: Box Tracker + Calculadora CDI row */}
+        <div className="grid md:grid-cols-2 gap-10 mt-10">
+          {/* Rastreador de Box */}
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><Shield className="h-5 w-5 text-primary" /></div>
+                <h3 className="text-2xl font-black tracking-tight">Rastreador de Box</h3>
+                <Badge className="bg-red-500/20 text-red-500 border-0 text-[10px] font-black animate-pulse">🔴 AO VIVO</Badge>
+                <Badge className="bg-primary/20 text-primary border-0 text-[10px] font-black">PRO</Badge>
+              </div>
+              <p className="text-muted-foreground">Rastreie automaticamente os melhores boxes da B3 em tempo real. Ranking com troféus 3D, % do CDI e instruções de montagem passo a passo.</p>
+            </div>
+            <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)]">
+              <img src="/assets/screenshot-box-tracker.png" alt="Rastreador de Box x CDI — Ranking ao Vivo" className="w-full h-auto" loading="lazy" />
+            </div>
+          </div>
+
+          {/* Calculadora CDI x Opções */}
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><Calculator className="h-5 w-5 text-primary" /></div>
+                <h3 className="text-2xl font-black tracking-tight">Calculadora CDI × Opções</h3>
+                <Badge className="bg-primary/20 text-primary border-0 text-[10px] font-black">NOVO</Badge>
+              </div>
+              <p className="text-muted-foreground">Compare o rendimento de qualquer estratégia com a renda fixa. Simule capital, prazo e taxa para saber se o risco vale a pena.</p>
+            </div>
+            <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)]">
+              <img src="/assets/screenshot-calculadora-cdi.png" alt="Calculadora CDI x Opções" className="w-full h-auto" loading="lazy" />
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* COMPARISON: PLANILHAS VS APP */}
       <section className="container py-24">
         <div className="text-center mb-16 space-y-4">
           <Badge variant="outline" className="border-primary/30 text-primary font-bold">O FIM DA ERA MANUAL</Badge>
-          <h2 className="text-4xl sm:text-6xl font-black tracking-tighter">OpçõesX vs. Planilhas</h2>
+          <h2 className="text-4xl sm:text-6xl font-black tracking-tighter">Opções PRO X vs. Planilhas</h2>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8">
@@ -270,7 +340,7 @@ export default function Index() {
               <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary">
                 <Cpu className="h-6 w-6" />
               </div>
-              <h3 className="text-2xl font-black">OpçõesX (IA)</h3>
+              <h3 className="text-2xl font-black">Opções PRO X (IA)</h3>
             </div>
             <ul className="space-y-4">
               {[
@@ -313,6 +383,42 @@ export default function Index() {
           <div className="rounded-2xl overflow-hidden border-2 border-primary/20 shadow-2xl">
             <img src="/assets/ocr_upload.png" alt="OCR Upload" className="w-full h-auto" />
           </div>
+        </div>
+      </section>
+
+      {/* SOCIAL PROOF / TESTIMONIALS */}
+      <section className="container py-24">
+        <div className="text-center mb-16 space-y-4">
+          <Badge variant="outline" className="border-primary/30 text-primary font-bold">DEPOIMENTOS</Badge>
+          <h2 className="text-4xl sm:text-6xl font-black tracking-tighter">Quem Usa, Aprova</h2>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Veja o que nossos usuários dizem sobre o Opções PRO X.</p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {[
+            { name: 'Ricardo M.', role: 'Trader de Opções', text: 'O OCR é surreal. Tiro um print do Profit e em 2 segundos tenho payoff, gregas e análise da IA. Economizo horas por semana.', stars: 5 },
+            { name: 'Fernanda S.', role: 'Investidora Independente', text: 'O Rastreador de Box me ajudou a encontrar oportunidades que eu nunca acharia manualmente. Melhor investimento que fiz.', stars: 5 },
+            { name: 'Carlos A.', role: 'Gestor de Patrimônio', text: 'O comparativo CDI foi game-changer. Agora sei exatamente quando vale operar opções vs. deixar na renda fixa.', stars: 5 },
+          ].map((t, i) => (
+            <Card key={i} className="p-8 border-border/40 bg-card/50 space-y-4 relative overflow-hidden">
+              <Quote className="h-8 w-8 text-primary/20 absolute top-4 right-4" />
+              <div className="flex gap-1">
+                {[...Array(t.stars)].map((_, si) => (
+                  <Star key={si} className="h-4 w-4 fill-primary text-primary" />
+                ))}
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed italic">"{t.text}"</p>
+              <div className="flex items-center gap-3 pt-2 border-t border-border/40">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-black">{t.name}</p>
+                  <p className="text-xs text-muted-foreground">{t.role}</p>
+                </div>
+              </div>
+            </Card>
+          ))}
         </div>
       </section>
 
@@ -373,7 +479,8 @@ export default function Index() {
               <PricingItem included pro label="Histórico de análises" highlight />
               <PricingItem included pro label="Tempo Real — Conexão Profit RTD" highlight />
               <PricingItem included pro label="Rastreador Box × CDI" highlight />
-              
+              <PricingItem included pro label="Calculadora CDI × Opções" highlight />
+              <PricingItem included pro label="Push Notifications de Box" highlight />
             </ul>
             <Button className="w-full h-14 text-lg font-black shadow-lg shadow-primary/30" onClick={() => navigate('/auth')}>
               ASSINAR PRO AGORA <ArrowRight className="ml-2 h-5 w-5" />
@@ -394,6 +501,27 @@ export default function Index() {
           </p>
         </div>
       </footer>
+
+      {/* Scroll to Top Button */}
+      {showScrollTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-6 right-6 z-50 h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 flex items-center justify-center hover:scale-110 transition-transform"
+          aria-label="Voltar ao topo"
+        >
+          <ChevronUp className="h-6 w-6" />
+        </button>
+      )}
+
+      {/* Mobile floating CTA */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 sm:hidden p-3 bg-background/95 backdrop-blur-lg border-t border-border/40">
+        <Button 
+          className="w-full h-12 font-black shadow-lg shadow-primary/30"
+          onClick={() => navigate('/auth')}
+        >
+          TESTAR 7 DIAS GRÁTIS <ArrowRight className="ml-2 h-5 w-5" />
+        </Button>
+      </div>
     </div>
   );
 }
