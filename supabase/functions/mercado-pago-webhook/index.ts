@@ -208,10 +208,10 @@ serve(async (req) => {
                       </div>
 
                       <div style="background:#111827;border-radius:12px;padding:20px;margin:20px 0;border:1px solid #1e293b">
-                        <h3 style="color:#a78bfa;margin:0 0 12px;font-size:15px">📊 Rastreadores (Box & Collar)</h3>
+                        <h3 style="color:#a78bfa;margin:0 0 12px;font-size:15px">📊 Rastreador de Box Spread</h3>
                         <ul style="list-style:none;padding:0;margin:0;color:#cbd5e1;font-size:13px;line-height:2">
                           <li>✅ Monitore Box Spread vs CDI em tempo real</li>
-                          <li>✅ Acompanhe proteção de carteira com Collar</li>
+                          <li>✅ Decida manter ou encerrar com dados reais</li>
                         </ul>
                       </div>
 
