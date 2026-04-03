@@ -699,6 +699,11 @@ export default function AdminPanel() {
             </div>
           </TabsContent>
 
+          {/* METRICS TAB */}
+          <TabsContent value="metrics" className="space-y-6">
+            <MetricsPanel users={users} proPrice={parseFloat(proPrice)} />
+          </TabsContent>
+
           <TabsContent value="features" className="space-y-6">
             <Card className="border-primary/20">
               <CardHeader>
@@ -708,31 +713,39 @@ export default function AdminPanel() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/20">
-                  <div className="flex items-center gap-3">
-                    <Shield className="h-5 w-5 text-primary" />
-                    <div>
-                      <p className="font-bold text-sm">Collar Tracker</p>
-                      <p className="text-xs text-muted-foreground">Aba de rastreamento de Collar em tempo real</p>
+                {[
+                  { key: 'feature-collar-tracker', label: 'Collar Tracker', desc: 'Aba de rastreamento de Collar em tempo real', icon: <Shield className="h-5 w-5 text-primary" /> },
+                  { key: 'feature-box-tracker', label: 'Box Tracker', desc: 'Rastreador de Box Spread vs CDI', icon: <BarChart3 className="h-5 w-5 text-primary" /> },
+                  { key: 'feature-calc-cdi', label: 'Calculadora CDI', desc: 'Calculadora CDI x Opções', icon: <DollarSign className="h-5 w-5 text-primary" /> },
+                  { key: 'feature-diversificador', label: 'Diversificador', desc: 'Diversificador de estratégias', icon: <Layers className="h-5 w-5 text-primary" /> },
+                  { key: 'feature-dados-ao-vivo', label: 'Dados ao Vivo', desc: 'Dados de mercado em tempo real via RTD', icon: <Activity className="h-5 w-5 text-primary" /> },
+                ].map(flag => (
+                  <div key={flag.key} className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/20">
+                    <div className="flex items-center gap-3">
+                      {flag.icon}
+                      <div>
+                        <p className="font-bold text-sm">{flag.label}</p>
+                        <p className="text-xs text-muted-foreground">{flag.desc}</p>
+                      </div>
                     </div>
+                    <button
+                      onClick={() => {
+                        const current = localStorage.getItem(flag.key) !== 'false';
+                        localStorage.setItem(flag.key, current ? 'false' : 'true');
+                        toast.success(`${flag.label} ${current ? 'desativado' : 'ativado'}!`);
+                        window.dispatchEvent(new Event('storage'));
+                      }}
+                      className={cn(
+                        "px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all",
+                        localStorage.getItem(flag.key) !== 'false'
+                          ? "bg-success text-success-foreground shadow-[0_0_12px_hsl(var(--success)/0.4)]"
+                          : "bg-destructive text-destructive-foreground"
+                      )}
+                    >
+                      {localStorage.getItem(flag.key) !== 'false' ? 'ATIVO' : 'DESATIVADO'}
+                    </button>
                   </div>
-                  <button
-                    onClick={() => {
-                      const current = localStorage.getItem('feature-collar-tracker') !== 'false';
-                      localStorage.setItem('feature-collar-tracker', current ? 'false' : 'true');
-                      toast.success(`Collar Tracker ${current ? 'desativado' : 'ativado'}!`);
-                      window.dispatchEvent(new Event('storage'));
-                    }}
-                    className={cn(
-                      "px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all",
-                      localStorage.getItem('feature-collar-tracker') !== 'false'
-                        ? "bg-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.4)]"
-                        : "bg-red-500 text-white"
-                    )}
-                  >
-                    {localStorage.getItem('feature-collar-tracker') !== 'false' ? 'ATIVO' : 'DESATIVADO'}
-                  </button>
-                </div>
+                ))}
               </CardContent>
             </Card>
           </TabsContent>
