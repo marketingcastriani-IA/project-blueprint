@@ -1,73 +1,94 @@
+# Auditoria Completa + Plano de Melhorias — Opções PRO X
 
+## Auditoria por Seção
 
-# Verificação do Plano — O que falta corrigir
+### 1. Dashboard (Nova Análise)
 
-## Status das melhorias
+- **OK**: Formulário de pernas, payoff chart, métricas, IA, OCR, salvamento
+- **Problema**: CDI hardcoded em 14.9% na History (linha 199) mas 14.65 no Dashboard
+- **Falta**: Botão de limpar/resetar todas as pernas de uma vez; duplicar análise existente
 
-### ✅ Já implementado
-- **A1**: Preço checkout corrigido para R$ 14,90
-- **B1**: "Esqueci minha senha" adicionado
-- **B2**: Texto corrigido para "7 dias grátis com acesso total"
-- **C1**: Meta tags OG corrigidas para "Opções PRO X"
-- **C2**: FAQ inline na landing page
-- **D2**: Loading state na Auth com spinner
-- **E2**: Modal upgrade usando tokens de tema
-- **G1**: Admin carrega preço do banco (fallback 149.90)
-- **A4**: Página de celebração pós-pagamento
-- Branding "OpçõesX" → "Opções PRO X" corrigido
+### 2. Histórico (Operações)
 
-### ❌ Pendente — 3 itens restantes
+- **OK**: Filtros por mês/ano, cards com métricas, PDF, encerrar/reabrir
+- **Problema**: CDI hardcoded `0.149` na linha 199 (deveria usar `a.cdi_rate` ou 14.65% padrão)
+- **Falta**: Busca por nome de análise/ativo; ordenação (mais recente/mais antigo/maior lucro)
 
-#### 1. Webhook sem idempotência (A3 — ALTO)
-O `mercado-pago-webhook/index.ts` processa qualquer notificação de pagamento sem verificar se o mesmo `payment_id` já foi processado. Se o Mercado Pago enviar a mesma notificação duas vezes, o `expires_at` será estendido em +31 dias indevidamente.
+### 3. Portfólio
 
-**Correção**: Antes de fazer o upsert, verificar se já existe um registro com `purchased_at` recente (últimos 5 minutos) para o mesmo `user_id`, OU registrar o `payment_id` processado e checar duplicatas.
+- **OK**: Stats consolidados, filtros, PDF, vs CDI
+- **Falta**: Gráfico de evolução do P&L ao longo do tempo (como o do Dashboard summary); exportação CSV
 
-#### 2. text-white no DadosAoVivo — header strip (E1 — contextual)
-O `DadosAoVivo.tsx` usa ~30x `text-white` nos cards de operações, MAS estas estão dentro de um header strip com fundo escuro hardcoded (`from-[hsl(222,47%,11%)]`). No modo claro, o **fundo** escuro permanece, então `text-white` funciona. Porém o fundo hardcoded não respeita o tema. A correção ideal é trocar o gradiente para `from-card/90 to-card` e os textos para `text-foreground`.
+### 5. Rastreador de Box
 
-**Decisão**: Isso é uma escolha de design — o header escuro é intencional para dar contraste ao card. Pode ser mantido como está ou refatorado para usar tokens.
+- **OK**: Componente robusto com 1777 linhas, RTD bridge, ranking
+- **Falta**: Nenhuma melhoria crítica identificada
 
-#### 3. Calculadora CDI sem controle de acesso (D4)
-`CalculadoraRendaFixa.tsx` não usa `useAccessControl()`. Qualquer usuário com trial expirado pode acessar. Se for feature PRO, adicionar gate; se for livre, manter como está.
+### 6. Dados ao Vivo
+
+- **OK**: RTD bridge, payoff, save para análise
+- **Falta**: Nenhuma melhoria crítica
+
+### 7. Diversificador
+
+- **OK**: Estratégias, cores, risco, gráfico
+- **Falta**: Nenhuma melhoria crítica
+
+### 8. Analysis Detail
+
+- **Problema**: Usa WebSocket próprio duplicado (linhas 39-78) em vez do `useSharedRtdBridge`
+- **Falta**: Nenhuma funcional
+
+### 9. Painel Administrativo
+
+- **OK**: Users, filtros, email em massa, templates, feature flags, config API
+- **Problemas encontrados**:
+  - Só mostra 6 dos 11 templates de email por usuário (linha 686: `slice(0, 6)`)
+  - Feature Flags tem só Collar Tracker — falta toggles para outras features
+  - Falta: dashboard de receita (MRR, churn, conversão trial->PRO)
+  - Falta: log de ações admin (quem aprovou, bloqueou, enviou email)
+  - Falta: botão "Enviar Boas-vindas PRO" direto no card do usuário ao registrar compra
+  - Falta: contagem de análises/pernas por usuário para entender engajamento
+  - Falta: aba de "Métricas" com gráficos de crescimento de usuários
 
 ---
 
-## Plano de implementação (itens pendentes)
+## Plano de Implementação
 
-### Arquivo 1: `supabase/functions/mercado-pago-webhook/index.ts`
-- Antes do upsert (linha 109), buscar o registro atual de `user_access` para o `userId`
-- Se `purchased_at` existir e for < 5 minutos atrás, retornar `{ received: true, skipped: 'duplicate' }` sem estender
-- Logar `payment_id` no console para auditoria
+### Fase 1 — Correções e Melhorias Rápidas
 
-### Arquivo 2: `src/pages/DadosAoVivo.tsx` (opcional)
-- Substituir gradiente hardcoded `from-[hsl(222,47%,11%)]` por `from-muted to-muted/80`
-- Trocar `text-white` por `text-foreground` nos ~30 pontos do header strip
-- Trocar `text-white/40`, `text-white/50`, `text-white/60` por `text-muted-foreground`
+1. **Corrigir CDI hardcoded na History** — usar `a.cdi_rate || 14.65` em vez de `0.149`
+2. **Mostrar TODOS os 11 templates de email** no card do usuário (remover `slice(0, 6)`)
+3. **Adicionar botão "Limpar Tudo"** no Dashboard para resetar pernas de uma vez
+4. **Adicionar busca por nome/ativo** no Histórico
 
-### Arquivo 3: `src/pages/CalculadoraRendaFixa.tsx` (decisão necessária)
-- Adicionar `useAccessControl()` e gate PRO, ou manter livre
+### Fase 2 — Painel Admin Avançado
 
----
+5. **Aba "Métricas"** no Admin com:
+  - Gráfico de crescimento de usuários (cadastros por semana/mês)
+  - Receita estimada (PROs ativos × preço)
+  - Taxa de conversão Trial → PRO
+  - Churn rate (vencidos que não renovaram)
+  - Engajamento médio (simulações por usuário)
+6. **Auto-envio de Boas-vindas PRO** ao registrar compra manualmente (botão integrado)
+7. **Mais Feature Flags**: Box Tracker, Calculadora CDI, Diversificador (para lançamentos graduais)
+8. **Contagem de análises por usuário** visível no card admin
 
-## Detalhes técnicos
+### Fase 3 — Melhorias de UX
 
-**Idempotência no webhook** — abordagem simples sem nova tabela:
+9. **Gráfico de evolução P&L** no Portfólio (reutilizar o AreaChart do Dashboard)
+10. **Ordenação no Histórico** (por data, lucro, nome)
+11. **AnalysisDetail usar `useSharedRtdBridge**` em vez de WebSocket duplicado
+
+### Detalhes Técnicos
+
+**Correção CDI History (linha 199)**:
+
 ```typescript
-// Antes do upsert, checar se já processou recentemente
-const { data: existing } = await supabaseAdmin
-  .from('user_access')
-  .select('purchased_at')
-  .eq('user_id', userId)
-  .single();
-
-if (existing?.purchased_at) {
-  const lastPurchase = new Date(existing.purchased_at).getTime();
-  const now = Date.now();
-  if (now - lastPurchase < 5 * 60 * 1000) {
-    console.log("[webhook] Pagamento duplicado ignorado");
-    return new Response(JSON.stringify({ received: true, skipped: 'duplicate' }), ...);
-  }
-}
+// DE: absInvestido * (Math.pow(1 + 0.149, bizDays / 252) - 1)
+// PARA: absInvestido * (Math.pow(1 + (a.cdi_rate || 14.65) / 100, bizDays / 252) - 1)
 ```
 
+**Admin Métricas**: Novo `TabsTrigger value="metrics"` com queries ao Supabase para agregação de dados de `user_access` e `analyses`. Sem necessidade de novas tabelas — tudo calculado em runtime a partir dos dados existentes.
+
+**Feature Flags**: Expandir o pattern existente de `localStorage` + `storage event` para novas flags, mantendo a sincronização cross-tab.
