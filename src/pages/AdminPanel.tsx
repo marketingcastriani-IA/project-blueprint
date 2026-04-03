@@ -215,9 +215,10 @@ export default function AdminPanel() {
     }
   };
 
-  type EmailTemplate = 'promo' | 'renewal' | 'news' | 'custom' | 'calc_cdi' | 'box_tracker' | 'collar_tracker' | 'tempo_real' | 'diversificador' | 'resumo_geral';
+  type EmailTemplate = 'promo' | 'renewal' | 'news' | 'custom' | 'calc_cdi' | 'box_tracker' | 'collar_tracker' | 'tempo_real' | 'diversificador' | 'resumo_geral' | 'boas_vindas_pro';
 
   const EMAIL_TEMPLATE_OPTIONS: { value: EmailTemplate; label: string; icon: string; color: string }[] = [
+    { value: 'boas_vindas_pro', label: 'Boas-vindas PRO', icon: '🎉', color: 'border-green-400/50 text-green-400 hover:bg-green-400/10' },
     { value: 'promo', label: 'Promoção', icon: '🔥', color: 'border-primary/30 hover:bg-primary/10' },
     { value: 'renewal', label: 'Renovação', icon: '⚠️', color: 'border-warning/30 text-warning hover:bg-warning/10' },
     { value: 'news', label: 'Novidades', icon: '🚀', color: 'border-success/30 text-success hover:bg-success/10' },
