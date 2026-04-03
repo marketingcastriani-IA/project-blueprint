@@ -21,7 +21,7 @@ import {
 import { cn } from '@/lib/utils';
 import { SectionDivider } from '@/components/ProfessionalLayout';
 
-const WS_URL = "ws://localhost:8765";
+import { useSharedRtdBridge } from '@/contexts/RtdBridgeContext';
 
 interface DbLeg {
   id: string;
@@ -35,47 +35,21 @@ interface DbLeg {
   expiry_date?: string | null;
 }
 
-// Lightweight RTD hook for live prices
+// Use shared RTD bridge instead of duplicate WebSocket
 function useLivePrices(tickers: string[]) {
-  const [prices, setPrices] = useState<Record<string, number>>({});
-  const [connected, setConnected] = useState(false);
-  const wsRef = useRef<WebSocket | null>(null);
-  const tickersRef = useRef(tickers);
-  tickersRef.current = tickers;
+  const { status, rows, addTicker, removeTicker } = useSharedRtdBridge();
+  const connected = status === 'connected';
 
   useEffect(() => {
-    if (tickers.length === 0) return;
-
-    const ws = new WebSocket(WS_URL);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      setConnected(true);
-      tickers.forEach(t => ws.send(JSON.stringify({ type: "add_ticker", ticker: t })));
-    };
-
-    ws.onclose = () => setConnected(false);
-    ws.onerror = () => setConnected(false);
-
-    ws.onmessage = (evt) => {
-      try {
-        const msg = JSON.parse(evt.data);
-        if (msg.type === "rtd_data") {
-          setPrices(prev => {
-            const next = { ...prev };
-            for (const item of msg.data) {
-              if (item.ultimo != null && tickersRef.current.includes(item.ticker)) {
-                next[item.ticker] = item.ultimo;
-              }
-            }
-            return next;
-          });
-        }
-      } catch { /* ignore */ }
-    };
-
-    return () => { ws.close(); };
+    tickers.forEach(t => addTicker(t));
+    return () => { tickers.forEach(t => removeTicker(t)); };
   }, [tickers.join(',')]);
+
+  const prices: Record<string, number> = {};
+  tickers.forEach(t => {
+    const row = rows.get(t);
+    if (row?.ultimo != null) prices[t] = row.ultimo;
+  });
 
   return { prices, connected };
 }

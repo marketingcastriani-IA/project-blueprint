@@ -3,14 +3,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
-import { CardContent } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { 
   Loader2, TrendingUp, TrendingDown, Calendar, Edit2, 
-  RotateCcw, Trash2, Briefcase, Wallet, Target, CalendarDays, Percent, BarChart3, Download 
+  RotateCcw, Trash2, Briefcase, Wallet, Target, CalendarDays, Percent, BarChart3, Download, FileDown
 } from 'lucide-react';
 import { countBusinessDays } from '@/lib/b3-calendar';
 import { calculateCDIReturn } from '@/lib/payoff';
@@ -18,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
 import { generatePortfolioPdf } from '@/lib/pdf-generator';
 import ListSkeleton from '@/components/skeletons/ListSkeleton';
+import { AreaChart, Area, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 
 interface ClosedAnalysis {
   id: string;
@@ -173,7 +175,20 @@ export default function Portfolio() {
       return sum + getCDIForPeriod(a.created_at, a.closed_at, a.cdi_rate, invested);
     }, 0);
 
-    return { totalPL, totalInvested, totalReturnPct, wins, losses, winRate, total: filteredAnalyses.length, avgProfit, totalCDI };
+    // Evolution data for P&L chart
+    const evolutionData: { name: string; pl: number }[] = [];
+    let cumulativePL = 0;
+    const sorted = [...filteredAnalyses].sort((a, b) => new Date(a.closed_at!).getTime() - new Date(b.closed_at!).getTime());
+    sorted.forEach(a => {
+      const pnl = pnls[filteredAnalyses.indexOf(a)] ?? 0;
+      cumulativePL += pnl;
+      evolutionData.push({
+        name: new Date(a.closed_at!).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        pl: Math.round(cumulativePL * 100) / 100,
+      });
+    });
+
+    return { totalPL, totalInvested, totalReturnPct, wins, losses, winRate, total: filteredAnalyses.length, avgProfit, totalCDI, evolutionData };
   }, [filteredAnalyses, legsMap]);
 
   const handleReopen = async (e: React.MouseEvent, id: string) => {
@@ -218,23 +233,49 @@ export default function Portfolio() {
             title="Portfólio" 
             subtitle="Acompanhe o desempenho histórico das suas operações encerradas"
           />
-          <Button 
-            variant="outline" 
-            onClick={() => {
-              generatePortfolioPdf(filteredAnalyses, legsMap, {
-                totalPL: stats.totalPL,
-                totalInvested: stats.totalInvested,
-                avgPL: stats.avgProfit,
-                winRate: parseFloat(stats.winRate as string),
-                wins: stats.wins,
-                losses: stats.losses,
-              });
-              toast.success('PDF gerado com sucesso!');
-            }} 
-            className="h-12 px-5 font-bold border-primary/30 text-primary hover:bg-primary/10"
-          >
-            <Download className="mr-2 h-5 w-5" /> Baixar PDF
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                // CSV export
+                const csvRows = ['Nome,Ativo,Investido,Saída,Resultado,ROI'];
+                filteredAnalyses.forEach(a => {
+                  const montage = getMontageCost(a.id);
+                  const exit = getExitValue(a.id);
+                  const pnl = getPnL(a.id);
+                  const inv = montage < 0 ? Math.abs(montage) : 0;
+                  const roi = inv > 0 ? (pnl / inv * 100).toFixed(2) : '0';
+                  csvRows.push(`"${a.name}","${a.underlying_asset || ''}",${Math.abs(montage).toFixed(2)},${Math.abs(exit).toFixed(2)},${pnl.toFixed(2)},${roi}%`);
+                });
+                const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url; link.download = 'portfolio.csv'; link.click();
+                URL.revokeObjectURL(url);
+                toast.success('CSV exportado!');
+              }} 
+              className="h-12 px-5 font-bold border-primary/30 text-primary hover:bg-primary/10"
+            >
+              <FileDown className="mr-2 h-5 w-5" /> CSV
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                generatePortfolioPdf(filteredAnalyses, legsMap, {
+                  totalPL: stats.totalPL,
+                  totalInvested: stats.totalInvested,
+                  avgPL: stats.avgProfit,
+                  winRate: parseFloat(stats.winRate as string),
+                  wins: stats.wins,
+                  losses: stats.losses,
+                });
+                toast.success('PDF gerado com sucesso!');
+              }} 
+              className="h-12 px-5 font-bold border-primary/30 text-primary hover:bg-primary/10"
+            >
+              <Download className="mr-2 h-5 w-5" /> PDF
+            </Button>
+          </div>
         </div>
 
         {/* Filtros */}
@@ -358,6 +399,39 @@ export default function Portfolio() {
             </CardContent>
           </ProfessionalCard>
         </div>
+
+        {/* P&L Evolution Chart */}
+        {stats.evolutionData.length >= 2 && (
+          <Card className="border-primary/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-black flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-primary" /> Evolução do P&L Acumulado
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={stats.evolutionData}>
+                    <defs>
+                      <linearGradient id="portfolioPlGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--success))" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} tickFormatter={(v: number) => `R$${v}`} />
+                    <RTooltip
+                      contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }}
+                      formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'P&L Acumulado']}
+                    />
+                    <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.5} />
+                    <Area type="monotone" dataKey="pl" stroke="hsl(var(--success))" strokeWidth={2} fill="url(#portfolioPlGradient)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Operations List */}
         {loading ? (
