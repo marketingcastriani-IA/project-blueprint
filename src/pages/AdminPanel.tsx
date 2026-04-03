@@ -467,8 +467,9 @@ export default function AdminPanel() {
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 max-w-md">
+          <TabsList className="grid w-full grid-cols-4 max-w-lg">
             <TabsTrigger value="users" className="font-bold">Usuários</TabsTrigger>
+            <TabsTrigger value="metrics" className="font-bold">Métricas</TabsTrigger>
             <TabsTrigger value="features" className="font-bold">Features</TabsTrigger>
             <TabsTrigger value="api" className="font-bold">Config. API</TabsTrigger>
           </TabsList>
