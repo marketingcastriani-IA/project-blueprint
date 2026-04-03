@@ -468,33 +468,55 @@ export default function History() {
           </div>
         </div>
 
-        {/* Filtros */}
-        <div className="flex flex-wrap items-center gap-3 p-4 rounded-2xl bg-muted/30 border border-border/50">
-          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground mr-2">
-            <CalendarDays className="h-4 w-4 text-primary" /> Filtrar Período:
+        {/* Search + Filtros */}
+        <div className="flex flex-col gap-3 p-4 rounded-2xl bg-muted/30 border border-border/50">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder="Buscar por nome da análise ou ativo..." 
+              value={searchQuery} 
+              onChange={e => setSearchQuery(e.target.value)} 
+              className="pl-9 h-10"
+            />
           </div>
-          <Select value={filterMonth} onValueChange={setFilterMonth}>
-            <SelectTrigger className="w-[160px] h-10 font-bold">
-              <SelectValue placeholder="Mês" />
-            </SelectTrigger>
-            <SelectContent>
-              {MONTHS.map(m => <SelectItem key={m.val} value={m.val}>{m.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={filterYear} onValueChange={setFilterYear}>
-            <SelectTrigger className="w-[120px] h-10 font-bold">
-              <SelectValue placeholder="Ano" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os Anos</SelectItem>
-              {years.filter(y => y !== 'all').map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          {(filterMonth !== 'all' || filterYear !== 'all') && (
-            <Button variant="ghost" size="sm" onClick={() => { setFilterMonth('all'); setFilterYear('all'); }} className="text-[10px] font-black uppercase">
-              Limpar Filtros
-            </Button>
-          )}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground mr-2">
+              <CalendarDays className="h-4 w-4 text-primary" /> Filtrar:
+            </div>
+            <Select value={filterMonth} onValueChange={setFilterMonth}>
+              <SelectTrigger className="w-[160px] h-10 font-bold">
+                <SelectValue placeholder="Mês" />
+              </SelectTrigger>
+              <SelectContent>
+                {MONTHS.map(m => <SelectItem key={m.val} value={m.val}>{m.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={filterYear} onValueChange={setFilterYear}>
+              <SelectTrigger className="w-[120px] h-10 font-bold">
+                <SelectValue placeholder="Ano" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Anos</SelectItem>
+                {years.filter(y => y !== 'all').map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={sortBy} onValueChange={(v: 'newest' | 'oldest' | 'profit') => setSortBy(v)}>
+              <SelectTrigger className="w-[170px] h-10 font-bold">
+                <ArrowUpDown className="h-3 w-3 mr-1" />
+                <SelectValue placeholder="Ordenar" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Mais Recente</SelectItem>
+                <SelectItem value="oldest">Mais Antiga</SelectItem>
+                <SelectItem value="profit">Maior Lucro</SelectItem>
+              </SelectContent>
+            </Select>
+            {(filterMonth !== 'all' || filterYear !== 'all' || searchQuery) && (
+              <Button variant="ghost" size="sm" onClick={() => { setFilterMonth('all'); setFilterYear('all'); setSearchQuery(''); }} className="text-[10px] font-black uppercase">
+                Limpar Filtros
+              </Button>
+            )}
+          </div>
         </div>
 
         {loading ? (

@@ -683,7 +683,7 @@ export default function AdminPanel() {
                         <Send className="h-3 w-3" /> Enviar Email para {u.display_name}
                       </Label>
                       <div className="flex gap-2 flex-wrap">
-                        {EMAIL_TEMPLATE_OPTIONS.slice(0, 6).map(t => (
+                        {EMAIL_TEMPLATE_OPTIONS.map(t => (
                           <Button key={t.value} size="sm" variant="outline" onClick={() => openEmailForUser(u, t.value)} className={cn("h-8 px-3 text-[10px] font-bold", t.color)}>
                             {t.icon} {t.label}
                           </Button>
