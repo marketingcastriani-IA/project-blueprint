@@ -196,8 +196,9 @@ export default function History() {
     const now = new Date();
     const bizDays = countBusinessDays(createdAt, now);
     const absInvestido = Math.abs(investido);
+    const cdiRateVal = (a.cdi_rate || 14.65) / 100;
     const cdiReturn = absInvestido > 0 && bizDays > 0
-      ? absInvestido * (Math.pow(1 + 0.149, bizDays / 252) - 1)
+      ? absInvestido * (Math.pow(1 + cdiRateVal, bizDays / 252) - 1)
       : 0;
     const cdiEfficiency = cdiReturn > 0 && m && typeof m.maxGain === 'number'
       ? Math.round((m.maxGain / cdiReturn) * 100)
