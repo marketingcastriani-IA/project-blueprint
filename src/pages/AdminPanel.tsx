@@ -37,6 +37,191 @@ interface UserRow {
   simulations_count: number;
 }
 
+// Metrics Panel Component
+function MetricsPanel({ users, proPrice }: { users: UserRow[]; proPrice: number }) {
+  const [analysisCountMap, setAnalysisCountMap] = useState<Record<string, number>>({});
+  const [weeklySignups, setWeeklySignups] = useState<{ week: string; count: number }[]>([]);
+
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      // Fetch analysis counts per user
+      const { data: analyses } = await supabase
+        .from('analyses')
+        .select('user_id');
+
+      if (analyses) {
+        const countMap: Record<string, number> = {};
+        analyses.forEach((a: any) => {
+          countMap[a.user_id] = (countMap[a.user_id] || 0) + 1;
+        });
+        setAnalysisCountMap(countMap);
+      }
+
+      // Weekly signups (last 12 weeks)
+      const weeks: { week: string; count: number }[] = [];
+      for (let i = 11; i >= 0; i--) {
+        const weekStart = new Date();
+        weekStart.setDate(weekStart.getDate() - (i * 7 + weekStart.getDay()));
+        weekStart.setHours(0, 0, 0, 0);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 7);
+        const count = users.filter(u => {
+          const d = new Date(u.created_at);
+          return d >= weekStart && d < weekEnd;
+        }).length;
+        weeks.push({
+          week: weekStart.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+          count,
+        });
+      }
+      setWeeklySignups(weeks);
+    };
+    fetchMetrics();
+  }, [users]);
+
+  const proUsers = users.filter(u => u.plan_type === 'pro');
+  const activeProUsers = proUsers.filter(u => u.expires_at && new Date(u.expires_at) > new Date());
+  const mrr = activeProUsers.length * proPrice;
+  
+  const trialUsers = users.filter(u => u.plan_type === 'free' && u.status === 'approved');
+  const convertedFromTrial = users.filter(u => u.plan_type === 'pro' && u.purchased_at);
+  const conversionRate = users.length > 0 ? ((convertedFromTrial.length / users.length) * 100).toFixed(1) : '0';
+  
+  const expiredPro = proUsers.filter(u => u.expires_at && new Date(u.expires_at) < new Date());
+  const churnRate = proUsers.length > 0 ? ((expiredPro.length / proUsers.length) * 100).toFixed(1) : '0';
+
+  const totalSimulations = users.reduce((acc, u) => acc + (u.simulations_count || 0), 0);
+  const avgSimsPerUser = users.length > 0 ? (totalSimulations / users.length).toFixed(1) : '0';
+
+  const totalAnalyses = Object.values(analysisCountMap).reduce((a, b) => a + b, 0);
+  const avgAnalysesPerUser = users.length > 0 ? (totalAnalyses / users.length).toFixed(1) : '0';
+
+  const COLORS = ['hsl(var(--primary))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))'];
+  const pieData = [
+    { name: 'PRO Ativos', value: activeProUsers.length },
+    { name: 'PRO Vencidos', value: expiredPro.length },
+    { name: 'Free', value: trialUsers.length },
+    { name: 'Pendentes', value: users.filter(u => u.status === 'pending').length },
+  ].filter(d => d.value > 0);
+
+  return (
+    <div className="space-y-6">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-success/30">
+          <CardContent className="p-5 text-center space-y-1">
+            <DollarSign className="h-6 w-6 mx-auto text-success" />
+            <p className="text-2xl font-black text-success">R$ {mrr.toFixed(2)}</p>
+            <p className="text-[10px] font-black uppercase text-muted-foreground">MRR Estimado</p>
+          </CardContent>
+        </Card>
+        <Card className="border-primary/30">
+          <CardContent className="p-5 text-center space-y-1">
+            <TrendingUp className="h-6 w-6 mx-auto text-primary" />
+            <p className="text-2xl font-black text-primary">{conversionRate}%</p>
+            <p className="text-[10px] font-black uppercase text-muted-foreground">Conversão Trial→PRO</p>
+          </CardContent>
+        </Card>
+        <Card className="border-destructive/30">
+          <CardContent className="p-5 text-center space-y-1">
+            <AlertTriangle className="h-6 w-6 mx-auto text-destructive" />
+            <p className="text-2xl font-black text-destructive">{churnRate}%</p>
+            <p className="text-[10px] font-black uppercase text-muted-foreground">Churn Rate</p>
+          </CardContent>
+        </Card>
+        <Card className="border-primary/30">
+          <CardContent className="p-5 text-center space-y-1">
+            <Activity className="h-6 w-6 mx-auto text-primary" />
+            <p className="text-2xl font-black">{avgSimsPerUser}</p>
+            <p className="text-[10px] font-black uppercase text-muted-foreground">Simulações / Usuário</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Weekly Signups Chart */}
+        <Card className="border-primary/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-black flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" /> Cadastros por Semana
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[220px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={weeklySignups}>
+                  <XAxis dataKey="week" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} allowDecimals={false} />
+                  <RTooltip
+                    contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }}
+                    formatter={(value: number) => [value, 'Cadastros']}
+                  />
+                  <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* User Distribution Pie */}
+        <Card className="border-primary/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-black flex items-center gap-2">
+              <Crown className="h-4 w-4 text-primary" /> Distribuição de Planos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[220px] flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, value }) => `${name}: ${value}`}>
+                    {pieData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  </Pie>
+                  <RTooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Engagement Table */}
+      <Card className="border-primary/20">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-black flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-primary" /> Engajamento por Usuário
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">Média: {avgAnalysesPerUser} análises / usuário</p>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 max-h-[300px] overflow-y-auto">
+            {users
+              .sort((a, b) => (analysisCountMap[b.user_id] || 0) - (analysisCountMap[a.user_id] || 0))
+              .slice(0, 20)
+              .map(u => {
+                const count = analysisCountMap[u.user_id] || 0;
+                return (
+                  <div key={u.user_id} className="flex items-center justify-between p-2 rounded-lg border border-border/30 bg-muted/10">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <Badge variant={u.plan_type === 'pro' ? 'default' : 'outline'} className={cn("text-[9px]", u.plan_type === 'pro' && 'bg-primary')}>
+                        {u.plan_type.toUpperCase()}
+                      </Badge>
+                      <span className="text-sm font-bold truncate">{u.display_name}</span>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <Badge variant="secondary" className="text-[10px] font-bold">{count} análises</Badge>
+                      <Badge variant="secondary" className="text-[10px] font-bold">{u.simulations_count} sims</Badge>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function AdminPanel() {
   const { user, loading: authLoading, signOut } = useAuth();
   const access = useAccessControl();
