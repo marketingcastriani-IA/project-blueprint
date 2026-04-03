@@ -233,23 +233,49 @@ export default function Portfolio() {
             title="Portfólio" 
             subtitle="Acompanhe o desempenho histórico das suas operações encerradas"
           />
-          <Button 
-            variant="outline" 
-            onClick={() => {
-              generatePortfolioPdf(filteredAnalyses, legsMap, {
-                totalPL: stats.totalPL,
-                totalInvested: stats.totalInvested,
-                avgPL: stats.avgProfit,
-                winRate: parseFloat(stats.winRate as string),
-                wins: stats.wins,
-                losses: stats.losses,
-              });
-              toast.success('PDF gerado com sucesso!');
-            }} 
-            className="h-12 px-5 font-bold border-primary/30 text-primary hover:bg-primary/10"
-          >
-            <Download className="mr-2 h-5 w-5" /> Baixar PDF
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                // CSV export
+                const csvRows = ['Nome,Ativo,Investido,Saída,Resultado,ROI'];
+                filteredAnalyses.forEach(a => {
+                  const montage = getMontageCost(a.id);
+                  const exit = getExitValue(a.id);
+                  const pnl = getPnL(a.id);
+                  const inv = montage < 0 ? Math.abs(montage) : 0;
+                  const roi = inv > 0 ? (pnl / inv * 100).toFixed(2) : '0';
+                  csvRows.push(`"${a.name}","${a.underlying_asset || ''}",${Math.abs(montage).toFixed(2)},${Math.abs(exit).toFixed(2)},${pnl.toFixed(2)},${roi}%`);
+                });
+                const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url; link.download = 'portfolio.csv'; link.click();
+                URL.revokeObjectURL(url);
+                toast.success('CSV exportado!');
+              }} 
+              className="h-12 px-5 font-bold border-primary/30 text-primary hover:bg-primary/10"
+            >
+              <FileDown className="mr-2 h-5 w-5" /> CSV
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                generatePortfolioPdf(filteredAnalyses, legsMap, {
+                  totalPL: stats.totalPL,
+                  totalInvested: stats.totalInvested,
+                  avgPL: stats.avgProfit,
+                  winRate: parseFloat(stats.winRate as string),
+                  wins: stats.wins,
+                  losses: stats.losses,
+                });
+                toast.success('PDF gerado com sucesso!');
+              }} 
+              className="h-12 px-5 font-bold border-primary/30 text-primary hover:bg-primary/10"
+            >
+              <Download className="mr-2 h-5 w-5" /> PDF
+            </Button>
+          </div>
         </div>
 
         {/* Filtros */}
