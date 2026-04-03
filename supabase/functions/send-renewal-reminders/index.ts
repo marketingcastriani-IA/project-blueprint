@@ -131,9 +131,15 @@ Deno.serve(async (req) => {
             
             <ul style="line-height: 2;">
               <li>✅ Simulações ilimitadas</li>
-              <li>✅ Relatórios de IA avançados</li>
-              <li>✅ OCR para leitura automática de notas</li>
-              <li>✅ Portfólio e histórico completos</li>
+              <li>✅ Análise por IA avançada</li>
+              <li>✅ Leitura de Imagem via OCR</li>
+              <li>✅ Histórico completo de operações</li>
+              <li>✅ Portfólio com P&L em tempo real</li>
+              <li>✅ Rastreador de Box Spread</li>
+              <li>✅ Lucro em Tempo Real (RTD Bridge)</li>
+              <li>✅ Calculadora CDI x Opções</li>
+              <li>✅ Diversificador de Carteira</li>
+              <li>✅ Suporte Prioritário</li>
             </ul>
             
             <div style="text-align: center; padding: 20px 0;">
