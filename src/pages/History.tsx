@@ -51,6 +51,8 @@ export default function History() {
 
   const [filterMonth, setFilterMonth] = useState('all');
   const [filterYear, setFilterYear] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'profit'>('newest');
 
   useEffect(() => {
     if (!user) return;
