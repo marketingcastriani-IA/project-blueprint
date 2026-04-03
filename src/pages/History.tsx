@@ -112,13 +112,37 @@ export default function History() {
   }, [analyses]);
 
   const filteredAnalyses = useMemo(() => {
-    return analyses.filter(a => {
+    let result = analyses.filter(a => {
       const date = new Date(a.created_at);
       const monthMatch = filterMonth === 'all' || date.getMonth().toString() === filterMonth;
       const yearMatch = filterYear === 'all' || date.getFullYear().toString() === filterYear;
-      return monthMatch && yearMatch;
+      if (!monthMatch || !yearMatch) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const nameMatch = a.name.toLowerCase().includes(q);
+        const assetMatch = a.underlying_asset?.toLowerCase().includes(q);
+        const legsAssetMatch = (legsMap[a.id] || []).some(l => l.asset?.toLowerCase().includes(q));
+        if (!nameMatch && !assetMatch && !legsAssetMatch) return false;
+      }
+      return true;
     });
-  }, [analyses, filterMonth, filterYear]);
+
+    // Sort
+    if (sortBy === 'oldest') {
+      result = [...result].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    } else if (sortBy === 'profit') {
+      result = [...result].sort((a, b) => {
+        const mA = metricsMap[a.id];
+        const mB = metricsMap[b.id];
+        const gainA = mA && typeof mA.maxGain === 'number' ? mA.maxGain : 0;
+        const gainB = mB && typeof mB.maxGain === 'number' ? mB.maxGain : 0;
+        return gainB - gainA;
+      });
+    }
+    // 'newest' is default order from DB
+
+    return result;
+  }, [analyses, filterMonth, filterYear, searchQuery, sortBy, legsMap, metricsMap]);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
