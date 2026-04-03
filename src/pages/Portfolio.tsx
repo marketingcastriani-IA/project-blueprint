@@ -3,14 +3,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import { supabase } from '@/integrations/supabase/client';
-import { CardContent } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { 
   Loader2, TrendingUp, TrendingDown, Calendar, Edit2, 
-  RotateCcw, Trash2, Briefcase, Wallet, Target, CalendarDays, Percent, BarChart3, Download 
+  RotateCcw, Trash2, Briefcase, Wallet, Target, CalendarDays, Percent, BarChart3, Download, FileDown
 } from 'lucide-react';
 import { countBusinessDays } from '@/lib/b3-calendar';
 import { calculateCDIReturn } from '@/lib/payoff';
@@ -18,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
 import { generatePortfolioPdf } from '@/lib/pdf-generator';
 import ListSkeleton from '@/components/skeletons/ListSkeleton';
+import { AreaChart, Area, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 
 interface ClosedAnalysis {
   id: string;
