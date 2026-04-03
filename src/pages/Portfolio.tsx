@@ -401,7 +401,7 @@ export default function Portfolio() {
         </div>
 
         {/* P&L Evolution Chart */}
-        {stats.evolutionData.length >= 2 && (
+        {stats.evolutionData.length >= 1 && (
           <Card className="border-primary/20">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-black flex items-center gap-2">
