@@ -158,9 +158,9 @@ serve(async (req) => {
               body: JSON.stringify({
                 from: 'Opções PRO X <contato@opcoesprox.com.br>',
                 to: profile.email,
-                subject: '🎉 Bem-vindo ao Opções PRO X!',
+                subject: '🎉 Bem-vindo ao Opções PRO X — Seu Acesso PRO Está Ativo!',
                 html: `
-                  <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a0f;border-radius:16px;overflow:hidden;border:1px solid #1a1a2e">
+                  <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:640px;margin:0 auto;background:#0a0a0f;border-radius:16px;overflow:hidden;border:1px solid #1a1a2e">
                     <div style="background:linear-gradient(135deg,#6d28d9,#4f46e5);padding:40px 30px;text-align:center">
                       <h1 style="color:#fff;margin:0;font-size:28px">🚀 Acesso PRO Ativado!</h1>
                       <p style="color:#e0d4ff;margin:10px 0 0;font-size:15px">Seu pagamento foi confirmado com sucesso</p>
@@ -170,26 +170,88 @@ serve(async (req) => {
                         Olá <strong style="color:#a78bfa">${profile.display_name || 'Investidor'}</strong>! 👋
                       </p>
                       <p style="color:#94a3b8;font-size:14px;line-height:1.7">
-                        Seu plano <strong style="color:#22c55e">PRO</strong> está ativo e você agora tem acesso completo a todas as funcionalidades:
+                        Parabéns! Seu plano <strong style="color:#22c55e">PRO</strong> está ativo e você agora tem acesso COMPLETO a todas as funcionalidades profissionais:
                       </p>
+
                       <div style="background:#111827;border-radius:12px;padding:20px;margin:20px 0;border:1px solid #1e293b">
-                        <ul style="list-style:none;padding:0;margin:0;color:#cbd5e1;font-size:14px;line-height:2.2">
-                          <li>✅ Análise por IA ilimitada</li>
-                          <li>✅ OCR — Leitura de imagens de opções</li>
-                          <li>✅ Histórico completo de estruturas</li>
-                          <li>✅ Portfólio de operações</li>
-                          <li>✅ Simulações ilimitadas</li>
-                          <li>✅ Comparação com CDI</li>
+                        <h3 style="color:#a78bfa;margin:0 0 12px;font-size:15px">📊 Simulador de Estruturas</h3>
+                        <ul style="list-style:none;padding:0;margin:0;color:#cbd5e1;font-size:13px;line-height:2">
+                          <li>✅ Monte qualquer estrutura (Box, Collar, Trava, Borboleta, etc.)</li>
+                          <li>✅ Gráfico de Payoff interativo</li>
+                          <li>✅ Simulações ILIMITADAS</li>
                         </ul>
                       </div>
-                      <p style="color:#94a3b8;font-size:13px;line-height:1.7">
+
+                      <div style="background:#111827;border-radius:12px;padding:20px;margin:20px 0;border:1px solid #1e293b">
+                        <h3 style="color:#a78bfa;margin:0 0 12px;font-size:15px">🤖 Análise por IA</h3>
+                        <ul style="list-style:none;padding:0;margin:0;color:#cbd5e1;font-size:13px;line-height:2">
+                          <li>✅ IA analisa e sugere melhorias na sua estrutura</li>
+                          <li>✅ Identifica riscos e oportunidades</li>
+                          <li>✅ Uso ILIMITADO</li>
+                        </ul>
+                      </div>
+
+                      <div style="background:#111827;border-radius:12px;padding:20px;margin:20px 0;border:1px solid #1e293b">
+                        <h3 style="color:#a78bfa;margin:0 0 12px;font-size:15px">📷 OCR — Leitura de Imagens</h3>
+                        <ul style="list-style:none;padding:0;margin:0;color:#cbd5e1;font-size:13px;line-height:2">
+                          <li>✅ Tire foto da tela e a IA monta a estrutura</li>
+                          <li>✅ Funciona com qualquer corretora</li>
+                        </ul>
+                      </div>
+
+                      <div style="background:#111827;border-radius:12px;padding:20px;margin:20px 0;border:1px solid #1e293b">
+                        <h3 style="color:#a78bfa;margin:0 0 12px;font-size:15px">🧮 Calculadora CDI x Opções</h3>
+                        <ul style="list-style:none;padding:0;margin:0;color:#cbd5e1;font-size:13px;line-height:2">
+                          <li>✅ Compare o lucro da operação com o CDI</li>
+                          <li>✅ Com/sem IR (tabela regressiva automática)</li>
+                        </ul>
+                      </div>
+
+                      <div style="background:#111827;border-radius:12px;padding:20px;margin:20px 0;border:1px solid #1e293b">
+                        <h3 style="color:#a78bfa;margin:0 0 12px;font-size:15px">📊 Rastreadores (Box & Collar)</h3>
+                        <ul style="list-style:none;padding:0;margin:0;color:#cbd5e1;font-size:13px;line-height:2">
+                          <li>✅ Monitore Box Spread vs CDI em tempo real</li>
+                          <li>✅ Acompanhe proteção de carteira com Collar</li>
+                        </ul>
+                      </div>
+
+                      <div style="background:#111827;border-radius:12px;padding:20px;margin:20px 0;border:1px solid #1e293b">
+                        <h3 style="color:#a78bfa;margin:0 0 12px;font-size:15px">🎯 Diversificador + Portfólio</h3>
+                        <ul style="list-style:none;padding:0;margin:0;color:#cbd5e1;font-size:13px;line-height:2">
+                          <li>✅ Monte portfólio de estratégias equilibrado</li>
+                          <li>✅ Histórico completo + Relatórios em PDF</li>
+                        </ul>
+                      </div>
+
+                      <div style="background:#0c1a2e;border-radius:12px;padding:20px;margin:20px 0;border:1px solid #1e3a5f">
+                        <h3 style="color:#f59e0b;margin:0 0 12px;font-size:15px">🔴 Dados ao Vivo (Tempo Real)</h3>
+                        <ul style="list-style:none;padding:0;margin:0;color:#cbd5e1;font-size:13px;line-height:2">
+                          <li>✅ Preços atualizados em tempo real</li>
+                          <li>✅ Visualização profissional</li>
+                        </ul>
+                        <div style="background:#1a0f00;border:1px solid #f59e0b44;border-radius:8px;padding:12px;margin-top:12px">
+                          <p style="color:#fbbf24;font-size:12px;margin:0;line-height:1.6">
+                            ⚠️ <strong>IMPORTANTE:</strong> O Tempo Real requer conexão com o <strong>Profit Pro</strong> (Nelogica) via Bridge RTD. 
+                            Basta ter o Profit Pro aberto e configurar o Bridge. 
+                            Veja o guia: Menu → Manual → Configuração do Bridge
+                          </p>
+                        </div>
+                      </div>
+
+                      <p style="color:#94a3b8;font-size:13px;line-height:1.7;margin-top:25px">
                         📅 <strong style="color:#e2e8f0">Válido até:</strong> ${expiresAt.toLocaleDateString('pt-BR')}<br>
                         💳 <strong style="color:#e2e8f0">Data da compra:</strong> ${now.toLocaleDateString('pt-BR')}
                       </p>
+
                       <div style="text-align:center;margin:30px 0 10px">
                         <a href="https://www.opcoesprox.com.br/dashboard" style="display:inline-block;background:linear-gradient(135deg,#6d28d9,#4f46e5);color:#fff;text-decoration:none;padding:14px 40px;border-radius:10px;font-weight:bold;font-size:15px">
                           Acessar Plataforma →
                         </a>
+                      </div>
+                      <div style="text-align:center;margin:10px 0 0">
+                        <a href="https://www.opcoesprox.com.br/manual" style="color:#a78bfa;font-size:13px;text-decoration:underline">📖 Ver Manual Completo</a>
+                        &nbsp;&nbsp;|&nbsp;&nbsp;
+                        <a href="https://www.opcoesprox.com.br/faq" style="color:#a78bfa;font-size:13px;text-decoration:underline">❓ FAQ</a>
                       </div>
                     </div>
                     <div style="background:#060609;padding:20px;text-align:center;border-top:1px solid #1a1a2e">
