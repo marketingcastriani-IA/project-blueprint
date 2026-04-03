@@ -17,6 +17,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAccessControl } from '@/hooks/useAccessControl';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 
 // IR regressivo para renda fixa
 function getIRRate(diasCorridos: number): number {
@@ -31,22 +32,56 @@ function calcDiasCorridos(start: Date, end: Date): number {
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
+// Format number as BRL: 100000 -> "100.000,00"
+function formatBRL(value: number): string {
+  return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Parse BRL formatted string back to number: "100.000,00" -> 100000
+function parseBRL(value: string): number {
+  const cleaned = value.replace(/\./g, '').replace(',', '.');
+  return parseFloat(cleaned) || 0;
+}
+
 export default function CalculadoraRendaFixa() {
   const navigate = useNavigate();
   const accessControl = useAccessControl();
   const isPro = accessControl.planType === 'pro' || accessControl.isAdmin || (!accessControl.trialExpired && accessControl.status === 'approved');
-  const [capital, setCapital] = useState<string>('100000');
-  const [cdiAnual, setCdiAnual] = useState<string>('14.15');
+  const [capitalRaw, setCapitalRaw] = useState<number>(100000);
+  const [capitalDisplay, setCapitalDisplay] = useState<string>('100.000,00');
+  const [cdiAnual, setCdiAnual] = useState<string>('14.65');
   const [percentCdi, setPercentCdi] = useState<string>('100');
   const [dataInicio, setDataInicio] = useState<Date>(new Date());
   const [dataVencimento, setDataVencimento] = useState<Date | undefined>(undefined);
-  const [incluirIR, setIncluirIR] = useState(true);
+  const [incluirIRRF, setIncluirIRRF] = useState(true);
+  const [incluirIROpcoes, setIncluirIROpcoes] = useState(false);
+  const [irOpcoesTaxa, setIrOpcoesTaxa] = useState<number>(15);
   const [lucroEstrutura, setLucroEstrutura] = useState<string>('');
+
+  const handleCapitalChange = (rawValue: string) => {
+    // Allow typing numbers, remove non-numeric except comma and dot
+    const numericOnly = rawValue.replace(/[^0-9,]/g, '');
+    // Parse as number (treat comma as decimal)
+    const asNumber = parseFloat(numericOnly.replace(',', '.')) || 0;
+    setCapitalRaw(asNumber);
+    setCapitalDisplay(rawValue);
+  };
+
+  const handleCapitalBlur = () => {
+    setCapitalDisplay(formatBRL(capitalRaw));
+  };
+
+  const handleCapitalFocus = () => {
+    // Show raw number for easier editing
+    if (capitalRaw > 0) {
+      setCapitalDisplay(String(capitalRaw));
+    }
+  };
 
   const resultado = useMemo(() => {
     if (!dataVencimento) return null;
 
-    const capitalNum = parseFloat(capital) || 0;
+    const capitalNum = capitalRaw;
     const cdiNum = parseFloat(cdiAnual) || 0;
     const pctCdi = parseFloat(percentCdi) || 100;
     const lucroEstruturaNum = parseFloat(lucroEstrutura) || 0;
@@ -60,10 +95,10 @@ export default function CalculadoraRendaFixa() {
     // Aplicando % do CDI contratado
     const rendBrutoPeriodo = cdiBrutoPeriodo * (pctCdi / 100);
 
-    // IR
-    const aliquotaIR = getIRRate(diasCorridos);
-    const rendLiquidoPeriodo = incluirIR
-      ? rendBrutoPeriodo * (1 - aliquotaIR / 100)
+    // IR Renda Fixa
+    const aliquotaIRRF = getIRRate(diasCorridos);
+    const rendLiquidoPeriodo = incluirIRRF
+      ? rendBrutoPeriodo * (1 - aliquotaIRRF / 100)
       : rendBrutoPeriodo;
 
     // Valores em R$
@@ -73,21 +108,28 @@ export default function CalculadoraRendaFixa() {
     // Comparação com estrutura de opções
     let comparacao = null;
     if (lucroEstruturaNum !== 0) {
-      // Lucro da estrutura como % do CDI bruto do período
-      const pctDoCdiBruto = cdiBrutoPeriodo > 0 ? (lucroEstruturaNum / cdiBrutoPeriodo) * 100 : 0;
-      // Lucro da estrutura como % do CDI líquido
-      const pctDoCdiLiquido = rendLiquidoPeriodo > 0 ? (lucroEstruturaNum / rendLiquidoPeriodo) * 100 : 0;
-      // Lucro em R$ da estrutura
       const lucroEstruturaRS = capitalNum * (lucroEstruturaNum / 100);
+      // Aplicar IR sobre opções se ativado
+      const lucroOpcoesBruto = lucroEstruturaNum;
+      const lucroOpcoesLiquido = incluirIROpcoes
+        ? lucroEstruturaNum * (1 - irOpcoesTaxa / 100)
+        : lucroEstruturaNum;
+      const lucroOpcoesRS = capitalNum * (lucroOpcoesLiquido / 100);
 
+      // % do CDI bruto
+      const pctDoCdiBruto = cdiBrutoPeriodo > 0 ? (lucroOpcoesLiquido / cdiBrutoPeriodo) * 100 : 0;
+      // % do CDI líquido
+      const pctDoCdiLiquido = rendLiquidoPeriodo > 0 ? (lucroOpcoesLiquido / rendLiquidoPeriodo) * 100 : 0;
+
+      const referenciaRF = incluirIRRF ? rendLiquidoPeriodo : rendBrutoPeriodo;
       comparacao = {
-        lucroPercent: lucroEstruturaNum,
-        lucroRS: lucroEstruturaRS,
+        lucroPercentBruto: lucroOpcoesBruto,
+        lucroPercentLiquido: lucroOpcoesLiquido,
+        lucroRS: lucroOpcoesRS,
+        lucroBrutoRS: lucroEstruturaRS,
         pctDoCdiBruto,
         pctDoCdiLiquido,
-        vantagem: incluirIR
-          ? lucroEstruturaNum > rendLiquidoPeriodo
-          : lucroEstruturaNum > rendBrutoPeriodo,
+        vantagem: lucroOpcoesLiquido > referenciaRF,
       };
     }
 
@@ -99,10 +141,51 @@ export default function CalculadoraRendaFixa() {
       rendLiquidoPeriodo,
       rendBrutoRS,
       rendLiquidoRS,
-      aliquotaIR,
+      aliquotaIRRF,
       comparacao,
     };
-  }, [capital, cdiAnual, percentCdi, dataInicio, dataVencimento, incluirIR, lucroEstrutura]);
+  }, [capitalRaw, cdiAnual, percentCdi, dataInicio, dataVencimento, incluirIRRF, incluirIROpcoes, irOpcoesTaxa, lucroEstrutura]);
+
+  // Chart data
+  const chartData = useMemo(() => {
+    if (!resultado) return [];
+    const data = [];
+
+    // Renda Fixa bars
+    data.push({
+      name: 'RF Bruto',
+      valor: resultado.rendBrutoRS,
+      percent: resultado.rendBrutoPeriodo,
+      fill: 'hsl(var(--primary))',
+    });
+    if (incluirIRRF) {
+      data.push({
+        name: 'RF Líquido',
+        valor: resultado.rendLiquidoRS,
+        percent: resultado.rendLiquidoPeriodo,
+        fill: 'hsl(var(--primary) / 0.6)',
+      });
+    }
+
+    // Opções bars
+    if (resultado.comparacao) {
+      data.push({
+        name: 'Opções Bruto',
+        valor: resultado.comparacao.lucroBrutoRS,
+        percent: resultado.comparacao.lucroPercentBruto,
+        fill: resultado.comparacao.vantagem ? '#22c55e' : '#ef4444',
+      });
+      if (incluirIROpcoes) {
+        data.push({
+          name: 'Opções Líquido',
+          valor: resultado.comparacao.lucroRS,
+          percent: resultado.comparacao.lucroPercentLiquido,
+          fill: resultado.comparacao.vantagem ? 'rgba(34,197,94,0.6)' : 'rgba(239,68,68,0.6)',
+        });
+      }
+    }
+    return data;
+  }, [resultado, incluirIRRF, incluirIROpcoes]);
 
   if (!isPro) {
     return (
@@ -152,13 +235,16 @@ export default function CalculadoraRendaFixa() {
                   Capital Investido (R$)
                 </Label>
                 <div className="relative mt-1">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">R$</span>
                   <Input
-                    type="number"
-                    value={capital}
-                    onChange={e => setCapital(e.target.value)}
-                    className="pl-9 font-mono"
-                    placeholder="100000"
+                    type="text"
+                    inputMode="decimal"
+                    value={capitalDisplay}
+                    onChange={e => handleCapitalChange(e.target.value)}
+                    onBlur={handleCapitalBlur}
+                    onFocus={handleCapitalFocus}
+                    className="pl-10 font-mono"
+                    placeholder="100.000,00"
                   />
                 </div>
               </div>
@@ -229,21 +315,72 @@ export default function CalculadoraRendaFixa() {
                 </Popover>
               </div>
 
-              <div className="flex items-center justify-between rounded-lg border border-border p-3 bg-muted/30">
+              {/* IR Renda Fixa */}
+              <div className={cn(
+                "flex items-center justify-between rounded-lg border-2 p-3 transition-all",
+                incluirIRRF
+                  ? "border-success/60 bg-success/10"
+                  : "border-destructive/40 bg-destructive/10"
+              )}>
                 <div className="flex items-center gap-2">
                   <Scale className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-semibold">Descontar IR</span>
+                  <span className="text-sm font-bold">IR Renda Fixa</span>
                   <Tooltip>
                     <TooltipTrigger>
                       <Info className="h-3.5 w-3.5 text-muted-foreground" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs text-xs">
-                      Tabela regressiva de IR: até 180 dias = 22,5%; até 360 = 20%; até 720 = 17,5%; acima = 15%.
-                      Opções de até 1 dia não têm IR sobre ganho de capital.
+                      Tabela regressiva: até 180d = 22,5%; até 360d = 20%; até 720d = 17,5%; acima = 15%.
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <Switch checked={incluirIR} onCheckedChange={setIncluirIR} />
+                <Switch
+                  checked={incluirIRRF}
+                  onCheckedChange={setIncluirIRRF}
+                  className={cn(
+                    incluirIRRF ? "data-[state=checked]:bg-success" : "data-[state=unchecked]:bg-destructive/50"
+                  )}
+                />
+              </div>
+
+              {/* IR Opções */}
+              <div className={cn(
+                "flex items-center justify-between rounded-lg border-2 p-3 transition-all",
+                incluirIROpcoes
+                  ? "border-success/60 bg-success/10"
+                  : "border-destructive/40 bg-destructive/10"
+              )}>
+                <div className="flex items-center gap-2">
+                  <Scale className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-bold">IR Opções</span>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs text-xs">
+                      Alíquota fixa de IR sobre ganho de capital em opções (padrão 15%).
+                    </TooltipContent>
+                  </Tooltip>
+                  {incluirIROpcoes && (
+                    <>
+                      <Input
+                        type="number"
+                        step="0.5"
+                        value={irOpcoesTaxa}
+                        onChange={e => setIrOpcoesTaxa(parseFloat(e.target.value) || 0)}
+                        className="h-7 w-16 text-xs font-mono font-bold text-center ml-1"
+                      />
+                      <span className="text-xs font-bold text-success">%</span>
+                    </>
+                  )}
+                </div>
+                <Switch
+                  checked={incluirIROpcoes}
+                  onCheckedChange={setIncluirIROpcoes}
+                  className={cn(
+                    incluirIROpcoes ? "data-[state=checked]:bg-success" : "data-[state=unchecked]:bg-destructive/50"
+                  )}
+                />
               </div>
 
               <Separator />
@@ -302,14 +439,14 @@ export default function CalculadoraRendaFixa() {
                     />
                   </div>
 
-                  {incluirIR && (
+                  {incluirIRRF && (
                     <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 space-y-2">
                       <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground font-semibold">Alíquota IR</span>
-                        <span className="font-mono font-bold text-destructive">{resultado.aliquotaIR}%</span>
+                        <span className="text-muted-foreground font-semibold">Alíquota IR RF</span>
+                        <span className="font-mono font-bold text-destructive">{resultado.aliquotaIRRF}%</span>
                       </div>
                       <div className="flex justify-between text-xs">
-                        <span className="text-muted-foreground font-semibold">Rend. Líquido</span>
+                        <span className="text-muted-foreground font-semibold">Rend. Líquido RF</span>
                         <span className="font-mono font-bold text-foreground">{formatPercent(resultado.rendLiquidoPeriodo)}</span>
                       </div>
                     </div>
@@ -320,12 +457,12 @@ export default function CalculadoraRendaFixa() {
                   <div className="grid grid-cols-2 gap-3">
                     <MetricBox
                       label="Lucro Bruto (R$)"
-                      value={`R$ ${resultado.rendBrutoRS.toFixed(2).replace('.', ',')}`}
+                      value={`R$ ${formatBRL(resultado.rendBrutoRS)}`}
                       color="success"
                     />
                     <MetricBox
-                      label={incluirIR ? "Lucro Líquido (R$)" : "Lucro (R$)"}
-                      value={`R$ ${resultado.rendLiquidoRS.toFixed(2).replace('.', ',')}`}
+                      label={incluirIRRF ? "Lucro Líquido RF (R$)" : "Lucro RF (R$)"}
+                      value={`R$ ${formatBRL(resultado.rendLiquidoRS)}`}
                       color="success"
                       highlight
                     />
@@ -351,18 +488,20 @@ export default function CalculadoraRendaFixa() {
 
                 <div className="flex items-center justify-center gap-4 py-2">
                   <div className="text-center">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Estrutura</p>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                      Opções {incluirIROpcoes ? '(líq.)' : '(bruto)'}
+                    </p>
                     <p className="text-2xl font-black font-mono text-foreground">
-                      {formatPercent(resultado.comparacao.lucroPercent)}
+                      {formatPercent(resultado.comparacao.lucroPercentLiquido)}
                     </p>
                   </div>
                   <ArrowRight className="h-5 w-5 text-muted-foreground" />
                   <div className="text-center">
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
-                      Renda Fixa {incluirIR ? '(líq.)' : '(bruto)'}
+                      Renda Fixa {incluirIRRF ? '(líq.)' : '(bruto)'}
                     </p>
                     <p className="text-2xl font-black font-mono text-foreground">
-                      {formatPercent(incluirIR ? resultado.rendLiquidoPeriodo : resultado.rendBrutoPeriodo)}
+                      {formatPercent(incluirIRRF ? resultado.rendLiquidoPeriodo : resultado.rendBrutoPeriodo)}
                     </p>
                   </div>
                 </div>
@@ -384,7 +523,7 @@ export default function CalculadoraRendaFixa() {
                     </Badge>
                   </div>
 
-                  {incluirIR && (
+                  {incluirIRRF && (
                     <div className="flex justify-between items-center">
                       <span className="text-sm font-semibold text-muted-foreground">% do CDI Líquido</span>
                       <Badge
@@ -401,9 +540,11 @@ export default function CalculadoraRendaFixa() {
                   )}
 
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-semibold text-muted-foreground">Lucro Estrutura (R$)</span>
+                    <span className="text-sm font-semibold text-muted-foreground">
+                      Lucro Opções {incluirIROpcoes ? '(líq.)' : ''} (R$)
+                    </span>
                     <span className="font-mono font-bold text-foreground">
-                      R$ {resultado.comparacao.lucroRS.toFixed(2).replace('.', ',')}
+                      R$ {formatBRL(resultado.comparacao.lucroRS)}
                     </span>
                   </div>
                 </div>
@@ -419,6 +560,49 @@ export default function CalculadoraRendaFixa() {
                   {resultado.comparacao.vantagem
                     ? `✅ Estrutura rende ${(resultado.comparacao.pctDoCdiBruto - 100).toFixed(1).replace('.', ',')}% ACIMA do CDI bruto`
                     : `⚠️ Estrutura rende ${(100 - resultado.comparacao.pctDoCdiBruto).toFixed(1).replace('.', ',')}% ABAIXO do CDI bruto`}
+                </div>
+              </ProfessionalCard>
+            )}
+
+            {/* Gráfico de Comparação */}
+            {resultado && chartData.length > 0 && (
+              <ProfessionalCard className="p-6 space-y-4">
+                <h2 className="text-lg font-bold flex items-center gap-2 text-foreground">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Gráfico Comparativo (R$)
+                </h2>
+                <div className="h-[280px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11, fontWeight: 600 }}
+                      />
+                      <YAxis
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                        tickFormatter={(v) => `R$ ${formatBRL(v)}`}
+                      />
+                      <RechartsTooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: 8,
+                          color: 'hsl(var(--foreground))',
+                          fontSize: 13,
+                        }}
+                        formatter={(value: number, name: string, props: any) => [
+                          `R$ ${formatBRL(value)} (${props.payload.percent.toFixed(2)}%)`,
+                          props.payload.name
+                        ]}
+                      />
+                      <Bar dataKey="valor" radius={[6, 6, 0, 0]} maxBarSize={60}>
+                        {chartData.map((entry, index) => (
+                          <Cell key={index} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </ProfessionalCard>
             )}
