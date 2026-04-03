@@ -175,7 +175,20 @@ export default function Portfolio() {
       return sum + getCDIForPeriod(a.created_at, a.closed_at, a.cdi_rate, invested);
     }, 0);
 
-    return { totalPL, totalInvested, totalReturnPct, wins, losses, winRate, total: filteredAnalyses.length, avgProfit, totalCDI };
+    // Evolution data for P&L chart
+    const evolutionData: { name: string; pl: number }[] = [];
+    let cumulativePL = 0;
+    const sorted = [...filteredAnalyses].sort((a, b) => new Date(a.closed_at!).getTime() - new Date(b.closed_at!).getTime());
+    sorted.forEach(a => {
+      const pnl = pnls[filteredAnalyses.indexOf(a)] ?? 0;
+      cumulativePL += pnl;
+      evolutionData.push({
+        name: new Date(a.closed_at!).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+        pl: Math.round(cumulativePL * 100) / 100,
+      });
+    });
+
+    return { totalPL, totalInvested, totalReturnPct, wins, losses, winRate, total: filteredAnalyses.length, avgProfit, totalCDI, evolutionData };
   }, [filteredAnalyses, legsMap]);
 
   const handleReopen = async (e: React.MouseEvent, id: string) => {
