@@ -10,12 +10,8 @@ import { Zap, Lock } from "lucide-react";
 export default function BoxTracker() {
   const { user } = useAuth();
   const access = useAccessControl();
-  const navigate = useNavigate();
 
-  if (!user) {
-    navigate("/auth");
-    return null;
-  }
+  if (!user) return <Navigate to="/auth" replace />;
 
   const isPro = access.planType === "pro" || access.isAdmin;
 
