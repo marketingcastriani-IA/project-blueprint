@@ -890,7 +890,7 @@ export const generateLandingPagePdf = async (images: PdfImageMap = {}) => {
   });
 
   // ===== FEATURES PAGES (one per feature with screenshot) =====
-  for (const item of LANDING_IMAGES) {
+  for (const item of LANDING_FEATURES) {
     doc.addPage();
     addHeader(doc, 'Catálogo de Produto');
     y = 36;
@@ -899,7 +899,8 @@ export const generateLandingPagePdf = async (images: PdfImageMap = {}) => {
     y = addParagraph(doc, item.desc, y);
     y += 4;
 
-    const imgData = imageMap[item.src];
+    const imgUrl = images[item.key];
+    const imgData = imgUrl ? imageMap[imgUrl] : undefined;
     if (imgData) {
       ({ newY: y } = addImageToPdf(doc, imgData, y, 180, 130));
     }
