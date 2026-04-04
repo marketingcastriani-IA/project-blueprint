@@ -3,6 +3,41 @@ import autoTable from 'jspdf-autotable';
 import { calculateMetrics, calculateCDIOpportunityCost } from './payoff';
 import type { Leg, AnalysisMetrics } from './types';
 
+// Helper to load an image URL as base64 data URL for jsPDF
+const loadImageAsBase64 = (src: string): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('Canvas context unavailable')); return; }
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL('image/jpeg', 0.85));
+    };
+    img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
+    img.src = src;
+  });
+};
+
+// Helper to add an image to PDF with proper aspect ratio
+const addImageToPdf = (doc: jsPDF, dataUrl: string, y: number, maxWidth = 170, maxHeight = 90): { newY: number } => {
+  const img = new Image();
+  img.src = dataUrl;
+  const ratio = img.naturalWidth / img.naturalHeight;
+  let w = maxWidth;
+  let h = w / ratio;
+  if (h > maxHeight) {
+    h = maxHeight;
+    w = h * ratio;
+  }
+  const x = (210 - w) / 2; // center horizontally
+  doc.addImage(dataUrl, 'JPEG', x, y, w, h);
+  return { newY: y + h + 6 };
+};
+
 // Helper to call autoTable and return finalY + spacing
 const addTable = (doc: jsPDF, options: any, spacing = 10): number => {
   autoTable(doc, options);
