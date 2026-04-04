@@ -342,7 +342,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   y = addParagraph(doc, 'O módulo Diversificador permite criar planos de alocação para distribuir seu patrimônio entre diferentes estratégias de opções. Defina percentuais, nível de risco e alavancagem para cada estratégia, mantendo um controle disciplinado da sua exposição ao mercado.', y);
 
   // Diversificador screenshot
-  const divImg = imageMap['/assets/screenshot-diversificador.png'];
+  const divImg = getImg('diversificador');
   if (divImg) {
     y = checkPageBreak(doc, y, 100);
     ({ newY: y } = addImageToPdf(doc, divImg, y));
