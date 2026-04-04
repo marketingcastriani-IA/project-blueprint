@@ -21,8 +21,9 @@ export default function Index() {
   const { user, loading } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const { proPrice } = useProPrice();
+  const { proPrice, annualPrice, monthlyEquivalent } = useProPrice();
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [planPeriod, setPlanPeriod] = useState<PlanPeriod>('monthly');
 
   useEffect(() => {
     const onScroll = () => setShowScrollTop(window.scrollY > 600);
