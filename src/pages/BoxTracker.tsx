@@ -1,6 +1,6 @@
 import { useAccessControl } from "@/hooks/useAccessControl";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import BoxTrackerTab from "@/components/BoxTrackerTab";
 import { ProfessionalLayout } from "@/components/ProfessionalLayout";
@@ -12,10 +12,7 @@ export default function BoxTracker() {
   const access = useAccessControl();
   const navigate = useNavigate();
 
-  if (!user) {
-    navigate("/auth");
-    return null;
-  }
+  if (!user) return <Navigate to="/auth" replace />;
 
   const isPro = access.planType === "pro" || access.isAdmin;
 
