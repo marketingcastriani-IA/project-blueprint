@@ -203,7 +203,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   y = addSectionTitle(doc, '2. Como Criar uma Análise', y);
 
   // OCR screenshot
-  const ocrImg = imageMap['/assets/screenshot-ocr.png'];
+  const ocrImg = getImg('ocr');
   if (ocrImg) {
     y = checkPageBreak(doc, y, 100);
     ({ newY: y } = addImageToPdf(doc, ocrImg, y));
