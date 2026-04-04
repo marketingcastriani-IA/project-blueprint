@@ -134,37 +134,29 @@ const formatMetricValue = (val: number | string | 'Ilimitado'): string => {
 
 // ==================== FAQ MANUAL PDF ====================
 
-// Image mapping: section → image path (these are imported in FAQ.tsx from src/assets)
-const FAQ_IMAGES: { section: string; src: string; alt: string }[] = [
-  { section: 'payoff', src: '/assets/screenshot-payoff.png', alt: 'Gráfico de Payoff' },
-  { section: 'cdi', src: '/assets/screenshot-cdi.png', alt: 'Comparação CDI' },
-  { section: 'historico', src: '/assets/screenshot-analysis.png', alt: 'Histórico de Análises' },
-  { section: 'portfolio', src: '/assets/screenshot-portfolio.png', alt: 'Portfólio' },
-  { section: 'analise', src: '/assets/screenshot-ai-report.png', alt: 'Análise de IA' },
-  { section: 'diversificador', src: '/assets/screenshot-diversificador.png', alt: 'Diversificador' },
-  { section: 'temporeal', src: '/assets/screenshot-realtime.png', alt: 'Tempo Real' },
-  { section: 'box', src: '/assets/box-tracker-winner.png', alt: 'Rastreador de Box' },
-  { section: 'bridge', src: '/assets/screenshot-ocr.png', alt: 'OCR Upload' },
-];
+export type PdfImageMap = Record<string, string>; // key → imported URL
 
-const loadAllImages = async (images: { src: string }[]): Promise<Record<string, string>> => {
+const loadAllImages = async (urls: string[]): Promise<Record<string, string>> => {
   const map: Record<string, string> = {};
-  const results = await Promise.allSettled(
-    images.map(async (img) => {
+  await Promise.allSettled(
+    urls.map(async (src) => {
       try {
-        const b64 = await loadImageAsBase64(img.src);
-        map[img.src] = b64;
+        const b64 = await loadImageAsBase64(src);
+        map[src] = b64;
       } catch { /* skip failed images */ }
     })
   );
   return map;
 };
 
-export const generateFAQPdf = async () => {
+export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   const doc = new jsPDF();
 
-  // Pre-load all images
-  const imageMap = await loadAllImages(FAQ_IMAGES);
+  // Pre-load all images from the imported URLs
+  const urls = Object.values(images).filter(Boolean);
+  const imageMap = await loadAllImages(urls);
+  // Helper to get image by key
+  const getImg = (key: string) => images[key] ? imageMap[images[key]] : undefined;
   
   // Cover page
   doc.setFillColor(...COLORS.dark);
@@ -211,7 +203,7 @@ export const generateFAQPdf = async () => {
   y = addSectionTitle(doc, '2. Como Criar uma Análise', y);
 
   // OCR screenshot
-  const ocrImg = imageMap['/assets/screenshot-ocr.png'];
+  const ocrImg = getImg('ocr');
   if (ocrImg) {
     y = checkPageBreak(doc, y, 100);
     ({ newY: y } = addImageToPdf(doc, ocrImg, y));
@@ -236,7 +228,7 @@ export const generateFAQPdf = async () => {
   y = addParagraph(doc, 'O gráfico de payoff mostra visualmente o lucro ou prejuízo da sua estrutura para cada cenário de preço do ativo-objeto no vencimento. Use os botões VALOR e % ROI para alternar a visualização. A linha tracejada amarela representa o retorno do CDI.', y);
 
   // Payoff screenshot
-  const payoffImg = imageMap['/assets/screenshot-payoff.png'];
+  const payoffImg = getImg('payoff');
   if (payoffImg) {
     y = checkPageBreak(doc, y, 100);
     ({ newY: y } = addImageToPdf(doc, payoffImg, y));
@@ -260,7 +252,7 @@ export const generateFAQPdf = async () => {
   y = addParagraph(doc, 'A comparação com CDI permite avaliar se a sua estratégia de opções supera o rendimento do CDI (Certificado de Depósito Interbancário), a taxa de referência para investimentos de renda fixa no Brasil.', y);
 
   // CDI screenshot
-  const cdiImg = imageMap['/assets/screenshot-cdi.png'];
+  const cdiImg = getImg('cdi');
   if (cdiImg) {
     y = checkPageBreak(doc, y, 100);
     ({ newY: y } = addImageToPdf(doc, cdiImg, y));
@@ -287,7 +279,7 @@ export const generateFAQPdf = async () => {
   y = addParagraph(doc, 'Ao abrir uma operação ativa, você acessa a tela de Detalhes. Nela é possível monitorar o P&L em tempo real, comparar com o custo de oportunidade do CDI e solicitar um Veredito de Saída da IA para decidir o melhor momento de encerrar.', y);
 
   // AI Analysis screenshot
-  const aiImg = imageMap['/assets/screenshot-ai-report.png'];
+  const aiImg = getImg('ai');
   if (aiImg) {
     y = checkPageBreak(doc, y, 100);
     ({ newY: y } = addImageToPdf(doc, aiImg, y));
@@ -311,7 +303,7 @@ export const generateFAQPdf = async () => {
   y = addParagraph(doc, 'O Histórico é o centro de controle das suas análises. Todas as operações salvas aparecem organizadas por status (Ativas e Encerradas) com filtros por mês e ano.', y);
 
   // Histórico screenshot
-  const histImg = imageMap['/assets/screenshot-analysis.png'];
+  const histImg = getImg('historico');
   if (histImg) {
     y = checkPageBreak(doc, y, 100);
     ({ newY: y } = addImageToPdf(doc, histImg, y));
@@ -339,7 +331,7 @@ export const generateFAQPdf = async () => {
   y = addParagraph(doc, 'O Portfólio consolida todas as operações encerradas. Métricas disponíveis: Resultado Total, Capital Alocado, Média por Operação, VS CDI, Taxa de Acerto e total de Estratégias Encerradas.', y);
 
   // Portfolio screenshot
-  const portImg = imageMap['/assets/screenshot-portfolio.png'];
+  const portImg = getImg('portfolio');
   if (portImg) {
     y = checkPageBreak(doc, y, 100);
     ({ newY: y } = addImageToPdf(doc, portImg, y));
@@ -350,7 +342,7 @@ export const generateFAQPdf = async () => {
   y = addParagraph(doc, 'O módulo Diversificador permite criar planos de alocação para distribuir seu patrimônio entre diferentes estratégias de opções. Defina percentuais, nível de risco e alavancagem para cada estratégia, mantendo um controle disciplinado da sua exposição ao mercado.', y);
 
   // Diversificador screenshot
-  const divImg = imageMap['/assets/screenshot-diversificador.png'];
+  const divImg = getImg('diversificador');
   if (divImg) {
     y = checkPageBreak(doc, y, 100);
     ({ newY: y } = addImageToPdf(doc, divImg, y));
@@ -361,7 +353,7 @@ export const generateFAQPdf = async () => {
   y = addSectionTitle(doc, '10. Tempo Real', y);
   y = addParagraph(doc, 'Conecte ao Profit Pro via RTD Bridge e acompanhe suas operações com preços ao vivo, P&L em tempo real e encerramento direto pelo app.', y);
 
-  const rtImg = imageMap['/assets/screenshot-realtime.png'];
+  const rtImg = getImg('temporeal');
   if (rtImg) {
     y = checkPageBreak(doc, y, 100);
     ({ newY: y } = addImageToPdf(doc, rtImg, y));
@@ -372,7 +364,7 @@ export const generateFAQPdf = async () => {
   y = addSectionTitle(doc, '11. Rastreador de Box', y);
   y = addParagraph(doc, 'Rastreie automaticamente os melhores boxes da B3 em tempo real. Ranking com troféus 3D, % do CDI e instruções de montagem passo a passo.', y);
 
-  const boxImg = imageMap['/assets/box-tracker-winner.png'];
+  const boxImg = getImg('box');
   if (boxImg) {
     y = checkPageBreak(doc, y, 100);
     ({ newY: y } = addImageToPdf(doc, boxImg, y));
@@ -828,24 +820,25 @@ export const generateAnalysisPdf = (
 
 // ==================== LANDING PAGE PDF ====================
 
-const LANDING_IMAGES = [
-  { key: 'analysis', src: '/assets/screenshot-analysis.png', title: 'Dashboard de Análise', desc: 'Visão completa da estrutura com P&L em tempo real, métricas e gráfico de payoff.' },
-  { key: 'ocr', src: '/assets/screenshot-ocr.png', title: 'OCR Inteligente', desc: 'Tire um print da corretora e a IA lê strikes, prêmios e quantidades em 2 segundos.' },
-  { key: 'ai', src: '/assets/screenshot-ai-report.png', title: 'Análise com IA', desc: 'Relatório quantitativo com nota de atratividade, risco, cenários e sugestões.' },
-  { key: 'payoff', src: '/assets/screenshot-payoff.png', title: 'Gráfico de Payoff', desc: 'Visualize lucro máximo, risco máximo, breakeven e métricas em tempo real.' },
-  { key: 'cdi', src: '/assets/screenshot-cdi.png', title: 'Comparativo CDI', desc: 'Compare sua estratégia contra o CDI e saiba se o risco vale a pena.' },
-  { key: 'realtime', src: '/assets/screenshot-realtime.png', title: 'Tempo Real 🔴 AO VIVO', desc: 'Conecte ao Profit Pro via RTD Bridge e acompanhe operações com preços ao vivo.' },
-  { key: 'portfolio', src: '/assets/screenshot-portfolio.png', title: 'Portfólio P&L', desc: 'Acompanhe P&L consolidado, ROI total e taxa de acerto das suas operações.' },
-  { key: 'diversificador', src: '/assets/screenshot-diversificador.png', title: 'Diversificador', desc: 'Gerencie a alocação do seu patrimônio entre estratégias com balanceamento automático.' },
-  { key: 'box', src: '/assets/box-tracker-winner.png', title: 'Rastreador de Box 🔴 AO VIVO', desc: 'Rastreie os melhores boxes da B3 em tempo real. Ranking com troféus e % do CDI.' },
-  { key: 'calcCdi', src: '/assets/calculadora-cdi.png', title: 'Calculadora CDI × Opções', desc: 'Compare o rendimento de qualquer estratégia com a renda fixa.' },
+const LANDING_FEATURES = [
+  { key: 'analysis', title: 'Dashboard de Análise', desc: 'Visão completa da estrutura com P&L em tempo real, métricas e gráfico de payoff.' },
+  { key: 'ocr', title: 'OCR Inteligente', desc: 'Tire um print da corretora e a IA lê strikes, prêmios e quantidades em 2 segundos.' },
+  { key: 'ai', title: 'Análise com IA', desc: 'Relatório quantitativo com nota de atratividade, risco, cenários e sugestões.' },
+  { key: 'payoff', title: 'Gráfico de Payoff', desc: 'Visualize lucro máximo, risco máximo, breakeven e métricas em tempo real.' },
+  { key: 'cdi', title: 'Comparativo CDI', desc: 'Compare sua estratégia contra o CDI e saiba se o risco vale a pena.' },
+  { key: 'realtime', title: 'Tempo Real 🔴 AO VIVO', desc: 'Conecte ao Profit Pro via RTD Bridge e acompanhe operações com preços ao vivo.' },
+  { key: 'portfolio', title: 'Portfólio P&L', desc: 'Acompanhe P&L consolidado, ROI total e taxa de acerto das suas operações.' },
+  { key: 'diversificador', title: 'Diversificador', desc: 'Gerencie a alocação do seu patrimônio entre estratégias com balanceamento automático.' },
+  { key: 'box', title: 'Rastreador de Box 🔴 AO VIVO', desc: 'Rastreie os melhores boxes da B3 em tempo real. Ranking com troféus e % do CDI.' },
+  { key: 'calcCdi', title: 'Calculadora CDI × Opções', desc: 'Compare o rendimento de qualquer estratégia com a renda fixa.' },
 ];
 
-export const generateLandingPagePdf = async () => {
+export const generateLandingPagePdf = async (images: PdfImageMap = {}) => {
   const doc = new jsPDF();
 
-  // Pre-load all images
-  const imageMap = await loadAllImages(LANDING_IMAGES);
+  // Pre-load all images from imported URLs
+  const urls = Object.values(images).filter(Boolean);
+  const imageMap = await loadAllImages(urls);
 
   // ===== COVER PAGE =====
   doc.setFillColor(...COLORS.dark);
@@ -897,7 +890,7 @@ export const generateLandingPagePdf = async () => {
   });
 
   // ===== FEATURES PAGES (one per feature with screenshot) =====
-  for (const item of LANDING_IMAGES) {
+  for (const item of LANDING_FEATURES) {
     doc.addPage();
     addHeader(doc, 'Catálogo de Produto');
     y = 36;
@@ -906,7 +899,8 @@ export const generateLandingPagePdf = async () => {
     y = addParagraph(doc, item.desc, y);
     y += 4;
 
-    const imgData = imageMap[item.src];
+    const imgUrl = images[item.key];
+    const imgData = imgUrl ? imageMap[imgUrl] : undefined;
     if (imgData) {
       ({ newY: y } = addImageToPdf(doc, imgData, y, 180, 130));
     }
