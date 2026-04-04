@@ -166,54 +166,83 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   // Pre-load all images from the imported URLs
   const urls = Object.values(images).filter(Boolean);
   const imageMap = await loadAllImages(urls);
-  // Helper to get image by key
   const getImg = (key: string) => images[key] ? imageMap[images[key]] : undefined;
   
-  // Cover page
+  // ── CAPA ──
   doc.setFillColor(...COLORS.dark);
   doc.rect(0, 0, 210, 297, 'F');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(36);
   doc.setTextColor(...COLORS.primary);
-  doc.text('Opções PRO X', 105, 90, { align: 'center' });
+  doc.text('Opções PRO X', 105, 80, { align: 'center' });
   doc.setFontSize(18);
   doc.setTextColor(...COLORS.white);
-  doc.text('Manual do Usuário', 105, 108, { align: 'center' });
+  doc.text('Manual do Usuário', 105, 98, { align: 'center' });
   doc.setFontSize(11);
   doc.setTextColor(...COLORS.lightGray);
-  doc.text('Guia completo para dominar a plataforma', 105, 120, { align: 'center' });
-  doc.text('Da simulação ao controle do portfólio', 105, 128, { align: 'center' });
-  const date = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  doc.text('Guia completo para dominar a plataforma', 105, 112, { align: 'center' });
+  doc.text('Da simulação ao controle do portfólio', 105, 120, { align: 'center' });
+
+  // Sumário na capa
+  const tocItems = [
+    '1. Visão Geral da Plataforma',
+    '2. Criar uma Análise (OCR)',
+    '3. Gráfico de Payoff e Métricas',
+    '4. Comparação com CDI',
+    '5. Análise de IA e Veredito de Saída',
+    '6. Histórico de Operações',
+    '7. Fluxo: Histórico > Portfólio',
+    '8. Portfólio Consolidado',
+    '9. Diversificador de Estratégias',
+    '10. Dados ao Vivo (Tempo Real)',
+    '11. Rastreador de Box',
+    '12. Temas e Personalização',
+    '13. Tabelas de Referência',
+    '14. Perguntas Frequentes',
+  ];
   doc.setFontSize(10);
   doc.setTextColor(...COLORS.gray);
-  doc.text(`Versão: ${date}`, 105, 200, { align: 'center' });
+  doc.text('Sumário', 105, 148, { align: 'center' });
+  doc.setFontSize(9);
+  let tocY = 158;
+  for (const item of tocItems) {
+    doc.text(item, 105, tocY, { align: 'center' });
+    tocY += 7;
+  }
 
-  // Page 2
+  const dateStr = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  doc.setFontSize(10);
+  doc.text(`Versão: ${dateStr}`, 105, 270, { align: 'center' });
+
+  // ── 1. VISÃO GERAL ──
   doc.addPage();
   addHeader(doc, 'Manual do Usuário');
   let y = 36;
 
-  y = addSectionTitle(doc, '1. O que é o Opções PRO X?', y);
+  y = addSectionTitle(doc, '1. Visão Geral da Plataforma', y);
   y = addParagraph(doc, 'O Opções PRO X é uma ferramenta profissional de simulação e análise de estratégias com opções na B3. Ele permite montar estruturas, visualizar o gráfico de payoff, comparar com o CDI, receber análises de IA e gerenciar todo o ciclo de vida das suas operações — do estudo ao encerramento.', y);
 
-  y += 4;
   y = addTable(doc, {
     startY: y,
-    head: [['Recurso', 'Descrição']],
+    head: [['Módulo', 'Descrição']],
     body: [
-      ['Simulação', 'Monte e analise estruturas de opções com gráfico de payoff'],
-      ['IA Integrada', 'Análise inteligente automática da estrutura montada'],
+      ['Nova Análise', 'Monte estruturas de opções com OCR automático e gráfico de payoff'],
+      ['Análise de IA', 'Avaliação inteligente de risco/retorno e sugestões de ajuste'],
       ['Comparação CDI', 'Compare o retorno da estratégia com a renda fixa'],
-      ['Portfólio', 'Controle de operações encerradas com métricas consolidadas'],
+      ['Histórico', 'Centro de controle de todas as operações salvas'],
+      ['Portfólio', 'Consolidação de operações encerradas com métricas'],
       ['Diversificador', 'Planejamento de alocação entre diferentes estratégias'],
+      ['Dados ao Vivo', 'Preços em tempo real via integração com Profit Pro'],
+      ['Rastreador de Box', 'Ranking dos melhores boxes da B3 em tempo real'],
     ],
     ...TABLE_STYLES,
   });
 
+  // ── 2. CRIAR UMA ANÁLISE ──
   y = checkPageBreak(doc, y, 80);
-  y = addSectionTitle(doc, '2. Como Criar uma Análise', y);
+  y = addSectionTitle(doc, '2. Criar uma Análise (OCR)', y);
+  y = addParagraph(doc, 'A tela Nova Análise permite montar uma estrutura de opções em poucos cliques. Use o OCR para importar dados automaticamente de um print da sua corretora ou insira manualmente as pernas da operação.', y);
 
-  // OCR screenshot
   const ocrImg = getImg('ocr');
   if (ocrImg) {
     y = checkPageBreak(doc, y, 140);
@@ -224,21 +253,21 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     startY: y,
     head: [['Passo', 'Ação', 'Descrição']],
     body: [
-      ['1', 'Upload da Imagem (OCR)', 'Faça upload de um print da tela de opções da sua corretora. A IA irá extrair automaticamente os dados das opções via OCR.'],
-      ['2', 'Ajuste as Pernas', 'Revise e ajuste as pernas da operação: lado (compra/venda), tipo (call/put/ação), strike, preço, quantidade e vencimento.'],
-      ['3', 'Visualize Payoff e Métricas', 'O gráfico de payoff mostra lucro/prejuízo em cada cenário. Métricas: ganho máximo, perda máxima, breakevens e custo líquido.'],
-      ['4', 'Solicite Análise de IA', 'A IA avalia risco/retorno, cenários favoráveis/desfavoráveis e sugere ajustes na estrutura.'],
-      ['5', 'Salve a Análise', 'Dê um nome descritivo e salve. A operação ficará no Histórico como "Ativa".'],
+      ['1', 'Upload da Imagem', 'Faça upload de um print da tela de opções da sua corretora. A IA extrai automaticamente os dados via OCR.'],
+      ['2', 'Ajuste as Pernas', 'Revise lado (compra/venda), tipo (call/put/ação), strike, preço, quantidade e vencimento.'],
+      ['3', 'Payoff e Métricas', 'O gráfico é gerado automaticamente com lucro/prejuízo, breakevens e custo líquido.'],
+      ['4', 'Análise de IA', 'Solicite análise automática de risco/retorno e sugestões de ajuste.'],
+      ['5', 'Salvar', 'Dê um nome descritivo e salve. A operação ficará no Histórico como "Ativa".'],
     ],
     ...TABLE_STYLES,
-    columnStyles: { 0: { cellWidth: 12, halign: 'center' as const, fontStyle: 'bold' as const }, 1: { cellWidth: 40, fontStyle: 'bold' as const } },
+    columnStyles: { 0: { cellWidth: 12, halign: 'center' as const, fontStyle: 'bold' as const }, 1: { cellWidth: 38, fontStyle: 'bold' as const } },
   });
 
+  // ── 3. GRÁFICO DE PAYOFF ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '3. Gráfico de Payoff & Métricas', y);
+  y = addSectionTitle(doc, '3. Gráfico de Payoff e Métricas', y);
   y = addParagraph(doc, 'O gráfico de payoff mostra visualmente o lucro ou prejuízo da sua estrutura para cada cenário de preço do ativo-objeto no vencimento. Use os botões VALOR e % ROI para alternar a visualização. A linha tracejada amarela representa o retorno do CDI.', y);
 
-  // Payoff screenshot
   const payoffImg = getImg('payoff');
   if (payoffImg) {
     y = checkPageBreak(doc, y, 140);
@@ -247,22 +276,23 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
 
   y = addTable(doc, {
     startY: y,
-    head: [['Métrica', 'Descrição']],
+    head: [['Métrica', 'O que significa']],
     body: [
-      ['Custo Líquido', 'Valor total investido na montagem da estrutura'],
-      ['Lucro Máximo', 'Ganho máximo possível no vencimento'],
+      ['Custo Líquido', 'Valor total investido (débito) ou recebido (crédito) na montagem'],
+      ['Lucro Máximo', 'Ganho máximo possível no vencimento da estrutura'],
       ['Risco Máximo', 'Perda máxima possível no vencimento'],
-      ['Breakeven', 'Preço do ativo onde o resultado é zero'],
+      ['Breakeven', 'Preço do ativo onde o resultado é zero (ponto de equilíbrio)'],
       ['Eficiência vs CDI', 'Percentual do retorno comparado ao CDI no período'],
+      ['Tipo de Estratégia', 'Nome da estratégia identificada automaticamente (trava, borboleta, etc.)'],
     ],
     ...TABLE_STYLES,
   });
 
-  y = checkPageBreak(doc, y, 60);
+  // ── 4. COMPARAÇÃO COM CDI ──
+  y = checkPageBreak(doc, y, 50);
   y = addSectionTitle(doc, '4. Comparação com CDI', y);
-  y = addParagraph(doc, 'A comparação com CDI permite avaliar se a sua estratégia de opções supera o rendimento do CDI (Certificado de Depósito Interbancário), a taxa de referência para investimentos de renda fixa no Brasil.', y);
+  y = addParagraph(doc, 'Compare o retorno da sua estratégia com o CDI (Certificado de Depósito Interbancário), a taxa de referência para renda fixa no Brasil. Essa comparação ajuda a avaliar se o risco da operação com opções se justifica frente à renda fixa.', y);
 
-  // CDI screenshot
   const cdiImg = getImg('cdi');
   if (cdiImg) {
     y = checkPageBreak(doc, y, 140);
@@ -274,22 +304,22 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     head: [['Campo', 'Descrição']],
     body: [
       ['Taxa CDI (% a.a.)', 'Taxa CDI anual utilizada no cálculo (configurável)'],
-      ['Data de Vencimento', 'Data de vencimento da estrutura para calcular os dias úteis'],
+      ['Data de Vencimento', 'Data de expiração da estrutura para calcular dias úteis restantes'],
       ['Capital Investido', 'Valor total investido para calcular o retorno proporcional do CDI'],
-      ['Eficiência CDI', 'Percentual que indica quanto a estratégia rende em relação ao CDI. Ex: 220% = 2,2x mais que o CDI'],
-      ['IR no CDI / IR Opções', 'Ative para incluir imposto de renda na comparação'],
-      ['Retorno CDI (R$)', 'Valor que o capital renderia no CDI no mesmo período'],
+      ['Eficiência CDI', 'Percentual que indica quanto a estratégia rende vs CDI. Ex: 220% = 2,2x mais'],
+      ['IR CDI / IR Opções', 'Ative para incluir imposto de renda na comparação'],
+      ['Retorno CDI (R$)', 'Valor que o capital renderia aplicado no CDI no mesmo período'],
     ],
     ...TABLE_STYLES,
     columnStyles: { 0: { cellWidth: 40, fontStyle: 'bold' as const } },
   });
-  y = addParagraph(doc, 'Dica: Estratégias com risco limitado e eficiência CDI acima de 100% são consideradas atrativas, pois oferecem retorno superior à renda fixa com risco controlado.', y);
+  y = addParagraph(doc, 'Dica: Estratégias com risco limitado e eficiência CDI acima de 100% são consideradas atrativas, pois superam a renda fixa com risco controlado.', y);
 
+  // ── 5. ANÁLISE DE IA ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '5. Acompanhamento de Operações Ativas', y);
-  y = addParagraph(doc, 'Ao abrir uma operação ativa, você acessa a tela de Detalhes. Nela é possível monitorar o P&L em tempo real, comparar com o custo de oportunidade do CDI e solicitar um Veredito de Saída da IA para decidir o melhor momento de encerrar.', y);
+  y = addSectionTitle(doc, '5. Análise de IA e Veredito de Saída', y);
+  y = addParagraph(doc, 'A IA avalia sua estrutura automaticamente, analisando risco/retorno, cenários favoráveis e desfavoráveis, e sugere ajustes. Para operações ativas, o Veredito de Saída recomenda se é hora de encerrar com base no P&L atual vs CDI e risco residual.', y);
 
-  // AI Analysis screenshot
   const aiImg = getImg('ai');
   if (aiImg) {
     y = checkPageBreak(doc, y, 140);
@@ -304,71 +334,72 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
 
   y = addTable(doc, {
     startY: y,
-    head: [['Indicador', 'Descrição']],
+    head: [['Recurso de IA', 'Descrição']],
     body: [
+      ['Análise da Estrutura', 'Avalia risco/retorno ao criar a operação e sugere ajustes'],
+      ['Veredito de Saída', 'Analisa se é hora de encerrar a operação baseado em P&L e CDI'],
       ['Lucro Atual (PNL)', 'Resultado atual baseado nos preços de saída informados'],
-      ['Custo Oportunidade (CDI)', 'Quanto seu capital teria rendido no CDI no mesmo período'],
-      ['Eficiência vs CDI', 'Percentual de rendimento comparado ao CDI'],
-      ['IA: Veredito de Saída', 'Análise automática que avalia se é hora de encerrar a operação'],
+      ['Custo Oportunidade', 'Quanto seu capital teria rendido no CDI no mesmo período'],
     ],
     ...TABLE_STYLES,
     columnStyles: { 0: { cellWidth: 45, fontStyle: 'bold' as const } },
   });
 
+  // ── 6. HISTÓRICO ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '6. Aba Histórico', y);
+  y = addSectionTitle(doc, '6. Histórico de Operações', y);
   y = addParagraph(doc, 'O Histórico é o centro de controle das suas análises. Todas as operações salvas aparecem organizadas por status (Ativas e Encerradas) com filtros por mês e ano.', y);
 
-  // Histórico screenshot
   const histImg = getImg('historico');
   if (histImg) {
     y = checkPageBreak(doc, y, 140);
     ({ newY: y } = addImageToPdf(doc, histImg, y, 182, 120));
   }
 
-  y = addParagraph(doc, '• Operações Ativas: Podem ser editadas, encerradas ou deletadas.\n• Operações Encerradas: Ficam registradas com a data de encerramento. Podem ser reabertas.', y);
+  y = addParagraph(doc, 'Operações Ativas: Podem ser editadas, encerradas ou deletadas. Operações Encerradas: Ficam registradas com a data de encerramento e podem ser reabertas.', y);
 
+  // ── 7. FLUXO ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '7. Fluxo: Histórico → Portfólio', y);
+  y = addSectionTitle(doc, '7. Fluxo: Histórico > Portfólio', y);
 
   y = addTable(doc, {
     startY: y,
     head: [['De', 'Para', 'Ação']],
     body: [
       ['Nova Análise', 'Histórico', 'Ao salvar, a operação vai para o Histórico como "Ativa"'],
-      ['Histórico', 'Portfólio', 'Ao encerrar uma operação ativa, ela é movida para o Portfólio'],
+      ['Histórico', 'Portfólio', 'Ao encerrar uma operação ativa, ela aparece no Portfólio'],
       ['Portfólio', 'Histórico', 'Você pode reabrir uma operação encerrada se precisar'],
     ],
     ...TABLE_STYLES,
   });
-  y = addParagraph(doc, 'Como encerrar: Acesse Histórico → Localize a operação Ativa → Clique em "Encerrar" → Confirme → A operação muda para "Encerrada" e aparece no Portfólio.', y);
+  y = addParagraph(doc, 'Como encerrar: Histórico > Localize a operação Ativa > Clique em "Encerrar" > Confirme > A operação muda para "Encerrada" e aparece no Portfólio.', y);
 
-  y = checkPageBreak(doc, y, 40);
-  y = addSectionTitle(doc, '8. Aba Portfólio', y);
-  y = addParagraph(doc, 'O Portfólio consolida todas as operações encerradas. Métricas disponíveis: Resultado Total, Capital Alocado, Média por Operação, VS CDI, Taxa de Acerto e total de Estratégias Encerradas.', y);
+  // ── 8. PORTFÓLIO ──
+  y = checkPageBreak(doc, y, 50);
+  y = addSectionTitle(doc, '8. Portfólio Consolidado', y);
+  y = addParagraph(doc, 'O Portfólio consolida todas as operações encerradas com métricas de desempenho: Resultado Total, Capital Alocado, Média por Operação, VS CDI, Taxa de Acerto e total de Estratégias Encerradas.', y);
 
-  // Portfolio screenshot
   const portImg = getImg('portfolio');
   if (portImg) {
     y = checkPageBreak(doc, y, 140);
     ({ newY: y } = addImageToPdf(doc, portImg, y, 182, 120));
   }
 
-  y = checkPageBreak(doc, y, 40);
+  // ── 9. DIVERSIFICADOR ──
+  y = checkPageBreak(doc, y, 50);
   y = addSectionTitle(doc, '9. Diversificador de Estratégias', y);
-  y = addParagraph(doc, 'O módulo Diversificador permite criar planos de alocação para distribuir seu patrimônio entre diferentes estratégias de opções. Defina percentuais, nível de risco e alavancagem para cada estratégia, mantendo um controle disciplinado da sua exposição ao mercado.', y);
+  y = addParagraph(doc, 'O módulo Diversificador permite criar planos de alocação para distribuir seu patrimônio entre diferentes estratégias de opções. Defina percentuais, nível de risco e alavancagem para cada estratégia.', y);
 
-  // Diversificador screenshot
   const divImg = getImg('diversificador');
   if (divImg) {
     y = checkPageBreak(doc, y, 140);
     ({ newY: y } = addImageToPdf(doc, divImg, y, 182, 120));
   }
 
-  // Tempo Real section
-  y = checkPageBreak(doc, y, 60);
-  y = addSectionTitle(doc, '10. Tempo Real', y);
-  y = addParagraph(doc, 'Conecte ao Profit Pro via RTD Bridge e acompanhe suas operações com preços ao vivo, P&L em tempo real e encerramento direto pelo app.', y);
+  // ── 10. TEMPO REAL ──
+  y = checkPageBreak(doc, y, 50);
+  y = addSectionTitle(doc, '10. Dados ao Vivo (Tempo Real)', y);
+  y = addParagraph(doc, 'Conecte ao Profit Pro via RTD Bridge e acompanhe suas operações com preços ao vivo, P&L em tempo real e encerramento direto pelo app. Requer o módulo Bridge instalado no computador.', y);
 
   const rtImg = getImg('temporeal');
   if (rtImg) {
@@ -376,10 +407,10 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     ({ newY: y } = addImageToPdf(doc, rtImg, y, 182, 120));
   }
 
-  // Rastreador de Box section
-  y = checkPageBreak(doc, y, 60);
+  // ── 11. RASTREADOR DE BOX ──
+  y = checkPageBreak(doc, y, 50);
   y = addSectionTitle(doc, '11. Rastreador de Box', y);
-  y = addParagraph(doc, 'Rastreie automaticamente os melhores boxes da B3 em tempo real. Ranking com troféus 3D, % do CDI e instruções de montagem passo a passo.', y);
+  y = addParagraph(doc, 'Rastreie automaticamente os melhores boxes da B3 em tempo real. Ranking com classificação visual, percentual do CDI e instruções de montagem passo a passo para cada box identificado.', y);
 
   const boxImg = getImg('box');
   if (boxImg) {
@@ -393,10 +424,10 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     ({ newY: y } = addImageToPdf(doc, boxTabelaImg, y, 182, 120));
   }
 
-  // Manual section with screenshots
-  y = checkPageBreak(doc, y, 60);
-  y = addSectionTitle(doc, '13. Temas e Personalização', y);
-  y = addParagraph(doc, 'Escolha entre tema claro e escuro, com paleta de cores profissional otimizada para uso em diferentes condições de luminosidade.', y);
+  // ── 12. TEMAS ──
+  y = checkPageBreak(doc, y, 50);
+  y = addSectionTitle(doc, '12. Temas e Personalização', y);
+  y = addParagraph(doc, 'Escolha entre tema claro e escuro, com paleta de cores profissional otimizada para diferentes condições de luminosidade. As configurações ficam salvas no seu perfil.', y);
 
   const temasImg = getImg('temasCores');
   if (temasImg) {
@@ -404,9 +435,10 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     ({ newY: y } = addImageToPdf(doc, temasImg, y, 182, 120));
   }
 
-  y = checkPageBreak(doc, y, 60);
-  y = addSectionTitle(doc, '14. Tabelas do Manual', y);
-  y = addParagraph(doc, 'Referência rápida com tabelas detalhadas de funcionalidades, atalhos e parâmetros do sistema.', y);
+  // ── 13. TABELAS DE REFERÊNCIA ──
+  y = checkPageBreak(doc, y, 50);
+  y = addSectionTitle(doc, '13. Tabelas de Referência', y);
+  y = addParagraph(doc, 'Referência rápida com tabelas detalhadas de funcionalidades, atalhos de teclado e parâmetros do sistema.', y);
 
   const manualTabelaImg = getImg('manualTabela');
   if (manualTabelaImg) {
@@ -420,30 +452,27 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     ({ newY: y } = addImageToPdf(doc, manualGraficoImg, y, 182, 120));
   }
 
-  y = checkPageBreak(doc, y, 60);
-  y = addSectionTitle(doc, '15. Tomada de Decisão com IA', y);
-  y = addParagraph(doc, 'Use o veredito da IA para tomar decisões embasadas sobre manter ou encerrar uma operação, com análise de cenários e recomendações.', y);
-
   const tomadaImg = getImg('tomadaDecisao');
   if (tomadaImg) {
     y = checkPageBreak(doc, y, 140);
     ({ newY: y } = addImageToPdf(doc, tomadaImg, y, 182, 120));
   }
 
+  // ── 14. PERGUNTAS FREQUENTES ──
   y = checkPageBreak(doc, y, 80);
-  y = addSectionTitle(doc, '12. Perguntas Frequentes', y);
+  y = addSectionTitle(doc, '14. Perguntas Frequentes', y);
 
   y = addTable(doc, {
     startY: y,
     head: [['Pergunta', 'Resposta']],
     body: [
-      ['Preciso ter conta em corretora?', 'O Opções PRO X é uma ferramenta de simulação. Você precisa de corretora apenas para executar operações reais.'],
-      ['Como funciona o OCR?', 'Faça um print da tela de opções da sua corretora e faça upload. A IA extrai automaticamente os dados das opções.'],
-      ['O que é "Eficiência CDI"?', 'Indica quanto a estratégia rende em relação ao CDI. Ex: 220% = 2,2x mais que o CDI. Acima de 100% supera renda fixa.'],
-      ['Posso reabrir operação encerrada?', 'Sim! Na aba Histórico, operações encerradas possuem o botão "Reabrir".'],
-      ['É recomendação de investimento?', 'Não. É uma ferramenta de simulação baseada nas regras da B3. Consulte um profissional antes de operar.'],
-      ['Como a IA funciona?', 'Utiliza IA (OpenAI) para avaliar risco/retorno, cenários favoráveis/desfavoráveis e sugerir ajustes.'],
-      ['Diferença Free vs PRO?', 'Free: acesso básico com limites. PRO: simulações ilimitadas, IA, CDI, diversificador e todos os recursos.'],
+      ['Preciso ter conta em corretora?', 'O Opções PRO X é uma ferramenta de simulação. Corretora é necessária apenas para operações reais.'],
+      ['Como funciona o OCR?', 'Faça um print da tela de opções da sua corretora e faça upload. A IA extrai os dados automaticamente.'],
+      ['O que é Eficiência CDI?', 'Indica quanto a estratégia rende vs CDI. Ex: 220% = 2,2x mais que o CDI.'],
+      ['Posso reabrir operação encerrada?', 'Sim. Na aba Histórico, operações encerradas possuem o botão "Reabrir".'],
+      ['É recomendação de investimento?', 'Não. É uma ferramenta de simulação. Consulte um profissional antes de operar.'],
+      ['Como a IA funciona?', 'Utiliza IA (OpenAI) para avaliar risco/retorno e sugerir ajustes na estrutura.'],
+      ['Diferença Free vs PRO?', 'Free: acesso básico com limites. PRO: simulações ilimitadas e todos os recursos.'],
     ],
     ...TABLE_STYLES,
     columnStyles: { 0: { cellWidth: 45, fontStyle: 'bold' as const } },
