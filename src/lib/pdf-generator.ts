@@ -279,7 +279,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   y = addParagraph(doc, 'Ao abrir uma operação ativa, você acessa a tela de Detalhes. Nela é possível monitorar o P&L em tempo real, comparar com o custo de oportunidade do CDI e solicitar um Veredito de Saída da IA para decidir o melhor momento de encerrar.', y);
 
   // AI Analysis screenshot
-  const aiImg = imageMap['/assets/screenshot-ai-report.png'];
+  const aiImg = getImg('ai');
   if (aiImg) {
     y = checkPageBreak(doc, y, 100);
     ({ newY: y } = addImageToPdf(doc, aiImg, y));
