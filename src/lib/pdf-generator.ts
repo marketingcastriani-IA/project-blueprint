@@ -25,8 +25,8 @@ const loadImageAsBase64 = (src: string): Promise<string> => {
 // Helper to add an image to PDF with proper aspect ratio
 const addImageToPdf = (doc: jsPDF, dataUrl: string, y: number, maxWidth = 170, maxHeight = 90): { newY: number } => {
   const imageProps = doc.getImageProperties(dataUrl);
-  const sourceWidth = Number(imageProps.width ?? imageProps.pixelWidth ?? 0);
-  const sourceHeight = Number(imageProps.height ?? imageProps.pixelHeight ?? 0);
+  const sourceWidth = Number(imageProps.width ?? 0);
+  const sourceHeight = Number(imageProps.height ?? 0);
 
   if (!Number.isFinite(sourceWidth) || !Number.isFinite(sourceHeight) || sourceWidth <= 0 || sourceHeight <= 0) {
     throw new Error('Não foi possível calcular o tamanho da imagem para o PDF.');
