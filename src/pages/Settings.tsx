@@ -156,11 +156,48 @@ export default function Settings() {
                   <Crown className="h-8 w-8 text-primary animate-pulse" />
                   <div>
                     <h3 className="text-xl font-black text-foreground">Assine a versão PRO</h3>
+                  </div>
+                </div>
+
+                {/* Monthly/Yearly toggle */}
+                <div className="flex items-center justify-center gap-1 p-1 rounded-xl bg-muted/50 border border-border/50">
+                  <button
+                    onClick={() => setPlanPeriod('monthly')}
+                    className={cn(
+                      "flex-1 py-2 px-4 rounded-lg text-sm font-black transition-all",
+                      planPeriod === 'monthly' ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Mensal
+                  </button>
+                  <button
+                    onClick={() => setPlanPeriod('yearly')}
+                    className={cn(
+                      "flex-1 py-2 px-4 rounded-lg text-sm font-black transition-all relative",
+                      planPeriod === 'yearly' ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Anual
+                    <Badge className="absolute -top-2 -right-2 bg-success text-success-foreground text-[9px] font-black px-1.5 py-0.5">-20%</Badge>
+                  </button>
+                </div>
+
+                <div className="text-center">
+                  {planPeriod === 'monthly' ? (
                     <p className="text-primary font-black text-2xl">
                       R$ {proPrice.toFixed(2).replace('.', ',')}<span className="text-sm font-medium text-muted-foreground">/mês</span>
                     </p>
-                  </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <p className="text-muted-foreground text-sm line-through">R$ {(proPrice * 12).toFixed(2).replace('.', ',')}/ano</p>
+                      <p className="text-primary font-black text-2xl">
+                        R$ {annualPrice.toFixed(2).replace('.', ',')}<span className="text-sm font-medium text-muted-foreground">/ano</span>
+                      </p>
+                      <p className="text-xs text-success font-bold">≈ R$ {monthlyEquivalent.toFixed(2).replace('.', ',')}/mês — economize 20%</p>
+                    </div>
+                  )}
                 </div>
+
                 {access.daysRemaining !== null && access.daysRemaining > 0 && (
                   <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-warning/10 border border-warning/30">
                     <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
@@ -183,7 +220,7 @@ export default function Settings() {
                   className="w-full h-14 text-lg font-black shadow-lg shadow-primary/30 rounded-xl animate-pulse hover:animate-none"
                 >
                   {upgrading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <Crown className="mr-2 h-6 w-6" />}
-                  ASSINAR PRO AGORA
+                  {planPeriod === 'yearly' ? 'ASSINAR PRO ANUAL' : 'ASSINAR PRO AGORA'}
                 </Button>
               </div>
             )}
