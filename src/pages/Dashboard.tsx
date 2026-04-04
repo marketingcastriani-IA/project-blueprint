@@ -636,7 +636,7 @@ export default function Dashboard() {
             </div>
 
             {inputMode === null ? (
-              <div className="grid grid-cols-1 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 gap-4 sm:gap-6" data-tour="input-mode">
                 <button 
                   onClick={() => setInputMode('image')} 
                   className="group relative overflow-hidden rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card p-8 text-left transition-all duration-500 hover:border-primary hover:shadow-[0_0_60px_-12px_hsl(var(--primary)/0.5)] hover:-translate-y-1.5"
