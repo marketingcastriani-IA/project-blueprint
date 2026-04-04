@@ -1,27 +1,28 @@
 import type { PdfImageMap } from '@/lib/pdf-generator';
 
-import faqPayoff from '@/assets/faq-payoff.png';
-import faqCdi from '@/assets/faq-cdi.png';
-import faqHistorico from '@/assets/faq-historico.png';
-import faqPortfolio from '@/assets/faq-portfolio.png';
-import faqAnaliseDetalhe from '@/assets/faq-analise-detalhe.png';
-import faqDiversificador from '@/assets/faq-diversificador.png';
-import faqTempoReal from '@/assets/faq-tempo-real.jpg';
-import faqRastreadorBox from '@/assets/faq-rastreador-box.jpg';
-import faqBridgeSetup from '@/assets/faq-bridge-setup.jpg';
-import screenshotPayoff from '@/assets/screenshot-payoff.jpg';
-import screenshotOcr from '@/assets/screenshot-ocr.jpg';
-import screenshotAi from '@/assets/screenshot-ai-analysis.jpg';
+// Screenshots fiéis do sistema extraídas do catálogo oficial
+import pdfNovaAnalise from '@/assets/pdf-nova-analise.jpg';
+import pdfHistorico from '@/assets/pdf-historico.jpg';
+import pdfPortfolio from '@/assets/pdf-portfolio.jpg';
+import pdfDiversificador from '@/assets/pdf-diversificador.jpg';
+import pdfTempoReal from '@/assets/pdf-tempo-real.jpg';
+import pdfBoxRanking from '@/assets/pdf-box-ranking.jpg';
+import pdfAnaliseDetalhe from '@/assets/pdf-analise-detalhe.jpg';
+import pdfPayoff from '@/assets/pdf-payoff.jpg';
+import pdfCalculadoraCdi from '@/assets/pdf-calculadora-cdi.jpg';
 
 export const landingImages: PdfImageMap = {
-  analysis: faqHistorico,
-  ocr: screenshotOcr,
-  ai: screenshotAi,
-  payoff: screenshotPayoff,
-  cdi: faqCdi,
-  realtime: faqTempoReal,
-  portfolio: faqPortfolio,
-  diversificador: faqDiversificador,
-  box: faqRastreadorBox,
-  calcCdi: faqCdi, // reuse CDI image
+  analysis: pdfNovaAnalise,
+  ocr: pdfNovaAnalise,
+  ai: pdfAnaliseDetalhe,
+  payoff: pdfPayoff,
+  cdi: pdfCalculadoraCdi,
+  realtime: pdfTempoReal,
+  portfolio: pdfPortfolio,
+  diversificador: pdfDiversificador,
+  box: pdfBoxRanking,
+  calcCdi: pdfCalculadoraCdi,
+  // Keys used by FAQ manual PDF
+  historico: pdfHistorico,
+  temporeal: pdfTempoReal,
 };
