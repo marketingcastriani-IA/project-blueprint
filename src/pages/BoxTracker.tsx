@@ -1,6 +1,6 @@
 import { useAccessControl } from "@/hooks/useAccessControl";
 import { useAuth } from "@/contexts/AuthContext";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import BoxTrackerTab from "@/components/BoxTrackerTab";
 import { ProfessionalLayout } from "@/components/ProfessionalLayout";
