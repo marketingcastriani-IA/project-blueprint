@@ -303,7 +303,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   y = addParagraph(doc, 'O Histórico é o centro de controle das suas análises. Todas as operações salvas aparecem organizadas por status (Ativas e Encerradas) com filtros por mês e ano.', y);
 
   // Histórico screenshot
-  const histImg = imageMap['/assets/screenshot-analysis.png'];
+  const histImg = getImg('historico');
   if (histImg) {
     y = checkPageBreak(doc, y, 100);
     ({ newY: y } = addImageToPdf(doc, histImg, y));
