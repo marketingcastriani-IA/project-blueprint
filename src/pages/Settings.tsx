@@ -193,7 +193,7 @@ export default function Settings() {
                       <p className="text-primary font-black text-2xl">
                         R$ {annualPrice.toFixed(2).replace('.', ',')}<span className="text-sm font-medium text-muted-foreground">/ano</span>
                       </p>
-                      <p className="text-xs text-success font-bold">≈ R$ {monthlyEquivalent.toFixed(2).replace('.', ',')}/mês — economize 20%</p>
+                      <p className="text-xs text-success font-bold">≈ R$ {monthlyEquivalent.toFixed(2).replace('.', ',')}/mês — economize {annualDiscountPercent}%</p>
                     </div>
                   )}
                 </div>
