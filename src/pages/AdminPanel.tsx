@@ -952,7 +952,8 @@ export default function AdminPanel() {
                   onClick={async () => {
                     toast.info('Gerando PDF com imagens da landing page...');
                     const { generateLandingPagePdf } = await import('@/lib/pdf-generator');
-                    await generateLandingPagePdf();
+                    const imgs = await import('@/pages/AdminPanelImages');
+                    await generateLandingPagePdf(imgs.landingImages);
                     toast.success('Catálogo PDF baixado!');
                   }}
                   className="w-full h-12 font-black"
