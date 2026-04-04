@@ -252,7 +252,8 @@ export default function AdminPanel() {
   // Mercado Pago Config
   const [mpPublicKey, setMpPublicKey] = useState('');
   const [mpAccessToken, setMpAccessToken] = useState('');
-  const [proPrice, setProPrice] = useState('149.90');
+  const [proPrice, setProPrice] = useState('14.90');
+  const [annualDiscount, setAnnualDiscount] = useState('20');
 
   const fetchUsers = async () => {
     setLoading(true);
