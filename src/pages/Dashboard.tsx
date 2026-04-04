@@ -30,6 +30,7 @@ import { ProfessionalHeader, SectionDivider, ProfessionalLayout } from '@/compon
 import DashboardSkeleton from '@/components/skeletons/DashboardSkeleton';
 import AIInsights from '@/components/AIInsights';
 import { generateAnalysisPdf } from '@/lib/pdf-generator';
+import OnboardingTour from '@/components/OnboardingTour';
 
 type InputMode = null | 'manual' | 'image';
 
