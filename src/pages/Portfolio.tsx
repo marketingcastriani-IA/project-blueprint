@@ -108,7 +108,7 @@ export default function Portfolio() {
       }
     };
     fetchData();
-  }, [user]);
+  }, [user?.id]);
 
   const years = useMemo(() => {
     const y = new Set<string>();
