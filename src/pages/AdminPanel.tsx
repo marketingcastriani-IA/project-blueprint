@@ -289,7 +289,9 @@ export default function AdminPanel() {
         .single();
       
       if (settings?.value && typeof settings.value === 'object' && 'price' in settings.value) {
-        setProPrice(String((settings.value as { price: number }).price));
+        const val = settings.value as { price: number; annual_discount?: number };
+        setProPrice(String(val.price));
+        if (val.annual_discount !== undefined) setAnnualDiscount(String(val.annual_discount));
       }
     } catch (err: any) {
       toast.error('Erro ao carregar dados');
