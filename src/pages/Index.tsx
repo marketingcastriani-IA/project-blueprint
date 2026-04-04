@@ -15,6 +15,8 @@ import { Card } from '@/components/ui/card';
 import { useProPrice } from '@/hooks/useProPrice';
 import { useState, useEffect } from 'react';
 
+type PlanPeriod = 'monthly' | 'yearly';
+
 export default function Index() {
   const { user, loading } = useAuth();
   const { theme, toggleTheme } = useTheme();
