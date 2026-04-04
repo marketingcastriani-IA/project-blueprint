@@ -138,6 +138,7 @@ export default function FAQ() {
 
         {/* Como Criar uma Análise */}
         <FeatureSection icon={Upload} title="Como Criar uma Análise" badge="Passo a Passo">
+          <img src={faqNovaAnalise} alt="Tela de Nova Análise" className="w-full rounded-lg border border-border/40 shadow-md mb-4" />
           <div className="space-y-4">
             <StepCard 
               step={1} icon={Camera}
