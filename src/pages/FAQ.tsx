@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { generateFAQPdf, type PdfImageMap } from '@/lib/pdf-generator';
 
+import faqNovaAnalise from '@/assets/pdf-nova-analise.jpg';
 import faqPayoff from '@/assets/pdf-payoff.jpg';
 import faqCdi from '@/assets/pdf-calculadora-cdi.jpg';
 import faqHistorico from '@/assets/pdf-historico.jpg';
