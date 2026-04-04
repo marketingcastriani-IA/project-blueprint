@@ -23,7 +23,7 @@ const loadImageAsBase64 = (src: string): Promise<string> => {
 };
 
 // Helper to add an image to PDF with proper aspect ratio
-const addImageToPdf = (doc: jsPDF, dataUrl: string, y: number, maxWidth = 170, maxHeight = 90): { newY: number } => {
+const addImageToPdf = (doc: jsPDF, dataUrl: string, y: number, maxWidth = 182, maxHeight = 110): { newY: number } => {
   const imageProps = doc.getImageProperties(dataUrl);
   const sourceWidth = Number(imageProps.width ?? 0);
   const sourceHeight = Number(imageProps.height ?? 0);
@@ -38,8 +38,15 @@ const addImageToPdf = (doc: jsPDF, dataUrl: string, y: number, maxWidth = 170, m
   const x = (210 - w) / 2;
   const format = imageProps.fileType === 'PNG' ? 'PNG' : 'JPEG';
 
+  // Shadow effect behind image
+  doc.setFillColor(200, 200, 200);
+  doc.roundedRect(x + 1.5, y + 1.5, w, h, 2, 2, 'F');
+  // Border
+  doc.setDrawColor(180, 190, 200);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(x, y, w, h, 2, 2, 'S');
   doc.addImage(dataUrl, format, x, y, w, h);
-  return { newY: y + h + 6 };
+  return { newY: y + h + 8 };
 };
 
 // Helper to call autoTable and return finalY + spacing
@@ -209,8 +216,8 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   // OCR screenshot
   const ocrImg = getImg('ocr');
   if (ocrImg) {
-    y = checkPageBreak(doc, y, 100);
-    ({ newY: y } = addImageToPdf(doc, ocrImg, y));
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, ocrImg, y, 182, 120));
   }
 
   y = addTable(doc, {
@@ -234,8 +241,8 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   // Payoff screenshot
   const payoffImg = getImg('payoff');
   if (payoffImg) {
-    y = checkPageBreak(doc, y, 100);
-    ({ newY: y } = addImageToPdf(doc, payoffImg, y));
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, payoffImg, y, 182, 120));
   }
 
   y = addTable(doc, {
@@ -258,8 +265,8 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   // CDI screenshot
   const cdiImg = getImg('cdi');
   if (cdiImg) {
-    y = checkPageBreak(doc, y, 100);
-    ({ newY: y } = addImageToPdf(doc, cdiImg, y));
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, cdiImg, y, 182, 120));
   }
 
   y = addTable(doc, {
@@ -285,8 +292,14 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   // AI Analysis screenshot
   const aiImg = getImg('ai');
   if (aiImg) {
-    y = checkPageBreak(doc, y, 100);
-    ({ newY: y } = addImageToPdf(doc, aiImg, y));
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, aiImg, y, 182, 120));
+  }
+
+  const ai2Img = getImg('ai2');
+  if (ai2Img) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, ai2Img, y, 182, 120));
   }
 
   y = addTable(doc, {
@@ -309,8 +322,8 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   // Histórico screenshot
   const histImg = getImg('historico');
   if (histImg) {
-    y = checkPageBreak(doc, y, 100);
-    ({ newY: y } = addImageToPdf(doc, histImg, y));
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, histImg, y, 182, 120));
   }
 
   y = addParagraph(doc, '• Operações Ativas: Podem ser editadas, encerradas ou deletadas.\n• Operações Encerradas: Ficam registradas com a data de encerramento. Podem ser reabertas.', y);
@@ -337,8 +350,8 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   // Portfolio screenshot
   const portImg = getImg('portfolio');
   if (portImg) {
-    y = checkPageBreak(doc, y, 100);
-    ({ newY: y } = addImageToPdf(doc, portImg, y));
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, portImg, y, 182, 120));
   }
 
   y = checkPageBreak(doc, y, 40);
@@ -348,8 +361,8 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   // Diversificador screenshot
   const divImg = getImg('diversificador');
   if (divImg) {
-    y = checkPageBreak(doc, y, 100);
-    ({ newY: y } = addImageToPdf(doc, divImg, y));
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, divImg, y, 182, 120));
   }
 
   // Tempo Real section
@@ -359,8 +372,8 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
 
   const rtImg = getImg('temporeal');
   if (rtImg) {
-    y = checkPageBreak(doc, y, 100);
-    ({ newY: y } = addImageToPdf(doc, rtImg, y));
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, rtImg, y, 182, 120));
   }
 
   // Rastreador de Box section
@@ -370,8 +383,51 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
 
   const boxImg = getImg('box');
   if (boxImg) {
-    y = checkPageBreak(doc, y, 100);
-    ({ newY: y } = addImageToPdf(doc, boxImg, y));
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, boxImg, y, 182, 120));
+  }
+
+  const boxTabelaImg = getImg('boxTabela');
+  if (boxTabelaImg) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, boxTabelaImg, y, 182, 120));
+  }
+
+  // Manual section with screenshots
+  y = checkPageBreak(doc, y, 60);
+  y = addSectionTitle(doc, '13. Temas e Personalização', y);
+  y = addParagraph(doc, 'Escolha entre tema claro e escuro, com paleta de cores profissional otimizada para uso em diferentes condições de luminosidade.', y);
+
+  const temasImg = getImg('temasCores');
+  if (temasImg) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, temasImg, y, 182, 120));
+  }
+
+  y = checkPageBreak(doc, y, 60);
+  y = addSectionTitle(doc, '14. Tabelas do Manual', y);
+  y = addParagraph(doc, 'Referência rápida com tabelas detalhadas de funcionalidades, atalhos e parâmetros do sistema.', y);
+
+  const manualTabelaImg = getImg('manualTabela');
+  if (manualTabelaImg) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, manualTabelaImg, y, 182, 120));
+  }
+
+  const manualGraficoImg = getImg('manualGrafico');
+  if (manualGraficoImg) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, manualGraficoImg, y, 182, 120));
+  }
+
+  y = checkPageBreak(doc, y, 60);
+  y = addSectionTitle(doc, '15. Tomada de Decisão com IA', y);
+  y = addParagraph(doc, 'Use o veredito da IA para tomar decisões embasadas sobre manter ou encerrar uma operação, com análise de cenários e recomendações.', y);
+
+  const tomadaImg = getImg('tomadaDecisao');
+  if (tomadaImg) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, tomadaImg, y, 182, 120));
   }
 
   y = checkPageBreak(doc, y, 80);
@@ -824,17 +880,20 @@ export const generateAnalysisPdf = (
 
 // ==================== LANDING PAGE PDF ====================
 
-const LANDING_FEATURES = [
+const LANDING_FEATURES: { key: string; title: string; desc: string; extraKeys?: string[] }[] = [
   { key: 'analysis', title: 'Dashboard de Análise', desc: 'Visão completa da estrutura com P&L em tempo real, métricas e gráfico de payoff.' },
   { key: 'ocr', title: 'OCR Inteligente', desc: 'Tire um print da corretora e a IA lê strikes, prêmios e quantidades em 2 segundos.' },
-  { key: 'ai', title: 'Análise com IA', desc: 'Relatório quantitativo com nota de atratividade, risco, cenários e sugestões.' },
+  { key: 'ai', title: 'Análise com IA', desc: 'Relatório quantitativo com nota de atratividade, risco, cenários e sugestões.', extraKeys: ['ai2'] },
   { key: 'payoff', title: 'Gráfico de Payoff', desc: 'Visualize lucro máximo, risco máximo, breakeven e métricas em tempo real.' },
   { key: 'cdi', title: 'Comparativo CDI', desc: 'Compare sua estratégia contra o CDI e saiba se o risco vale a pena.' },
   { key: 'realtime', title: 'Tempo Real 🔴 AO VIVO', desc: 'Conecte ao Profit Pro via RTD Bridge e acompanhe operações com preços ao vivo.' },
   { key: 'portfolio', title: 'Portfólio P&L', desc: 'Acompanhe P&L consolidado, ROI total e taxa de acerto das suas operações.' },
   { key: 'diversificador', title: 'Diversificador', desc: 'Gerencie a alocação do seu patrimônio entre estratégias com balanceamento automático.' },
-  { key: 'box', title: 'Rastreador de Box 🔴 AO VIVO', desc: 'Rastreie os melhores boxes da B3 em tempo real. Ranking com troféus e % do CDI.' },
+  { key: 'box', title: 'Rastreador de Box 🔴 AO VIVO', desc: 'Rastreie os melhores boxes da B3 em tempo real. Ranking com troféus e % do CDI.', extraKeys: ['boxTabela'] },
   { key: 'calcCdi', title: 'Calculadora CDI × Opções', desc: 'Compare o rendimento de qualquer estratégia com a renda fixa.' },
+  { key: 'temasCores', title: 'Temas e Personalização', desc: 'Escolha entre tema claro e escuro, com paleta profissional para qualquer condição.' },
+  { key: 'tomadaDecisao', title: 'Tomada de Decisão com IA', desc: 'Use o veredito da IA para decidir quando manter ou encerrar uma operação.' },
+  { key: 'manualTabela', title: 'Manual & Referência', desc: 'Tabelas detalhadas de funcionalidades, atalhos e parâmetros do sistema.', extraKeys: ['manualGrafico'] },
 ];
 
 export const generateLandingPagePdf = async (images: PdfImageMap = {}) => {
@@ -899,18 +958,49 @@ export const generateLandingPagePdf = async (images: PdfImageMap = {}) => {
     addHeader(doc, 'Catálogo de Produto');
     y = 36;
 
-    y = addSectionTitle(doc, item.title, y);
-    y = addParagraph(doc, item.desc, y);
-    y += 4;
+    // Feature title with accent bar
+    doc.setFillColor(...COLORS.primary);
+    doc.roundedRect(14, y, 182, 20, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(...COLORS.white);
+    doc.text(item.title, 105, y + 13, { align: 'center' });
+    y += 26;
 
+    // Description
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(...COLORS.gray);
+    const descLines = doc.splitTextToSize(item.desc, 178);
+    doc.text(descLines, 14, y);
+    y += descLines.length * 5 + 6;
+
+    // Main screenshot — large
     const imgUrl = images[item.key];
     const imgData = imgUrl ? imageMap[imgUrl] : undefined;
     if (imgData) {
-      ({ newY: y } = addImageToPdf(doc, imgData, y, 180, 130));
+      ({ newY: y } = addImageToPdf(doc, imgData, y, 184, 160));
+    }
+
+    // Extra images on a new page if needed
+    if (item.extraKeys) {
+      for (const extraKey of item.extraKeys) {
+        const extraUrl = images[extraKey];
+        const extraData = extraUrl ? imageMap[extraUrl] : undefined;
+        if (extraData) {
+          doc.addPage();
+          addHeader(doc, 'Catálogo de Produto');
+          y = 36;
+          doc.setFont('helvetica', 'italic');
+          doc.setFontSize(9);
+          doc.setTextColor(...COLORS.gray);
+          doc.text(`${item.title} — continuação`, 14, y);
+          y += 8;
+          ({ newY: y } = addImageToPdf(doc, extraData, y, 184, 180));
+        }
+      }
     }
   }
-
-  // ===== COMPARATIVO PLANILHAS VS APP =====
   doc.addPage();
   addHeader(doc, 'Catálogo de Produto');
   y = 36;
