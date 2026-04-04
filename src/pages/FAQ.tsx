@@ -88,7 +88,12 @@ export default function FAQ() {
           />
           <Button 
             variant="outline" 
-            onClick={() => generateFAQPdf()} 
+            onClick={async () => {
+              const { toast } = await import('sonner');
+              toast.info('Gerando PDF com imagens...');
+              await generateFAQPdf();
+              toast.success('PDF do manual baixado!');
+            }} 
             className="h-12 px-5 font-bold border-primary/30 text-primary hover:bg-primary/10 shrink-0"
           >
             <Download className="mr-2 h-5 w-5" /> Baixar PDF
