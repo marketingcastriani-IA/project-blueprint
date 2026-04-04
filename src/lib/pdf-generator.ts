@@ -825,3 +825,146 @@ export const generateAnalysisPdf = (
   addAllFooters(doc);
   doc.save(`OpçõesPROX_${name.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`);
 };
+
+// ==================== LANDING PAGE PDF ====================
+
+const LANDING_IMAGES = [
+  { key: 'analysis', src: '/assets/screenshot-analysis.png', title: 'Dashboard de Análise', desc: 'Visão completa da estrutura com P&L em tempo real, métricas e gráfico de payoff.' },
+  { key: 'ocr', src: '/assets/screenshot-ocr.png', title: 'OCR Inteligente', desc: 'Tire um print da corretora e a IA lê strikes, prêmios e quantidades em 2 segundos.' },
+  { key: 'ai', src: '/assets/screenshot-ai-report.png', title: 'Análise com IA', desc: 'Relatório quantitativo com nota de atratividade, risco, cenários e sugestões.' },
+  { key: 'payoff', src: '/assets/screenshot-payoff.png', title: 'Gráfico de Payoff', desc: 'Visualize lucro máximo, risco máximo, breakeven e métricas em tempo real.' },
+  { key: 'cdi', src: '/assets/screenshot-cdi.png', title: 'Comparativo CDI', desc: 'Compare sua estratégia contra o CDI e saiba se o risco vale a pena.' },
+  { key: 'realtime', src: '/assets/screenshot-realtime.png', title: 'Tempo Real 🔴 AO VIVO', desc: 'Conecte ao Profit Pro via RTD Bridge e acompanhe operações com preços ao vivo.' },
+  { key: 'portfolio', src: '/assets/screenshot-portfolio.png', title: 'Portfólio P&L', desc: 'Acompanhe P&L consolidado, ROI total e taxa de acerto das suas operações.' },
+  { key: 'diversificador', src: '/assets/screenshot-diversificador.png', title: 'Diversificador', desc: 'Gerencie a alocação do seu patrimônio entre estratégias com balanceamento automático.' },
+  { key: 'box', src: '/assets/box-tracker-winner.png', title: 'Rastreador de Box 🔴 AO VIVO', desc: 'Rastreie os melhores boxes da B3 em tempo real. Ranking com troféus e % do CDI.' },
+  { key: 'calcCdi', src: '/assets/calculadora-cdi.png', title: 'Calculadora CDI × Opções', desc: 'Compare o rendimento de qualquer estratégia com a renda fixa.' },
+];
+
+export const generateLandingPagePdf = async () => {
+  const doc = new jsPDF();
+
+  // Pre-load all images
+  const imageMap = await loadAllImages(LANDING_IMAGES);
+
+  // ===== COVER PAGE =====
+  doc.setFillColor(...COLORS.dark);
+  doc.rect(0, 0, 210, 297, 'F');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(42);
+  doc.setTextColor(...COLORS.primary);
+  doc.text('Opções PRO X', 105, 80, { align: 'center' });
+
+  doc.setFontSize(20);
+  doc.setTextColor(...COLORS.white);
+  doc.text('Análise de Opções com IA', 105, 100, { align: 'center' });
+
+  doc.setFontSize(14);
+  doc.setTextColor(...COLORS.lightGray);
+  doc.text('Único no Brasil', 105, 115, { align: 'center' });
+
+  doc.setFontSize(12);
+  doc.setTextColor(...COLORS.gray);
+  doc.text('Tire um print da sua estrutura na corretora e receba', 105, 145, { align: 'center' });
+  doc.text('payoff, métricas e análise de IA em segundos.', 105, 157, { align: 'center' });
+
+  doc.setFontSize(16);
+  doc.setTextColor(...COLORS.primary);
+  doc.text('www.opcoesprox.com.br', 105, 185, { align: 'center' });
+
+  const date = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  doc.setFontSize(10);
+  doc.setTextColor(...COLORS.gray);
+  doc.text(`Catálogo de Produto — ${date}`, 105, 250, { align: 'center' });
+
+  // ===== COMO FUNCIONA =====
+  doc.addPage();
+  addHeader(doc, 'Catálogo de Produto');
+  let y = 36;
+
+  y = addSectionTitle(doc, 'Como Funciona — 3 Passos', y);
+  y = addTable(doc, {
+    startY: y,
+    head: [['Passo', 'Ação', 'Descrição']],
+    body: [
+      ['1', 'Tire um Print', 'Capture a tela da sua estrutura no Profit, FlexScan ou Home Broker.'],
+      ['2', 'IA Analisa', 'Nossa IA lê strikes, prêmios e quantidades e monta a estrutura automaticamente.'],
+      ['3', 'Veja o Resultado', 'Payoff, métricas, comparativo CDI e relatório com sugestões da IA.'],
+    ],
+    ...TABLE_STYLES,
+    columnStyles: { 0: { cellWidth: 15, halign: 'center' as const, fontStyle: 'bold' as const }, 1: { cellWidth: 35, fontStyle: 'bold' as const } },
+  });
+
+  // ===== FEATURES PAGES (one per feature with screenshot) =====
+  for (const item of LANDING_IMAGES) {
+    doc.addPage();
+    addHeader(doc, 'Catálogo de Produto');
+    y = 36;
+
+    y = addSectionTitle(doc, item.title, y);
+    y = addParagraph(doc, item.desc, y);
+    y += 4;
+
+    const imgData = imageMap[item.src];
+    if (imgData) {
+      ({ newY: y } = addImageToPdf(doc, imgData, y, 180, 130));
+    }
+  }
+
+  // ===== COMPARATIVO PLANILHAS VS APP =====
+  doc.addPage();
+  addHeader(doc, 'Catálogo de Produto');
+  y = 36;
+
+  y = addSectionTitle(doc, 'Opções PRO X vs. Planilhas', y);
+  y = addTable(doc, {
+    startY: y,
+    head: [['', 'Planilhas ❌', 'Opções PRO X ✅']],
+    body: [
+      ['Entrada de dados', 'Manual, lenta', 'OCR: Print → dados em 2s'],
+      ['Fórmulas', 'Quebram e exigem manutenção', 'Automático e preciso'],
+      ['CDI', 'Sem comparativo real', 'Eficiência vs CDI integrada'],
+      ['Mobile', 'Impossível no celular', 'Mobile-First, use no pregão'],
+      ['IA', 'Inexistente', 'Análise e sugestões da IA'],
+      ['Tempo Real', 'Manual', 'RTD Bridge com Profit Pro'],
+    ],
+    ...TABLE_STYLES,
+    columnStyles: { 0: { fontStyle: 'bold' as const, cellWidth: 35 } },
+  });
+
+  // ===== PLANOS =====
+  y = checkPageBreak(doc, y, 80);
+  y = addSectionTitle(doc, 'Planos', y);
+  y = addTable(doc, {
+    startY: y,
+    head: [['Recurso', 'FREE', 'PRO']],
+    body: [
+      ['Simulações', '3 por dia', 'Ilimitadas'],
+      ['Análise de IA', '❌', '✅ Ilimitado'],
+      ['OCR (Leitura de Print)', '❌', '✅'],
+      ['Comparação CDI', '✅ Básico', '✅ Completo + IR'],
+      ['Rastreador de Box', '❌', '✅ Tempo Real'],
+      ['Diversificador', '❌', '✅'],
+      ['Portfólio P&L', '❌', '✅'],
+      ['Tempo Real (RTD)', '❌', '✅'],
+      ['Exportação PDF', '✅ Básico', '✅ Completo'],
+    ],
+    ...TABLE_STYLES,
+    columnStyles: { 0: { fontStyle: 'bold' as const, cellWidth: 50 }, 1: { halign: 'center' as const, cellWidth: 35 }, 2: { halign: 'center' as const, cellWidth: 35 } },
+  });
+
+  // ===== CTA =====
+  y = checkPageBreak(doc, y, 60);
+  doc.setFillColor(...COLORS.primary);
+  doc.roundedRect(14, y, 182, 40, 4, 4, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.setTextColor(...COLORS.white);
+  doc.text('Teste 7 Dias Grátis!', 105, y + 16, { align: 'center' });
+  doc.setFontSize(12);
+  doc.text('www.opcoesprox.com.br', 105, y + 30, { align: 'center' });
+
+  addAllFooters(doc);
+  doc.save('OpçõesPROX_Catalogo.pdf');
+};
