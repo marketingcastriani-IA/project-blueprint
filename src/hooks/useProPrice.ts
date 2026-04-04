@@ -32,5 +32,8 @@ export function useProPrice() {
     fetchPrice();
   }, []);
 
-  return { proPrice, loading };
+  const annualPrice = Math.round(proPrice * 12 * 0.8 * 100) / 100;
+  const monthlyEquivalent = Math.round((annualPrice / 12) * 100) / 100;
+
+  return { proPrice, annualPrice, monthlyEquivalent, loading };
 }
