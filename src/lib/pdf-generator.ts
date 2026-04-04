@@ -331,7 +331,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   y = addParagraph(doc, 'O Portfólio consolida todas as operações encerradas. Métricas disponíveis: Resultado Total, Capital Alocado, Média por Operação, VS CDI, Taxa de Acerto e total de Estratégias Encerradas.', y);
 
   // Portfolio screenshot
-  const portImg = imageMap['/assets/screenshot-portfolio.png'];
+  const portImg = getImg('portfolio');
   if (portImg) {
     y = checkPageBreak(doc, y, 100);
     ({ newY: y } = addImageToPdf(doc, portImg, y));
