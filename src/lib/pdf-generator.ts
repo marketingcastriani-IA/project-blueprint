@@ -353,7 +353,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   y = addSectionTitle(doc, '10. Tempo Real', y);
   y = addParagraph(doc, 'Conecte ao Profit Pro via RTD Bridge e acompanhe suas operações com preços ao vivo, P&L em tempo real e encerramento direto pelo app.', y);
 
-  const rtImg = imageMap['/assets/screenshot-realtime.png'];
+  const rtImg = getImg('temporeal');
   if (rtImg) {
     y = checkPageBreak(doc, y, 100);
     ({ newY: y } = addImageToPdf(doc, rtImg, y));
