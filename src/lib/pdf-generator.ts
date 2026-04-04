@@ -24,17 +24,21 @@ const loadImageAsBase64 = (src: string): Promise<string> => {
 
 // Helper to add an image to PDF with proper aspect ratio
 const addImageToPdf = (doc: jsPDF, dataUrl: string, y: number, maxWidth = 170, maxHeight = 90): { newY: number } => {
-  const img = new Image();
-  img.src = dataUrl;
-  const ratio = img.naturalWidth / img.naturalHeight;
-  let w = maxWidth;
-  let h = w / ratio;
-  if (h > maxHeight) {
-    h = maxHeight;
-    w = h * ratio;
+  const imageProps = doc.getImageProperties(dataUrl);
+  const sourceWidth = Number(imageProps.width ?? imageProps.pixelWidth ?? 0);
+  const sourceHeight = Number(imageProps.height ?? imageProps.pixelHeight ?? 0);
+
+  if (!Number.isFinite(sourceWidth) || !Number.isFinite(sourceHeight) || sourceWidth <= 0 || sourceHeight <= 0) {
+    throw new Error('Não foi possível calcular o tamanho da imagem para o PDF.');
   }
-  const x = (210 - w) / 2; // center horizontally
-  doc.addImage(dataUrl, 'JPEG', x, y, w, h);
+
+  const scale = Math.min(maxWidth / sourceWidth, maxHeight / sourceHeight);
+  const w = sourceWidth * scale;
+  const h = sourceHeight * scale;
+  const x = (210 - w) / 2;
+  const format = imageProps.fileType === 'PNG' ? 'PNG' : 'JPEG';
+
+  doc.addImage(dataUrl, format, x, y, w, h);
   return { newY: y + h + 6 };
 };
 
