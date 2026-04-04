@@ -18,7 +18,7 @@ export default function AccessBlocked({ status }: AccessBlockedProps) {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const [upgrading, setUpgrading] = useState(false);
-  const { proPrice, annualPrice, monthlyEquivalent } = useProPrice();
+  const { proPrice, annualPrice, monthlyEquivalent, annualDiscountPercent } = useProPrice();
   const [planPeriod, setPlanPeriod] = useState<'monthly' | 'yearly'>('monthly');
 
   const handleUpgrade = async () => {
