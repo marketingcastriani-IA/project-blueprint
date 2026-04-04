@@ -39,8 +39,9 @@ serve(async (req) => {
     const backUrl = `${PRODUCTION_URL}/settings?payment=success`;
     console.log(`[mercado-pago-checkout] URL de retorno: ${backUrl}, período: ${planPeriod}`);
 
-    // Busca preço atualizado ou usa padrão
+    // Busca preço e desconto atualizados ou usa padrão
     let monthlyPrice = 14.90
+    let annualDiscount = 20 // percent
     try {
       const { data: settings } = await supabaseClient
         .from('site_settings')
@@ -51,13 +52,17 @@ serve(async (req) => {
       if (settings?.value?.price) {
         monthlyPrice = Number(settings.value.price);
       }
+      if (settings?.value?.annual_discount !== undefined) {
+        annualDiscount = Number(settings.value.annual_discount);
+      }
     } catch (e) {
       console.log("[mercado-pago-checkout] Usando preço padrão");
     }
 
     // Calcular preço final
+    const discountFactor = 1 - annualDiscount / 100;
     const price = planPeriod === 'yearly'
-      ? Math.round(monthlyPrice * 12 * 0.8 * 100) / 100
+      ? Math.round(monthlyPrice * 12 * discountFactor * 100) / 100
       : monthlyPrice;
 
     const itemTitle = planPeriod === 'yearly'

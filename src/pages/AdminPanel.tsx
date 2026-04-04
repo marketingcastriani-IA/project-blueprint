@@ -252,7 +252,8 @@ export default function AdminPanel() {
   // Mercado Pago Config
   const [mpPublicKey, setMpPublicKey] = useState('');
   const [mpAccessToken, setMpAccessToken] = useState('');
-  const [proPrice, setProPrice] = useState('149.90');
+  const [proPrice, setProPrice] = useState('14.90');
+  const [annualDiscount, setAnnualDiscount] = useState('20');
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -288,7 +289,9 @@ export default function AdminPanel() {
         .single();
       
       if (settings?.value && typeof settings.value === 'object' && 'price' in settings.value) {
-        setProPrice(String((settings.value as { price: number }).price));
+        const val = settings.value as { price: number; annual_discount?: number };
+        setProPrice(String(val.price));
+        if (val.annual_discount !== undefined) setAnnualDiscount(String(val.annual_discount));
       }
     } catch (err: any) {
       toast.error('Erro ao carregar dados');
@@ -521,7 +524,7 @@ export default function AdminPanel() {
         .from('site_settings')
         .upsert({ 
           id: 'pro_plan', 
-          value: { price: parseFloat(proPrice) } 
+          value: { price: parseFloat(proPrice), annual_discount: parseFloat(annualDiscount) } 
         });
       
       if (error) throw error;
@@ -966,9 +969,44 @@ export default function AdminPanel() {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-xs font-black uppercase tracking-widest">Valor Mensal (R$)</Label>
-                    <Input type="number" step="0.01" value={proPrice} onChange={e => setProPrice(e.target.value)} placeholder="19.90" className="font-mono text-lg font-bold" />
+                    <Input type="number" step="0.01" value={proPrice} onChange={e => setProPrice(e.target.value)} placeholder="14.90" className="font-mono text-lg font-bold" />
                   </div>
-                  <p className="text-xs text-muted-foreground">Este valor será exibido na Landing Page e na página de Upgrade.</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-black uppercase tracking-widest">Desconto Anual (%)</Label>
+                      <Input 
+                        type="number" step="1" min="0" max="99" 
+                        value={annualDiscount} 
+                        onChange={e => setAnnualDiscount(e.target.value)} 
+                        placeholder="20" 
+                        className="font-mono text-lg font-bold" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-black uppercase tracking-widest">Parcela Mensal Equiv. (R$)</Label>
+                      <Input 
+                        type="number" step="0.01" 
+                        value={(parseFloat(proPrice) * (1 - parseFloat(annualDiscount || '0') / 100)).toFixed(2)}
+                        onChange={e => {
+                          const equiv = parseFloat(e.target.value);
+                          const monthly = parseFloat(proPrice);
+                          if (monthly > 0 && equiv > 0) {
+                            setAnnualDiscount(((1 - equiv / monthly) * 100).toFixed(0));
+                          }
+                        }}
+                        placeholder="11.92" 
+                        className="font-mono text-lg font-bold" 
+                      />
+                    </div>
+                  </div>
+                  <div className="rounded-lg border border-success/30 bg-success/5 p-3">
+                    <p className="text-xs text-muted-foreground">
+                      <span className="font-bold text-success">Valor Anual:</span>{' '}
+                      R$ {(parseFloat(proPrice) * 12 * (1 - parseFloat(annualDiscount || '0') / 100)).toFixed(2)}{' '}
+                      <span className="text-muted-foreground/60">(equivalente a R$ {(parseFloat(proPrice) * (1 - parseFloat(annualDiscount || '0') / 100)).toFixed(2)}/mês)</span>
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Estes valores serão exibidos na Landing Page, página de Upgrade e no checkout.</p>
                 </CardContent>
               </Card>
             </div>
