@@ -425,12 +425,34 @@ export default function Index() {
         </div>
       </section>
 
-      {/* PRICING — FREE vs PRO */}
       <section className="container py-24">
         <div className="text-center mb-16 space-y-4">
           <Badge variant="outline" className="border-primary/30 text-primary font-bold">PLANOS</Badge>
           <h2 className="text-5xl font-black tracking-tighter">FREE vs. PRO</h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">Comece com <span className="text-foreground font-bold">7 dias grátis</span> e evolua quando quiser. Sem surpresas.</p>
+          
+          {/* Monthly/Yearly toggle */}
+          <div className="flex items-center justify-center gap-1 p-1 rounded-xl bg-muted/50 border border-border/50 max-w-xs mx-auto">
+            <button
+              onClick={() => setPlanPeriod('monthly')}
+              className={cn(
+                "flex-1 py-2.5 px-4 rounded-lg text-sm font-black transition-all",
+                planPeriod === 'monthly' ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Mensal
+            </button>
+            <button
+              onClick={() => setPlanPeriod('yearly')}
+              className={cn(
+                "flex-1 py-2.5 px-4 rounded-lg text-sm font-black transition-all relative",
+                planPeriod === 'yearly' ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Anual
+              <Badge className="absolute -top-2 -right-2 bg-success text-success-foreground text-[9px] font-black px-1.5 py-0.5">-20%</Badge>
+            </button>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
@@ -468,7 +490,15 @@ export default function Index() {
             </div>
             <div className="space-y-2">
               <h3 className="text-2xl font-black tracking-tight text-primary">PRO</h3>
-              <p className="text-4xl font-black tracking-tighter">R$ {proPrice.toFixed(2)}<span className="text-sm text-muted-foreground font-medium">/mês</span></p>
+              {planPeriod === 'monthly' ? (
+                <p className="text-4xl font-black tracking-tighter">R$ {proPrice.toFixed(2)}<span className="text-sm text-muted-foreground font-medium">/mês</span></p>
+              ) : (
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground line-through">R$ {(proPrice * 12).toFixed(2)}/ano</p>
+                  <p className="text-4xl font-black tracking-tighter text-primary">R$ {annualPrice.toFixed(2)}<span className="text-sm text-muted-foreground font-medium">/ano</span></p>
+                  <p className="text-xs text-success font-bold">≈ R$ {monthlyEquivalent.toFixed(2)}/mês — economize 20%</p>
+                </div>
+              )}
               <p className="text-sm text-muted-foreground">Para quem opera de verdade</p>
             </div>
             <ul className="space-y-3">

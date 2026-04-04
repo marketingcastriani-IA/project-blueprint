@@ -105,10 +105,47 @@ export default function AccessBlocked({ status }: AccessBlockedProps) {
               <div className="text-center space-y-2">
                 <Crown className="h-10 w-10 text-primary mx-auto" />
                 <h3 className="text-lg font-bold">Renovar Plano PRO</h3>
-                <p className="text-3xl font-black text-primary">
-                  R$ {proPrice.toFixed(2).replace('.', ',')}
-                  <span className="text-sm font-normal text-muted-foreground">/mês</span>
-                </p>
+              </div>
+
+              {/* Monthly/Yearly toggle */}
+              <div className="flex items-center justify-center gap-1 p-1 rounded-xl bg-muted/50 border border-border/50">
+                <button
+                  onClick={() => setPlanPeriod('monthly')}
+                  className={cn(
+                    "flex-1 py-2 px-4 rounded-lg text-sm font-black transition-all",
+                    planPeriod === 'monthly' ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Mensal
+                </button>
+                <button
+                  onClick={() => setPlanPeriod('yearly')}
+                  className={cn(
+                    "flex-1 py-2 px-4 rounded-lg text-sm font-black transition-all relative",
+                    planPeriod === 'yearly' ? "bg-primary text-primary-foreground shadow-lg" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Anual
+                  <Badge className="absolute -top-2 -right-2 bg-success text-success-foreground text-[9px] font-black px-1.5 py-0.5">-20%</Badge>
+                </button>
+              </div>
+
+              <div className="text-center">
+                {planPeriod === 'monthly' ? (
+                  <p className="text-3xl font-black text-primary">
+                    R$ {proPrice.toFixed(2).replace('.', ',')}
+                    <span className="text-sm font-normal text-muted-foreground">/mês</span>
+                  </p>
+                ) : (
+                  <div className="space-y-1">
+                    <p className="text-muted-foreground text-sm line-through">R$ {(proPrice * 12).toFixed(2).replace('.', ',')}/ano</p>
+                    <p className="text-3xl font-black text-primary">
+                      R$ {annualPrice.toFixed(2).replace('.', ',')}
+                      <span className="text-sm font-normal text-muted-foreground">/ano</span>
+                    </p>
+                    <p className="text-xs text-success font-bold">≈ R$ {monthlyEquivalent.toFixed(2).replace('.', ',')}/mês</p>
+                  </div>
+                )}
               </div>
 
               <ul className="space-y-2">
@@ -128,7 +165,7 @@ export default function AccessBlocked({ status }: AccessBlockedProps) {
                 {upgrading ? (
                   <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Processando...</>
                 ) : (
-                  <><Crown className="mr-2 h-5 w-5" /> Assinar Agora</>
+                  <><Crown className="mr-2 h-5 w-5" /> {planPeriod === 'yearly' ? 'Assinar Plano Anual' : 'Assinar Agora'}</>
                 )}
               </Button>
             </CardContent>

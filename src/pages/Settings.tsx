@@ -389,9 +389,18 @@ export default function Settings() {
           </CardContent>
         </Card>
 
-        <Button onClick={async () => { await signOut(); navigate('/auth'); }} variant="destructive" className="w-full h-12 font-black">
-          <LogOut className="mr-2 h-5 w-5" /> DESCONECTAR
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button 
+            variant="outline" 
+            onClick={() => { resetOnboardingTour(); toast.success('Tour reiniciado! Volte ao Dashboard para revê-lo.'); }}
+            className="flex-1 h-12 font-bold"
+          >
+            <RotateCcw className="mr-2 h-4 w-4" /> Reiniciar Tour Guiado
+          </Button>
+          <Button onClick={async () => { await signOut(); navigate('/auth'); }} variant="destructive" className="flex-1 h-12 font-black">
+            <LogOut className="mr-2 h-5 w-5" /> DESCONECTAR
+          </Button>
+        </div>
       </main>
     </div>
   );
