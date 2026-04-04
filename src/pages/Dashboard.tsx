@@ -30,6 +30,7 @@ import { ProfessionalHeader, SectionDivider, ProfessionalLayout } from '@/compon
 import DashboardSkeleton from '@/components/skeletons/DashboardSkeleton';
 import AIInsights from '@/components/AIInsights';
 import { generateAnalysisPdf } from '@/lib/pdf-generator';
+import OnboardingTour from '@/components/OnboardingTour';
 
 type InputMode = null | 'manual' | 'image';
 
@@ -395,6 +396,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background pb-16">
       <Header />
+      <OnboardingTour />
       
       {/* Banner fixo para usuários free */}
       {access.planType === 'free' && access.daysRemaining !== null && (
@@ -518,6 +520,7 @@ export default function Dashboard() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
+                    data-tour="ai-button"
                     onClick={getAISuggestion} 
                     disabled={loadingAI || legs.length === 0} 
                     className={cn(
@@ -553,6 +556,7 @@ export default function Dashboard() {
               </Tooltip>
 
               <Button 
+                data-tour="save-button"
                 onClick={saveAnalysis} 
                 disabled={saving || legs.length === 0}
                 variant="outline"
@@ -585,7 +589,7 @@ export default function Dashboard() {
               )}
             </div>
 
-            <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 lg:grid-cols-3" data-tour="analysis-config">
               <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-sm font-bold">
                   Nome da análise
@@ -634,7 +638,7 @@ export default function Dashboard() {
             </div>
 
             {inputMode === null ? (
-              <div className="grid grid-cols-1 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 gap-4 sm:gap-6" data-tour="input-mode">
                 <button 
                   onClick={() => setInputMode('image')} 
                   className="group relative overflow-hidden rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/10 via-card to-card p-8 text-left transition-all duration-500 hover:border-primary hover:shadow-[0_0_60px_-12px_hsl(var(--primary)/0.5)] hover:-translate-y-1.5"

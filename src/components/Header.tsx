@@ -88,7 +88,7 @@ export default function Header() {
         </button>
 
         {/* Desktop Primary Nav */}
-        <nav className="hidden md:flex items-center gap-1 flex-1 justify-center">
+        <nav className="hidden md:flex items-center gap-1 flex-1 justify-center" data-tour="nav-menu">
           {primaryNav.map(item => (
             <NavButton key={item.path} item={item} />
           ))}
