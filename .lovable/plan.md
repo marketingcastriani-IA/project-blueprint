@@ -1,94 +1,115 @@
-# Auditoria Completa + Plano de Melhorias — Opções PRO X
 
-## Auditoria por Seção
 
-### 1. Dashboard (Nova Análise)
+# Varredura Completa do Sistema -- Resultado da Auditoria
 
-- **OK**: Formulário de pernas, payoff chart, métricas, IA, OCR, salvamento
-- **Problema**: CDI hardcoded em 14.9% na History (linha 199) mas 14.65 no Dashboard
-- **Falta**: Botão de limpar/resetar todas as pernas de uma vez; duplicar análise existente
+## Status Geral: Sistema Estavel
 
-### 2. Histórico (Operações)
-
-- **OK**: Filtros por mês/ano, cards com métricas, PDF, encerrar/reabrir
-- **Problema**: CDI hardcoded `0.149` na linha 199 (deveria usar `a.cdi_rate` ou 14.65% padrão)
-- **Falta**: Busca por nome de análise/ativo; ordenação (mais recente/mais antigo/maior lucro)
-
-### 3. Portfólio
-
-- **OK**: Stats consolidados, filtros, PDF, vs CDI
-- **Falta**: Gráfico de evolução do P&L ao longo do tempo (como o do Dashboard summary); exportação CSV
-
-### 5. Rastreador de Box
-
-- **OK**: Componente robusto com 1777 linhas, RTD bridge, ranking
-- **Falta**: Nenhuma melhoria crítica identificada
-
-### 6. Dados ao Vivo
-
-- **OK**: RTD bridge, payoff, save para análise
-- **Falta**: Nenhuma melhoria crítica
-
-### 7. Diversificador
-
-- **OK**: Estratégias, cores, risco, gráfico
-- **Falta**: Nenhuma melhoria crítica
-
-### 8. Analysis Detail
-
-- **Problema**: Usa WebSocket próprio duplicado (linhas 39-78) em vez do `useSharedRtdBridge`
-- **Falta**: Nenhuma funcional
-
-### 9. Painel Administrativo
-
-- **OK**: Users, filtros, email em massa, templates, feature flags, config API
-- **Problemas encontrados**:
-  - Só mostra 6 dos 11 templates de email por usuário (linha 686: `slice(0, 6)`)
-  - Feature Flags tem só Collar Tracker — falta toggles para outras features
-  - Falta: dashboard de receita (MRR, churn, conversão trial->PRO)
-  - Falta: log de ações admin (quem aprovou, bloqueou, enviou email)
-  - Falta: botão "Enviar Boas-vindas PRO" direto no card do usuário ao registrar compra
-  - Falta: contagem de análises/pernas por usuário para entender engajamento
-  - Falta: aba de "Métricas" com gráficos de crescimento de usuários
+Zero erros de runtime detectados. Todas as APIs retornando 200. Dados fluindo corretamente entre frontend e Supabase.
 
 ---
 
-## Plano de Implementação
+## Auditoria por Aba
 
-### Fase 1 — Correções e Melhorias Rápidas
+### 1. Dashboard (Nova Analise) -- OK
+- Formulario de pernas, payoff chart, metricas, IA, OCR, PDF -- tudo funcional
+- Barra flutuante com IA + Salvar + PDF -- implementada
+- Dialog de sucesso pos-salvamento com redirecionamento -- OK
+- CDI dinamico -- OK
 
-1. **Corrigir CDI hardcoded na History** — usar `a.cdi_rate || 14.65` em vez de `0.149`
-2. **Mostrar TODOS os 11 templates de email** no card do usuário (remover `slice(0, 6)`)
-3. **Adicionar botão "Limpar Tudo"** no Dashboard para resetar pernas de uma vez
-4. **Adicionar busca por nome/ativo** no Histórico
+### 2. Historico (Operacoes) -- OK
+- CDI corrigido (usa `a.cdi_rate || 14.65` dinamicamente) -- CORRIGIDO
+- Busca por nome/ativo -- IMPLEMENTADO
+- Ordenacao (mais recente/antigo/lucro) -- IMPLEMENTADO
+- Filtros mes/ano -- OK
+- Encerrar/reabrir operacao -- OK
+- PDF individual -- OK
 
-### Fase 2 — Painel Admin Avançado
+### 3. Portfolio -- OK
+- Grafico de evolucao P&L (AreaChart) -- IMPLEMENTADO (threshold >= 1)
+- Exportacao CSV -- IMPLEMENTADO
+- Stats consolidados (P&L, ROI, Win Rate, Operacoes) -- OK
+- Filtros mes/ano -- OK
+- PDF portfolio -- OK
 
-5. **Aba "Métricas"** no Admin com:
-  - Gráfico de crescimento de usuários (cadastros por semana/mês)
-  - Receita estimada (PROs ativos × preço)
-  - Taxa de conversão Trial → PRO
-  - Churn rate (vencidos que não renovaram)
-  - Engajamento médio (simulações por usuário)
-6. **Auto-envio de Boas-vindas PRO** ao registrar compra manualmente (botão integrado)
-7. **Mais Feature Flags**: Box Tracker, Calculadora CDI, Diversificador (para lançamentos graduais)
-8. **Contagem de análises por usuário** visível no card admin
+### 4. Analysis Detail -- OK
+- Usa `useSharedRtdBridge` (unificado) -- CORRIGIDO
+- Precos em tempo real via RTD compartilhado -- OK
+- Edicao de pernas, salvar, encerrar -- OK
 
-### Fase 3 — Melhorias de UX
+### 5. Rastreador de Box -- OK
+- Componente robusto (BoxTrackerTab) -- OK
+- Acesso restrito a PRO -- OK
+- RTD bridge compartilhado -- OK
 
-9. **Gráfico de evolução P&L** no Portfólio (reutilizar o AreaChart do Dashboard)
-10. **Ordenação no Histórico** (por data, lucro, nome)
-11. **AnalysisDetail usar `useSharedRtdBridge**` em vez de WebSocket duplicado
+### 6. Rastreador de Collar -- OK
+- Acesso restrito a PRO -- OK
+- Componente dedicado (CollarTrackerTab) -- OK
 
-### Detalhes Técnicos
+### 7. Dados ao Vivo -- OK
+- RTD bridge compartilhado -- OK
+- Payoff em tempo real -- OK
+- Salvar como analise -- OK
 
-**Correção CDI History (linha 199)**:
+### 8. Calculadora CDI -- OK
+- IR regressivo correto (22.5/20/17.5/15%) -- OK
+- Formatacao BRL -- OK
+- Acesso controlado -- OK
 
+### 9. Diversificador -- OK
+- Estrategias com CRUD completo -- OK
+- Persistencia Supabase -- OK
+
+### 10. Configuracoes (Settings) -- OK
+- Upgrade via Mercado Pago -- OK
+- Troca de senha -- OK
+- Deteccao de retorno de pagamento -- OK
+
+### 11. Painel Administrativo -- OK
+- Aba Usuarios: filtros, email em massa, todos os templates disponiveis -- CORRIGIDO
+- Aba Metricas: MRR, Conversao, Churn, Cadastros Semanais, Distribuicao -- IMPLEMENTADO
+- Aba Feature Flags: 5 flags (Collar, Box, CDI, Diversificador, Dados ao Vivo) -- IMPLEMENTADO
+- Aba API: Mercado Pago + Preco PRO -- OK
+- Contagem de analises por usuario -- IMPLEMENTADO
+
+### 12. Auth / Access Control -- OK
+- Login email + Google -- OK
+- Trial 7 dias automatico -- OK
+- RLS policies em todas as tabelas -- OK
+- Roles via tabela separada (user_roles) -- OK
+- Funcao `has_role` security definer -- OK
+
+---
+
+## Problemas Encontrados
+
+### Menor Prioridade (nao bloqueantes)
+1. **BoxTracker e CollarTracker usam `navigate()` dentro do render** (linhas 17-18): Deveria usar `<Navigate>` em vez de chamar `navigate()` dentro do corpo do componente, pois pode causar warnings de React sobre side-effects durante render.
+
+2. **Queries duplicadas no Portfolio**: A pagina faz as mesmas queries 2x quando o componente re-renderiza (visivel nos network logs -- 4 requests identicas). Isso acontece porque o `useEffect` depende de `user` que muda durante o auth state change.
+
+3. **Console warning de Badge ref**: Warning menor sobre `Badge` nao suportar `ref` -- cosmetico, sem impacto funcional.
+
+---
+
+## Plano de Correcoes Finais
+
+### 1. Corrigir navegacao no BoxTracker e CollarTracker
+- Substituir `navigate("/auth"); return null;` por `return <Navigate to="/auth" replace />;`
+- Arquivo: `src/pages/BoxTracker.tsx` (linhas 15-18)
+- Arquivo: `src/pages/CollarTracker.tsx` (linhas 15-18)
+
+### 2. Evitar queries duplicadas no Portfolio
+- Adicionar flag `fetchedRef` para prevenir re-fetch desnecessario no `useEffect`
+
+### Detalhes Tecnicos
+
+Correcao BoxTracker/CollarTracker:
 ```typescript
-// DE: absInvestido * (Math.pow(1 + 0.149, bizDays / 252) - 1)
-// PARA: absInvestido * (Math.pow(1 + (a.cdi_rate || 14.65) / 100, bizDays / 252) - 1)
+// DE:
+if (!user) { navigate("/auth"); return null; }
+// PARA:
+if (!user) return <Navigate to="/auth" replace />;
 ```
 
-**Admin Métricas**: Novo `TabsTrigger value="metrics"` com queries ao Supabase para agregação de dados de `user_access` e `analyses`. Sem necessidade de novas tabelas — tudo calculado em runtime a partir dos dados existentes.
+Estas sao correcoes menores de qualidade de codigo. O sistema esta funcional e completo em todas as abas.
 
-**Feature Flags**: Expandir o pattern existente de `localStorage` + `storage event` para novas flags, mantendo a sincronização cross-tab.
