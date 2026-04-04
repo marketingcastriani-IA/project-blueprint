@@ -11,9 +11,10 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Lock, Mail, LogOut, Shield, CheckCircle2, Crown, CreditCard, Sparkles, Zap, Camera, Bot, History, Briefcase, MessageSquare, ExternalLink, Radio, ArrowRight, AlertTriangle } from 'lucide-react';
+import { Loader2, Lock, Mail, LogOut, Shield, CheckCircle2, Crown, CreditCard, Sparkles, Zap, Camera, Bot, History, Briefcase, MessageSquare, ExternalLink, Radio, ArrowRight, AlertTriangle, RotateCcw } from 'lucide-react';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import { useProPrice } from '@/hooks/useProPrice';
+import { resetOnboardingTour } from '@/components/OnboardingTour';
 
 export default function Settings() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -23,8 +24,9 @@ export default function Settings() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
-  const { proPrice } = useProPrice();
+  const { proPrice, annualPrice, monthlyEquivalent } = useProPrice();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [planPeriod, setPlanPeriod] = useState<'monthly' | 'yearly'>('monthly');
 
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
 
