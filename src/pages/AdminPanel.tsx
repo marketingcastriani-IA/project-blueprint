@@ -524,7 +524,7 @@ export default function AdminPanel() {
         .from('site_settings')
         .upsert({ 
           id: 'pro_plan', 
-          value: { price: parseFloat(proPrice) } 
+          value: { price: parseFloat(proPrice), annual_discount: parseFloat(annualDiscount) } 
         });
       
       if (error) throw error;
