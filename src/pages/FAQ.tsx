@@ -13,15 +13,15 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { generateFAQPdf, type PdfImageMap } from '@/lib/pdf-generator';
 
-import faqPayoff from '@/assets/faq-payoff.png';
-import faqCdi from '@/assets/faq-cdi.png';
-import faqHistorico from '@/assets/faq-historico.png';
-import faqPortfolio from '@/assets/faq-portfolio.png';
-import faqAnaliseDetalhe from '@/assets/faq-analise-detalhe.png';
-import faqDiversificador from '@/assets/faq-diversificador.png';
-import faqTempoReal from '@/assets/faq-tempo-real.jpg';
-import faqRastreadorBox from '@/assets/faq-rastreador-box.jpg';
-import faqBridgeSetup from '@/assets/faq-bridge-setup.jpg';
+import faqPayoff from '@/assets/pdf-payoff.jpg';
+import faqCdi from '@/assets/pdf-calculadora-cdi.jpg';
+import faqHistorico from '@/assets/pdf-historico.jpg';
+import faqPortfolio from '@/assets/pdf-portfolio.jpg';
+import faqAnaliseDetalhe from '@/assets/pdf-analise-detalhe.jpg';
+import faqDiversificador from '@/assets/pdf-diversificador.jpg';
+import faqTempoReal from '@/assets/pdf-tempo-real.jpg';
+import faqRastreadorBox from '@/assets/pdf-box-ranking.jpg';
+import faqBridgeSetup from '@/assets/pdf-tempo-real.jpg';
 
 const StepCard = ({ step, title, description, icon: Icon }: { step: number; title: string; description: string; icon: React.ComponentType<{ className?: string }> }) => (
   <div className="flex gap-4 items-start">
