@@ -155,6 +155,8 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   // Pre-load all images from the imported URLs
   const urls = Object.values(images).filter(Boolean);
   const imageMap = await loadAllImages(urls);
+  // Helper to get image by key
+  const getImg = (key: string) => images[key] ? imageMap[images[key]] : undefined;
   
   // Cover page
   doc.setFillColor(...COLORS.dark);
