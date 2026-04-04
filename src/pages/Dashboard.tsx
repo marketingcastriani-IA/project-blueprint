@@ -396,6 +396,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background pb-16">
       <Header />
+      <OnboardingTour />
       
       {/* Banner fixo para usuários free */}
       {access.planType === 'free' && access.daysRemaining !== null && (
