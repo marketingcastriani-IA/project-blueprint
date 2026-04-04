@@ -133,8 +133,38 @@ const formatMetricValue = (val: number | string | 'Ilimitado'): string => {
 };
 
 // ==================== FAQ MANUAL PDF ====================
-export const generateFAQPdf = () => {
+
+// Image mapping: section → image path (these are imported in FAQ.tsx from src/assets)
+const FAQ_IMAGES: { section: string; src: string; alt: string }[] = [
+  { section: 'payoff', src: '/assets/screenshot-payoff.png', alt: 'Gráfico de Payoff' },
+  { section: 'cdi', src: '/assets/screenshot-cdi.png', alt: 'Comparação CDI' },
+  { section: 'historico', src: '/assets/screenshot-analysis.png', alt: 'Histórico de Análises' },
+  { section: 'portfolio', src: '/assets/screenshot-portfolio.png', alt: 'Portfólio' },
+  { section: 'analise', src: '/assets/screenshot-ai-report.png', alt: 'Análise de IA' },
+  { section: 'diversificador', src: '/assets/screenshot-diversificador.png', alt: 'Diversificador' },
+  { section: 'temporeal', src: '/assets/screenshot-realtime.png', alt: 'Tempo Real' },
+  { section: 'box', src: '/assets/box-tracker-winner.png', alt: 'Rastreador de Box' },
+  { section: 'bridge', src: '/assets/screenshot-ocr.png', alt: 'OCR Upload' },
+];
+
+const loadAllImages = async (images: { src: string }[]): Promise<Record<string, string>> => {
+  const map: Record<string, string> = {};
+  const results = await Promise.allSettled(
+    images.map(async (img) => {
+      try {
+        const b64 = await loadImageAsBase64(img.src);
+        map[img.src] = b64;
+      } catch { /* skip failed images */ }
+    })
+  );
+  return map;
+};
+
+export const generateFAQPdf = async () => {
   const doc = new jsPDF();
+
+  // Pre-load all images
+  const imageMap = await loadAllImages(FAQ_IMAGES);
   
   // Cover page
   doc.setFillColor(...COLORS.dark);
@@ -180,6 +210,13 @@ export const generateFAQPdf = () => {
   y = checkPageBreak(doc, y, 80);
   y = addSectionTitle(doc, '2. Como Criar uma Análise', y);
 
+  // OCR screenshot
+  const ocrImg = imageMap['/assets/screenshot-ocr.png'];
+  if (ocrImg) {
+    y = checkPageBreak(doc, y, 100);
+    ({ newY: y } = addImageToPdf(doc, ocrImg, y));
+  }
+
   y = addTable(doc, {
     startY: y,
     head: [['Passo', 'Ação', 'Descrição']],
@@ -198,6 +235,13 @@ export const generateFAQPdf = () => {
   y = addSectionTitle(doc, '3. Gráfico de Payoff & Métricas', y);
   y = addParagraph(doc, 'O gráfico de payoff mostra visualmente o lucro ou prejuízo da sua estrutura para cada cenário de preço do ativo-objeto no vencimento. Use os botões VALOR e % ROI para alternar a visualização. A linha tracejada amarela representa o retorno do CDI.', y);
 
+  // Payoff screenshot
+  const payoffImg = imageMap['/assets/screenshot-payoff.png'];
+  if (payoffImg) {
+    y = checkPageBreak(doc, y, 100);
+    ({ newY: y } = addImageToPdf(doc, payoffImg, y));
+  }
+
   y = addTable(doc, {
     startY: y,
     head: [['Métrica', 'Descrição']],
@@ -214,6 +258,13 @@ export const generateFAQPdf = () => {
   y = checkPageBreak(doc, y, 60);
   y = addSectionTitle(doc, '4. Comparação com CDI', y);
   y = addParagraph(doc, 'A comparação com CDI permite avaliar se a sua estratégia de opções supera o rendimento do CDI (Certificado de Depósito Interbancário), a taxa de referência para investimentos de renda fixa no Brasil.', y);
+
+  // CDI screenshot
+  const cdiImg = imageMap['/assets/screenshot-cdi.png'];
+  if (cdiImg) {
+    y = checkPageBreak(doc, y, 100);
+    ({ newY: y } = addImageToPdf(doc, cdiImg, y));
+  }
 
   y = addTable(doc, {
     startY: y,
@@ -235,6 +286,13 @@ export const generateFAQPdf = () => {
   y = addSectionTitle(doc, '5. Acompanhamento de Operações Ativas', y);
   y = addParagraph(doc, 'Ao abrir uma operação ativa, você acessa a tela de Detalhes. Nela é possível monitorar o P&L em tempo real, comparar com o custo de oportunidade do CDI e solicitar um Veredito de Saída da IA para decidir o melhor momento de encerrar.', y);
 
+  // AI Analysis screenshot
+  const aiImg = imageMap['/assets/screenshot-ai-report.png'];
+  if (aiImg) {
+    y = checkPageBreak(doc, y, 100);
+    ({ newY: y } = addImageToPdf(doc, aiImg, y));
+  }
+
   y = addTable(doc, {
     startY: y,
     head: [['Indicador', 'Descrição']],
@@ -251,6 +309,14 @@ export const generateFAQPdf = () => {
   y = checkPageBreak(doc, y, 50);
   y = addSectionTitle(doc, '6. Aba Histórico', y);
   y = addParagraph(doc, 'O Histórico é o centro de controle das suas análises. Todas as operações salvas aparecem organizadas por status (Ativas e Encerradas) com filtros por mês e ano.', y);
+
+  // Histórico screenshot
+  const histImg = imageMap['/assets/screenshot-analysis.png'];
+  if (histImg) {
+    y = checkPageBreak(doc, y, 100);
+    ({ newY: y } = addImageToPdf(doc, histImg, y));
+  }
+
   y = addParagraph(doc, '• Operações Ativas: Podem ser editadas, encerradas ou deletadas.\n• Operações Encerradas: Ficam registradas com a data de encerramento. Podem ser reabertas.', y);
 
   y = checkPageBreak(doc, y, 50);
@@ -272,12 +338,48 @@ export const generateFAQPdf = () => {
   y = addSectionTitle(doc, '8. Aba Portfólio', y);
   y = addParagraph(doc, 'O Portfólio consolida todas as operações encerradas. Métricas disponíveis: Resultado Total, Capital Alocado, Média por Operação, VS CDI, Taxa de Acerto e total de Estratégias Encerradas.', y);
 
+  // Portfolio screenshot
+  const portImg = imageMap['/assets/screenshot-portfolio.png'];
+  if (portImg) {
+    y = checkPageBreak(doc, y, 100);
+    ({ newY: y } = addImageToPdf(doc, portImg, y));
+  }
+
   y = checkPageBreak(doc, y, 40);
   y = addSectionTitle(doc, '9. Diversificador de Estratégias', y);
   y = addParagraph(doc, 'O módulo Diversificador permite criar planos de alocação para distribuir seu patrimônio entre diferentes estratégias de opções. Defina percentuais, nível de risco e alavancagem para cada estratégia, mantendo um controle disciplinado da sua exposição ao mercado.', y);
 
+  // Diversificador screenshot
+  const divImg = imageMap['/assets/screenshot-diversificador.png'];
+  if (divImg) {
+    y = checkPageBreak(doc, y, 100);
+    ({ newY: y } = addImageToPdf(doc, divImg, y));
+  }
+
+  // Tempo Real section
+  y = checkPageBreak(doc, y, 60);
+  y = addSectionTitle(doc, '10. Tempo Real', y);
+  y = addParagraph(doc, 'Conecte ao Profit Pro via RTD Bridge e acompanhe suas operações com preços ao vivo, P&L em tempo real e encerramento direto pelo app.', y);
+
+  const rtImg = imageMap['/assets/screenshot-realtime.png'];
+  if (rtImg) {
+    y = checkPageBreak(doc, y, 100);
+    ({ newY: y } = addImageToPdf(doc, rtImg, y));
+  }
+
+  // Rastreador de Box section
+  y = checkPageBreak(doc, y, 60);
+  y = addSectionTitle(doc, '11. Rastreador de Box', y);
+  y = addParagraph(doc, 'Rastreie automaticamente os melhores boxes da B3 em tempo real. Ranking com troféus 3D, % do CDI e instruções de montagem passo a passo.', y);
+
+  const boxImg = imageMap['/assets/box-tracker-winner.png'];
+  if (boxImg) {
+    y = checkPageBreak(doc, y, 100);
+    ({ newY: y } = addImageToPdf(doc, boxImg, y));
+  }
+
   y = checkPageBreak(doc, y, 80);
-  y = addSectionTitle(doc, '10. Perguntas Frequentes', y);
+  y = addSectionTitle(doc, '12. Perguntas Frequentes', y);
 
   y = addTable(doc, {
     startY: y,
