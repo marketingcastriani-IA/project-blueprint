@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { generateFAQPdf, type PdfImageMap } from '@/lib/pdf-generator';
 
+import faqNovaAnalise from '@/assets/pdf-nova-analise.jpg';
 import faqPayoff from '@/assets/pdf-payoff.jpg';
 import faqCdi from '@/assets/pdf-calculadora-cdi.jpg';
 import faqHistorico from '@/assets/pdf-historico.jpg';
@@ -92,6 +93,8 @@ export default function FAQ() {
               const { toast } = await import('sonner');
               toast.info('Gerando PDF com imagens...');
               const faqImages: PdfImageMap = {
+                analysis: faqNovaAnalise,
+                ocr: faqNovaAnalise,
                 payoff: faqPayoff,
                 cdi: faqCdi,
                 historico: faqHistorico,
@@ -100,7 +103,6 @@ export default function FAQ() {
                 diversificador: faqDiversificador,
                 temporeal: faqTempoReal,
                 box: faqRastreadorBox,
-                ocr: faqBridgeSetup,
               };
               await generateFAQPdf(faqImages);
               toast.success('PDF do manual baixado!');
@@ -137,6 +139,7 @@ export default function FAQ() {
 
         {/* Como Criar uma Análise */}
         <FeatureSection icon={Upload} title="Como Criar uma Análise" badge="Passo a Passo">
+          <img src={faqNovaAnalise} alt="Tela de Nova Análise" className="w-full rounded-lg border border-border/40 shadow-md mb-4" />
           <div className="space-y-4">
             <StepCard 
               step={1} icon={Camera}
