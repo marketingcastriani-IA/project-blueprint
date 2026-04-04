@@ -249,6 +249,7 @@ export default function AdminPanel() {
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailImageDataUrl, setEmailImageDataUrl] = useState<string | null>(null);
   const [emailImagePreview, setEmailImagePreview] = useState<string | null>(null);
+  const [emailAttachment, setEmailAttachment] = useState<{ name: string; content: string; type: string } | null>(null);
   // Mercado Pago Config
   const [mpPublicKey, setMpPublicKey] = useState('');
   const [mpAccessToken, setMpAccessToken] = useState('');
@@ -500,6 +501,7 @@ export default function AdminPanel() {
           subject: emailSubject,
           body: emailBody,
           imageDataUrl: emailImageDataUrl,
+          attachment: emailAttachment,
         },
       });
       if (error) throw error;
@@ -511,6 +513,7 @@ export default function AdminPanel() {
       setEmailBody('');
       setEmailImageDataUrl(null);
       setEmailImagePreview(null);
+      setEmailAttachment(null);
     } catch (err: any) {
       toast.error('Erro ao enviar email: ' + (err.message || 'Erro desconhecido'));
     } finally {
