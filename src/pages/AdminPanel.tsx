@@ -950,11 +950,16 @@ export default function AdminPanel() {
                 </p>
                 <Button 
                   onClick={async () => {
-                    toast.info('Gerando PDF com imagens da landing page...');
-                    const { generateLandingPagePdf } = await import('@/lib/pdf-generator');
-                    const imgs = await import('@/pages/AdminPanelImages');
-                    await generateLandingPagePdf(imgs.landingImages);
-                    toast.success('Catálogo PDF baixado!');
+                    try {
+                      toast.info('Gerando PDF com imagens da landing page...');
+                      const { generateLandingPagePdf } = await import('@/lib/pdf-generator');
+                      const imgs = await import('@/pages/AdminPanelImages');
+                      await generateLandingPagePdf(imgs.landingImages);
+                      toast.success('Catálogo PDF baixado!');
+                    } catch (err: any) {
+                      console.error('Erro ao gerar catálogo:', err);
+                      toast.error(`Erro ao gerar PDF: ${err?.message || 'desconhecido'}`);
+                    }
                   }}
                   className="w-full h-12 font-black"
                 >
