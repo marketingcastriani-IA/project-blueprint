@@ -364,7 +364,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   y = addSectionTitle(doc, '11. Rastreador de Box', y);
   y = addParagraph(doc, 'Rastreie automaticamente os melhores boxes da B3 em tempo real. Ranking com troféus 3D, % do CDI e instruções de montagem passo a passo.', y);
 
-  const boxImg = imageMap['/assets/box-tracker-winner.png'];
+  const boxImg = getImg('box');
   if (boxImg) {
     y = checkPageBreak(doc, y, 100);
     ({ newY: y } = addImageToPdf(doc, boxImg, y));
