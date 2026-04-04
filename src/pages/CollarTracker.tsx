@@ -10,6 +10,7 @@ import { Zap, Lock } from "lucide-react";
 export default function CollarTracker() {
   const { user } = useAuth();
   const access = useAccessControl();
+  const navigate = useNavigate();
 
   if (!user) return <Navigate to="/auth" replace />;
 
