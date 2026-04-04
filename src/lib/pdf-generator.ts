@@ -252,7 +252,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   y = addParagraph(doc, 'A comparação com CDI permite avaliar se a sua estratégia de opções supera o rendimento do CDI (Certificado de Depósito Interbancário), a taxa de referência para investimentos de renda fixa no Brasil.', y);
 
   // CDI screenshot
-  const cdiImg = imageMap['/assets/screenshot-cdi.png'];
+  const cdiImg = getImg('cdi');
   if (cdiImg) {
     y = checkPageBreak(doc, y, 100);
     ({ newY: y } = addImageToPdf(doc, cdiImg, y));
