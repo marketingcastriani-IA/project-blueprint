@@ -881,8 +881,7 @@ export const generateAnalysisPdf = (
 // ==================== LANDING PAGE PDF ====================
 
 const LANDING_FEATURES: { key: string; title: string; desc: string; extraKeys?: string[] }[] = [
-  { key: 'analysis', title: 'Dashboard de Análise', desc: 'Visão completa da estrutura com P&L em tempo real, métricas e gráfico de payoff.' },
-  { key: 'ocr', title: 'OCR Inteligente', desc: 'Tire um print da corretora e a IA lê strikes, prêmios e quantidades em 2 segundos.' },
+  { key: 'analysis', title: 'Dashboard de Análise + OCR', desc: 'Visão completa da estrutura com P&L em tempo real, métricas e gráfico de payoff. Tire um print da corretora e a IA lê strikes, prêmios e quantidades em 2 segundos.' },
   { key: 'ai', title: 'Análise com IA', desc: 'Relatório quantitativo com nota de atratividade, risco, cenários e sugestões.', extraKeys: ['ai2'] },
   { key: 'payoff', title: 'Gráfico de Payoff', desc: 'Visualize lucro máximo, risco máximo, breakeven e métricas em tempo real.' },
   { key: 'cdi', title: 'Comparativo CDI', desc: 'Compare sua estratégia contra o CDI e saiba se o risco vale a pena.' },
