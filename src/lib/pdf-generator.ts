@@ -23,7 +23,7 @@ const loadImageAsBase64 = (src: string): Promise<string> => {
 };
 
 // Helper to add an image to PDF with proper aspect ratio
-const addImageToPdf = (doc: jsPDF, dataUrl: string, y: number, maxWidth = 170, maxHeight = 90): { newY: number } => {
+const addImageToPdf = (doc: jsPDF, dataUrl: string, y: number, maxWidth = 182, maxHeight = 110): { newY: number } => {
   const imageProps = doc.getImageProperties(dataUrl);
   const sourceWidth = Number(imageProps.width ?? 0);
   const sourceHeight = Number(imageProps.height ?? 0);
@@ -38,8 +38,15 @@ const addImageToPdf = (doc: jsPDF, dataUrl: string, y: number, maxWidth = 170, m
   const x = (210 - w) / 2;
   const format = imageProps.fileType === 'PNG' ? 'PNG' : 'JPEG';
 
+  // Shadow effect behind image
+  doc.setFillColor(200, 200, 200);
+  doc.roundedRect(x + 1.5, y + 1.5, w, h, 2, 2, 'F');
+  // Border
+  doc.setDrawColor(180, 190, 200);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(x, y, w, h, 2, 2, 'S');
   doc.addImage(dataUrl, format, x, y, w, h);
-  return { newY: y + h + 6 };
+  return { newY: y + h + 8 };
 };
 
 // Helper to call autoTable and return finalY + spacing
