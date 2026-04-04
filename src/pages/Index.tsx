@@ -22,7 +22,7 @@ export default function Index() {
   const { user, loading } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const { proPrice, annualPrice, monthlyEquivalent } = useProPrice();
+  const { proPrice, annualPrice, monthlyEquivalent, annualDiscountPercent } = useProPrice();
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [planPeriod, setPlanPeriod] = useState<PlanPeriod>('monthly');
 
