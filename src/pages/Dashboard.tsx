@@ -587,7 +587,7 @@ export default function Dashboard() {
               )}
             </div>
 
-            <div className="grid gap-4 grid-cols-1 lg:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 lg:grid-cols-3" data-tour="analysis-config">
               <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-sm font-bold">
                   Nome da análise
