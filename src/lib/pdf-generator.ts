@@ -820,24 +820,25 @@ export const generateAnalysisPdf = (
 
 // ==================== LANDING PAGE PDF ====================
 
-const LANDING_IMAGES = [
-  { key: 'analysis', src: '/assets/screenshot-analysis.png', title: 'Dashboard de Análise', desc: 'Visão completa da estrutura com P&L em tempo real, métricas e gráfico de payoff.' },
-  { key: 'ocr', src: '/assets/screenshot-ocr.png', title: 'OCR Inteligente', desc: 'Tire um print da corretora e a IA lê strikes, prêmios e quantidades em 2 segundos.' },
-  { key: 'ai', src: '/assets/screenshot-ai-report.png', title: 'Análise com IA', desc: 'Relatório quantitativo com nota de atratividade, risco, cenários e sugestões.' },
-  { key: 'payoff', src: '/assets/screenshot-payoff.png', title: 'Gráfico de Payoff', desc: 'Visualize lucro máximo, risco máximo, breakeven e métricas em tempo real.' },
-  { key: 'cdi', src: '/assets/screenshot-cdi.png', title: 'Comparativo CDI', desc: 'Compare sua estratégia contra o CDI e saiba se o risco vale a pena.' },
-  { key: 'realtime', src: '/assets/screenshot-realtime.png', title: 'Tempo Real 🔴 AO VIVO', desc: 'Conecte ao Profit Pro via RTD Bridge e acompanhe operações com preços ao vivo.' },
-  { key: 'portfolio', src: '/assets/screenshot-portfolio.png', title: 'Portfólio P&L', desc: 'Acompanhe P&L consolidado, ROI total e taxa de acerto das suas operações.' },
-  { key: 'diversificador', src: '/assets/screenshot-diversificador.png', title: 'Diversificador', desc: 'Gerencie a alocação do seu patrimônio entre estratégias com balanceamento automático.' },
-  { key: 'box', src: '/assets/box-tracker-winner.png', title: 'Rastreador de Box 🔴 AO VIVO', desc: 'Rastreie os melhores boxes da B3 em tempo real. Ranking com troféus e % do CDI.' },
-  { key: 'calcCdi', src: '/assets/calculadora-cdi.png', title: 'Calculadora CDI × Opções', desc: 'Compare o rendimento de qualquer estratégia com a renda fixa.' },
+const LANDING_FEATURES = [
+  { key: 'analysis', title: 'Dashboard de Análise', desc: 'Visão completa da estrutura com P&L em tempo real, métricas e gráfico de payoff.' },
+  { key: 'ocr', title: 'OCR Inteligente', desc: 'Tire um print da corretora e a IA lê strikes, prêmios e quantidades em 2 segundos.' },
+  { key: 'ai', title: 'Análise com IA', desc: 'Relatório quantitativo com nota de atratividade, risco, cenários e sugestões.' },
+  { key: 'payoff', title: 'Gráfico de Payoff', desc: 'Visualize lucro máximo, risco máximo, breakeven e métricas em tempo real.' },
+  { key: 'cdi', title: 'Comparativo CDI', desc: 'Compare sua estratégia contra o CDI e saiba se o risco vale a pena.' },
+  { key: 'realtime', title: 'Tempo Real 🔴 AO VIVO', desc: 'Conecte ao Profit Pro via RTD Bridge e acompanhe operações com preços ao vivo.' },
+  { key: 'portfolio', title: 'Portfólio P&L', desc: 'Acompanhe P&L consolidado, ROI total e taxa de acerto das suas operações.' },
+  { key: 'diversificador', title: 'Diversificador', desc: 'Gerencie a alocação do seu patrimônio entre estratégias com balanceamento automático.' },
+  { key: 'box', title: 'Rastreador de Box 🔴 AO VIVO', desc: 'Rastreie os melhores boxes da B3 em tempo real. Ranking com troféus e % do CDI.' },
+  { key: 'calcCdi', title: 'Calculadora CDI × Opções', desc: 'Compare o rendimento de qualquer estratégia com a renda fixa.' },
 ];
 
-export const generateLandingPagePdf = async () => {
+export const generateLandingPagePdf = async (images: PdfImageMap = {}) => {
   const doc = new jsPDF();
 
-  // Pre-load all images
-  const imageMap = await loadAllImages(LANDING_IMAGES);
+  // Pre-load all images from imported URLs
+  const urls = Object.values(images).filter(Boolean);
+  const imageMap = await loadAllImages(urls);
 
   // ===== COVER PAGE =====
   doc.setFillColor(...COLORS.dark);
