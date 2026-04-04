@@ -936,6 +936,31 @@ export default function AdminPanel() {
                 ))}
               </CardContent>
             </Card>
+
+            <Card className="border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Download className="h-5 w-5 text-primary" />
+                  Gerar PDF da Landing Page
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Gere um catálogo profissional em PDF com todas as capturas de tela e funcionalidades da plataforma. Ideal para enviar a potenciais clientes e parceiros.
+                </p>
+                <Button 
+                  onClick={async () => {
+                    toast.info('Gerando PDF com imagens da landing page...');
+                    const { generateLandingPagePdf } = await import('@/lib/pdf-generator');
+                    await generateLandingPagePdf();
+                    toast.success('Catálogo PDF baixado!');
+                  }}
+                  className="w-full h-12 font-black"
+                >
+                  <Download className="mr-2 h-5 w-5" /> GERAR CATÁLOGO PDF
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="api" className="space-y-6">
