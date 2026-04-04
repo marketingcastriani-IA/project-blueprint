@@ -24,7 +24,7 @@ export default function Settings() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
-  const { proPrice, annualPrice, monthlyEquivalent } = useProPrice();
+  const { proPrice, annualPrice, monthlyEquivalent, annualDiscountPercent } = useProPrice();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [planPeriod, setPlanPeriod] = useState<'monthly' | 'yearly'>('monthly');
 
