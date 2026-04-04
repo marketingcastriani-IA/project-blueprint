@@ -3,10 +3,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Clock, XCircle, AlertTriangle, LogOut, Crown, Loader2, CheckCircle2, Zap, Camera, Bot, History, Briefcase } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useProPrice } from '@/hooks/useProPrice';
+import { cn } from '@/lib/utils';
 
 interface AccessBlockedProps {
   status: 'pending' | 'rejected' | 'expired';
@@ -16,12 +18,15 @@ export default function AccessBlocked({ status }: AccessBlockedProps) {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const [upgrading, setUpgrading] = useState(false);
-  const { proPrice } = useProPrice();
+  const { proPrice, annualPrice, monthlyEquivalent } = useProPrice();
+  const [planPeriod, setPlanPeriod] = useState<'monthly' | 'yearly'>('monthly');
 
   const handleUpgrade = async () => {
     setUpgrading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('mercado-pago-checkout');
+      const { data, error } = await supabase.functions.invoke('mercado-pago-checkout', {
+        body: { plan_period: planPeriod }
+      });
       if (error) {
         toast.error("Falha no Checkout", { description: error.message || "Erro ao processar pagamento" });
         return;
