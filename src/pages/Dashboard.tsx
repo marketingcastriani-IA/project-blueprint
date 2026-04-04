@@ -520,6 +520,7 @@ export default function Dashboard() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
+                    data-tour="ai-button"
                     onClick={getAISuggestion} 
                     disabled={loadingAI || legs.length === 0} 
                     className={cn(
