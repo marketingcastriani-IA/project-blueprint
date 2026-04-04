@@ -24,7 +24,7 @@ export default function Settings() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
-  const { proPrice, annualPrice, monthlyEquivalent } = useProPrice();
+  const { proPrice, annualPrice, monthlyEquivalent, annualDiscountPercent } = useProPrice();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [planPeriod, setPlanPeriod] = useState<'monthly' | 'yearly'>('monthly');
 
@@ -178,7 +178,7 @@ export default function Settings() {
                     )}
                   >
                     Anual
-                    <Badge className="absolute -top-2 -right-2 bg-success text-success-foreground text-[9px] font-black px-1.5 py-0.5">-20%</Badge>
+                    <Badge className="absolute -top-2 -right-2 bg-success text-success-foreground text-[9px] font-black px-1.5 py-0.5">-{annualDiscountPercent}%</Badge>
                   </button>
                 </div>
 
@@ -193,7 +193,7 @@ export default function Settings() {
                       <p className="text-primary font-black text-2xl">
                         R$ {annualPrice.toFixed(2).replace('.', ',')}<span className="text-sm font-medium text-muted-foreground">/ano</span>
                       </p>
-                      <p className="text-xs text-success font-bold">≈ R$ {monthlyEquivalent.toFixed(2).replace('.', ',')}/mês — economize 20%</p>
+                      <p className="text-xs text-success font-bold">≈ R$ {monthlyEquivalent.toFixed(2).replace('.', ',')}/mês — economize {annualDiscountPercent}%</p>
                     </div>
                   )}
                 </div>

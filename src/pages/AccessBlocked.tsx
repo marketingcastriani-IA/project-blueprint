@@ -18,7 +18,7 @@ export default function AccessBlocked({ status }: AccessBlockedProps) {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   const [upgrading, setUpgrading] = useState(false);
-  const { proPrice, annualPrice, monthlyEquivalent } = useProPrice();
+  const { proPrice, annualPrice, monthlyEquivalent, annualDiscountPercent } = useProPrice();
   const [planPeriod, setPlanPeriod] = useState<'monthly' | 'yearly'>('monthly');
 
   const handleUpgrade = async () => {
@@ -126,7 +126,7 @@ export default function AccessBlocked({ status }: AccessBlockedProps) {
                   )}
                 >
                   Anual
-                  <Badge className="absolute -top-2 -right-2 bg-success text-success-foreground text-[9px] font-black px-1.5 py-0.5">-20%</Badge>
+                  <Badge className="absolute -top-2 -right-2 bg-success text-success-foreground text-[9px] font-black px-1.5 py-0.5">-{annualDiscountPercent}%</Badge>
                 </button>
               </div>
 

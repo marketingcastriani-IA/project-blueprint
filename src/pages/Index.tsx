@@ -22,7 +22,7 @@ export default function Index() {
   const { user, loading } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
-  const { proPrice, annualPrice, monthlyEquivalent } = useProPrice();
+  const { proPrice, annualPrice, monthlyEquivalent, annualDiscountPercent } = useProPrice();
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [planPeriod, setPlanPeriod] = useState<PlanPeriod>('monthly');
 
@@ -451,7 +451,7 @@ export default function Index() {
               )}
             >
               Anual
-              <Badge className="absolute -top-2 -right-2 bg-success text-success-foreground text-[9px] font-black px-1.5 py-0.5">-20%</Badge>
+              <Badge className="absolute -top-2 -right-2 bg-success text-success-foreground text-[9px] font-black px-1.5 py-0.5">-{annualDiscountPercent}%</Badge>
             </button>
           </div>
         </div>
@@ -497,7 +497,7 @@ export default function Index() {
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground line-through">R$ {(proPrice * 12).toFixed(2)}/ano</p>
                   <p className="text-4xl font-black tracking-tighter text-primary">R$ {annualPrice.toFixed(2)}<span className="text-sm text-muted-foreground font-medium">/ano</span></p>
-                  <p className="text-xs text-success font-bold">≈ R$ {monthlyEquivalent.toFixed(2)}/mês — economize 20%</p>
+                  <p className="text-xs text-success font-bold">≈ R$ {monthlyEquivalent.toFixed(2)}/mês — economize {annualDiscountPercent}%</p>
                 </div>
               )}
               <p className="text-sm text-muted-foreground">Para quem opera de verdade</p>
