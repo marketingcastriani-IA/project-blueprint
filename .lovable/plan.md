@@ -1,115 +1,74 @@
 
 
-# Varredura Completa do Sistema -- Resultado da Auditoria
+# Plano: Onboarding Guiado + Plano Anual com Desconto
 
-## Status Geral: Sistema Estavel
+## 1. Onboarding Guiado (Tour Interativo)
 
-Zero erros de runtime detectados. Todas as APIs retornando 200. Dados fluindo corretamente entre frontend e Supabase.
+**Novo componente**: `src/components/OnboardingTour.tsx`
+- Tour de 5 passos usando tooltips posicionados sobre elementos reais do Dashboard:
+  1. "Escolha como inserir suas pernas" (botoes de input mode)
+  2. "Defina nome, data e CDI" (campos do formulario)
+  3. "Clique aqui para a IA analisar" (botao de IA)
+  4. "Salve para acompanhar no historico" (botao Salvar)
+  5. "Explore o Portfolio e Rastreadores" (menu do Header)
+- Overlay escuro com highlight no elemento ativo
+- Botoes "Proximo" / "Pular Tour" / indicador de progresso (1/5)
+- Persistencia via `localStorage('onboarding_completed')`
+- Renderizado condicionalmente no Dashboard apenas para novos usuarios (primeira visita)
 
----
+**Alteracoes em**: `src/pages/Dashboard.tsx`
+- Importar e renderizar `<OnboardingTour />` quando `!localStorage.getItem('onboarding_completed')` e usuario logado com pernas vazias
 
-## Auditoria por Aba
-
-### 1. Dashboard (Nova Analise) -- OK
-- Formulario de pernas, payoff chart, metricas, IA, OCR, PDF -- tudo funcional
-- Barra flutuante com IA + Salvar + PDF -- implementada
-- Dialog de sucesso pos-salvamento com redirecionamento -- OK
-- CDI dinamico -- OK
-
-### 2. Historico (Operacoes) -- OK
-- CDI corrigido (usa `a.cdi_rate || 14.65` dinamicamente) -- CORRIGIDO
-- Busca por nome/ativo -- IMPLEMENTADO
-- Ordenacao (mais recente/antigo/lucro) -- IMPLEMENTADO
-- Filtros mes/ano -- OK
-- Encerrar/reabrir operacao -- OK
-- PDF individual -- OK
-
-### 3. Portfolio -- OK
-- Grafico de evolucao P&L (AreaChart) -- IMPLEMENTADO (threshold >= 1)
-- Exportacao CSV -- IMPLEMENTADO
-- Stats consolidados (P&L, ROI, Win Rate, Operacoes) -- OK
-- Filtros mes/ano -- OK
-- PDF portfolio -- OK
-
-### 4. Analysis Detail -- OK
-- Usa `useSharedRtdBridge` (unificado) -- CORRIGIDO
-- Precos em tempo real via RTD compartilhado -- OK
-- Edicao de pernas, salvar, encerrar -- OK
-
-### 5. Rastreador de Box -- OK
-- Componente robusto (BoxTrackerTab) -- OK
-- Acesso restrito a PRO -- OK
-- RTD bridge compartilhado -- OK
-
-### 6. Rastreador de Collar -- OK
-- Acesso restrito a PRO -- OK
-- Componente dedicado (CollarTrackerTab) -- OK
-
-### 7. Dados ao Vivo -- OK
-- RTD bridge compartilhado -- OK
-- Payoff em tempo real -- OK
-- Salvar como analise -- OK
-
-### 8. Calculadora CDI -- OK
-- IR regressivo correto (22.5/20/17.5/15%) -- OK
-- Formatacao BRL -- OK
-- Acesso controlado -- OK
-
-### 9. Diversificador -- OK
-- Estrategias com CRUD completo -- OK
-- Persistencia Supabase -- OK
-
-### 10. Configuracoes (Settings) -- OK
-- Upgrade via Mercado Pago -- OK
-- Troca de senha -- OK
-- Deteccao de retorno de pagamento -- OK
-
-### 11. Painel Administrativo -- OK
-- Aba Usuarios: filtros, email em massa, todos os templates disponiveis -- CORRIGIDO
-- Aba Metricas: MRR, Conversao, Churn, Cadastros Semanais, Distribuicao -- IMPLEMENTADO
-- Aba Feature Flags: 5 flags (Collar, Box, CDI, Diversificador, Dados ao Vivo) -- IMPLEMENTADO
-- Aba API: Mercado Pago + Preco PRO -- OK
-- Contagem de analises por usuario -- IMPLEMENTADO
-
-### 12. Auth / Access Control -- OK
-- Login email + Google -- OK
-- Trial 7 dias automatico -- OK
-- RLS policies em todas as tabelas -- OK
-- Roles via tabela separada (user_roles) -- OK
-- Funcao `has_role` security definer -- OK
+**Alteracoes em**: `src/pages/Settings.tsx`
+- Adicionar botao "Reiniciar Tour" que limpa o localStorage
 
 ---
 
-## Problemas Encontrados
+## 2. Plano Anual com Desconto
 
-### Menor Prioridade (nao bloqueantes)
-1. **BoxTracker e CollarTracker usam `navigate()` dentro do render** (linhas 17-18): Deveria usar `<Navigate>` em vez de chamar `navigate()` dentro do corpo do componente, pois pode causar warnings de React sobre side-effects durante render.
+**Logica de pricing**: Preco anual = preco mensal x 12 com 20% de desconto (ex: R$14,90/mes -> R$142,56/ano, equivalente a R$11,88/mes)
 
-2. **Queries duplicadas no Portfolio**: A pagina faz as mesmas queries 2x quando o componente re-renderiza (visivel nos network logs -- 4 requests identicas). Isso acontece porque o `useEffect` depende de `user` que muda durante o auth state change.
+**Alteracoes na Edge Function**: `supabase/functions/mercado-pago-checkout/index.ts`
+- Aceitar parametro `plan_period: 'monthly' | 'yearly'` no body do request
+- Calcular preco conforme periodo (mensal = price, anual = price * 12 * 0.8)
+- Ajustar titulo do item no MP ("Plano Mensal" vs "Plano Anual")
 
-3. **Console warning de Badge ref**: Warning menor sobre `Badge` nao suportar `ref` -- cosmetico, sem impacto funcional.
+**Alteracoes no Webhook**: `supabase/functions/mercado-pago-webhook/index.ts`
+- Detectar se pagamento foi anual (pelo valor ou external_reference) e definir `expires_at` para 365 dias em vez de 31
+
+**Alteracoes na Landing Page**: `src/pages/Index.tsx`
+- Adicionar toggle "Mensal / Anual" na secao de pricing
+- Mostrar badge "-20%" e preco riscado no card PRO quando anual selecionado
+
+**Alteracoes em**: `src/pages/Settings.tsx` e `src/pages/AccessBlocked.tsx`
+- Toggle mensal/anual nos CTAs de upgrade
+- Passar `plan_period` ao invocar `mercado-pago-checkout`
+
+**Alteracoes em**: `src/hooks/useProPrice.ts`
+- Retornar tambem `annualPrice` calculado (price * 12 * 0.8)
 
 ---
 
-## Plano de Correcoes Finais
+## Detalhes Tecnicos
 
-### 1. Corrigir navegacao no BoxTracker e CollarTracker
-- Substituir `navigate("/auth"); return null;` por `return <Navigate to="/auth" replace />;`
-- Arquivo: `src/pages/BoxTracker.tsx` (linhas 15-18)
-- Arquivo: `src/pages/CollarTracker.tsx` (linhas 15-18)
-
-### 2. Evitar queries duplicadas no Portfolio
-- Adicionar flag `fetchedRef` para prevenir re-fetch desnecessario no `useEffect`
-
-### Detalhes Tecnicos
-
-Correcao BoxTracker/CollarTracker:
+**Onboarding Tour** - Implementacao pura com CSS (sem lib externa):
 ```typescript
-// DE:
-if (!user) { navigate("/auth"); return null; }
-// PARA:
-if (!user) return <Navigate to="/auth" replace />;
+// Estado: step atual (0-4), refs dos elementos-alvo
+// Cada step: { targetSelector, title, description, position }
+// Overlay: fixed inset-0 bg-black/60 z-50
+// Tooltip: absolute posicionado via getBoundingClientRect()
 ```
 
-Estas sao correcoes menores de qualidade de codigo. O sistema esta funcional e completo em todas as abas.
+**Checkout anual** - Formato do request:
+```typescript
+// Frontend
+supabase.functions.invoke('mercado-pago-checkout', { 
+  body: { plan_period: 'yearly' } 
+})
+
+// Edge Function: external_reference = `${user.id}:yearly`
+// Webhook: parse external_reference para detectar periodo
+```
+
+**Nenhuma migracao de banco necessaria** - toda a logica usa campos existentes (expires_at com 365 dias para anual).
 
