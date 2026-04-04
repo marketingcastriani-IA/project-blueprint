@@ -556,6 +556,7 @@ export default function Dashboard() {
               </Tooltip>
 
               <Button 
+                data-tour="save-button"
                 onClick={saveAnalysis} 
                 disabled={saving || legs.length === 0}
                 variant="outline"
