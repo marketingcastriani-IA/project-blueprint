@@ -881,15 +881,14 @@ export const generateAnalysisPdf = (
 // ==================== LANDING PAGE PDF ====================
 
 const LANDING_FEATURES: { key: string; title: string; desc: string; extraKeys?: string[] }[] = [
-  { key: 'analysis', title: 'Dashboard de Análise', desc: 'Visão completa da estrutura com P&L em tempo real, métricas e gráfico de payoff.' },
-  { key: 'ocr', title: 'OCR Inteligente', desc: 'Tire um print da corretora e a IA lê strikes, prêmios e quantidades em 2 segundos.' },
+  { key: 'analysis', title: 'Dashboard de Análise + OCR', desc: 'Visão completa da estrutura com P&L em tempo real, métricas e gráfico de payoff. Tire um print da corretora e a IA lê strikes, prêmios e quantidades em 2 segundos.' },
   { key: 'ai', title: 'Análise com IA', desc: 'Relatório quantitativo com nota de atratividade, risco, cenários e sugestões.', extraKeys: ['ai2'] },
   { key: 'payoff', title: 'Gráfico de Payoff', desc: 'Visualize lucro máximo, risco máximo, breakeven e métricas em tempo real.' },
   { key: 'cdi', title: 'Comparativo CDI', desc: 'Compare sua estratégia contra o CDI e saiba se o risco vale a pena.' },
-  { key: 'realtime', title: 'Tempo Real 🔴 AO VIVO', desc: 'Conecte ao Profit Pro via RTD Bridge e acompanhe operações com preços ao vivo.' },
-  { key: 'portfolio', title: 'Portfólio P&L', desc: 'Acompanhe P&L consolidado, ROI total e taxa de acerto das suas operações.' },
+  { key: 'realtime', title: 'Tempo Real - AO VIVO', desc: 'Conecte ao Profit Pro via RTD Bridge e acompanhe operações com preços ao vivo.' },
+  { key: 'portfolio', title: 'Portfolio P&L', desc: 'Acompanhe P&L consolidado, ROI total e taxa de acerto das suas operações.' },
   { key: 'diversificador', title: 'Diversificador', desc: 'Gerencie a alocação do seu patrimônio entre estratégias com balanceamento automático.' },
-  { key: 'box', title: 'Rastreador de Box 🔴 AO VIVO', desc: 'Rastreie os melhores boxes da B3 em tempo real. Ranking com troféus e % do CDI.', extraKeys: ['boxTabela'] },
+  { key: 'box', title: 'Rastreador de Box - AO VIVO', desc: 'Rastreie os melhores boxes da B3 em tempo real. Ranking com troféus e % do CDI.', extraKeys: ['boxTabela'] },
   { key: 'calcCdi', title: 'Calculadora CDI × Opções', desc: 'Compare o rendimento de qualquer estratégia com a renda fixa.' },
   { key: 'temasCores', title: 'Temas e Personalização', desc: 'Escolha entre tema claro e escuro, com paleta profissional para qualquer condição.' },
   { key: 'tomadaDecisao', title: 'Tomada de Decisão com IA', desc: 'Use o veredito da IA para decidir quando manter ou encerrar uma operação.' },
@@ -1008,7 +1007,7 @@ export const generateLandingPagePdf = async (images: PdfImageMap = {}) => {
   y = addSectionTitle(doc, 'Opções PRO X vs. Planilhas', y);
   y = addTable(doc, {
     startY: y,
-    head: [['', 'Planilhas ❌', 'Opções PRO X ✅']],
+    head: [['', 'Planilhas', 'Opções PRO X']],
     body: [
       ['Entrada de dados', 'Manual, lenta', 'OCR: Print → dados em 2s'],
       ['Fórmulas', 'Quebram e exigem manutenção', 'Automático e preciso'],
@@ -1021,26 +1020,7 @@ export const generateLandingPagePdf = async (images: PdfImageMap = {}) => {
     columnStyles: { 0: { fontStyle: 'bold' as const, cellWidth: 35 } },
   });
 
-  // ===== PLANOS =====
-  y = checkPageBreak(doc, y, 80);
-  y = addSectionTitle(doc, 'Planos', y);
-  y = addTable(doc, {
-    startY: y,
-    head: [['Recurso', 'FREE', 'PRO']],
-    body: [
-      ['Simulações', '3 por dia', 'Ilimitadas'],
-      ['Análise de IA', '❌', '✅ Ilimitado'],
-      ['OCR (Leitura de Print)', '❌', '✅'],
-      ['Comparação CDI', '✅ Básico', '✅ Completo + IR'],
-      ['Rastreador de Box', '❌', '✅ Tempo Real'],
-      ['Diversificador', '❌', '✅'],
-      ['Portfólio P&L', '❌', '✅'],
-      ['Tempo Real (RTD)', '❌', '✅'],
-      ['Exportação PDF', '✅ Básico', '✅ Completo'],
-    ],
-    ...TABLE_STYLES,
-    columnStyles: { 0: { fontStyle: 'bold' as const, cellWidth: 50 }, 1: { halign: 'center' as const, cellWidth: 35 }, 2: { halign: 'center' as const, cellWidth: 35 } },
-  });
+  // (Tabela de planos removida - foco no catálogo de funcionalidades)
 
   // ===== CTA =====
   y = checkPageBreak(doc, y, 60);
