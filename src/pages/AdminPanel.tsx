@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import {
   TrendingUp, Users, CheckCircle2, XCircle, Clock, Shield,
   Loader2, LogOut, Sun, Moon, RefreshCw, Search, Crown, Wallet,
-  ArrowLeft, LayoutDashboard, Ban, RotateCcw, Calendar, Settings, Key, Save, User, Mail, DollarSign, AlertTriangle, CalendarClock, ShoppingCart, Send, Upload, Image as ImageIcon, BarChart3, Activity, Layers
+  ArrowLeft, LayoutDashboard, Ban, RotateCcw, Calendar, Settings, Key, Save, User, Mail, DollarSign, AlertTriangle, CalendarClock, ShoppingCart, Send, Upload, Image as ImageIcon, BarChart3, Activity, Layers, Download
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
