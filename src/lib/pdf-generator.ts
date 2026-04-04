@@ -958,18 +958,49 @@ export const generateLandingPagePdf = async (images: PdfImageMap = {}) => {
     addHeader(doc, 'Catálogo de Produto');
     y = 36;
 
-    y = addSectionTitle(doc, item.title, y);
-    y = addParagraph(doc, item.desc, y);
-    y += 4;
+    // Feature title with accent bar
+    doc.setFillColor(...COLORS.primary);
+    doc.roundedRect(14, y, 182, 20, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(...COLORS.white);
+    doc.text(item.title, 105, y + 13, { align: 'center' });
+    y += 26;
 
+    // Description
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(...COLORS.gray);
+    const descLines = doc.splitTextToSize(item.desc, 178);
+    doc.text(descLines, 14, y);
+    y += descLines.length * 5 + 6;
+
+    // Main screenshot — large
     const imgUrl = images[item.key];
     const imgData = imgUrl ? imageMap[imgUrl] : undefined;
     if (imgData) {
-      ({ newY: y } = addImageToPdf(doc, imgData, y, 180, 130));
+      ({ newY: y } = addImageToPdf(doc, imgData, y, 184, 160));
+    }
+
+    // Extra images on a new page if needed
+    if (item.extraKeys) {
+      for (const extraKey of item.extraKeys) {
+        const extraUrl = images[extraKey];
+        const extraData = extraUrl ? imageMap[extraUrl] : undefined;
+        if (extraData) {
+          doc.addPage();
+          addHeader(doc, 'Catálogo de Produto');
+          y = 36;
+          doc.setFont('helvetica', 'italic');
+          doc.setFontSize(9);
+          doc.setTextColor(...COLORS.gray);
+          doc.text(`${item.title} — continuação`, 14, y);
+          y += 8;
+          ({ newY: y } = addImageToPdf(doc, extraData, y, 184, 180));
+        }
+      }
     }
   }
-
-  // ===== COMPARATIVO PLANILHAS VS APP =====
   doc.addPage();
   addHeader(doc, 'Catálogo de Produto');
   y = 36;
