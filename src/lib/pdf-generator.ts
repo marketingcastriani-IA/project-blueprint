@@ -134,37 +134,27 @@ const formatMetricValue = (val: number | string | 'Ilimitado'): string => {
 
 // ==================== FAQ MANUAL PDF ====================
 
-// Image mapping: section → image path (these are imported in FAQ.tsx from src/assets)
-const FAQ_IMAGES: { section: string; src: string; alt: string }[] = [
-  { section: 'payoff', src: '/assets/screenshot-payoff.png', alt: 'Gráfico de Payoff' },
-  { section: 'cdi', src: '/assets/screenshot-cdi.png', alt: 'Comparação CDI' },
-  { section: 'historico', src: '/assets/screenshot-analysis.png', alt: 'Histórico de Análises' },
-  { section: 'portfolio', src: '/assets/screenshot-portfolio.png', alt: 'Portfólio' },
-  { section: 'analise', src: '/assets/screenshot-ai-report.png', alt: 'Análise de IA' },
-  { section: 'diversificador', src: '/assets/screenshot-diversificador.png', alt: 'Diversificador' },
-  { section: 'temporeal', src: '/assets/screenshot-realtime.png', alt: 'Tempo Real' },
-  { section: 'box', src: '/assets/box-tracker-winner.png', alt: 'Rastreador de Box' },
-  { section: 'bridge', src: '/assets/screenshot-ocr.png', alt: 'OCR Upload' },
-];
+export type PdfImageMap = Record<string, string>; // key → imported URL
 
-const loadAllImages = async (images: { src: string }[]): Promise<Record<string, string>> => {
+const loadAllImages = async (urls: string[]): Promise<Record<string, string>> => {
   const map: Record<string, string> = {};
-  const results = await Promise.allSettled(
-    images.map(async (img) => {
+  await Promise.allSettled(
+    urls.map(async (src) => {
       try {
-        const b64 = await loadImageAsBase64(img.src);
-        map[img.src] = b64;
+        const b64 = await loadImageAsBase64(src);
+        map[src] = b64;
       } catch { /* skip failed images */ }
     })
   );
   return map;
 };
 
-export const generateFAQPdf = async () => {
+export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   const doc = new jsPDF();
 
-  // Pre-load all images
-  const imageMap = await loadAllImages(FAQ_IMAGES);
+  // Pre-load all images from the imported URLs
+  const urls = Object.values(images).filter(Boolean);
+  const imageMap = await loadAllImages(urls);
   
   // Cover page
   doc.setFillColor(...COLORS.dark);
