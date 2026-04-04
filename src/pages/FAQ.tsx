@@ -91,7 +91,18 @@ export default function FAQ() {
             onClick={async () => {
               const { toast } = await import('sonner');
               toast.info('Gerando PDF com imagens...');
-              await generateFAQPdf();
+              const faqImages: PdfImageMap = {
+                payoff: faqPayoff,
+                cdi: faqCdi,
+                historico: faqHistorico,
+                portfolio: faqPortfolio,
+                ai: faqAnaliseDetalhe,
+                diversificador: faqDiversificador,
+                temporeal: faqTempoReal,
+                box: faqRastreadorBox,
+                ocr: faqBridgeSetup,
+              };
+              await generateFAQPdf(faqImages);
               toast.success('PDF do manual baixado!');
             }} 
             className="h-12 px-5 font-bold border-primary/30 text-primary hover:bg-primary/10 shrink-0"
