@@ -216,8 +216,8 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   // OCR screenshot
   const ocrImg = getImg('ocr');
   if (ocrImg) {
-    y = checkPageBreak(doc, y, 100);
-    ({ newY: y } = addImageToPdf(doc, ocrImg, y));
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, ocrImg, y, 182, 120));
   }
 
   y = addTable(doc, {
@@ -241,8 +241,8 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   // Payoff screenshot
   const payoffImg = getImg('payoff');
   if (payoffImg) {
-    y = checkPageBreak(doc, y, 100);
-    ({ newY: y } = addImageToPdf(doc, payoffImg, y));
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, payoffImg, y, 182, 120));
   }
 
   y = addTable(doc, {
@@ -265,8 +265,8 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   // CDI screenshot
   const cdiImg = getImg('cdi');
   if (cdiImg) {
-    y = checkPageBreak(doc, y, 100);
-    ({ newY: y } = addImageToPdf(doc, cdiImg, y));
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, cdiImg, y, 182, 120));
   }
 
   y = addTable(doc, {
@@ -292,8 +292,14 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   // AI Analysis screenshot
   const aiImg = getImg('ai');
   if (aiImg) {
-    y = checkPageBreak(doc, y, 100);
-    ({ newY: y } = addImageToPdf(doc, aiImg, y));
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, aiImg, y, 182, 120));
+  }
+
+  const ai2Img = getImg('ai2');
+  if (ai2Img) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, ai2Img, y, 182, 120));
   }
 
   y = addTable(doc, {
@@ -316,8 +322,8 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   // Histórico screenshot
   const histImg = getImg('historico');
   if (histImg) {
-    y = checkPageBreak(doc, y, 100);
-    ({ newY: y } = addImageToPdf(doc, histImg, y));
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, histImg, y, 182, 120));
   }
 
   y = addParagraph(doc, '• Operações Ativas: Podem ser editadas, encerradas ou deletadas.\n• Operações Encerradas: Ficam registradas com a data de encerramento. Podem ser reabertas.', y);
@@ -344,8 +350,8 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   // Portfolio screenshot
   const portImg = getImg('portfolio');
   if (portImg) {
-    y = checkPageBreak(doc, y, 100);
-    ({ newY: y } = addImageToPdf(doc, portImg, y));
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, portImg, y, 182, 120));
   }
 
   y = checkPageBreak(doc, y, 40);
@@ -355,8 +361,8 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   // Diversificador screenshot
   const divImg = getImg('diversificador');
   if (divImg) {
-    y = checkPageBreak(doc, y, 100);
-    ({ newY: y } = addImageToPdf(doc, divImg, y));
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, divImg, y, 182, 120));
   }
 
   // Tempo Real section
@@ -366,8 +372,8 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
 
   const rtImg = getImg('temporeal');
   if (rtImg) {
-    y = checkPageBreak(doc, y, 100);
-    ({ newY: y } = addImageToPdf(doc, rtImg, y));
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, rtImg, y, 182, 120));
   }
 
   // Rastreador de Box section
@@ -377,8 +383,51 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
 
   const boxImg = getImg('box');
   if (boxImg) {
-    y = checkPageBreak(doc, y, 100);
-    ({ newY: y } = addImageToPdf(doc, boxImg, y));
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, boxImg, y, 182, 120));
+  }
+
+  const boxTabelaImg = getImg('boxTabela');
+  if (boxTabelaImg) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, boxTabelaImg, y, 182, 120));
+  }
+
+  // Manual section with screenshots
+  y = checkPageBreak(doc, y, 60);
+  y = addSectionTitle(doc, '13. Temas e Personalização', y);
+  y = addParagraph(doc, 'Escolha entre tema claro e escuro, com paleta de cores profissional otimizada para uso em diferentes condições de luminosidade.', y);
+
+  const temasImg = getImg('temasCores');
+  if (temasImg) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, temasImg, y, 182, 120));
+  }
+
+  y = checkPageBreak(doc, y, 60);
+  y = addSectionTitle(doc, '14. Tabelas do Manual', y);
+  y = addParagraph(doc, 'Referência rápida com tabelas detalhadas de funcionalidades, atalhos e parâmetros do sistema.', y);
+
+  const manualTabelaImg = getImg('manualTabela');
+  if (manualTabelaImg) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, manualTabelaImg, y, 182, 120));
+  }
+
+  const manualGraficoImg = getImg('manualGrafico');
+  if (manualGraficoImg) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, manualGraficoImg, y, 182, 120));
+  }
+
+  y = checkPageBreak(doc, y, 60);
+  y = addSectionTitle(doc, '15. Tomada de Decisão com IA', y);
+  y = addParagraph(doc, 'Use o veredito da IA para tomar decisões embasadas sobre manter ou encerrar uma operação, com análise de cenários e recomendações.', y);
+
+  const tomadaImg = getImg('tomadaDecisao');
+  if (tomadaImg) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, tomadaImg, y, 182, 120));
   }
 
   y = checkPageBreak(doc, y, 80);
