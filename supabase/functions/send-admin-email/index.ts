@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { to, subject, body, imageDataUrl } = await req.json();
+    const { to, subject, body, imageDataUrl, attachment } = await req.json();
 
     const recipients = Array.isArray(to)
       ? to.filter((email: string) => typeof email === 'string' && email.trim().length > 0)
@@ -195,18 +195,33 @@ Deno.serve(async (req) => {
 
     const fromEmail = 'Opções PRO X <contato@opcoesprox.com.br>';
 
+    // Build attachments array for Resend
+    const attachments: Array<{ filename: string; content: string; content_type?: string }> = [];
+    if (attachment && attachment.name && attachment.content) {
+      attachments.push({
+        filename: attachment.name,
+        content: attachment.content,
+        ...(attachment.type ? { content_type: attachment.type } : {}),
+      });
+    }
+
+    const emailPayload: Record<string, unknown> = {
+      from: fromEmail,
+      to: recipients,
+      subject,
+      html: htmlBody,
+    };
+    if (attachments.length > 0) {
+      emailPayload.attachments = attachments;
+    }
+
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        from: fromEmail,
-        to: recipients,
-        subject,
-        html: htmlBody,
-      }),
+      body: JSON.stringify(emailPayload),
     });
 
     const resData = await res.json();

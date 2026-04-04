@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import {
   TrendingUp, Users, CheckCircle2, XCircle, Clock, Shield,
   Loader2, LogOut, Sun, Moon, RefreshCw, Search, Crown, Wallet,
-  ArrowLeft, LayoutDashboard, Ban, RotateCcw, Calendar, Settings, Key, Save, User, Mail, DollarSign, AlertTriangle, CalendarClock, ShoppingCart, Send, Upload, Image as ImageIcon, BarChart3, Activity, Layers, Download
+  ArrowLeft, LayoutDashboard, Ban, RotateCcw, Calendar, Settings, Key, Save, User, Mail, DollarSign, AlertTriangle, CalendarClock, ShoppingCart, Send, Upload, Image as ImageIcon, BarChart3, Activity, Layers, Download, Paperclip, FileText
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
@@ -249,6 +249,7 @@ export default function AdminPanel() {
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailImageDataUrl, setEmailImageDataUrl] = useState<string | null>(null);
   const [emailImagePreview, setEmailImagePreview] = useState<string | null>(null);
+  const [emailAttachment, setEmailAttachment] = useState<{ name: string; content: string; type: string } | null>(null);
   // Mercado Pago Config
   const [mpPublicKey, setMpPublicKey] = useState('');
   const [mpAccessToken, setMpAccessToken] = useState('');
@@ -500,6 +501,7 @@ export default function AdminPanel() {
           subject: emailSubject,
           body: emailBody,
           imageDataUrl: emailImageDataUrl,
+          attachment: emailAttachment,
         },
       });
       if (error) throw error;
@@ -511,6 +513,7 @@ export default function AdminPanel() {
       setEmailBody('');
       setEmailImageDataUrl(null);
       setEmailImagePreview(null);
+      setEmailAttachment(null);
     } catch (err: any) {
       toast.error('Erro ao enviar email: ' + (err.message || 'Erro desconhecido'));
     } finally {
@@ -1125,8 +1128,50 @@ export default function AdminPanel() {
                   </label>
                 )}
               </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-black uppercase flex items-center gap-1">
+                  <Paperclip className="h-3 w-3" /> Arquivo Anexo (opcional)
+                </Label>
+                {emailAttachment ? (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/30 border border-border/50">
+                    <FileText className="h-4 w-4 text-primary shrink-0" />
+                    <span className="text-sm truncate flex-1">{emailAttachment.name}</span>
+                    <button
+                      onClick={() => setEmailAttachment(null)}
+                      className="h-6 w-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs hover:scale-110 transition-transform shrink-0"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex items-center gap-2 cursor-pointer rounded-lg border-2 border-dashed border-primary/30 hover:border-primary/50 bg-primary/5 p-4 transition-colors">
+                    <Paperclip className="h-5 w-5 text-primary" />
+                    <span className="text-sm text-muted-foreground">Clique para anexar um arquivo (PDF, DOC, etc. - max 10MB)</span>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 10 * 1024 * 1024) {
+                          const { toast } = await import('sonner');
+                          toast.error('Arquivo muito grande. Máximo 10MB.');
+                          return;
+                        }
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          const base64 = (ev.target?.result as string).split(',')[1];
+                          setEmailAttachment({ name: file.name, content: base64, type: file.type });
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
               <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => { setEmailRecipients([]); setEmailImageDataUrl(null); setEmailImagePreview(null); }}>Cancelar</Button>
+                <Button variant="outline" onClick={() => { setEmailRecipients([]); setEmailImageDataUrl(null); setEmailImagePreview(null); setEmailAttachment(null); }}>Cancelar</Button>
                 <Button onClick={sendEmailViaResend} disabled={sendingEmail} className="font-bold">
                   {sendingEmail ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
                   {sendingEmail ? 'Enviando...' : `Enviar para ${emailRecipients.length}`}
