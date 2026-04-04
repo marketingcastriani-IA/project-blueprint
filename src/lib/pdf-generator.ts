@@ -228,7 +228,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   y = addParagraph(doc, 'O gráfico de payoff mostra visualmente o lucro ou prejuízo da sua estrutura para cada cenário de preço do ativo-objeto no vencimento. Use os botões VALOR e % ROI para alternar a visualização. A linha tracejada amarela representa o retorno do CDI.', y);
 
   // Payoff screenshot
-  const payoffImg = imageMap['/assets/screenshot-payoff.png'];
+  const payoffImg = getImg('payoff');
   if (payoffImg) {
     y = checkPageBreak(doc, y, 100);
     ({ newY: y } = addImageToPdf(doc, payoffImg, y));
