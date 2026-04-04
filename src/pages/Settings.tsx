@@ -47,7 +47,9 @@ export default function Settings() {
   const handleUpgrade = async () => {
     setUpgrading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('mercado-pago-checkout');
+      const { data, error } = await supabase.functions.invoke('mercado-pago-checkout', {
+        body: { plan_period: planPeriod }
+      });
       
       if (error) {
         // Tenta extrair a mensagem de erro do corpo da resposta se disponível
