@@ -1008,7 +1008,7 @@ export const generateLandingPagePdf = async (images: PdfImageMap = {}) => {
   y = addSectionTitle(doc, 'Opções PRO X vs. Planilhas', y);
   y = addTable(doc, {
     startY: y,
-    head: [['', 'Planilhas ❌', 'Opções PRO X ✅']],
+    head: [['', 'Planilhas', 'Opções PRO X']],
     body: [
       ['Entrada de dados', 'Manual, lenta', 'OCR: Print → dados em 2s'],
       ['Fórmulas', 'Quebram e exigem manutenção', 'Automático e preciso'],
