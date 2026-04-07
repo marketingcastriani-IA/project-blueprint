@@ -215,13 +215,13 @@ export default function PayoffHeatmap({
             )}
           />
 
-          {/* Zero line */}
+          {/* Zero line — bold dark */}
           <ReferenceLine
             y={0}
-            stroke="hsl(var(--muted-foreground))"
-            strokeDasharray="6 3"
-            strokeOpacity={0.4}
-            strokeWidth={1.5}
+            stroke="hsl(var(--foreground))"
+            strokeOpacity={0.7}
+            strokeWidth={2.5}
+            label={{ value: 'ZERO', position: 'insideRight', fill: 'hsl(var(--foreground))', fontSize: 9, fontWeight: 900, opacity: 0.5 }}
           />
 
           {/* Breakeven lines */}
