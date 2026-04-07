@@ -935,6 +935,17 @@ export default function BoxTracker() {
                 </button>
               )}
 
+              {/* Test Alert Button */}
+              {notifEnabled && (
+                <button
+                  onClick={sendTestAlert}
+                  className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-warning/30 bg-warning/10 text-warning text-xs font-semibold transition-all active:scale-[0.97] hover:bg-warning/20"
+                  title="Enviar notificação de teste"
+                >
+                  🧪 Testar
+                </button>
+              )}
+
               {/* Platform badge */}
               {notifEnabled && (
                 <span className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
