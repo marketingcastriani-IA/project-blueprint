@@ -34,7 +34,7 @@ const chartConfig = {
   simulated: { label: 'Simulação', color: 'hsl(var(--primary))' },
 };
 
-const CustomTooltip = ({ active, payload, label, displayMode, legs, daysToExpiry, cdiRate }: any) => {
+const CustomTooltip = ({ active, payload, label, displayMode }: any) => {
   if (!active || !payload?.length) return null;
 
   const format = (val: number) => {
@@ -42,29 +42,25 @@ const CustomTooltip = ({ active, payload, label, displayMode, legs, daysToExpiry
     return `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
   };
 
-  const greeks = legs && legs.length > 0 && daysToExpiry > 0
-    ? calculatePortfolioGreeks(legs, label, daysToExpiry, cdiRate)
-    : null;
-
   const filteredPayload = payload.filter((p: any) =>
     !['gainZone', 'lossZone'].includes(p.dataKey)
   );
 
   return (
-    <div className="rounded-xl border border-border/60 bg-card/95 p-3.5 shadow-2xl backdrop-blur-md min-w-[220px]">
-      <div className="mb-2.5 border-b border-border/40 pb-2">
-        <p className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground mb-0.5">Preço do Ativo</p>
-        <p className="text-base font-bold font-mono text-foreground">R$ {Number(label).toFixed(2)}</p>
+    <div className="rounded-lg border border-border/60 bg-card/95 p-2.5 shadow-xl backdrop-blur-md min-w-[180px]">
+      <div className="mb-1.5 border-b border-border/40 pb-1.5">
+        <p className="text-[9px] font-black uppercase tracking-[0.15em] text-muted-foreground">Preço</p>
+        <p className="text-sm font-bold font-mono text-foreground">R$ {Number(label).toFixed(2)}</p>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1">
         {filteredPayload.map((p: any, i: number) => (
-          <div key={i} className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="h-2.5 w-2.5 rounded-full shrink-0 ring-1 ring-white/10" style={{ backgroundColor: p.color }} />
-              <span className="text-[11px] font-medium text-foreground/70">{p.name}</span>
+          <div key={i} className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-1.5">
+              <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: p.color }} />
+              <span className="text-[10px] font-medium text-foreground/70">{p.name}</span>
             </div>
             <span className={cn(
-              "text-[11px] font-black font-mono",
+              "text-[10px] font-black font-mono",
               p.value >= 0 ? "text-emerald-400" : "text-red-400"
             )}>
               {format(p.value)}
@@ -72,29 +68,44 @@ const CustomTooltip = ({ active, payload, label, displayMode, legs, daysToExpiry
           </div>
         ))}
       </div>
-      {greeks && (
-        <div className="mt-2.5 pt-2.5 border-t border-border/40">
-          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-1.5">Greeks</p>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-            <div className="flex justify-between">
-              <span className="text-[10px] text-muted-foreground">Δ Delta</span>
-              <span className="text-[10px] font-mono font-bold text-foreground/80">{greeks.delta}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[10px] text-muted-foreground">Γ Gamma</span>
-              <span className="text-[10px] font-mono font-bold text-foreground/80">{greeks.gamma}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[10px] text-muted-foreground">Θ Theta</span>
-              <span className="text-[10px] font-mono font-bold text-foreground/80">{greeks.theta}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[10px] text-muted-foreground">ν Vega</span>
-              <span className="text-[10px] font-mono font-bold text-foreground/80">{greeks.vega}</span>
-            </div>
-          </div>
-        </div>
-      )}
+    </div>
+  );
+};
+
+
+// Greeks panel component (moved out of tooltip)
+const GreeksPanel = ({ legs, currentSpotPrice, daysToExpiry, cdiRate }: {
+  legs?: Leg[];
+  currentSpotPrice?: number | null;
+  daysToExpiry?: number;
+  cdiRate?: number;
+}) => {
+  const greeks = useMemo(() => {
+    if (!legs || legs.length === 0 || !currentSpotPrice || !daysToExpiry || daysToExpiry <= 0) return null;
+    return calculatePortfolioGreeks(legs, currentSpotPrice, daysToExpiry, cdiRate);
+  }, [legs, currentSpotPrice, daysToExpiry, cdiRate]);
+
+  if (!greeks) return null;
+
+  return (
+    <div className="flex items-center gap-4 px-3 py-2 rounded-lg bg-muted/15 border border-border/30 text-[10px]">
+      <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground">Greeks:</span>
+      <div className="flex items-center gap-1">
+        <span className="text-muted-foreground">Δ</span>
+        <span className="font-mono font-bold">{greeks.delta}</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <span className="text-muted-foreground">Γ</span>
+        <span className="font-mono font-bold">{greeks.gamma}</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <span className="text-muted-foreground">Θ</span>
+        <span className="font-mono font-bold">{greeks.theta}</span>
+      </div>
+      <div className="flex items-center gap-1">
+        <span className="text-muted-foreground">ν</span>
+        <span className="font-mono font-bold">{greeks.vega}</span>
+      </div>
     </div>
   );
 };
@@ -139,9 +150,7 @@ export default function PayoffChart({
         profitAtExpiry: profit * factor,
         profitToday: p.profitToday * factor,
         simulatedAtExpiry: simPoint ? simPoint.profitAtExpiry * factor : undefined,
-        // Green zone: profit above zero
         gainZone: (profit > 0 ? profit : 0) * factor,
-        // Red zone: loss below zero
         lossZone: (profit < 0 ? profit : 0) * factor,
         cdiLine: cdi * factor,
         periodCdiLine: simCdi * factor,
@@ -159,7 +168,6 @@ export default function PayoffChart({
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
 
-  // Compute risk/reward ratio
   const riskRewardRatio = useMemo(() => {
     if (!maxGain || !maxLoss || maxGain === 'Ilimitado' || maxLoss === 'Ilimitado') return null;
     const ratio = Math.abs(maxGain) / Math.abs(maxLoss);
@@ -167,7 +175,7 @@ export default function PayoffChart({
   }, [maxGain, maxLoss]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Metrics row */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
         <div className="p-3 rounded-xl bg-muted/20 border border-border/40 hover:border-success/30 transition-colors">
@@ -274,18 +282,41 @@ export default function PayoffChart({
           />
         </Suspense>
       ) : (
-        <div className="rounded-xl border border-border/30 bg-card/20 p-1">
+        <div className="rounded-xl border border-border/30 bg-card/20 p-1 relative overflow-hidden">
+          {/* Zone text labels */}
+          <div className="absolute inset-0 pointer-events-none z-0 flex flex-col items-start justify-center pl-20">
+            <span className="text-[15px] font-black tracking-[0.15em] text-emerald-500/15 -mt-24">ZONA DE LUCRO</span>
+            <span className="text-[15px] font-black tracking-[0.15em] text-red-500/15 mt-24">ZONA DE PERDA</span>
+          </div>
+          {/* Integrated mini-legend */}
+          <div className="absolute top-3 left-14 z-10 flex flex-wrap gap-3 px-2.5 py-1.5 rounded-lg bg-card/80 backdrop-blur-sm border border-border/30">
+            <div className="flex items-center gap-1.5">
+              <div className="h-[3px] w-4 rounded-full" style={{ backgroundColor: 'hsl(var(--chart-profit))' }} />
+              <span className="text-[9px] font-semibold text-foreground/70">Vencimento</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="h-[3px] w-4 rounded-full border-t-2 border-dashed" style={{ borderColor: 'hsl(var(--info))' }} />
+              <span className="text-[9px] font-semibold text-foreground/70">Hoje T+0</span>
+            </div>
+            {cdiValue && (
+              <div className="flex items-center gap-1.5">
+                <div className="h-[3px] w-4 rounded-full" style={{ backgroundColor: 'hsl(45, 95%, 55%)' }} />
+                <span className="text-[9px] font-bold text-amber-400">CDI</span>
+              </div>
+            )}
+          </div>
+
           <ChartContainer config={chartConfig} className="h-[450px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={chartData} margin={{ top: 25, right: 25, left: 5, bottom: 20 }}>
                 <defs>
                   <linearGradient id="gainZoneGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(142, 76%, 40%)" stopOpacity={0.45} />
-                    <stop offset="100%" stopColor="hsl(142, 76%, 40%)" stopOpacity={0.05} />
+                    <stop offset="0%" stopColor="hsl(142, 76%, 40%)" stopOpacity={0.55} />
+                    <stop offset="100%" stopColor="hsl(142, 76%, 40%)" stopOpacity={0.08} />
                   </linearGradient>
                   <linearGradient id="lossZoneGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(0, 80%, 55%)" stopOpacity={0.05} />
-                    <stop offset="100%" stopColor="hsl(0, 80%, 55%)" stopOpacity={0.45} />
+                    <stop offset="0%" stopColor="hsl(0, 80%, 55%)" stopOpacity={0.08} />
+                    <stop offset="100%" stopColor="hsl(0, 80%, 55%)" stopOpacity={0.55} />
                   </linearGradient>
                 </defs>
 
@@ -313,6 +344,7 @@ export default function PayoffChart({
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={10}
                   width={60}
+                  tickCount={10}
                   tick={{ fill: 'hsl(var(--muted-foreground))' }}
                   label={{
                     value: displayMode === 'percent' ? 'ROI (%)' : 'Resultado (R$)',
@@ -326,12 +358,26 @@ export default function PayoffChart({
                 />
 
                 {/* Zero line — bold dark separator */}
-                <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeOpacity={0.7} strokeWidth={2.5} label={{ value: 'ZERO', position: 'insideRight', fill: 'hsl(var(--foreground))', fontSize: 9, fontWeight: 900, opacity: 0.5 }} />
+                <ReferenceLine
+                  y={0}
+                  stroke="hsl(var(--foreground))"
+                  strokeOpacity={0.85}
+                  strokeWidth={3}
+                  label={{
+                    value: '━━ ZERO ━━',
+                    position: 'insideLeft',
+                    fill: 'hsl(var(--foreground))',
+                    fontSize: 10,
+                    fontWeight: 900,
+                    opacity: 0.6,
+                  }}
+                />
 
                 {/* Green gain zone */}
-                <Area type="monotone" dataKey="gainZone" stroke="none" fill="url(#gainZoneGrad)" isAnimationActive={false} legendType="none" />
+                <Area type="monotone" dataKey="gainZone" stroke="hsl(142, 76%, 40%)" strokeWidth={0.5} strokeOpacity={0.3} fill="url(#gainZoneGrad)" isAnimationActive={false} legendType="none" />
                 {/* Red loss zone */}
-                <Area type="monotone" dataKey="lossZone" stroke="none" fill="url(#lossZoneGrad)" isAnimationActive={false} legendType="none" />
+                <Area type="monotone" dataKey="lossZone" stroke="hsl(0, 80%, 55%)" strokeWidth={0.5} strokeOpacity={0.3} fill="url(#lossZoneGrad)" isAnimationActive={false} legendType="none" />
+
 
                 {/* Entry spot price */}
                 {entrySpotPrice && (
@@ -365,6 +411,25 @@ export default function PayoffChart({
                   />
                 )}
 
+                {/* CDI reference line with label */}
+                {cdiValue && (
+                  <ReferenceLine
+                    y={cdiValue * factor}
+                    stroke="hsl(45, 95%, 55%)"
+                    strokeWidth={0.8}
+                    strokeDasharray="6 4"
+                    strokeOpacity={0.5}
+                    label={{
+                      value: `▲ Supera CDI`,
+                      position: 'insideTopRight',
+                      fill: 'hsl(45, 93%, 55%)',
+                      fontSize: 9,
+                      fontWeight: 800,
+                      opacity: 0.7,
+                    }}
+                  />
+                )}
+
                 {/* Breakeven markers */}
                 {breakevens.map((be, i) => (
                   <ReferenceLine
@@ -382,7 +447,7 @@ export default function PayoffChart({
                   <ReferenceDot x={currentSpotPrice} y={currentPnL * factor} r={7} fill="hsl(var(--primary))" stroke="hsl(var(--background))" strokeWidth={2.5} />
                 )}
 
-                <ChartTooltip content={<CustomTooltip displayMode={displayMode} legs={legs} daysToExpiry={daysToExpiry} cdiRate={cdiRate} />} />
+                <ChartTooltip content={<CustomTooltip displayMode={displayMode} />} />
 
                 {/* CDI line — bold and prominent */}
                 <Line name="── CDI ──" type="monotone" dataKey="cdiLine" stroke="hsl(45, 95%, 55%)" strokeWidth={2.5} dot={false} isAnimationActive={false} />
@@ -402,6 +467,9 @@ export default function PayoffChart({
           </ChartContainer>
         </div>
       )}
+
+      {/* Fixed Greeks panel below chart */}
+      <GreeksPanel legs={legs} currentSpotPrice={currentSpotPrice} daysToExpiry={daysToExpiry} cdiRate={cdiRate} />
     </div>
   );
 }
