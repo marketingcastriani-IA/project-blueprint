@@ -396,7 +396,7 @@ export default function TickerOpcoes() {
     }
 
     localStorage.setItem(BOX_STORAGE_KEY, JSON.stringify(existingFamilies));
-    toast.success(`${tickers.length} tickers enviados ao Box Tracker (${familyName})`);
+    toast.success(`${tickers.length} tickers enviados ao Rastrear Box (${familyName})`);
     navigate("/box-tracker");
   }, [filtered, selectedRows, selectedFamily, navigate]);
 
@@ -424,7 +424,7 @@ export default function TickerOpcoes() {
     }
 
     localStorage.setItem(BOX_STORAGE_KEY, JSON.stringify(existingFamilies));
-    toast.success(`Par ${call.ticker}/${put.ticker} enviado ao Box Tracker`);
+    toast.success(`Par ${call.ticker}/${put.ticker} enviado ao Rastrear Box`);
     navigate("/box-tracker");
   }, [navigate]);
 
@@ -539,7 +539,7 @@ export default function TickerOpcoes() {
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</span>
                 <div>
                   <p className="text-xs font-semibold text-foreground">Envie automaticamente</p>
-                  <p className="text-xs leading-snug font-medium text-muted-foreground">Use "Tempo Real" ou "Box Tracker" para enviar os tickers selecionados</p>
+                  <p className="text-xs leading-snug font-medium text-muted-foreground">Use "Tempo Real" ou "Rastrear Box" para enviar os tickers selecionados</p>
                 </div>
               </div>
             </div>
@@ -571,7 +571,7 @@ export default function TickerOpcoes() {
                 </div>
               </div>
               <div>
-                <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Ativo Base</label>
+                <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Escolher o Ativo</label>
                 <Select value={selectedFamily} onValueChange={setSelectedFamily}>
                   <SelectTrigger className="h-9 text-sm bg-background/50"><SelectValue /></SelectTrigger>
                   <SelectContent className="max-h-[300px]">
@@ -712,7 +712,7 @@ export default function TickerOpcoes() {
                     <div className="text-xs">{opp.vencimento}</div>
                   </div>
                   <div className="flex items-center gap-1 mt-1.5 text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Send className="h-2.5 w-2.5" /> Enviar ao Box Tracker
+                    <Send className="h-2.5 w-2.5" /> Enviar ao Rastrear Box
                   </div>
                 </button>
               ))}
@@ -749,9 +749,9 @@ export default function TickerOpcoes() {
                     variant="outline"
                     onClick={sendSelectedToBox}
                     className="gap-1.5 text-xs border-primary/40 text-primary hover:bg-primary/10"
-                    title="Enviar Call+Put selecionados ao Box Tracker"
+                    title="Enviar Call+Put selecionados ao Rastrear Box"
                   >
-                    <Box className="h-3.5 w-3.5" /> Box Tracker
+                    <Box className="h-3.5 w-3.5" /> Rastrear Box
                   </Button>
                 )}
               </>
