@@ -85,6 +85,7 @@ interface StockFamily {
   name: string;
   tickers: OptionTicker[];
   expanded: boolean;
+  quantidade: number;
 }
 
 interface SavedFamily {
