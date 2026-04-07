@@ -104,6 +104,68 @@
     --input: 45 30% 20%;
     --ring: 48 96% 53%;
   }
+
+  /* Midnight Blue — deep navy with electric accents */
+  .midnight {
+    --background: 230 35% 7%;
+    --foreground: 220 30% 95%;
+    --card: 230 35% 10%;
+    --card-foreground: 220 30% 95%;
+    --popover: 230 35% 10%;
+    --popover-foreground: 220 30% 95%;
+    --primary: 210 100% 60%;
+    --primary-foreground: 230 35% 5%;
+    --secondary: 230 25% 15%;
+    --secondary-foreground: 220 30% 90%;
+    --muted: 230 25% 14%;
+    --muted-foreground: 220 20% 62%;
+    --accent: 210 100% 60%;
+    --accent-foreground: 230 35% 5%;
+    --destructive: 0 80% 58%;
+    --destructive-foreground: 220 30% 95%;
+    --success: 160 80% 42%;
+    --success-foreground: 230 35% 5%;
+    --warning: 40 95% 55%;
+    --warning-foreground: 230 35% 5%;
+    --info: 210 100% 65%;
+    --info-foreground: 220 30% 95%;
+    --border: 230 25% 18%;
+    --input: 230 25% 18%;
+    --ring: 210 100% 60%;
+    --chart-profit: 160 80% 42%;
+    --chart-loss: 0 80% 58%;
+  }
+
+  /* Forest — deep green nature theme */
+  .forest {
+    --background: 150 25% 6%;
+    --foreground: 140 20% 92%;
+    --card: 150 25% 9%;
+    --card-foreground: 140 20% 92%;
+    --popover: 150 25% 9%;
+    --popover-foreground: 140 20% 92%;
+    --primary: 155 70% 45%;
+    --primary-foreground: 150 30% 4%;
+    --secondary: 150 20% 14%;
+    --secondary-foreground: 140 20% 90%;
+    --muted: 150 20% 13%;
+    --muted-foreground: 145 15% 58%;
+    --accent: 155 70% 45%;
+    --accent-foreground: 150 30% 4%;
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 140 20% 92%;
+    --success: 140 75% 48%;
+    --success-foreground: 150 30% 4%;
+    --warning: 42 90% 52%;
+    --warning-foreground: 150 30% 4%;
+    --info: 190 80% 55%;
+    --info-foreground: 140 20% 92%;
+    --border: 150 20% 16%;
+    --input: 150 20% 16%;
+    --ring: 155 70% 45%;
+    --chart-profit: 140 75% 48%;
+    --chart-loss: 0 75% 55%;
+  }
 }
 
 @layer base {
