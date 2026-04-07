@@ -42,6 +42,7 @@ interface SavedFamily {
   autoImported?: string[];
 }
 const BOX_STORAGE_KEY = "box-tracker-families";
+const COLLAR_STORAGE_KEY = "collar-tracker-families";
 
 export default function TickerOpcoes() {
   const { options, families, vencimentos, loading } = useB3Options();
@@ -398,6 +399,39 @@ export default function TickerOpcoes() {
     localStorage.setItem(BOX_STORAGE_KEY, JSON.stringify(existingFamilies));
     toast.success(`${tickers.length} tickers enviados ao Rastrear Box (${familyName})`);
     navigate("/box-tracker");
+  }, [filtered, selectedRows, selectedFamily, navigate]);
+
+  // ─── INTEGRATION: Send selected to Collar Tracker ─────────
+  const sendSelectedToCollar = useCallback(() => {
+    const selected = filtered.filter((o) => selectedRows.has(o.ticker));
+    const familyName = selected[0]?.family || selectedFamily;
+    if (!familyName || familyName === "all") {
+      toast.error("Não foi possível determinar a família");
+      return;
+    }
+    const tickers = selected.map((o) => o.ticker);
+
+    let existingFamilies: SavedFamily[] = [];
+    try {
+      const saved = localStorage.getItem(COLLAR_STORAGE_KEY);
+      if (saved) existingFamilies = JSON.parse(saved);
+    } catch {}
+
+    const existingIdx = existingFamilies.findIndex((f) => f.name === familyName);
+    if (existingIdx >= 0) {
+      const existing = new Set(existingFamilies[existingIdx].tickers);
+      tickers.forEach((t) => existing.add(t));
+      existingFamilies[existingIdx].tickers = Array.from(existing);
+      const autoSet = new Set(existingFamilies[existingIdx].autoImported || []);
+      tickers.forEach((t) => autoSet.add(t));
+      existingFamilies[existingIdx].autoImported = Array.from(autoSet);
+    } else {
+      existingFamilies.push({ name: familyName, tickers, autoImported: [...tickers] });
+    }
+
+    localStorage.setItem(COLLAR_STORAGE_KEY, JSON.stringify(existingFamilies));
+    toast.success(`${tickers.length} tickers enviados ao Rastrear Collar (${familyName})`);
+    navigate("/collar-tracker");
   }, [filtered, selectedRows, selectedFamily, navigate]);
 
   // ─── INTEGRATION: Send box opportunity to Box Tracker ──────
