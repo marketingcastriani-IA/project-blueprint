@@ -33,10 +33,10 @@ const filterOptionsByTicker = (items: B3Option[], rawQuery: string) => {
 };
 
 export default function TickerOpcoes() {
-  const { options, families, loading } = useB3Options();
+  const { options, families, vencimentos, loading } = useB3Options();
   const [search, setSearch] = useState("");
   const [selectedFamily, setSelectedFamily] = useState<string>("all");
-  
+  const [selectedVencimento, setSelectedVencimento] = useState<string>("all");
   const [selectedTipo, setSelectedTipo] = useState<string>("all");
   const [precoBase, setPrecoBase] = useState("");
   const [precoBaseManual, setPrecoBaseManual] = useState(false);
@@ -88,7 +88,7 @@ export default function TickerOpcoes() {
   const filtered = useMemo(() => {
     let result = dedupeOptionsByTicker(options);
     if (selectedFamily !== "all") result = result.filter((o) => o.family === selectedFamily);
-    
+    if (selectedVencimento !== "all") result = result.filter((o) => o.vencimento === selectedVencimento);
     if (selectedTipo !== "all") result = result.filter((o) => o.tipo === selectedTipo);
     if (search.trim()) result = filterOptionsByTicker(result, search);
     if (precoBaseNum > 0) {
@@ -107,7 +107,7 @@ export default function TickerOpcoes() {
       return sortDir === "asc" ? cmp : -cmp;
     });
     return result;
-  }, [options, selectedFamily, selectedTipo, search, precoBaseNum, strikeMinCalc, strikeMaxCalc, sortField, sortDir]);
+  }, [options, selectedFamily, selectedVencimento, selectedTipo, search, precoBaseNum, strikeMinCalc, strikeMaxCalc, sortField, sortDir]);
 
   const displayed = filtered.slice(0, 200);
 
@@ -148,6 +148,7 @@ export default function TickerOpcoes() {
   const resetFilters = () => {
     setSearch("");
     setSelectedFamily("all");
+    setSelectedVencimento("all");
     setSelectedTipo("all");
     setPrecoBase("");
     setPrecoBaseManual(false);
@@ -156,6 +157,12 @@ export default function TickerOpcoes() {
     setSelectedRows(new Set());
   };
 
+  const availableVencimentos = useMemo(() => {
+    if (selectedFamily === "all") return vencimentos;
+    const fOpts = options.filter((o) => o.family === selectedFamily);
+    const vSet = new Set(fOpts.map((o) => o.vencimento));
+    return vencimentos.filter((v) => vSet.has(v));
+  }, [selectedFamily, options, vencimentos]);
 
   if (loading) {
     return (
@@ -174,7 +181,7 @@ export default function TickerOpcoes() {
     );
   }
 
-  const hasActiveFilters = search || selectedFamily !== "all" || selectedTipo !== "all" || precoBaseNum > 0;
+  const hasActiveFilters = search || selectedFamily !== "all" || selectedVencimento !== "all" || selectedTipo !== "all" || precoBaseNum > 0;
 
   return (
     <ProfessionalLayout>
@@ -213,7 +220,7 @@ export default function TickerOpcoes() {
           </div>
           <div className="p-4 space-y-4">
             {/* Row 1: Search + Family + Vencimento + Tipo */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="col-span-2 md:col-span-1">
                 <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Buscar Ticker</label>
                 <div className="relative">
@@ -233,6 +240,16 @@ export default function TickerOpcoes() {
                   <SelectContent className="max-h-[300px]">
                     <SelectItem value="all">Todos ({families.length})</SelectItem>
                     {families.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Vencimento</label>
+                <Select value={selectedVencimento} onValueChange={setSelectedVencimento}>
+                  <SelectTrigger className="h-9 text-sm bg-background/50"><SelectValue /></SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    <SelectItem value="all">Todos</SelectItem>
+                    {availableVencimentos.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
