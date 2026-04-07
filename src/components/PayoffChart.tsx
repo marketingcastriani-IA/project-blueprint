@@ -268,6 +268,9 @@ export default function PayoffChart({
             currentSpotPrice={currentSpotPrice}
             legs={legs}
             daysToExpiry={daysToExpiry}
+            cdiRate={cdiRate}
+            netCost={netCost}
+            montageTotal={montageTotal}
           />
         </Suspense>
       ) : (
