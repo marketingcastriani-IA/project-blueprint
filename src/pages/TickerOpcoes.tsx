@@ -138,6 +138,7 @@ export default function TickerOpcoes() {
     setSelectedVencimento("all");
     setSelectedTipo("all");
     setPrecoBase("");
+    setPrecoBaseManual(false);
     setPctAbaixo(20);
     setPctAcima(20);
     setSelectedRows(new Set());
@@ -153,6 +154,7 @@ export default function TickerOpcoes() {
   if (loading) {
     return (
       <ProfessionalLayout>
+        <Header />
         <div className="p-6 space-y-4">
           <Skeleton className="h-10 w-64" />
           <div className="grid grid-cols-3 gap-4">
@@ -170,6 +172,7 @@ export default function TickerOpcoes() {
 
   return (
     <ProfessionalLayout>
+      <Header />
       <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between">
