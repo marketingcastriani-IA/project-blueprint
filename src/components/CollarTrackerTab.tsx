@@ -1551,12 +1551,24 @@ export default function CollarTrackerTab() {
                     <span className="text-muted-foreground">
                       CDI: <span className="font-bold text-warning">{formatPercent(collar.cdiPeriodo)}</span>
                     </span>
-                    <span className={cn("font-black px-1.5 py-0.5 rounded-full text-xs",
-                      collar.qualityScore >= 80 ? "bg-success/10 text-success" :
-                      collar.qualityScore >= 60 ? "bg-warning/10 text-warning" :
-                      "bg-muted text-muted-foreground")}>
-                      Score {collar.qualityScore}
-                    </span>
+                    {(() => {
+                      const activeScore = rankingMethod === "combinado" ? collar.scoreCombinado.toFixed(1)
+                        : rankingMethod === "per" ? (collar.per === Infinity ? "∞" : collar.per?.toFixed(1) ?? "—")
+                        : rankingMethod === "custo" ? formatBRL(collar.custoCollar)
+                        : collar.qualityScore;
+                      const label = rankingMethod === "combinado" ? "Comb."
+                        : rankingMethod === "per" ? "PER"
+                        : rankingMethod === "custo" ? "Custo"
+                        : "Score";
+                      return (
+                        <span className={cn("font-black px-1.5 py-0.5 rounded-full text-xs",
+                          collar.qualityScore >= 80 ? "bg-success/10 text-success" :
+                          collar.qualityScore >= 60 ? "bg-warning/10 text-warning" :
+                          "bg-muted text-muted-foreground")}>
+                          {label} {activeScore}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
