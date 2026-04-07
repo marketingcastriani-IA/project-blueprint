@@ -3,41 +3,58 @@
 // Handles persistent push notifications for Box Tracker alerts
 // ============================================================
 
-const CACHE_NAME = 'opcoes-prox-v1';
+const CACHE_NAME = 'opcoes-prox-v2';
 
 // Install — activate immediately
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate — claim all clients
+// Activate — claim all clients immediately
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    self.clients.claim().then(() => {
+      console.log('[SW] Activated and claimed all clients');
+    })
+  );
 });
 
 // Listen for push notification messages from the app
 self.addEventListener('message', (event) => {
+  console.log('[SW] Received message:', event.data?.type);
+  
   if (event.data && event.data.type === 'BOX_ALERT') {
     const { title, body, tag, data } = event.data;
     const isUrgent = data?.priority === 'urgent';
     
-    self.registration.showNotification(title, {
-      body,
-      icon: '/favicon.png',
-      badge: '/favicon.png',
-      tag: tag || 'box-tracker-alert',
-      vibrate: isUrgent
-        ? [300, 100, 300, 100, 300, 100, 500]
-        : [200, 100, 200, 100, 300],
-      requireInteraction: true,
-      renotify: true,
-      silent: data?.sound === false,
-      actions: [
-        { action: 'open', title: '📊 Ver Box Tracker' },
-        { action: 'dismiss', title: 'Dispensar' },
-      ],
-      data: data || {},
-    });
+    event.waitUntil(
+      self.registration.showNotification(title, {
+        body,
+        icon: '/favicon.png',
+        badge: '/favicon.png',
+        tag: tag || 'box-tracker-alert',
+        vibrate: isUrgent
+          ? [300, 100, 300, 100, 300, 100, 500]
+          : [200, 100, 200, 100, 300],
+        requireInteraction: true,
+        renotify: true,
+        silent: data?.sound === false,
+        actions: [
+          { action: 'open', title: '📊 Ver Box Tracker' },
+          { action: 'dismiss', title: 'Dispensar' },
+        ],
+        data: data || {},
+      }).then(() => {
+        console.log('[SW] Notification shown:', title);
+      }).catch((err) => {
+        console.error('[SW] Notification error:', err);
+      })
+    );
+  }
+  
+  // Ping/pong for health check
+  if (event.data && event.data.type === 'PING') {
+    event.source?.postMessage({ type: 'PONG', timestamp: Date.now() });
   }
 });
 
@@ -56,7 +73,7 @@ self.addEventListener('notificationclick', (event) => {
           return client.focus();
         }
       }
-      // If no window found, open a new one
+      // If no window found, navigate existing one
       for (const client of clientList) {
         if ('focus' in client) {
           client.navigate('/box-tracker');
@@ -71,8 +88,7 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// Handle fetch — network first, no aggressive caching (just SW for notifications)
+// Handle fetch — passthrough (SW exists for notifications only)
 self.addEventListener('fetch', (event) => {
-  if (event.request.url.includes('/~oauth')) return;
   return;
 });
