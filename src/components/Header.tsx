@@ -77,18 +77,20 @@ export default function Header() {
     <header className="sticky top-0 z-50 border-b border-primary/30 bg-primary shadow-lg">
       {/* Row 1: Logo + Primary Nav + Actions */}
       <div className="container flex h-14 items-center justify-between gap-3">
-        {/* Logo */}
-        <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 font-black text-lg shrink-0">
-          <img src="/assets/logo.png" alt="Opções PRO X" className="h-8 w-8 object-contain" />
-          <span className="hidden sm:inline tracking-tight text-primary-foreground">Opções PRO X</span>
-          <Badge variant="outline" className={cn(
-            "text-[8px] hidden sm:inline-flex border-primary-foreground/40",
-            isFree ? "text-yellow-300" : "text-primary-foreground"
-          )}>
-            {access.planType === 'pro' ? 'PRO' : 'FREE'}
-          </Badge>
-        </button>
-        <InstallAppButton />
+        {/* Logo + Install */}
+        <div className="flex flex-col items-start shrink-0">
+          <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 font-black text-lg">
+            <img src="/assets/logo.png" alt="Opções PRO X" className="h-8 w-8 object-contain" />
+            <span className="hidden sm:inline tracking-tight text-primary-foreground">Opções PRO X</span>
+            <Badge variant="outline" className={cn(
+              "text-[8px] hidden sm:inline-flex border-primary-foreground/40",
+              isFree ? "text-yellow-300" : "text-primary-foreground"
+            )}>
+              {access.planType === 'pro' ? 'PRO' : 'FREE'}
+            </Badge>
+          </button>
+          <InstallAppButton />
+        </div>
 
         {/* Desktop Primary Nav */}
         <nav className="hidden md:flex items-center gap-1 flex-1 justify-center" data-tour="nav-menu">
