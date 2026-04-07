@@ -38,12 +38,18 @@ export default function TickerOpcoes() {
     }
     if (search.trim()) {
       const q = search.toUpperCase().trim();
-      // Check for exact ticker match first
+      // Exact ticker match first
       const exactMatch = result.filter((o) => o.ticker === q);
       if (exactMatch.length > 0) {
         result = exactMatch;
       } else {
-        result = result.filter((o) => o.ticker.includes(q) || o.family.includes(q));
+        // Partial: prioritize ticker starts-with, then ticker contains, then family match
+        const startsWith = result.filter((o) => o.ticker.startsWith(q));
+        if (startsWith.length > 0) {
+          result = startsWith;
+        } else {
+          result = result.filter((o) => o.ticker.includes(q));
+        }
       }
     }
     if (strikeMin) {
