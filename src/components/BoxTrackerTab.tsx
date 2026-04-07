@@ -313,18 +313,27 @@ export default function BoxTracker() {
           expanded: true,
         }));
         setFamilies(loaded);
+        // Load autoImported map
+        const autoMap = new Map<string, Set<string>>();
+        parsed.forEach((sf) => {
+          if (sf.autoImported && sf.autoImported.length > 0) {
+            autoMap.set(sf.name, new Set(sf.autoImported));
+          }
+        });
+        setAutoImportedMap(autoMap);
       }
     } catch {}
   }, []);
 
-  // Save families to localStorage
+  // Save families to localStorage (preserve autoImported)
   useEffect(() => {
     const toSave: SavedFamily[] = families.map((f) => ({
       name: f.name,
       tickers: f.tickers.map((t) => t.symbol),
+      autoImported: Array.from(autoImportedMap.get(f.name) || []),
     }));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-  }, [families]);
+  }, [families, autoImportedMap]);
 
   // Derive stock ticker from family name (e.g., PETR -> PETR4, VALE -> VALE3)
   const familyStockTickers = useCallback((familyName: string): string => {
