@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, X, Smartphone } from 'lucide-react';
+import { Download, X, Smartphone, Monitor } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -14,6 +14,7 @@ export default function InstallAppButton({ variant = 'header' }: { variant?: 'he
   const [canInstall, setCanInstall] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [showIOSTip, setShowIOSTip] = useState(false);
+  const [showDesktopTip, setShowDesktopTip] = useState(false);
   const [dismissed, setDismissed] = useState(() => sessionStorage.getItem('install-dismissed') === '1');
 
   useEffect(() => {
@@ -31,7 +32,7 @@ export default function InstallAppButton({ variant = 'header' }: { variant?: 'he
       return;
     }
 
-    // Android / Desktop Chrome
+    // Android / Desktop Chrome - listen for native prompt
     const handler = (e: Event) => {
       e.preventDefault();
       deferredPrompt = e as BeforeInstallPromptEvent;
@@ -40,7 +41,13 @@ export default function InstallAppButton({ variant = 'header' }: { variant?: 'he
     window.addEventListener('beforeinstallprompt', handler);
 
     // Already captured
-    if (deferredPrompt) setCanInstall(true);
+    if (deferredPrompt) {
+      setCanInstall(true);
+    } else {
+      // Always show the button — if native prompt isn't available,
+      // we'll show manual instructions on click
+      setCanInstall(true);
+    }
 
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
@@ -50,18 +57,23 @@ export default function InstallAppButton({ variant = 'header' }: { variant?: 'he
       setShowIOSTip(true);
       return;
     }
-    if (!deferredPrompt) return;
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setCanInstall(false);
-      deferredPrompt = null;
+    if (deferredPrompt) {
+      await deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setCanInstall(false);
+        deferredPrompt = null;
+      }
+    } else {
+      // No native prompt available — show desktop manual instructions
+      setShowDesktopTip(true);
     }
   };
 
   const handleDismiss = () => {
     setDismissed(true);
     setShowIOSTip(false);
+    setShowDesktopTip(false);
     sessionStorage.setItem('install-dismissed', '1');
   };
 
@@ -95,6 +107,75 @@ export default function InstallAppButton({ variant = 'header' }: { variant?: 'he
             </li>
           </ol>
           <p className="text-xs text-muted-foreground/80">O app ficará na sua tela inicial como um app nativo!</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop tip overlay (when native prompt not available)
+  if (showDesktopTip) {
+    const isChrome = /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent);
+    const isEdge = /Edg/.test(navigator.userAgent);
+    return (
+      <div className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4 animate-fade-in" onClick={handleDismiss}>
+        <div className="bg-card border border-border rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-3" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between">
+            <h3 className="font-black text-sm uppercase tracking-wider flex items-center gap-2">
+              <Monitor className="h-4 w-4 text-primary" /> Instalar no PC
+            </h3>
+            <button onClick={handleDismiss} className="text-muted-foreground hover:text-foreground">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <ol className="text-sm text-muted-foreground space-y-2">
+            {isChrome ? (
+              <>
+                <li className="flex items-start gap-2">
+                  <span className="bg-primary text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold shrink-0">1</span>
+                  Clique no ícone <strong className="text-foreground">⋮</strong> (menu) no canto superior direito do Chrome
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="bg-primary text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold shrink-0">2</span>
+                  Selecione <strong className="text-foreground">"Salvar e compartilhar"</strong> → <strong className="text-foreground">"Instalar página como app"</strong>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="bg-primary text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold shrink-0">3</span>
+                  Confirme clicando <strong className="text-foreground">"Instalar"</strong>
+                </li>
+              </>
+            ) : isEdge ? (
+              <>
+                <li className="flex items-start gap-2">
+                  <span className="bg-primary text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold shrink-0">1</span>
+                  Clique no ícone <strong className="text-foreground">⋯</strong> (menu) no canto superior direito do Edge
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="bg-primary text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold shrink-0">2</span>
+                  Selecione <strong className="text-foreground">"Apps"</strong> → <strong className="text-foreground">"Instalar este site como app"</strong>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="bg-primary text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold shrink-0">3</span>
+                  Confirme clicando <strong className="text-foreground">"Instalar"</strong>
+                </li>
+              </>
+            ) : (
+              <>
+                <li className="flex items-start gap-2">
+                  <span className="bg-primary text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold shrink-0">1</span>
+                  Abra o <strong className="text-foreground">menu do navegador</strong> (⋮ ou ⋯)
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="bg-primary text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold shrink-0">2</span>
+                  Procure a opção <strong className="text-foreground">"Instalar app"</strong> ou <strong className="text-foreground">"Adicionar à área de trabalho"</strong>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="bg-primary text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold shrink-0">3</span>
+                  Confirme a instalação
+                </li>
+              </>
+            )}
+          </ol>
+          <p className="text-xs text-muted-foreground/80">O app abrirá em uma janela própria, como um programa instalado!</p>
         </div>
       </div>
     );
