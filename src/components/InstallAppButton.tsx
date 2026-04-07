@@ -73,6 +73,7 @@ export default function InstallAppButton({ variant = 'header' }: { variant?: 'he
   const handleDismiss = () => {
     setDismissed(true);
     setShowIOSTip(false);
+    setShowDesktopTip(false);
     sessionStorage.setItem('install-dismissed', '1');
   };
 
