@@ -33,6 +33,7 @@ import trophyBronze from "@/assets/trophy-bronze.png";
 // ─── TIPOS ───────────────────────────────────────────────────
 type CollarTipo = "Normal" | "Baixa" | "ATM" | "Calendário";
 type CollarCusto = "Zero-Cost" | "Crédito" | "Débito";
+type RankingMethod = "score" | "custo" | "per" | "combinado";
 
 interface OptionTicker {
   id: string;
