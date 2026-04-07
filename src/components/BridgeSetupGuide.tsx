@@ -29,11 +29,11 @@ const steps = [
   },
   {
     number: 2,
-    title: "Ative o RTD no Profit Pro",
-    description: "No Profit, vá em Opções (menu superior) e abra a grade de opções do ativo desejado (ex: PETR4). Selecione o vencimento que deseja monitorar.",
+    title: "Selecione o vencimento na Grade de Opções",
+    description: "No Profit, vá em Opções (menu superior) e abra a grade de opções do ativo desejado (ex: PETR4). Selecione o vencimento que deseja monitorar para expandir os strikes.",
     image: "/images/guide-profit-opcoes.png",
     imageAlt: "Profit Pro - Grade de opções com vencimentos",
-    tip: "A grade de opções no Profit exibe todos os vencimentos disponíveis. Clique no vencimento desejado para expandir os strikes.",
+    tip: "A grade de opções no Profit exibe todos os vencimentos disponíveis. Clique no vencimento desejado para expandir os strikes e enviar os dados ao app.",
   },
   {
     number: 3,
