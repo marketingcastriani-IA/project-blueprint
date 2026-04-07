@@ -37,6 +37,7 @@ import {
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 import { statusConfig } from "@/hooks/useRtdBridge";
 import { Calendar } from "@/components/ui/calendar";
+import { useB3Options } from "@/contexts/B3OptionsContext";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
@@ -187,6 +188,7 @@ function strToDate(s: string): Date | undefined {
 
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────
 export default function BoxTracker() {
+  const { getStrikeAndExpiry, getByFamily } = useB3Options();
   const [families, setFamilies] = useState<StockFamily[]>([]);
   const [newFamilyName, setNewFamilyName] = useState("");
   const [quantidade, setQuantidade] = useState<number>(100);
@@ -296,12 +298,15 @@ export default function BoxTracker() {
         const loaded: StockFamily[] = parsed.map((sf) => ({
           id: generateId(),
           name: sf.name,
-          tickers: sf.tickers.map((sym) => ({
-            id: generateId(),
-            symbol: sym.toUpperCase(),
-            type: extractTypeFromTicker(sym),
-            strike: extractStrikeFromTicker(sym),
-          })),
+          tickers: sf.tickers.map((sym) => {
+            const b3Info = getStrikeAndExpiry(sym);
+            return {
+              id: generateId(),
+              symbol: sym.toUpperCase(),
+              type: b3Info?.tipo ?? extractTypeFromTicker(sym),
+              strike: (b3Info && b3Info.strike > 0) ? b3Info.strike : extractStrikeFromTicker(sym),
+            };
+          }),
           expanded: true,
         }));
         setFamilies(loaded);
@@ -376,12 +381,15 @@ export default function BoxTracker() {
         .map((s) => s.trim().toUpperCase())
         .filter((s) => s.length >= 5 && /^[A-Z]{3,6}\d{0,2}[A-X]\d+$/.test(s));
       if (!symbols.length) return;
-      const newTickers: OptionTicker[] = symbols.map((symbol) => ({
-        id: generateId(),
-        symbol,
-        type: extractTypeFromTicker(symbol),
-        strike: extractStrikeFromTicker(symbol),
-      }));
+      const newTickers: OptionTicker[] = symbols.map((symbol) => {
+        const b3Info = getStrikeAndExpiry(symbol);
+        return {
+          id: generateId(),
+          symbol,
+          type: b3Info?.tipo ?? extractTypeFromTicker(symbol),
+          strike: (b3Info && b3Info.strike > 0) ? b3Info.strike : extractStrikeFromTicker(symbol),
+        };
+      });
       setFamilies((prev) =>
         prev.map((f) => {
           if (f.id !== familyId) return f;
@@ -394,7 +402,7 @@ export default function BoxTracker() {
         newTickers.forEach((t) => bridgeAddTicker(t.symbol));
       }
     },
-    [status, bridgeAddTicker]
+    [status, bridgeAddTicker, getStrikeAndExpiry]
   );
 
   const handleFileUpload = useCallback(
@@ -455,16 +463,18 @@ export default function BoxTracker() {
         const putBid = getPrice(putRow, "ofCompra");
         const putAsk = getPrice(putRow, "ofVenda");
 
-        // RTD PEX strike takes priority over ticker-parsed strike
+        // Strike priority: RTD PEX > B3 options DB > ticker-parsed
         const strikeRtdRaw = callRow?.strike ?? putRow?.strike ?? null;
         const strikeRtd = (strikeRtdRaw && strikeRtdRaw > 0) ? strikeRtdRaw : null;
-        const strikeReal = strikeRtd ?? tickerStrike;
+        const b3CallInfo = call ? getStrikeAndExpiry(call.symbol) : null;
+        const b3PutInfo = put ? getStrikeAndExpiry(put.symbol) : null;
+        const b3Strike = b3CallInfo?.strike ?? b3PutInfo?.strike ?? null;
+        const strikeReal = strikeRtd ?? ((b3Strike && b3Strike > 0) ? b3Strike : tickerStrike);
 
-        // Debug: log strike source for troubleshooting
-        if (call?.symbol || put?.symbol) {
-          console.log(`[BOX STRIKE DEBUG] ${call?.symbol ?? put?.symbol}: RTD PEX=${strikeRtdRaw}, tickerParsed=${tickerStrike}, using=${strikeReal} (source: ${strikeRtd ? 'RTD' : 'TICKER'})`);
-        }
-        const vencimento = callRow?.ven ?? putRow?.ven ?? null;
+        // Vencimento: RTD > B3 options DB > manual
+        const vencRtd = callRow?.ven ?? putRow?.ven ?? null;
+        const b3Venc = b3CallInfo?.vencimento ?? b3PutInfo?.vencimento ?? null;
+        const vencimento = vencRtd || b3Venc || null;
 
         // Custo = (Preço_Ação + Preço_Put) - Preço_Call
         let compraBox: number | null = null;
@@ -524,7 +534,7 @@ export default function BoxTracker() {
       pairs.sort((a, b) => (b.lucroPercent ?? -999) - (a.lucroPercent ?? -999));
       return pairs;
     },
-    [rows, quantidade, vencimentoManual, descontarIRAcoes, descontarIRRendaFixa, cdiAnual]
+    [rows, quantidade, vencimentoManual, descontarIRAcoes, descontarIRRendaFixa, cdiAnual, getStrikeAndExpiry]
   );
 
   // Global ranking — only the #1 best box per family

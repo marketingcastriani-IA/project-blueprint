@@ -36,14 +36,18 @@ import { cn } from "@/lib/utils";
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 import { statusConfig, type ConStatus, type RtdRow } from "@/hooks/useRtdBridge";
 import { extractStrikeFromTicker } from "@/lib/b3-utils";
+import { useB3Options } from "@/contexts/B3OptionsContext";
 
 const fmt = (v: number | null, d = 2) =>
   v !== null && v !== undefined ? v.toFixed(d) : "—";
 
-/** Get best strike: RTD PEX > 0 first, then ticker-parsed fallback */
-const getStrike = (row: RtdRow): number | null => {
+/** Get best strike: RTD PEX > 0 first, then B3 options DB, then ticker-parsed fallback */
+const getStrike = (row: RtdRow, getStrikeAndExpiry?: (ticker: string) => { strike: number; vencimento: string; tipo: "CALL" | "PUT" } | null): number | null => {
   if (row.strike !== null && row.strike > 0) return row.strike;
   if (row.tipo === "stock") return null;
+  // Try B3 options database
+  const b3Info = getStrikeAndExpiry?.(row.ticker);
+  if (b3Info && b3Info.strike > 0) return b3Info.strike;
   const parsed = extractStrikeFromTicker(row.ticker);
   return parsed > 0 ? parsed : null;
 };
@@ -89,6 +93,7 @@ export default function DadosAoVivo() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const accessControl = useAccessControl();
+  const { getStrikeAndExpiry } = useB3Options();
   const { status, rows, errorMsg, reconnectCount, connect, addTicker, removeTicker, updateRow } = useSharedRtdBridge();
 
   const [newTicker, setNewTicker] = useState("");
@@ -238,7 +243,7 @@ export default function DadosAoVivo() {
         side: r.lado,
         option_type: r.tipo,
         asset: r.ticker,
-        strike: r.tipo === 'stock' ? 0 : (getStrike(r) ?? 0),
+        strike: r.tipo === 'stock' ? 0 : (getStrike(r, getStrikeAndExpiry) ?? 0),
         price: r.precoEntrada ?? r.ultimo ?? r.ofCompra ?? r.ofVenda ?? 0,
         quantity: r.quantidade,
         expiry_date: r.expiryDate,
@@ -579,7 +584,7 @@ export default function DadosAoVivo() {
                             </Select>
                           </TableCell>
                           <TableCell className="text-right font-mono font-semibold">{fmt(row.ultimo)}</TableCell>
-                          <TableCell className="text-right font-mono">{fmt(getStrike(row))}</TableCell>
+                          <TableCell className="text-right font-mono">{fmt(getStrike(row, getStrikeAndExpiry))}</TableCell>
                           <TableCell className="text-right font-mono">{fmt(row.negocios, 0)}</TableCell>
                           <TableCell className="text-right font-mono">{fmt(row.ofCompra)}</TableCell>
                           <TableCell className="text-right font-mono">{fmt(row.ofVenda)}</TableCell>
