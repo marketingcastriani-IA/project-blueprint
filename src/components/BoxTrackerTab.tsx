@@ -245,6 +245,25 @@ export default function BoxTracker() {
   const [showAlertHistory, setShowAlertHistory] = useState(false);
   const notifPermissionRef = useRef<NotificationPermission>("default");
 
+  // Helper: send message to Service Worker (with ready fallback)
+  const postToSW = useCallback(async (message: object) => {
+    if (!('serviceWorker' in navigator)) return false;
+    // Try controller first
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage(message);
+      return true;
+    }
+    // Fallback: wait for SW to be ready
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if (reg.active) {
+        reg.active.postMessage(message);
+        return true;
+      }
+    } catch {}
+    return false;
+  }, []);
+
   // Request notification permission
   const toggleNotifications = useCallback(async () => {
     if (notifEnabled) {
@@ -262,14 +281,13 @@ export default function BoxTracker() {
       setNotifEnabled(true);
       localStorage.setItem(NOTIF_ENABLED_KEY, "true");
       // Send test notification via Service Worker
-      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-          type: 'BOX_ALERT',
-          title: '🔔 Alertas Box Ativados!',
-          body: `✅ Você será notificado quando um box superar ${notifThreshold}% do CDI.\n📱 Funciona mesmo com o app minimizado!`,
-          tag: 'box-tracker-test',
-        });
-      } else {
+      const sent = await postToSW({
+        type: 'BOX_ALERT',
+        title: '🔔 Alertas Box Ativados!',
+        body: `✅ Você será notificado quando um box superar ${notifThreshold}% do CDI.\n📱 Funciona mesmo com o app minimizado!`,
+        tag: 'box-tracker-test',
+      });
+      if (!sent) {
         new Notification("🔔 Alertas Box Ativados!", {
           body: `Você será notificado quando um box superar ${notifThreshold}% do CDI.`,
           icon: "/favicon.png",
