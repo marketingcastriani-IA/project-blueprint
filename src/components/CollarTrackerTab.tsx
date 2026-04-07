@@ -305,6 +305,7 @@ export default function CollarTrackerTab() {
   const [filterCusto, setFilterCusto] = useState<CollarCusto | "Todos">("Todos");
   const [hideNegative, setHideNegative] = useState(false);
   const [onlyRiskFree, setOnlyRiskFree] = useState(false);
+  const [rankingMethod, setRankingMethod] = useState<RankingMethod>("score");
   const [selectedCollar, setSelectedCollar] = useState<(CollarResult & { familyName: string }) | null>(null);
   const [autoImportedMap, setAutoImportedMap] = useState<Map<string, Set<string>>>(new Map());
   const [cdiAnual, setCdiAnual] = useState<number>(() => {
