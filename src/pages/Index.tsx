@@ -548,18 +548,6 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border/40 bg-muted/20 py-12">
-        <div className="container text-center space-y-6">
-          <div className="flex items-center justify-center gap-2.5 font-black text-xl">
-            <img src="/assets/logo.png" alt="Opções PRO X" className="h-8 w-8 object-contain" />
-            <span className="tracking-tighter">Opções PRO X</span>
-          </div>
-          <p className="text-[10px] text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            AVISO LEGAL: Este aplicativo é uma ferramenta de simulação algorítmica baseada nas regras da B3. Os dados apresentados não constituem recomendação de investimento. Verifique os dados com sua corretora antes de operar.
-          </p>
-        </div>
-      </footer>
 
       {/* Scroll to Top Button */}
       {showScrollTop && (
