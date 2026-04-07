@@ -1209,22 +1209,25 @@ export default function BoxTracker() {
             className="w-full sm:w-24 bg-card border border-border rounded-xl px-3 py-2.5 text-sm text-center font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
           />
         </div>
-        <div className="flex gap-2 flex-1">
-          <input
-            type="text"
-            value={newFamilyName}
-            onChange={(e) => setNewFamilyName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && addFamily()}
-            placeholder="Ticker do ativo (ex: PETR4, BBDC4...)"
-            className="flex-1 bg-card border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all placeholder-muted-foreground"
-          />
-          <button
-            onClick={addFamily}
-            className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full text-sm font-bold transition-all shadow-md hover:shadow-lg active:scale-[0.97]"
-          >
-            <Plus className="w-4 h-4" />
-            Adicionar
-          </button>
+        <div className="flex flex-col gap-1 flex-1">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newFamilyName}
+              onChange={(e) => setNewFamilyName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addFamily()}
+              placeholder="Nome do ativo (ex: PETR, VALE, BBDC)"
+              className="flex-1 bg-card border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all placeholder-muted-foreground"
+            />
+            <button
+              onClick={addFamily}
+              className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full text-sm font-bold transition-all shadow-md hover:shadow-lg active:scale-[0.97]"
+            >
+              <Plus className="w-4 h-4" />
+              Adicionar
+            </button>
+          </div>
+          <p className="text-[10px] text-muted-foreground ml-1">Digite apenas o nome base sem número — ex: PETR, VALE, BBDC</p>
         </div>
       </div>
 
@@ -1232,8 +1235,14 @@ export default function BoxTracker() {
       {families.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
           <BarChart2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">Nenhuma família criada.</p>
-          <p className="text-xs mt-1">Adicione um ativo acima para começar a rastrear.</p>
+          <p className="text-sm font-semibold">Nenhuma família criada.</p>
+          <p className="text-xs mt-1">Adicione um ativo acima ou envie tickers do Opções B3.</p>
+          <button
+            onClick={() => navigate("/ticker-opcoes")}
+            className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full text-sm font-bold transition-all shadow-md hover:shadow-lg active:scale-[0.97]"
+          >
+            <Database className="w-4 h-4" /> Ir ao Opções B3 <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
       ) : (
         <div className="space-y-4">
