@@ -402,7 +402,7 @@ export default function BoxTracker() {
         newTickers.forEach((t) => bridgeAddTicker(t.symbol));
       }
     },
-    [status, bridgeAddTicker]
+    [status, bridgeAddTicker, getStrikeAndExpiry]
   );
 
   const handleFileUpload = useCallback(
@@ -534,7 +534,7 @@ export default function BoxTracker() {
       pairs.sort((a, b) => (b.lucroPercent ?? -999) - (a.lucroPercent ?? -999));
       return pairs;
     },
-    [rows, quantidade, vencimentoManual, descontarIRAcoes, descontarIRRendaFixa, cdiAnual]
+    [rows, quantidade, vencimentoManual, descontarIRAcoes, descontarIRRendaFixa, cdiAnual, getStrikeAndExpiry]
   );
 
   // Global ranking — only the #1 best box per family
