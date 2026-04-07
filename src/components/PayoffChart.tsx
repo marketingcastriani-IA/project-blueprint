@@ -276,17 +276,13 @@ export default function PayoffChart({
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={chartData} margin={{ top: 25, right: 25, left: 5, bottom: 20 }}>
                 <defs>
-                  <linearGradient id="lossGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.03} />
+                  <linearGradient id="gainZoneGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(142, 76%, 40%)" stopOpacity={0.45} />
+                    <stop offset="100%" stopColor="hsl(142, 76%, 40%)" stopOpacity={0.05} />
                   </linearGradient>
-                  <linearGradient id="orangeGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(38 92% 50%)" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="hsl(38 92% 50%)" stopOpacity={0.03} />
-                  </linearGradient>
-                  <linearGradient id="greenGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0.03} />
+                  <linearGradient id="lossZoneGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(0, 80%, 55%)" stopOpacity={0.05} />
+                    <stop offset="100%" stopColor="hsl(0, 80%, 55%)" stopOpacity={0.45} />
                   </linearGradient>
                 </defs>
 
@@ -326,8 +322,13 @@ export default function PayoffChart({
                   }}
                 />
 
-                {/* Zero line */}
-                <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="6 3" strokeOpacity={0.4} strokeWidth={1.5} />
+                {/* Zero line — bold separator */}
+                <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeOpacity={0.35} strokeWidth={2} />
+
+                {/* Green gain zone */}
+                <Area type="monotone" dataKey="gainZone" stroke="none" fill="url(#gainZoneGrad)" isAnimationActive={false} legendType="none" />
+                {/* Red loss zone */}
+                <Area type="monotone" dataKey="lossZone" stroke="none" fill="url(#lossZoneGrad)" isAnimationActive={false} legendType="none" />
 
                 {/* Entry spot price */}
                 {entrySpotPrice && (
@@ -380,13 +381,10 @@ export default function PayoffChart({
 
                 <ChartTooltip content={<CustomTooltip displayMode={displayMode} legs={legs} daysToExpiry={daysToExpiry} cdiRate={cdiRate} />} />
 
-                {/* Colored areas */}
-                <Area type="monotone" dataKey="belowZero" stroke="none" fill="url(#lossGradient)" isAnimationActive={false} />
-                <Area type="monotone" dataKey="betweenZeroCdi" stackId="positive" stroke="none" fill="url(#orangeGradient)" isAnimationActive={false} />
-                <Area type="monotone" dataKey="aboveCdi" stackId="positive" stroke="none" fill="url(#greenGradient)" isAnimationActive={false} />
+                {/* CDI line — bold and prominent */}
+                <Line name="── CDI ──" type="monotone" dataKey="cdiLine" stroke="hsl(45, 95%, 55%)" strokeWidth={2.5} dot={false} isAnimationActive={false} />
 
-                {/* Lines */}
-                <Line name="CDI" type="monotone" dataKey="cdiLine" stroke="hsl(45 95% 55%)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} isAnimationActive={false} />
+                {/* Payoff lines */}
                 <Line name="Hoje (T+0)" type="monotone" dataKey="profitToday" stroke="hsl(var(--info))" strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false} />
                 <Line name="No Vencimento" type="monotone" dataKey="profitAtExpiry" stroke="hsl(var(--chart-profit))" strokeWidth={2.5} dot={false} isAnimationActive={false} />
 
