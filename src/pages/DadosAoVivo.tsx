@@ -243,7 +243,7 @@ export default function DadosAoVivo() {
         side: r.lado,
         option_type: r.tipo,
         asset: r.ticker,
-        strike: r.tipo === 'stock' ? 0 : (getStrike(r) ?? 0),
+        strike: r.tipo === 'stock' ? 0 : (getStrike(r, getStrikeAndExpiry) ?? 0),
         price: r.precoEntrada ?? r.ultimo ?? r.ofCompra ?? r.ofVenda ?? 0,
         quantity: r.quantidade,
         expiry_date: r.expiryDate,
@@ -584,7 +584,7 @@ export default function DadosAoVivo() {
                             </Select>
                           </TableCell>
                           <TableCell className="text-right font-mono font-semibold">{fmt(row.ultimo)}</TableCell>
-                          <TableCell className="text-right font-mono">{fmt(getStrike(row))}</TableCell>
+                          <TableCell className="text-right font-mono">{fmt(getStrike(row, getStrikeAndExpiry))}</TableCell>
                           <TableCell className="text-right font-mono">{fmt(row.negocios, 0)}</TableCell>
                           <TableCell className="text-right font-mono">{fmt(row.ofCompra)}</TableCell>
                           <TableCell className="text-right font-mono">{fmt(row.ofVenda)}</TableCell>
