@@ -6,6 +6,7 @@
 // ============================================================
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 import trophyGold from "@/assets/trophy-gold.png";
 import trophySilver from "@/assets/trophy-silver.png";
 import trophyBronze from "@/assets/trophy-bronze.png";
@@ -188,6 +189,7 @@ function extractTypeFromTicker(symbol: string): "CALL" | "PUT" {
 export default function BoxTracker() {
   const { getStrikeAndExpiry, getByFamily } = useB3Options();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [families, setFamilies] = useState<StockFamily[]>([]);
   const [newFamilyName, setNewFamilyName] = useState("");
   const [quantidade, setQuantidade] = useState<number>(100);
@@ -245,6 +247,25 @@ export default function BoxTracker() {
   const [showAlertHistory, setShowAlertHistory] = useState(false);
   const notifPermissionRef = useRef<NotificationPermission>("default");
 
+  // Helper: send message to Service Worker (with ready fallback)
+  const postToSW = useCallback(async (message: object) => {
+    if (!('serviceWorker' in navigator)) return false;
+    // Try controller first
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage(message);
+      return true;
+    }
+    // Fallback: wait for SW to be ready
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if (reg.active) {
+        reg.active.postMessage(message);
+        return true;
+      }
+    } catch {}
+    return false;
+  }, []);
+
   // Request notification permission
   const toggleNotifications = useCallback(async () => {
     if (notifEnabled) {
@@ -262,14 +283,13 @@ export default function BoxTracker() {
       setNotifEnabled(true);
       localStorage.setItem(NOTIF_ENABLED_KEY, "true");
       // Send test notification via Service Worker
-      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-          type: 'BOX_ALERT',
-          title: '🔔 Alertas Box Ativados!',
-          body: `✅ Você será notificado quando um box superar ${notifThreshold}% do CDI.\n📱 Funciona mesmo com o app minimizado!`,
-          tag: 'box-tracker-test',
-        });
-      } else {
+      const sent = await postToSW({
+        type: 'BOX_ALERT',
+        title: '🔔 Alertas Box Ativados!',
+        body: `✅ Você será notificado quando um box superar ${notifThreshold}% do CDI.\n📱 Funciona mesmo com o app minimizado!`,
+        tag: 'box-tracker-test',
+      });
+      if (!sent) {
         new Notification("🔔 Alertas Box Ativados!", {
           body: `Você será notificado quando um box superar ${notifThreshold}% do CDI.`,
           icon: "/favicon.png",
@@ -576,26 +596,32 @@ export default function BoxTracker() {
 
   // ─── NOTIFICAÇÃO PUSH via Service Worker ────
   const sendPushNotification = useCallback(async (title: string, body: string, data?: any) => {
+    const tag = data?.priority === 'urgent' ? 'box-tracker-urgent' : 'box-tracker-alert';
     // Try Service Worker first (works when app is backgrounded on mobile)
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({
-        type: 'BOX_ALERT',
-        title,
-        body,
-        tag: data?.priority === 'urgent' ? 'box-tracker-urgent' : 'box-tracker-alert',
-        data,
-      });
-      return;
-    }
+    const sent = await postToSW({ type: 'BOX_ALERT', title, body, tag, data });
+    if (sent) return;
     // Fallback to regular Notification API
     if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, {
-        body,
-        icon: '/favicon.png',
-        tag: data?.priority === 'urgent' ? 'box-tracker-urgent' : 'box-tracker-alert',
-      });
+      new Notification(title, { body, icon: '/favicon.png', tag });
     }
-  }, []);
+  }, [postToSW]);
+
+  // Manual test alert
+  const sendTestAlert = useCallback(async () => {
+    if (!("Notification" in window) || Notification.permission !== "granted") {
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") {
+        alert("Permissão negada. Ative nas configurações do navegador.");
+        return;
+      }
+    }
+    await sendPushNotification(
+      '🧪 Teste de Alerta Box',
+      `📊 Alerta teste disparado às ${new Date().toLocaleTimeString('pt-BR')}\n🎯 Meta Normal: ≥ ${notifThreshold}% CDI\n🚨 Meta Urgente: ≥ ${notifThresholdUrgent}% CDI`,
+      { url: '/box-tracker', priority: 'normal', sound: soundEnabled }
+    );
+    toast({ title: "✅ Alerta teste enviado!", description: "Verifique se a notificação apareceu." });
+  }, [sendPushNotification, notifThreshold, notifThresholdUrgent, soundEnabled, toast]);
 
   useEffect(() => {
     if (!notifEnabled || !("Notification" in window) || Notification.permission !== "granted") return;
@@ -906,6 +932,17 @@ export default function BoxTracker() {
                   title={soundEnabled ? "Som ativado" : "Som desativado"}
                 >
                   {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                </button>
+              )}
+
+              {/* Test Alert Button */}
+              {notifEnabled && (
+                <button
+                  onClick={sendTestAlert}
+                  className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-warning/30 bg-warning/10 text-warning text-xs font-semibold transition-all active:scale-[0.97] hover:bg-warning/20"
+                  title="Enviar notificação de teste"
+                >
+                  🧪 Testar
                 </button>
               )}
 
