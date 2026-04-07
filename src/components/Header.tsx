@@ -88,6 +88,7 @@ export default function Header() {
             {access.planType === 'pro' ? 'PRO' : 'FREE'}
           </Badge>
         </button>
+        <InstallAppButton />
 
         {/* Desktop Primary Nav */}
         <nav className="hidden md:flex items-center gap-1 flex-1 justify-center" data-tour="nav-menu">
@@ -98,7 +99,6 @@ export default function Header() {
 
         {/* Right actions */}
         <div className="flex items-center gap-1.5 shrink-0">
-          <InstallAppButton />
           {isFree && (
             <Button 
               onClick={() => navigate('/settings')}
