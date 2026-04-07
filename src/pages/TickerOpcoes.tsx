@@ -674,10 +674,11 @@ export default function TickerOpcoes() {
             <div className="px-4 py-3 border-b border-primary/20 flex items-center gap-2">
               <Box className="h-4 w-4 text-primary" />
               <span className="text-sm font-semibold text-foreground">Oportunidades de Box</span>
+              <span className="text-[10px] text-muted-foreground ml-1">(Ação ASK + Put ASK) − Call BID</span>
               <Badge variant="default" className="text-xs ml-auto">{boxOpportunities.length} pares</Badge>
             </div>
             <div className="p-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2">
-              {boxOpportunities.map((opp, i) => (
+              {boxOpportunities.map((opp) => (
                 <button
                   key={`${opp.call.ticker}-${opp.put.ticker}`}
                   onClick={() => sendOpportunityToBox(opp.call, opp.put)}
@@ -685,9 +686,12 @@ export default function TickerOpcoes() {
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-xs font-bold text-foreground">Strike {opp.strike.toFixed(2)}</span>
-                    <Badge className={`text-xs font-bold border-0 ${opp.lucroPct > 1.5 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
-                      {opp.lucroPct.toFixed(2)}%
-                    </Badge>
+                    <div className="flex items-center gap-1">
+                      {opp.isLive && <Wifi className="h-2.5 w-2.5 text-primary" />}
+                      <Badge className={`text-xs font-bold border-0 ${opp.lucroPct > 1.5 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+                        {opp.lucroPct.toFixed(2)}%
+                      </Badge>
+                    </div>
                   </div>
                   <div className="text-xs text-muted-foreground space-y-0.5">
                     <div className="flex justify-between">
@@ -695,11 +699,11 @@ export default function TickerOpcoes() {
                       <span>P: {opp.put.ticker}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Ativo: {precoBaseNum.toFixed(2)}</span>
-                      <span>Call: {opp.call.precoUltimo.toFixed(2)}</span>
+                      <span>Ativo: {opp.stockPrice.toFixed(2)}</span>
+                      <span>Call: {opp.callPrice.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Put: {opp.put.precoUltimo.toFixed(2)}</span>
+                      <span>Put: {opp.putPrice.toFixed(2)}</span>
                       <span>Custo: {opp.custo.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
