@@ -139,9 +139,10 @@ export default function PayoffChart({
         profitAtExpiry: profit * factor,
         profitToday: p.profitToday * factor,
         simulatedAtExpiry: simPoint ? simPoint.profitAtExpiry * factor : undefined,
-        belowZero: (profit < 0 ? profit : 0) * factor,
-        betweenZeroCdi: (profit > 0 ? Math.min(profit, cdi) : 0) * factor,
-        aboveCdi: (profit > cdi ? profit - cdi : 0) * factor,
+        // Green zone: profit above zero
+        gainZone: (profit > 0 ? profit : 0) * factor,
+        // Red zone: loss below zero
+        lossZone: (profit < 0 ? profit : 0) * factor,
         cdiLine: cdi * factor,
         periodCdiLine: simCdi * factor,
       };
