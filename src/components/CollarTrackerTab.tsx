@@ -1925,11 +1925,20 @@ export default function CollarTrackerTab() {
                             <td className="py-2 px-2 text-right font-mono text-muted-foreground">
                               {c.per === null ? "—" : c.per === Infinity ? "∞" : c.per.toFixed(1)}
                             </td>
+                            <td className="py-2 px-2 text-right font-mono text-muted-foreground">
+                              {c.protecaoPct !== null ? `${c.protecaoPct.toFixed(1)}%` : "—"}
+                            </td>
+                            <td className="py-2 px-2 text-right font-mono text-muted-foreground">
+                              {c.upsidePct !== null ? `${c.upsidePct.toFixed(1)}%` : "—"}
+                            </td>
                             <td className="py-2 px-1 text-center">
                               <span className={cn("text-xs font-black px-1.5 py-0.5 rounded-full",
                                 c.qualityScore >= 80 ? "bg-success/10 text-success" :
                                 c.qualityScore >= 60 ? "bg-warning/10 text-warning" :
                                 "bg-muted text-muted-foreground")}>{c.qualityScore}</span>
+                            </td>
+                            <td className="py-2 px-1 text-center">
+                              <span className="text-xs font-bold text-muted-foreground">{c.scoreCombinado.toFixed(1)}</span>
                             </td>
                             <td className="py-2 px-2 text-center">
                               <span className="flex items-center justify-center gap-0.5">
