@@ -1,55 +1,50 @@
 
 
-# Tema Claro Padrão + Rodapé Global + Melhorias Gerais
+## Melhorias no Gráfico de Payoff 2D
 
-## 1. Iniciar o app sempre em modo claro
+### Problemas Identificados na Imagem
 
-**Arquivo**: `src/contexts/ThemeContext.tsx`
-- Alterar o fallback padrão de `'dark'` para `'light'` na inicialização do estado (linha 16)
-- Na primeira visita (sem localStorage), o app abrirá em modo claro
+1. **Linha ZERO pouco visível** - apesar de já ter sido melhorada, o label "ZERO" fica cortado no canto direito
+2. **Faixa verde/vermelha com gradiente fraco** - a zona de ganho é muito translúcida, difícil de distinguir
+3. **Tooltip bloqueia visão do gráfico** - ocupa muito espaço na área central
+4. **Linha CDI sem contexto** - mostra valor mas não destaca se a estratégia supera o CDI
+5. **Curva T+0 (azul tracejada) na zona negativa sem explicação** - usuário pode não entender o que significa
+6. **Falta de labels diretos no gráfico** - "ZONA DE LUCRO" e "ZONA DE PERDA" escritos nas faixas coloridas facilitariam leitura instantânea
+7. **Eixo Y com poucas marcações** - dificulta leitura de valores intermediários
 
-## 2. Rodapé global com logo e email
+### Plano de Melhorias
 
-**Novo arquivo**: `src/components/Footer.tsx`
-- Criar um componente `Footer` reutilizável com:
-  - Logo (`/assets/logo.png`) + nome "Opções PRO X"
-  - Email de contato (ex: contato@opcoesprox.com.br) com link `mailto:`
-  - Aviso legal compacto
-  - Ano dinâmico (2025)
-  - Estilo: `border-t`, `bg-muted/20`, responsivo, compacto
+**1. Labels "ZONA DE LUCRO" e "ZONA DE PERDA" no gráfico**
+- Adicionar texto fixo semi-transparente dentro das áreas verde e vermelha usando `customized` prop ou `Label` do Recharts
+- Posicionados no centro vertical de cada zona
 
-**Arquivo**: `src/App.tsx`
-- Importar o `Footer` e renderizá-lo dentro do `BrowserRouter`, logo após o `ErrorBoundary` com as rotas
-- Exibir o footer em **todas as páginas** (landing + autenticadas)
+**2. Faixas verde/vermelha mais intensas**
+- Aumentar `stopOpacity` do gradiente de 0.45 para 0.55 (ganho) e 0.45 para 0.55 (perda)
+- Adicionar borda sutil nas áreas (stroke leve verde/vermelho)
 
-**Arquivo**: `src/pages/Index.tsx`
-- Remover o footer inline da landing page (linhas 551-562) para usar o global
+**3. Linha Zero melhorada**
+- Mover label "ZERO" para `insideLeft` para não ser cortado
+- Aumentar contraste com cor sólida e fundo
 
-## 3. Varredura de melhorias identificadas
+**4. Indicador CDI vs Estratégia**
+- Adicionar uma anotação visual quando a curva de payoff cruza a linha CDI, indicando "Supera CDI" acima e "Abaixo CDI" abaixo
+- Label "CDI" mais legível com fundo/badge
 
-Abaixo as melhorias que identifiquei ao analisar o app inteiro. Estas **não serão implementadas agora** — são sugestões para próximas iterações:
+**5. Tooltip mais compacto**
+- Reduzir padding e espaçamento
+- Mover Greeks para um painel separado fixo (fora do tooltip) para não poluir
 
-| Area | Melhoria |
-|---|---|
-| **Performance** | Dashboard.tsx tem 812 linhas — extrair PortfolioSummary e AnalysisWizard em componentes separados |
-| **Performance** | Lazy load de rotas com `React.lazy()` + `Suspense` para reduzir o bundle inicial (17 páginas carregadas de uma vez) |
-| **UX** | History.tsx e Portfolio.tsx não têm estado vazio com CTA — adicionar ilustração + botão "Criar primeira análise" |
-| **UX** | Diversificador não tem skeleton loading (as outras páginas principais já têm) |
-| **Acessibilidade** | Vários botões de ícone sem `aria-label` no Header e nas páginas |
-| **SEO** | Páginas autenticadas sem `<title>` dinâmico — usar `document.title` ou react-helmet |
-| **Segurança** | AdminLogin.tsx usa credenciais hardcoded no client-side — migrar para validação server-side |
-| **Mobile** | Header com muitos itens no desktop row 1 pode sobrecarregar em telas 1024px — considerar agrupar em dropdown |
-| **Dados** | Box Tracker e Collar Tracker não persistem configurações no Supabase — apenas localStorage (perde ao trocar device) |
-| **Código** | Duplicação de lógica de preço PRO (`useProPrice`) entre Index.tsx e Settings.tsx — já está extraído mas os componentes de plano são duplicados |
+**6. Mini-legenda integrada no gráfico**
+- Adicionar legenda compacta no canto superior esquerdo do chart (dentro do gráfico) ao invés de depender só do tooltip
 
----
+### Arquivos Modificados
 
-## Arquivos afetados nesta implementação
+- `src/components/PayoffChart.tsx` - todas as melhorias visuais acima
 
-| Arquivo | Mudança |
-|---|---|
-| `src/contexts/ThemeContext.tsx` | Default `'light'` ao invés de `'dark'` |
-| `src/components/Footer.tsx` | **Novo** — componente de rodapé global |
-| `src/App.tsx` | Adicionar `<Footer />` global |
-| `src/pages/Index.tsx` | Remover footer inline duplicado |
+### Detalhes Técnicos
+
+- Labels de zona usarão `<text>` via `customized` no ComposedChart, posicionados com base no domínio Y
+- Gradientes atualizados nos `<linearGradient>` existentes
+- Legenda interna via componente `<foreignObject>` ou posicionamento absoluto sobre o chart container
+- Tooltip simplificado movendo Greeks para exibição fixa abaixo das métricas
 
