@@ -212,9 +212,19 @@ export default function BoxTracker() {
       return saved ? parseFloat(saved) : NOTIF_THRESHOLD_DEFAULT;
     } catch { return NOTIF_THRESHOLD_DEFAULT; }
   });
-  const [editingThreshold, setEditingThreshold] = useState(false);
-  const [thresholdInput, setThresholdInput] = useState(String(notifThreshold));
+  const [notifThresholdUrgent, setNotifThresholdUrgent] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(NOTIF_THRESHOLD_URGENT_KEY);
+      return saved ? parseFloat(saved) : NOTIF_THRESHOLD_URGENT_DEFAULT;
+    } catch { return NOTIF_THRESHOLD_URGENT_DEFAULT; }
+  });
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    try { return localStorage.getItem(NOTIF_SOUND_ENABLED_KEY) !== "false"; } catch { return true; }
+  });
   const lastNotifRef = useRef<number>(0);
+
+  // Auto-imported tickers tracking
+  const [autoImportedMap, setAutoImportedMap] = useState<Map<string, Set<string>>>(new Map());
 
   // ─── HISTÓRICO DE ALERTAS ─────────────────────────────────
   interface AlertEntry {
