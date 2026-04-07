@@ -966,37 +966,46 @@ export default function CollarTrackerTab() {
                   <ShieldCheck className="w-3.5 h-3.5 text-success" />
                 </div>
                 <p className="text-lg font-black text-foreground">{c.familyName}</p>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Lucro Máx</p>
-                    <p className="text-sm font-black text-success">{formatPercent(c.maxProfitPct)}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Perda Máx</p>
-                    <p className={cn("text-sm font-black", (c.maxLossPct ?? 0) >= 0 ? "text-success" : "text-destructive")}>
-                      {formatPercent(c.maxLossPct)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Net</p>
-                    <p className={cn("text-sm font-black", (c.netCostCredit ?? 0) >= 0 ? "text-success" : "text-destructive")}>
-                      {formatBRL(c.netCostCredit)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Score</p>
-                    <p className={cn("text-sm font-black",
-                      c.qualityScore >= 80 ? "text-success" :
-                      c.qualityScore >= 60 ? "text-warning" : "text-muted-foreground"
-                    )}>{c.qualityScore}</p>
-                  </div>
-                </div>
-                {c.vencimento && (
-                  <p className="text-[10px] text-muted-foreground mt-2">
-                    Venc: <span className="font-bold text-foreground">{c.vencimento}</span>
-                    {c.diasUteis !== null && <span> · {c.diasUteis}du</span>}
-                  </p>
-                )}
+                {(() => {
+                  const fam = families.find(f => f.name === c.familyName);
+                  const qty = fam?.quantidade ?? 100;
+                  const S0 = c.tipo === "Alta" ? c.stockAsk! : c.stockBid!;
+                  return (
+                    <>
+                      <div className="mt-2 grid grid-cols-2 gap-2">
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase font-bold">Lucro Máx</p>
+                          <p className="text-sm font-black text-success">{formatPercent(c.maxProfitPct)}</p>
+                          <p className="text-[9px] font-mono text-success">{formatBRL((c.maxProfitAbs ?? 0) * qty)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase font-bold">Investimento</p>
+                          <p className="text-sm font-black text-foreground">{formatBRL(S0 * qty)}</p>
+                          <p className="text-[9px] font-mono text-muted-foreground">{qty} ações</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase font-bold">Net</p>
+                          <p className={cn("text-sm font-black", (c.netCostCredit ?? 0) >= 0 ? "text-success" : "text-destructive")}>
+                            {formatBRL(c.netCostCredit)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase font-bold">Score</p>
+                          <p className={cn("text-sm font-black",
+                            c.qualityScore >= 80 ? "text-success" :
+                            c.qualityScore >= 60 ? "text-warning" : "text-muted-foreground"
+                          )}>{c.qualityScore}</p>
+                        </div>
+                      </div>
+                      {c.vencimento && (
+                        <p className="text-[10px] text-muted-foreground mt-2">
+                          Venc: <span className="font-bold text-foreground">{c.vencimento}</span>
+                          {c.diasUteis !== null && <span> · {c.diasUteis}du</span>}
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             );
           })}
