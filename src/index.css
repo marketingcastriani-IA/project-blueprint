@@ -21,7 +21,7 @@
     --secondary: 210 20% 94%;
     --secondary-foreground: 222 47% 11%;
     --muted: 210 20% 96%;
-    --muted-foreground: 215 20% 35%;
+    --muted-foreground: 215 22% 28%;
     --accent: 195 100% 45%;
     --accent-foreground: 0 0% 100%;
     
@@ -134,13 +134,9 @@
     text-rendering: geometricPrecision;
   }
 
-  .text-xs,
-  .text-sm,
-  .text-[10px],
-  .text-muted-foreground {
-    color: hsl(var(--muted-foreground));
-    font-weight: 500;
-    letter-spacing: 0;
+  ::placeholder {
+    color: hsl(var(--muted-foreground) / 0.92);
+    opacity: 1;
   }
 
   /* Fix para o ícone de calendário no input type="date" no tema dark */
