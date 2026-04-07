@@ -747,7 +747,7 @@ export default function TickerOpcoes() {
                     return (
                       <TableRow
                         key={`${opt.ticker}-${i}`}
-                        className={`transition-colors ${selectedRows.has(opt.ticker) ? "bg-primary/5 hover:bg-primary/10" : isPaired ? "hover:bg-muted/30" : "hover:bg-muted/30 opacity-60"}`}
+                        className={`transition-colors ${selectedRows.has(opt.ticker) ? "bg-primary/5 hover:bg-primary/10" : isPaired ? "hover:bg-muted/30 border-l-2 border-l-primary/50" : "hover:bg-muted/30 opacity-60"}`}
                       >
                         <TableCell>
                           <input
@@ -761,9 +761,18 @@ export default function TickerOpcoes() {
                           <span className="flex items-center gap-1.5">
                             {opt.ticker}
                             {isPaired && (
-                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-bold" title="Par Call+Put disponível neste strike">
-                                <Box className="h-2.5 w-2.5" /> PAR
-                              </span>
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-primary/15 text-primary text-[9px] font-bold border border-primary/20 cursor-help">
+                                      <Box className="h-2.5 w-2.5" /> PAR
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="max-w-[200px]">
+                                    <p className="text-xs">Este strike tem Call e Put disponíveis — ideal para montar Box Spread</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             )}
                           </span>
                         </TableCell>
