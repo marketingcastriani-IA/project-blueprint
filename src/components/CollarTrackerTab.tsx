@@ -33,6 +33,7 @@ import trophyBronze from "@/assets/trophy-bronze.png";
 // ─── TIPOS ───────────────────────────────────────────────────
 type CollarTipo = "Normal" | "Baixa" | "ATM" | "Calendário";
 type CollarCusto = "Zero-Cost" | "Crédito" | "Débito";
+type RankingMethod = "score" | "custo" | "per" | "combinado";
 
 interface OptionTicker {
   id: string;
@@ -72,6 +73,9 @@ interface CollarResult {
   diffCdiAlta: number | null;    // rentAlta - cdiPeriodo (pp)
   per: number | null;            // Protection Efficiency Ratio
   custoLiquidoPct: number | null; // custo líquido como % do ativo
+  protecaoPct: number | null;    // downside protegido como % do ativo
+  upsidePct: number | null;      // upside permitido como % do ativo
+  scoreCombinado: number;        // 0.5*Proteção + 0.3*Upside - 0.2*Custo
 }
 
 interface StockFamily {
@@ -301,6 +305,7 @@ export default function CollarTrackerTab() {
   const [filterCusto, setFilterCusto] = useState<CollarCusto | "Todos">("Todos");
   const [hideNegative, setHideNegative] = useState(false);
   const [onlyRiskFree, setOnlyRiskFree] = useState(false);
+  const [rankingMethod, setRankingMethod] = useState<RankingMethod>("score");
   const [selectedCollar, setSelectedCollar] = useState<(CollarResult & { familyName: string }) | null>(null);
   const [autoImportedMap, setAutoImportedMap] = useState<Map<string, Set<string>>>(new Map());
   const [cdiAnual, setCdiAnual] = useState<number>(() => {
@@ -728,13 +733,23 @@ export default function CollarTrackerTab() {
           const custoLiquidoPct = (custoCollar !== null && stockAsk !== null && stockAsk > 0)
             ? (custoCollar / stockAsk) * 100 : null;
 
+          // Proteção e Upside como % do ativo
+          const protecaoPct = (stockAsk !== null && stockAsk > 0) ? ((stockAsk - putStrike) / stockAsk) * 100 : null;
+          const upsidePct = (stockAsk !== null && stockAsk > 0) ? ((callStrike - stockAsk) / stockAsk) * 100 : null;
+
           // PER (Protection Efficiency Ratio)
           let per: number | null = null;
-          if (stockAsk !== null && stockAsk > 0) {
-            const downsideProtegido = stockAsk - putStrike;
-            per = (custoLiquidoPct !== null && Math.abs(custoLiquidoPct) > 0.01)
-              ? Math.abs(((downsideProtegido / stockAsk) * 100) / custoLiquidoPct)
-              : (custoLiquidoPct !== null && Math.abs(custoLiquidoPct) <= 0.01 ? Infinity : null);
+          if (protecaoPct !== null && custoLiquidoPct !== null) {
+            per = Math.abs(custoLiquidoPct) > 0.01
+              ? Math.abs(protecaoPct / custoLiquidoPct)
+              : (custoLiquidoPct <= 0.01 ? Infinity : null);
+          }
+
+          // Score Combinado (fórmula do comparador)
+          // 0.5*Proteção + 0.3*Upside - 0.2*Custo
+          let scoreCombinado = 0;
+          if (protecaoPct !== null && upsidePct !== null && custoLiquidoPct !== null) {
+            scoreCombinado = 0.5 * protecaoPct + 0.3 * upsidePct - 0.2 * custoLiquidoPct;
           }
 
           // Quality Score — fórmula combinada com pesos CDI
@@ -788,14 +803,28 @@ export default function CollarTrackerTab() {
             distPutPct, distCallPct, riskRewardRatio, qualityScore,
             isRiskFree,
             diffCdiBaixa, diffCdiAlta, per, custoLiquidoPct,
+            protecaoPct, upsidePct, scoreCombinado,
           });
         }
       }
 
-      results.sort((a, b) => b.qualityScore - a.qualityScore);
+      // Sort based on ranking method
+      results.sort((a, b) => {
+        switch (rankingMethod) {
+          case "custo":
+            return (a.custoCollar ?? 999) - (b.custoCollar ?? 999);
+          case "per":
+            return ((b.per === Infinity ? 9999 : b.per) ?? -1) - ((a.per === Infinity ? 9999 : a.per) ?? -1);
+          case "combinado":
+            return b.scoreCombinado - a.scoreCombinado;
+          case "score":
+          default:
+            return b.qualityScore - a.qualityScore;
+        }
+      });
       return results;
     },
-    [rows, vencimentoManual, cdiAnual, getStrikeAndExpiry, familyStockTickers]
+    [rows, vencimentoManual, cdiAnual, getStrikeAndExpiry, familyStockTickers, rankingMethod]
   );
 
   // Global best per family (memoized)
@@ -807,7 +836,14 @@ export default function CollarTrackerTab() {
       const best = collars.find((c) => c.rentAlta !== null && c.stockAsk !== null);
       if (best) bestPerFamily.push({ ...best, familyName: f.name });
     });
-    bestPerFamily.sort((a, b) => b.qualityScore - a.qualityScore);
+    bestPerFamily.sort((a, b) => {
+      switch (rankingMethod) {
+        case "custo": return (a.custoCollar ?? 999) - (b.custoCollar ?? 999);
+        case "per": return ((b.per === Infinity ? 9999 : b.per) ?? -1) - ((a.per === Infinity ? 9999 : a.per) ?? -1);
+        case "combinado": return b.scoreCombinado - a.scoreCombinado;
+        default: return b.qualityScore - a.qualityScore;
+      }
+    });
     return bestPerFamily.slice(0, 10);
   }, [families, calculateCollars]);
 
@@ -1300,6 +1336,41 @@ export default function CollarTrackerTab() {
         <p className="text-xs text-muted-foreground mt-2">
           📐 Zona ideal: PUT 5-15% abaixo · CALL 5-15% acima · Custo ≈ zero · Rent. &gt; CDI
         </p>
+
+        {/* MÉTODO DE RANKING */}
+        <div className="mt-4 pt-4 border-t border-border/50">
+          <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">
+            📊 Método de Ranking
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {([
+              { key: "score" as RankingMethod, label: "Quality Score", desc: "Fórmula CDI ponderada (5 componentes)" },
+              { key: "custo" as RankingMethod, label: "Custo Líquido", desc: "Menor custo = melhor proteção" },
+              { key: "per" as RankingMethod, label: "Eficiência (PER)", desc: "Proteção / Custo — maior = melhor" },
+              { key: "combinado" as RankingMethod, label: "Score Combinado", desc: "0.5×Proteção + 0.3×Upside – 0.2×Custo" },
+            ]).map((m) => (
+              <button
+                key={m.key}
+                onClick={() => setRankingMethod(m.key)}
+                title={m.desc}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-xs font-bold border transition-all",
+                  rankingMethod === m.key
+                    ? "bg-foreground text-background border-foreground"
+                    : "bg-background text-foreground border-border hover:border-foreground/50"
+                )}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-1.5">
+            {rankingMethod === "score" && "Quality Score (0-100): 30% Rent. Alta vs CDI · 25% Proteção · 20% Custo · 15% PER · 10% Estrutura"}
+            {rankingMethod === "custo" && "Custo Líquido = Prêmio Put – Prêmio Call · Menor valor = melhor (mais barato montar a proteção)"}
+            {rankingMethod === "per" && "PER = Proteção (%) / |Custo Líquido (%)| · Maior valor = mais proteção por unidade de custo"}
+            {rankingMethod === "combinado" && "Score = 0.5 × Proteção(%) + 0.3 × Upside(%) – 0.2 × Custo(%) · Maior valor = melhor equilíbrio"}
+          </p>
+        </div>
       </div>
 
       {/* VENCIMENTO */}
@@ -1480,12 +1551,24 @@ export default function CollarTrackerTab() {
                     <span className="text-muted-foreground">
                       CDI: <span className="font-bold text-warning">{formatPercent(collar.cdiPeriodo)}</span>
                     </span>
-                    <span className={cn("font-black px-1.5 py-0.5 rounded-full text-xs",
-                      collar.qualityScore >= 80 ? "bg-success/10 text-success" :
-                      collar.qualityScore >= 60 ? "bg-warning/10 text-warning" :
-                      "bg-muted text-muted-foreground")}>
-                      Score {collar.qualityScore}
-                    </span>
+                    {(() => {
+                      const activeScore = rankingMethod === "combinado" ? collar.scoreCombinado.toFixed(1)
+                        : rankingMethod === "per" ? (collar.per === Infinity ? "∞" : collar.per?.toFixed(1) ?? "—")
+                        : rankingMethod === "custo" ? formatBRL(collar.custoCollar)
+                        : collar.qualityScore;
+                      const label = rankingMethod === "combinado" ? "Comb."
+                        : rankingMethod === "per" ? "PER"
+                        : rankingMethod === "custo" ? "Custo"
+                        : "Score";
+                      return (
+                        <span className={cn("font-black px-1.5 py-0.5 rounded-full text-xs",
+                          collar.qualityScore >= 80 ? "bg-success/10 text-success" :
+                          collar.qualityScore >= 60 ? "bg-warning/10 text-warning" :
+                          "bg-muted text-muted-foreground")}>
+                          {label} {activeScore}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -1789,7 +1872,10 @@ export default function CollarTrackerTab() {
                           <th className="text-right py-2 px-2" title="Baixa vs CDI (pp)">↓ vs CDI</th>
                           <th className="text-right py-2 px-2" title="Alta vs CDI (pp)">↑ vs CDI</th>
                           <th className="text-right py-2 px-2" title="Protection Efficiency Ratio">PER</th>
-                          <th className="text-center py-2 px-1">Score</th>
+                          <th className="text-right py-2 px-2" title="Proteção downside (%)">Prot.%</th>
+                          <th className="text-right py-2 px-2" title="Upside permitido (%)">Ups.%</th>
+                          <th className="text-center py-2 px-1" title="Quality Score CDI ponderado">QS</th>
+                          <th className="text-center py-2 px-1" title="Score Combinado: 0.5×Prot + 0.3×Ups – 0.2×Custo">SC</th>
                           <th className="text-center py-2 px-2">Rating</th>
                         </tr>
                       </thead>
@@ -1839,11 +1925,20 @@ export default function CollarTrackerTab() {
                             <td className="py-2 px-2 text-right font-mono text-muted-foreground">
                               {c.per === null ? "—" : c.per === Infinity ? "∞" : c.per.toFixed(1)}
                             </td>
+                            <td className="py-2 px-2 text-right font-mono text-muted-foreground">
+                              {c.protecaoPct !== null ? `${c.protecaoPct.toFixed(1)}%` : "—"}
+                            </td>
+                            <td className="py-2 px-2 text-right font-mono text-muted-foreground">
+                              {c.upsidePct !== null ? `${c.upsidePct.toFixed(1)}%` : "—"}
+                            </td>
                             <td className="py-2 px-1 text-center">
                               <span className={cn("text-xs font-black px-1.5 py-0.5 rounded-full",
                                 c.qualityScore >= 80 ? "bg-success/10 text-success" :
                                 c.qualityScore >= 60 ? "bg-warning/10 text-warning" :
                                 "bg-muted text-muted-foreground")}>{c.qualityScore}</span>
+                            </td>
+                            <td className="py-2 px-1 text-center">
+                              <span className="text-xs font-bold text-muted-foreground">{c.scoreCombinado.toFixed(1)}</span>
                             </td>
                             <td className="py-2 px-2 text-center">
                               <span className="flex items-center justify-center gap-0.5">
