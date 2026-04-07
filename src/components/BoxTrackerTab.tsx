@@ -463,16 +463,18 @@ export default function BoxTracker() {
         const putBid = getPrice(putRow, "ofCompra");
         const putAsk = getPrice(putRow, "ofVenda");
 
-        // RTD PEX strike takes priority over ticker-parsed strike
+        // Strike priority: RTD PEX > B3 options DB > ticker-parsed
         const strikeRtdRaw = callRow?.strike ?? putRow?.strike ?? null;
         const strikeRtd = (strikeRtdRaw && strikeRtdRaw > 0) ? strikeRtdRaw : null;
-        const strikeReal = strikeRtd ?? tickerStrike;
+        const b3CallInfo = call ? getStrikeAndExpiry(call.symbol) : null;
+        const b3PutInfo = put ? getStrikeAndExpiry(put.symbol) : null;
+        const b3Strike = b3CallInfo?.strike ?? b3PutInfo?.strike ?? null;
+        const strikeReal = strikeRtd ?? ((b3Strike && b3Strike > 0) ? b3Strike : tickerStrike);
 
-        // Debug: log strike source for troubleshooting
-        if (call?.symbol || put?.symbol) {
-          console.log(`[BOX STRIKE DEBUG] ${call?.symbol ?? put?.symbol}: RTD PEX=${strikeRtdRaw}, tickerParsed=${tickerStrike}, using=${strikeReal} (source: ${strikeRtd ? 'RTD' : 'TICKER'})`);
-        }
-        const vencimento = callRow?.ven ?? putRow?.ven ?? null;
+        // Vencimento: RTD > B3 options DB > manual
+        const vencRtd = callRow?.ven ?? putRow?.ven ?? null;
+        const b3Venc = b3CallInfo?.vencimento ?? b3PutInfo?.vencimento ?? null;
+        const vencimento = vencRtd || b3Venc || null;
 
         // Custo = (Preço_Ação + Preço_Put) - Preço_Call
         let compraBox: number | null = null;
