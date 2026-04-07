@@ -17,7 +17,7 @@ export default function Footer() {
           contato@opcoesprox.com.br
         </a>
 
-        <p className="text-[10px] text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+        <p className="text-xs text-muted-foreground max-w-3xl mx-auto leading-relaxed">
           AVISO LEGAL: Este aplicativo é uma ferramenta de simulação algorítmica baseada nas regras da B3.
           Os dados apresentados não constituem recomendação de investimento. Verifique os dados com sua corretora antes de operar.
           © {new Date().getFullYear()} Opções PRO X. Todos os direitos reservados.

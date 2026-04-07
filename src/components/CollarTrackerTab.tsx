@@ -245,7 +245,7 @@ const CollarChartTooltip = ({ active, payload, label }: any) => {
   return (
     <div className="rounded-lg border border-border bg-card/95 p-3 shadow-xl backdrop-blur-sm">
       <div className="mb-2 border-b border-border/50 pb-1">
-        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Preço do Ativo</p>
+        <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Preço do Ativo</p>
         <p className="text-sm font-bold font-mono">R$ {Number(label).toFixed(2)}</p>
       </div>
       <div className="space-y-1.5">
@@ -255,7 +255,7 @@ const CollarChartTooltip = ({ active, payload, label }: any) => {
             <div key={i} className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
-                <span className="text-[11px] font-bold text-foreground/80">{p.name}</span>
+                <span className="text-xs font-bold text-foreground/80">{p.name}</span>
               </div>
               <span className={cn("text-xs font-black font-mono", p.value >= 0 ? "text-emerald-500" : "text-red-500")}>
                 R$ {Number(p.value).toFixed(2)}
@@ -643,7 +643,7 @@ export default function CollarTrackerTab() {
             </span>
             Rastreador de Collar
           </h1>
-          <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
+          <p className="text-xs md:text-xs text-muted-foreground mt-1">
             R↑ = (K_call − S₀ + P_call − P_put) / S₀ · R↓ = (K_put − S₀ + P_call − P_put) / S₀ · Custo = P_put − P_call
           </p>
         </div>
@@ -729,7 +729,7 @@ export default function CollarTrackerTab() {
         </h3>
         <div className="flex flex-wrap gap-3 items-center">
           <div className="flex items-center gap-2">
-            <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Tipo:</label>
+            <label className="text-xs text-muted-foreground uppercase tracking-wider">Tipo:</label>
             <select value={filterTipo} onChange={(e) => setFilterTipo(e.target.value as CollarTipo | "Todos")}
               className="bg-background border border-input rounded-lg px-2 py-1.5 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary">
               <option value="Todos">Todos</option>
@@ -739,7 +739,7 @@ export default function CollarTrackerTab() {
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Custo:</label>
+            <label className="text-xs text-muted-foreground uppercase tracking-wider">Custo:</label>
             <select value={filterCusto} onChange={(e) => setFilterCusto(e.target.value as CollarCusto | "Todos")}
               className="bg-background border border-input rounded-lg px-2 py-1.5 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary">
               <option value="Todos">Todos</option>
@@ -765,7 +765,7 @@ export default function CollarTrackerTab() {
             Só Risco Zero
           </button>
         </div>
-        <p className="text-[9px] text-muted-foreground mt-2">
+        <p className="text-xs text-muted-foreground mt-2">
           📐 Zona ideal: PUT 5-15% abaixo · CALL 5-15% acima · Custo ≈ zero · Rent. &gt; CDI
         </p>
       </div>
@@ -805,7 +805,7 @@ export default function CollarTrackerTab() {
           ) : (
             <div className="flex flex-wrap items-end gap-3">
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Selecione a data</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wider">Selecione a data</label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <button className={cn(
@@ -868,7 +868,7 @@ export default function CollarTrackerTab() {
                 {collar.isRiskFree && (
                   <div className="mb-3 flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 border border-emerald-400/50 animate-pulse">
                     <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-300">
+                    <span className="text-xs font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-300">
                       🛡️ Estrutura Risco Zero — Lucro em todos os cenários
                     </span>
                   </div>
@@ -880,12 +880,12 @@ export default function CollarTrackerTab() {
                   <span className="text-xs text-muted-foreground uppercase tracking-wider font-bold">
                     {i === 0 ? "🥇 Melhor Collar" : i === 1 ? "🥈 2º Melhor" : "🥉 3º Melhor"}
                   </span>
-                  <span className={cn("ml-auto text-[9px] uppercase tracking-widest font-black px-2 py-0.5 rounded-full",
+                  <span className={cn("ml-auto text-xs uppercase tracking-widest font-black px-2 py-0.5 rounded-full",
                     collar.tipo === "Normal" ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300" :
                     collar.tipo === "ATM" ? "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300" :
                     collar.tipo === "Baixa" ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300" :
                     "bg-muted text-muted-foreground")}>{collar.tipo}</span>
-                  <span className={cn("text-[9px] uppercase tracking-widest font-black px-2 py-0.5 rounded-full",
+                  <span className={cn("text-xs uppercase tracking-widest font-black px-2 py-0.5 rounded-full",
                     collar.custoTipo === "Crédito" ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300" :
                     collar.custoTipo === "Zero-Cost" ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300" :
                     "bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300")}>{collar.custoTipo}</span>
@@ -900,14 +900,14 @@ export default function CollarTrackerTab() {
                 {/* Call / Put row */}
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 px-3 py-2">
-                    <p className="text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase mb-0.5">V Call</p>
+                    <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase mb-0.5">V Call</p>
                     <p className="text-sm font-black text-foreground">{collar.callSymbol ?? "—"}</p>
-                    <p className="text-[10px] text-muted-foreground">Strike {formatBRL(collar.callStrike)} · Bid {formatBRL(collar.callBid)}</p>
+                    <p className="text-xs text-muted-foreground">Strike {formatBRL(collar.callStrike)} · Bid {formatBRL(collar.callBid)}</p>
                   </div>
                   <div className="rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 px-3 py-2">
-                    <p className="text-[9px] font-bold text-red-600 dark:text-red-400 uppercase mb-0.5">C Put</p>
+                    <p className="text-xs font-bold text-red-600 dark:text-red-400 uppercase mb-0.5">C Put</p>
                     <p className="text-sm font-black text-foreground">{collar.putSymbol ?? "—"}</p>
-                    <p className="text-[10px] text-muted-foreground">Strike {formatBRL(collar.putStrike)} · Ask {formatBRL(collar.putAsk)}</p>
+                    <p className="text-xs text-muted-foreground">Strike {formatBRL(collar.putStrike)} · Ask {formatBRL(collar.putAsk)}</p>
                   </div>
                 </div>
 
@@ -923,21 +923,21 @@ export default function CollarTrackerTab() {
                 <div className="grid grid-cols-3 gap-2 mb-3">
                   <div className="text-center rounded-lg border border-red-200 dark:border-red-800/40 bg-red-50/50 dark:bg-red-950/20 p-2">
                     <TrendingDown className="w-3.5 h-3.5 mx-auto text-red-500 mb-0.5" />
-                    <p className="text-[9px] text-red-600 dark:text-red-400 font-bold uppercase">Baixa</p>
+                    <p className="text-xs text-red-600 dark:text-red-400 font-bold uppercase">Baixa</p>
                     <p className={cn("text-sm font-black", (collar.rentBaixa ?? 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
                       {formatPercent(collar.rentBaixa)}
                     </p>
                   </div>
                   <div className="text-center rounded-lg border border-amber-200 dark:border-amber-800/40 bg-amber-50/50 dark:bg-amber-950/20 p-2">
                     <Minus className="w-3.5 h-3.5 mx-auto text-amber-500 mb-0.5" />
-                    <p className="text-[9px] text-amber-600 dark:text-amber-400 font-bold uppercase">Neutra</p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400 font-bold uppercase">Neutra</p>
                     <p className={cn("text-sm font-black", (collar.rentNeutra ?? 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
                       {formatPercent(collar.rentNeutra)}
                     </p>
                   </div>
                   <div className="text-center rounded-lg border border-emerald-200 dark:border-emerald-800/40 bg-emerald-50/50 dark:bg-emerald-950/20 p-2">
                     <TrendingUp className="w-3.5 h-3.5 mx-auto text-emerald-500 mb-0.5" />
-                    <p className="text-[9px] text-emerald-600 dark:text-emerald-400 font-bold uppercase">Alta</p>
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold uppercase">Alta</p>
                     <p className={cn("text-sm font-black", (collar.rentAlta ?? 0) >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400")}>
                       {formatPercent(collar.rentAlta)}
                     </p>
@@ -945,7 +945,7 @@ export default function CollarTrackerTab() {
                 </div>
 
                 {/* Bottom metrics */}
-                <div className="flex flex-wrap items-center gap-3 text-[10px]">
+                <div className="flex flex-wrap items-center gap-3 text-xs">
                   <span className="text-muted-foreground">
                     Meses: <span className="font-bold text-foreground">{calcMeses(collar.diasUteis)}</span>
                   </span>
@@ -958,7 +958,7 @@ export default function CollarTrackerTab() {
                   <span className="text-muted-foreground">
                     Call: <span className="font-bold">{collar.distCallPct !== null ? `+${formatPercent(collar.distCallPct)}` : "—"}</span>
                   </span>
-                  <span className={cn("font-black px-1.5 py-0.5 rounded-full text-[9px]",
+                  <span className={cn("font-black px-1.5 py-0.5 rounded-full text-xs",
                     collar.qualityScore >= 80 ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300" :
                     collar.qualityScore >= 60 ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300" :
                     "bg-muted text-muted-foreground")}>
@@ -1000,7 +1000,7 @@ export default function CollarTrackerTab() {
                   <h3 className="text-sm font-black text-foreground uppercase tracking-wider">
                     Gráfico Payoff — Collar {selectedCollar.familyName}
                   </h3>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {selectedCollar.callSymbol} (V Call) + {selectedCollar.putSymbol} (C Put) · Score: {selectedCollar.qualityScore}
                   </p>
                 </div>
@@ -1015,7 +1015,7 @@ export default function CollarTrackerTab() {
           {/* Metrics row */}
           <div className="px-5 py-3 grid grid-cols-2 sm:grid-cols-5 gap-3 border-b border-border/30 bg-muted/10">
             <div>
-              <p className="text-[9px] font-black uppercase text-muted-foreground flex items-center gap-1">
+              <p className="text-xs font-black uppercase text-muted-foreground flex items-center gap-1">
                 <TrendingUp className="h-3 w-3 text-emerald-500" /> Ganho Máx (Teto)
               </p>
               <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">
@@ -1023,7 +1023,7 @@ export default function CollarTrackerTab() {
               </p>
             </div>
             <div>
-              <p className="text-[9px] font-black uppercase text-muted-foreground flex items-center gap-1">
+              <p className="text-xs font-black uppercase text-muted-foreground flex items-center gap-1">
                 <TrendingDown className="h-3 w-3 text-red-500" /> Perda Máx (Piso)
               </p>
               <p className="text-sm font-black text-red-600 dark:text-red-400">
@@ -1031,17 +1031,17 @@ export default function CollarTrackerTab() {
               </p>
             </div>
             <div>
-              <p className="text-[9px] font-black uppercase text-muted-foreground">Custo Collar</p>
+              <p className="text-xs font-black uppercase text-muted-foreground">Custo Collar</p>
               <p className={cn("text-sm font-black", (selectedCollar.custoCollar ?? 0) <= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-orange-600 dark:text-orange-400")}>
                 {formatBRL(selectedCollar.custoCollar)}
               </p>
             </div>
             <div>
-              <p className="text-[9px] font-black uppercase text-muted-foreground">Breakeven</p>
+              <p className="text-xs font-black uppercase text-muted-foreground">Breakeven</p>
               <p className="text-sm font-black text-foreground">{selectedBreakeven ? formatBRL(selectedBreakeven) : "—"}</p>
             </div>
             <div>
-              <p className="text-[9px] font-black uppercase text-muted-foreground">CDI Período</p>
+              <p className="text-xs font-black uppercase text-muted-foreground">CDI Período</p>
               <p className="text-sm font-black text-amber-600 dark:text-amber-400">{formatPercent(selectedCollar.cdiPeriodo)}</p>
             </div>
           </div>
@@ -1276,7 +1276,7 @@ export default function CollarTrackerTab() {
                   <div className="flex flex-wrap gap-1.5">
                     {family.tickers.map((t) => (
                       <span key={t.id} className={cn(
-                        "inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border",
+                        "inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold border",
                         t.type === "CALL"
                           ? "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800/50 text-blue-700 dark:text-blue-300"
                           : "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-300"
@@ -1295,7 +1295,7 @@ export default function CollarTrackerTab() {
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs">
                       <thead>
-                        <tr className="border-b border-border text-[9px] uppercase tracking-wider text-muted-foreground">
+                        <tr className="border-b border-border text-xs uppercase tracking-wider text-muted-foreground">
                           <th className="text-center py-2 px-1">🛡️</th>
                           <th className="text-center py-2 px-1">Tipo</th>
                           <th className="text-left py-2 px-2">V Call</th>
@@ -1349,7 +1349,7 @@ export default function CollarTrackerTab() {
                             </td>
                             <td className="py-2 px-2 text-right text-amber-600 dark:text-amber-400">{formatPercent(c.cdiPeriodo)}</td>
                             <td className="py-2 px-1 text-center">
-                              <span className={cn("text-[9px] font-black px-1.5 py-0.5 rounded-full",
+                              <span className={cn("text-xs font-black px-1.5 py-0.5 rounded-full",
                                 c.qualityScore >= 80 ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300" :
                                 c.qualityScore >= 60 ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300" :
                                 "bg-muted text-muted-foreground")}>{c.qualityScore}</span>

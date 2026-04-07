@@ -234,7 +234,7 @@ export default function MetricsCards({ metrics, cdiReturn = 0, investedCapital =
                     </p>
                   )}
                   {item.badge && (
-                    <Badge className={cn('mt-2.5 text-[10px] font-black tracking-widest uppercase animate-pulse', t.badge)}>
+                    <Badge className={cn('mt-2.5 text-xs font-black tracking-widest uppercase animate-pulse', t.badge)}>
                       🛡️ {item.badge}
                     </Badge>
                   )}

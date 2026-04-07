@@ -301,7 +301,7 @@ export default function Portfolio() {
             </SelectContent>
           </Select>
           {(filterMonth !== 'all' || filterYear !== 'all') && (
-            <Button variant="ghost" size="sm" onClick={() => { setFilterMonth('all'); setFilterYear('all'); }} className="text-[10px] font-black uppercase">
+            <Button variant="ghost" size="sm" onClick={() => { setFilterMonth('all'); setFilterYear('all'); }} className="text-xs font-black uppercase">
               Limpar Filtros
             </Button>
           )}
@@ -312,7 +312,7 @@ export default function Portfolio() {
           <ProfessionalCard highlight={stats.totalPL >= 0}>
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Resultado Total</span>
+                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Resultado Total</span>
                 <div className={cn('p-2 rounded-lg', stats.totalPL >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive')}>
                   {stats.totalPL >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                 </div>
@@ -329,20 +329,20 @@ export default function Portfolio() {
           <ProfessionalCard>
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Capital Alocado</span>
+                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Capital Alocado</span>
                 <div className="p-2 rounded-lg bg-primary/10 text-primary"><Wallet className="h-4 w-4" /></div>
               </div>
               <p className="text-2xl font-black tracking-tighter text-foreground">
                 R$ {stats.totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
-              <p className="text-[9px] font-bold text-muted-foreground mt-2 uppercase">Total desembolsado</p>
+              <p className="text-xs font-bold text-muted-foreground mt-2 uppercase">Total desembolsado</p>
             </CardContent>
           </ProfessionalCard>
 
           <ProfessionalCard>
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Média por Op.</span>
+                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Média por Op.</span>
                 <div className={cn('p-2 rounded-lg', stats.avgProfit >= 0 ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive')}>
                   <BarChart3 className="h-4 w-4" />
                 </div>
@@ -350,14 +350,14 @@ export default function Portfolio() {
               <p className={cn('text-2xl font-black tracking-tighter', stats.avgProfit >= 0 ? 'text-success' : 'text-destructive')}>
                 R$ {stats.avgProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
-              <p className="text-[9px] font-bold text-muted-foreground mt-2 uppercase">Lucro médio por operação</p>
+              <p className="text-xs font-bold text-muted-foreground mt-2 uppercase">Lucro médio por operação</p>
             </CardContent>
           </ProfessionalCard>
 
           <ProfessionalCard>
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">vs CDI</span>
+                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">vs CDI</span>
                 <div className={cn('p-2 rounded-lg', stats.totalPL >= stats.totalCDI ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning')}>
                   <Percent className="h-4 w-4" />
                 </div>
@@ -365,7 +365,7 @@ export default function Portfolio() {
               <p className={cn('text-2xl font-black tracking-tighter', stats.totalPL >= stats.totalCDI ? 'text-success' : 'text-warning')}>
                 {stats.totalCDI > 0 ? `${((stats.totalPL / stats.totalCDI) * 100).toFixed(0)}%` : 'N/A'}
               </p>
-              <Badge variant="outline" className={cn('mt-2 text-[10px] font-black', stats.totalPL >= stats.totalCDI ? 'border-success/40 text-success' : 'border-warning/40 text-warning')}>
+              <Badge variant="outline" className={cn('mt-2 text-xs font-black', stats.totalPL >= stats.totalCDI ? 'border-success/40 text-success' : 'border-warning/40 text-warning')}>
                 CDI: R$ {stats.totalCDI.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </Badge>
             </CardContent>
@@ -374,16 +374,16 @@ export default function Portfolio() {
           <ProfessionalCard>
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Taxa de Acerto</span>
+                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Taxa de Acerto</span>
                 <div className="p-2 rounded-lg bg-primary/10 text-primary"><Target className="h-4 w-4" /></div>
               </div>
               <Badge className={cn('text-xl font-black px-4 py-2 rounded-full', parseFloat(stats.winRate) >= 50 ? 'bg-success text-success-foreground' : 'bg-destructive text-destructive-foreground')}>
                 {stats.winRate}%
               </Badge>
               <div className="flex items-center gap-2 mt-2">
-                <span className="text-[9px] font-bold text-success uppercase">{stats.wins}W</span>
+                <span className="text-xs font-bold text-success uppercase">{stats.wins}W</span>
                 <span className="text-muted-foreground">/</span>
-                <span className="text-[9px] font-bold text-destructive uppercase">{stats.losses}L</span>
+                <span className="text-xs font-bold text-destructive uppercase">{stats.losses}L</span>
               </div>
             </CardContent>
           </ProfessionalCard>
@@ -391,11 +391,11 @@ export default function Portfolio() {
           <ProfessionalCard>
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Operações</span>
+                <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Operações</span>
                 <div className="p-2 rounded-lg bg-muted text-muted-foreground"><Briefcase className="h-4 w-4" /></div>
               </div>
               <p className="text-2xl font-black tracking-tighter text-foreground">{stats.total}</p>
-              <p className="text-[9px] font-bold text-muted-foreground mt-2 uppercase">Estratégias encerradas</p>
+              <p className="text-xs font-bold text-muted-foreground mt-2 uppercase">Estratégias encerradas</p>
             </CardContent>
           </ProfessionalCard>
         </div>
@@ -480,12 +480,12 @@ export default function Portfolio() {
                         <div className="flex items-center gap-3 flex-wrap">
                           <p className="text-lg font-black tracking-tight truncate">{a.name}</p>
                           {a.underlying_asset && (
-                            <Badge variant="outline" className="text-[10px] border-primary/30 text-primary font-bold">
+                            <Badge variant="outline" className="text-xs border-primary/30 text-primary font-bold">
                               {a.underlying_asset}
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center gap-4 text-[11px] text-muted-foreground font-medium">
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground font-medium">
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
                             {new Date(a.created_at).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}
@@ -498,37 +498,37 @@ export default function Portfolio() {
                     {/* Metrics Section */}
                     <div className="grid grid-cols-5 gap-4 lg:gap-6 px-4 py-3 lg:py-0 rounded-xl bg-muted/30 lg:bg-transparent border border-border/50 lg:border-none">
                       <div className="text-center lg:text-right">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Investido</p>
+                        <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-1">Investido</p>
                         <p className={cn("text-sm font-bold font-mono", montage >= 0 ? "text-info" : "text-foreground")}>
                           R$ {Math.abs(montage).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </p>
                       </div>
                       <div className="text-center lg:text-right">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Saída</p>
+                        <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-1">Saída</p>
                         <p className="text-sm font-bold font-mono text-foreground">
                           R$ {Math.abs(exitValue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </p>
                       </div>
                       <div className="text-center lg:text-right">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Resultado</p>
+                        <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-1">Resultado</p>
                         <p className={cn('text-sm font-bold font-mono', pnl >= 0 ? 'text-success' : 'text-destructive')}>
                           {pnl >= 0 ? '+' : ''}R$ {pnl.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </p>
                       </div>
                       <div className="text-center lg:text-right">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">ROI</p>
+                        <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-1">ROI</p>
                         <Badge className={cn('font-black text-sm px-3 py-1 rounded-full shadow-lg', pnl >= 0 ? 'bg-success text-success-foreground shadow-success/30' : 'bg-destructive text-destructive-foreground shadow-destructive/30')}>
                           {roi >= 0 ? '+' : ''}{roi.toFixed(2)}%
                         </Badge>
                       </div>
                       <div className="text-center lg:text-right">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">vs CDI</p>
+                        <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-1">vs CDI</p>
                         {(() => {
                           const cdiReturn = getCDIForPeriod(a.created_at, a.closed_at, a.cdi_rate, invested);
                           const cdiPct = cdiReturn > 0 ? ((pnl / cdiReturn) * 100).toFixed(0) : 'N/A';
                           const beats = typeof cdiPct === 'string' ? false : pnl >= cdiReturn;
                           return (
-                            <Badge variant="outline" className={cn('font-black text-[11px] px-2 py-0.5', beats ? 'border-success/50 text-success bg-success/10' : 'border-warning/50 text-warning bg-warning/10')}>
+                            <Badge variant="outline" className={cn('font-black text-xs px-2 py-0.5', beats ? 'border-success/50 text-success bg-success/10' : 'border-warning/50 text-warning bg-warning/10')}>
                               {cdiPct === 'N/A' ? 'N/A' : `${cdiPct}% CDI`}
                             </Badge>
                           );

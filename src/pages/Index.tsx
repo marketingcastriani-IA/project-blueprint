@@ -146,7 +146,7 @@ export default function Index() {
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><Camera className="h-5 w-5 text-primary" /></div>
                 <h3 className="text-2xl font-black tracking-tight">OCR Inteligente</h3>
-                <Badge className="bg-primary/20 text-primary border-0 text-[10px] font-black">PRO</Badge>
+                <Badge className="bg-primary/20 text-primary border-0 text-xs font-black">PRO</Badge>
               </div>
               <p className="text-muted-foreground">Tire um print da corretora e a IA lê strikes, prêmios e quantidades em 2 segundos.</p>
             </div>
@@ -161,7 +161,7 @@ export default function Index() {
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><Bot className="h-5 w-5 text-primary" /></div>
                 <h3 className="text-2xl font-black tracking-tight">Análise com IA</h3>
-                <Badge className="bg-primary/20 text-primary border-0 text-[10px] font-black">PRO</Badge>
+                <Badge className="bg-primary/20 text-primary border-0 text-xs font-black">PRO</Badge>
               </div>
               <p className="text-muted-foreground">Relatório quantitativo com nota de atratividade, risco, cenários e sugestões da IA.</p>
             </div>
@@ -176,7 +176,7 @@ export default function Index() {
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><BarChart3 className="h-5 w-5 text-primary" /></div>
                 <h3 className="text-2xl font-black tracking-tight">Gráfico de Payoff</h3>
-                <Badge className="bg-muted text-muted-foreground border-0 text-[10px] font-black">FREE</Badge>
+                <Badge className="bg-muted text-muted-foreground border-0 text-xs font-black">FREE</Badge>
               </div>
               <p className="text-muted-foreground">Visualize lucro máximo, risco máximo, breakeven e métricas em tempo real.</p>
             </div>
@@ -191,7 +191,7 @@ export default function Index() {
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><PieChart className="h-5 w-5 text-primary" /></div>
                 <h3 className="text-2xl font-black tracking-tight">Comparativo CDI</h3>
-                <Badge className="bg-muted text-muted-foreground border-0 text-[10px] font-black">FREE</Badge>
+                <Badge className="bg-muted text-muted-foreground border-0 text-xs font-black">FREE</Badge>
               </div>
               <p className="text-muted-foreground">Compare sua estratégia contra o CDI e saiba se o risco vale a pena.</p>
             </div>
@@ -208,7 +208,7 @@ export default function Index() {
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><TrendingUp className="h-5 w-5 text-primary" /></div>
                 <h3 className="text-2xl font-black tracking-tight">Portfólio P&L</h3>
-                <Badge className="bg-primary/20 text-primary border-0 text-[10px] font-black">PRO</Badge>
+                <Badge className="bg-primary/20 text-primary border-0 text-xs font-black">PRO</Badge>
               </div>
               <p className="text-muted-foreground">Acompanhe P&L consolidado, ROI total e taxa de acerto das suas operações.</p>
             </div>
@@ -223,7 +223,7 @@ export default function Index() {
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><PieChart className="h-5 w-5 text-primary" /></div>
                 <h3 className="text-2xl font-black tracking-tight">Diversificador</h3>
-                <Badge className="bg-primary/20 text-primary border-0 text-[10px] font-black">PRO</Badge>
+                <Badge className="bg-primary/20 text-primary border-0 text-xs font-black">PRO</Badge>
               </div>
               <p className="text-muted-foreground">Gerencie a alocação do seu patrimônio entre estratégias com balanceamento automático e controle de risco.</p>
             </div>
@@ -240,7 +240,7 @@ export default function Index() {
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><Brain className="h-5 w-5 text-primary" /></div>
                 <h3 className="text-2xl font-black tracking-tight">Manual de Estratégias</h3>
-                <Badge className="bg-muted text-muted-foreground border-0 text-[10px] font-black">FREE</Badge>
+                <Badge className="bg-muted text-muted-foreground border-0 text-xs font-black">FREE</Badge>
               </div>
               <p className="text-muted-foreground">Aprenda 9+ estratégias de opções com exemplos reais, gráficos de payoff, gregas e tabela comparativa completa.</p>
             </div>
@@ -262,7 +262,7 @@ export default function Index() {
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-red-500/20 flex items-center justify-center"><Radio className="h-5 w-5 text-red-500" /></div>
                 <h3 className="text-2xl font-black tracking-tight">Estrutura em Tempo Real</h3>
-                <Badge className="bg-red-500/20 text-red-500 border-0 text-[10px] font-black animate-pulse">🔴 AO VIVO</Badge>
+                <Badge className="bg-red-500/20 text-red-500 border-0 text-xs font-black animate-pulse">🔴 AO VIVO</Badge>
               </div>
               <p className="text-muted-foreground">Conecte ao Profit Pro via RTD Bridge e acompanhe suas operações com preços ao vivo, P&L em tempo real e encerramento direto pelo app.</p>
             </div>
@@ -280,8 +280,8 @@ export default function Index() {
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><Shield className="h-5 w-5 text-primary" /></div>
                 <h3 className="text-2xl font-black tracking-tight">Rastreador de Box</h3>
-                <Badge className="bg-red-500/20 text-red-500 border-0 text-[10px] font-black animate-pulse">🔴 AO VIVO</Badge>
-                <Badge className="bg-primary/20 text-primary border-0 text-[10px] font-black">PRO</Badge>
+                <Badge className="bg-red-500/20 text-red-500 border-0 text-xs font-black animate-pulse">🔴 AO VIVO</Badge>
+                <Badge className="bg-primary/20 text-primary border-0 text-xs font-black">PRO</Badge>
               </div>
               <p className="text-muted-foreground">Rastreie automaticamente os melhores boxes da B3 em tempo real. Ranking com troféus 3D, % do CDI e instruções de montagem passo a passo.</p>
             </div>
@@ -296,7 +296,7 @@ export default function Index() {
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><Calculator className="h-5 w-5 text-primary" /></div>
                 <h3 className="text-2xl font-black tracking-tight">Calculadora CDI × Opções</h3>
-                <Badge className="bg-primary/20 text-primary border-0 text-[10px] font-black">NOVO</Badge>
+                <Badge className="bg-primary/20 text-primary border-0 text-xs font-black">NOVO</Badge>
               </div>
               <p className="text-muted-foreground">Compare o rendimento de qualquer estratégia com a renda fixa. Simule capital, prazo e taxa para saber se o risco vale a pena.</p>
             </div>
@@ -451,7 +451,7 @@ export default function Index() {
               )}
             >
               Anual
-              <Badge className="absolute -top-2 -right-2 bg-success text-success-foreground text-[9px] font-black px-1.5 py-0.5">-{annualDiscountPercent}%</Badge>
+              <Badge className="absolute -top-2 -right-2 bg-success text-success-foreground text-xs font-black px-1.5 py-0.5">-{annualDiscountPercent}%</Badge>
             </button>
           </div>
         </div>
@@ -464,7 +464,7 @@ export default function Index() {
               <h3 className="text-2xl font-black tracking-tight">FREE</h3>
               <p className="text-4xl font-black tracking-tighter">R$ 0<span className="text-sm text-muted-foreground font-medium">/mês</span></p>
               <p className="text-sm text-primary font-bold">✨ 7 dias com acesso TOTAL</p>
-              <p className="text-[10px] text-muted-foreground">* Após o trial, apenas recursos básicos ficam disponíveis.</p>
+              <p className="text-xs text-muted-foreground">* Após o trial, apenas recursos básicos ficam disponíveis.</p>
             </div>
             <ul className="space-y-3">
               <PricingItem included label="7 dias grátis — acesso completo" highlight />

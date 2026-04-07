@@ -281,7 +281,7 @@ export default function ImageUpload({ onLegsExtracted, onImageChange, onClear }:
               className="w-full rounded-lg border border-border/40"
               style={{ maxHeight: '340px' }}
             />
-            <p className="text-[11px] text-muted-foreground leading-snug">
+            <p className="text-xs text-muted-foreground leading-snug">
               Abra sua corretora, selecione a estrutura e pressione <strong className="text-foreground">Print Screen</strong> ou <strong className="text-foreground">CTRL+V</strong> para colar aqui.
             </p>
           </CardContent>

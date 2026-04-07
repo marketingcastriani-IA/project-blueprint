@@ -47,7 +47,7 @@ const CustomTooltip = ({ active, payload, label, displayMode, legs, daysToExpiry
     return (
       <div className="rounded-lg border border-border bg-card/95 p-3 shadow-xl backdrop-blur-sm">
         <div className="mb-2 border-b border-border/50 pb-1">
-          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Preço do Ativo</p>
+          <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Preço do Ativo</p>
           <p className="text-sm font-bold font-mono">R$ {label.toFixed(2)}</p>
         </div>
         <div className="space-y-1.5">
@@ -57,7 +57,7 @@ const CustomTooltip = ({ active, payload, label, displayMode, legs, daysToExpiry
               <div key={i} className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
-                  <span className="text-[11px] font-bold text-foreground/80">{p.name}</span>
+                  <span className="text-xs font-bold text-foreground/80">{p.name}</span>
                 </div>
                 <span className={cn("text-xs font-black font-mono", p.value >= 0 ? "text-success" : "text-destructive")}>
                   {format(p.value)}
@@ -68,10 +68,10 @@ const CustomTooltip = ({ active, payload, label, displayMode, legs, daysToExpiry
         </div>
         {greeks && (
           <div className="mt-2 pt-2 border-t border-border/50 grid grid-cols-2 gap-x-4 gap-y-1">
-            <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">Δ Delta</span><span className="text-[10px] font-mono font-bold">{greeks.delta}</span></div>
-            <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">Γ Gamma</span><span className="text-[10px] font-mono font-bold">{greeks.gamma}</span></div>
-            <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">Θ Theta</span><span className="text-[10px] font-mono font-bold">{greeks.theta}</span></div>
-            <div className="flex justify-between"><span className="text-[10px] text-muted-foreground">ν Vega</span><span className="text-[10px] font-mono font-bold">{greeks.vega}</span></div>
+            <div className="flex justify-between"><span className="text-xs text-muted-foreground">Δ Delta</span><span className="text-xs font-mono font-bold">{greeks.delta}</span></div>
+            <div className="flex justify-between"><span className="text-xs text-muted-foreground">Γ Gamma</span><span className="text-xs font-mono font-bold">{greeks.gamma}</span></div>
+            <div className="flex justify-between"><span className="text-xs text-muted-foreground">Θ Theta</span><span className="text-xs font-mono font-bold">{greeks.theta}</span></div>
+            <div className="flex justify-between"><span className="text-xs text-muted-foreground">ν Vega</span><span className="text-xs font-mono font-bold">{greeks.vega}</span></div>
           </div>
         )}
       </div>
@@ -144,26 +144,26 @@ export default function PayoffChart({
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="p-3 rounded-xl bg-muted/30 border border-border/50">
-          <p className="text-[10px] font-black uppercase text-muted-foreground mb-1 flex items-center gap-1">
+          <p className="text-xs font-black uppercase text-muted-foreground mb-1 flex items-center gap-1">
             <TrendingUp className="h-3 w-3 text-success" /> Lucro Máx.
           </p>
           <p className="text-sm font-bold text-success">{formatVal(maxGain)}</p>
         </div>
         <div className="p-3 rounded-xl bg-muted/30 border border-border/50">
-          <p className="text-[10px] font-black uppercase text-muted-foreground mb-1 flex items-center gap-1">
+          <p className="text-xs font-black uppercase text-muted-foreground mb-1 flex items-center gap-1">
             <TrendingDown className="h-3 w-3 text-destructive" /> Risco Máx.
           </p>
           <p className="text-sm font-bold text-destructive">{formatVal(maxLoss)}</p>
         </div>
         <div className="p-3 rounded-xl bg-muted/30 border border-border/50">
-          <p className="text-[10px] font-black uppercase text-muted-foreground mb-1 flex items-center gap-1">
+          <p className="text-xs font-black uppercase text-muted-foreground mb-1 flex items-center gap-1">
             <Target className="h-3 w-3 text-warning" /> Breakeven
           </p>
           <p className="text-sm font-bold">{breakevens.length > 0 ? `R$ ${breakevens[0].toFixed(2)}` : 'N/A'}</p>
         </div>
         <div className="flex items-center justify-end gap-1">
-          <Button variant={displayMode === 'value' ? 'default' : 'outline'} size="sm" className="h-8 px-3 text-[10px] font-bold" onClick={() => setDisplayMode('value')}><DollarSign className="h-3 w-3 mr-1" /> VALOR</Button>
-          <Button variant={displayMode === 'percent' ? 'default' : 'outline'} size="sm" className="h-8 px-3 text-[10px] font-bold" onClick={() => setDisplayMode('percent')}><Percent className="h-3 w-3 mr-1" /> % ROI</Button>
+          <Button variant={displayMode === 'value' ? 'default' : 'outline'} size="sm" className="h-8 px-3 text-xs font-bold" onClick={() => setDisplayMode('value')}><DollarSign className="h-3 w-3 mr-1" /> VALOR</Button>
+          <Button variant={displayMode === 'percent' ? 'default' : 'outline'} size="sm" className="h-8 px-3 text-xs font-bold" onClick={() => setDisplayMode('percent')}><Percent className="h-3 w-3 mr-1" /> % ROI</Button>
         </div>
       </div>
 

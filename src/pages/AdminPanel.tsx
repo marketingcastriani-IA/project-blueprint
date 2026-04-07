@@ -112,28 +112,28 @@ function MetricsPanel({ users, proPrice }: { users: UserRow[]; proPrice: number 
           <CardContent className="p-5 text-center space-y-1">
             <DollarSign className="h-6 w-6 mx-auto text-success" />
             <p className="text-2xl font-black text-success">R$ {mrr.toFixed(2)}</p>
-            <p className="text-[10px] font-black uppercase text-muted-foreground">MRR Estimado</p>
+            <p className="text-xs font-black uppercase text-muted-foreground">MRR Estimado</p>
           </CardContent>
         </Card>
         <Card className="border-primary/30">
           <CardContent className="p-5 text-center space-y-1">
             <TrendingUp className="h-6 w-6 mx-auto text-primary" />
             <p className="text-2xl font-black text-primary">{conversionRate}%</p>
-            <p className="text-[10px] font-black uppercase text-muted-foreground">Conversão Trial→PRO</p>
+            <p className="text-xs font-black uppercase text-muted-foreground">Conversão Trial→PRO</p>
           </CardContent>
         </Card>
         <Card className="border-destructive/30">
           <CardContent className="p-5 text-center space-y-1">
             <AlertTriangle className="h-6 w-6 mx-auto text-destructive" />
             <p className="text-2xl font-black text-destructive">{churnRate}%</p>
-            <p className="text-[10px] font-black uppercase text-muted-foreground">Churn Rate</p>
+            <p className="text-xs font-black uppercase text-muted-foreground">Churn Rate</p>
           </CardContent>
         </Card>
         <Card className="border-primary/30">
           <CardContent className="p-5 text-center space-y-1">
             <Activity className="h-6 w-6 mx-auto text-primary" />
             <p className="text-2xl font-black">{avgSimsPerUser}</p>
-            <p className="text-[10px] font-black uppercase text-muted-foreground">Simulações / Usuário</p>
+            <p className="text-xs font-black uppercase text-muted-foreground">Simulações / Usuário</p>
           </CardContent>
         </Card>
       </div>
@@ -203,14 +203,14 @@ function MetricsPanel({ users, proPrice }: { users: UserRow[]; proPrice: number 
                 return (
                   <div key={u.user_id} className="flex items-center justify-between p-2 rounded-lg border border-border/30 bg-muted/10">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <Badge variant={u.plan_type === 'pro' ? 'default' : 'outline'} className={cn("text-[9px]", u.plan_type === 'pro' && 'bg-primary')}>
+                      <Badge variant={u.plan_type === 'pro' ? 'default' : 'outline'} className={cn("text-xs", u.plan_type === 'pro' && 'bg-primary')}>
                         {u.plan_type.toUpperCase()}
                       </Badge>
                       <span className="text-sm font-bold truncate">{u.display_name}</span>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <Badge variant="secondary" className="text-[10px] font-bold">{count} análises</Badge>
-                      <Badge variant="secondary" className="text-[10px] font-bold">{u.simulations_count} sims</Badge>
+                      <Badge variant="secondary" className="text-xs font-bold">{count} análises</Badge>
+                      <Badge variant="secondary" className="text-xs font-bold">{u.simulations_count} sims</Badge>
                     </div>
                   </div>
                 );
@@ -633,27 +633,27 @@ export default function AdminPanel() {
           <Card className="p-4 text-center space-y-1">
             <Users className="h-5 w-5 mx-auto text-muted-foreground" />
             <p className="text-2xl font-black">{stats.total}</p>
-            <p className="text-[10px] font-bold uppercase text-muted-foreground">Usuários</p>
+            <p className="text-xs font-bold uppercase text-muted-foreground">Usuários</p>
           </Card>
           <Card className="p-4 text-center space-y-1 border-primary/30">
             <Crown className="h-5 w-5 mx-auto text-primary" />
             <p className="text-2xl font-black text-primary">{stats.pro}</p>
-            <p className="text-[10px] font-bold uppercase text-muted-foreground">Planos PRO</p>
+            <p className="text-xs font-bold uppercase text-muted-foreground">Planos PRO</p>
           </Card>
           <Card className="p-4 text-center space-y-1 border-warning/30">
             <Clock className="h-5 w-5 mx-auto text-warning" />
             <p className="text-2xl font-black text-warning">{stats.pending}</p>
-            <p className="text-[10px] font-bold uppercase text-muted-foreground">Pendentes</p>
+            <p className="text-xs font-bold uppercase text-muted-foreground">Pendentes</p>
           </Card>
           <Card className="p-4 text-center space-y-1 border-destructive/30">
             <AlertTriangle className="h-5 w-5 mx-auto text-destructive" />
             <p className="text-2xl font-black text-destructive">{stats.expired}</p>
-            <p className="text-[10px] font-bold uppercase text-muted-foreground">Vencidos</p>
+            <p className="text-xs font-bold uppercase text-muted-foreground">Vencidos</p>
           </Card>
           <Card className="p-4 text-center space-y-1">
             <TrendingUp className="h-5 w-5 mx-auto text-success" />
             <p className="text-2xl font-black">{stats.totalSims}</p>
-            <p className="text-[10px] font-bold uppercase text-muted-foreground">Simulações</p>
+            <p className="text-xs font-bold uppercase text-muted-foreground">Simulações</p>
           </Card>
         </div>
 
@@ -708,7 +708,7 @@ export default function AdminPanel() {
             <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/50 bg-card p-3">
               <p className="text-xs font-bold text-muted-foreground mr-1">📧 Email em massa:</p>
               {EMAIL_TEMPLATE_OPTIONS.map(t => (
-                <Button key={t.value} size="sm" variant="outline" onClick={() => openBulkEmailForFiltered(t.value)} className={cn("h-8 px-3 text-[10px] font-bold", t.color)}>
+                <Button key={t.value} size="sm" variant="outline" onClick={() => openBulkEmailForFiltered(t.value)} className={cn("h-8 px-3 text-xs font-bold", t.color)}>
                   {t.icon} {t.label}
                 </Button>
               ))}
@@ -735,14 +735,14 @@ export default function AdminPanel() {
                             {u.plan_type.toUpperCase()}
                           </Badge>
                           <Badge variant="secondary" className={cn(
-                            "text-[10px] font-black",
+                            "text-xs font-black",
                             u.status === 'approved' ? "text-success bg-success/10" : u.status === 'rejected' ? "text-destructive bg-destructive/10" : "text-warning bg-warning/10"
                           )}>
                             {u.status.toUpperCase()}
                           </Badge>
                           {daysRemaining !== null && (
                             <Badge variant="outline" className={cn(
-                              "text-[10px] font-black",
+                              "text-xs font-black",
                               isExpired ? "text-destructive border-destructive/40 bg-destructive/10" : isExpiringSoon ? "text-warning border-warning/40 bg-warning/10" : "text-success border-success/40 bg-success/10"
                             )}>
                               {isExpired ? `Vencido há ${Math.abs(daysRemaining)} dias` : `${daysRemaining} dias restantes`}
@@ -753,31 +753,31 @@ export default function AdminPanel() {
                           <Mail className="h-3 w-3" />
                           {u.email}
                         </div>
-                        <p className="text-[10px] font-mono text-muted-foreground/60 truncate max-w-[200px]">ID: {u.user_id}</p>
+                        <p className="text-xs font-mono text-muted-foreground/60 truncate max-w-[200px]">ID: {u.user_id}</p>
                         <div className="flex gap-3 pt-2 flex-wrap">
-                          <Badge variant="secondary" className="text-[10px] font-bold">
+                          <Badge variant="secondary" className="text-xs font-bold">
                             {u.simulations_count} Simulações
                           </Badge>
-                          <Badge variant="outline" className="text-[10px] font-bold text-muted-foreground gap-1">
+                          <Badge variant="outline" className="text-xs font-bold text-muted-foreground gap-1">
                             <Calendar className="h-3 w-3" />
                             Cadastro: {new Date(u.created_at).toLocaleDateString('pt-BR')}
                           </Badge>
                           {u.purchased_at && (
-                            <Badge variant="outline" className="text-[10px] font-bold text-primary border-primary/30 bg-primary/10 gap-1">
+                            <Badge variant="outline" className="text-xs font-bold text-primary border-primary/30 bg-primary/10 gap-1">
                               <ShoppingCart className="h-3 w-3" />
                               Compra: {new Date(u.purchased_at).toLocaleDateString('pt-BR')}
                             </Badge>
                           )}
                           {u.expires_at && (
                             <Badge variant="outline" className={cn(
-                              "text-[10px] font-bold gap-1",
+                              "text-xs font-bold gap-1",
                               isExpired ? "text-destructive border-destructive/30" : "text-success border-success/30"
                             )}>
                               <Clock className="h-3 w-3" />
                               {isExpired ? 'Venceu' : 'Vence'}: {new Date(u.expires_at).toLocaleDateString('pt-BR')}
                             </Badge>
                           )}
-                          <Badge variant="outline" className="text-[10px] font-bold text-muted-foreground/60 gap-1">
+                          <Badge variant="outline" className="text-xs font-bold text-muted-foreground/60 gap-1">
                             Atualizado: {new Date(u.updated_at).toLocaleDateString('pt-BR')}
                           </Badge>
                         </div>
@@ -786,7 +786,7 @@ export default function AdminPanel() {
 
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 border-t border-border/40 pt-4">
                       <div className="space-y-1.5">
-                        <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                        <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
                           <ShoppingCart className="h-3 w-3" /> Data da Compra
                         </Label>
                         <div className="flex gap-2">
@@ -799,7 +799,7 @@ export default function AdminPanel() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-9 px-3 text-[10px] font-black text-primary border-primary/30 hover:bg-primary/10"
+                            className="h-9 px-3 text-xs font-black text-primary border-primary/30 hover:bg-primary/10"
                             disabled={actionLoading === u.user_id}
                             onClick={() => {
                               const val = editingPurchaseDate[u.user_id] ?? (u.purchased_at ? new Date(u.purchased_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
@@ -809,11 +809,11 @@ export default function AdminPanel() {
                             <Save className="h-3 w-3" />
                           </Button>
                         </div>
-                        <p className="text-[9px] text-muted-foreground">Salvar registra compra + 1 mês de validade</p>
+                        <p className="text-xs text-muted-foreground">Salvar registra compra + 1 mês de validade</p>
                       </div>
 
                       <div className="space-y-1.5">
-                        <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
+                        <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
                           <CalendarClock className="h-3 w-3" /> Data de Vencimento
                         </Label>
                         <div className="flex gap-2">
@@ -826,7 +826,7 @@ export default function AdminPanel() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-9 px-3 text-[10px] font-black text-primary border-primary/30 hover:bg-primary/10"
+                            className="h-9 px-3 text-xs font-black text-primary border-primary/30 hover:bg-primary/10"
                             disabled={actionLoading === u.user_id}
                             onClick={() => {
                               const val = editingExpiry[u.user_id] ?? (u.expires_at ? new Date(u.expires_at).toISOString().split('T')[0] : '');
@@ -839,7 +839,7 @@ export default function AdminPanel() {
                       </div>
 
                       <div className="space-y-1.5">
-                        <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Alterar Plano</Label>
+                        <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Alterar Plano</Label>
                         <Select value={u.plan_type} onValueChange={(v) => updatePlan(u.user_id, v)}>
                           <SelectTrigger className="h-9 text-xs font-bold">
                             <SelectValue />
@@ -852,18 +852,18 @@ export default function AdminPanel() {
                       </div>
 
                       <div className="space-y-1.5">
-                        <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Ações Rápidas</Label>
+                        <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Ações Rápidas</Label>
                         <div className="flex gap-2 flex-wrap">
                           {u.status === 'pending' || u.status === 'rejected' ? (
-                            <Button size="sm" variant="outline" onClick={() => updateStatus(u.user_id, 'approved')} className="h-9 px-3 text-[10px] font-bold text-success border-success/30 hover:bg-success/10">
+                            <Button size="sm" variant="outline" onClick={() => updateStatus(u.user_id, 'approved')} className="h-9 px-3 text-xs font-bold text-success border-success/30 hover:bg-success/10">
                               <CheckCircle2 className="h-3 w-3 mr-1" /> APROVAR
                             </Button>
                           ) : (
-                            <Button size="sm" variant="outline" onClick={() => updateStatus(u.user_id, 'rejected')} className="h-9 px-3 text-[10px] font-bold text-destructive border-destructive/30 hover:bg-destructive/10">
+                            <Button size="sm" variant="outline" onClick={() => updateStatus(u.user_id, 'rejected')} className="h-9 px-3 text-xs font-bold text-destructive border-destructive/30 hover:bg-destructive/10">
                               <Ban className="h-3 w-3 mr-1" /> BLOQUEAR
                             </Button>
                           )}
-                          <Button size="sm" variant="outline" onClick={() => resetSimulations(u.user_id)} className="h-9 px-3 text-[10px] font-bold hover:bg-primary/10">
+                          <Button size="sm" variant="outline" onClick={() => resetSimulations(u.user_id)} className="h-9 px-3 text-xs font-bold hover:bg-primary/10">
                             <RotateCcw className="h-3 w-3 mr-1" /> RESET
                           </Button>
                         </div>
@@ -872,12 +872,12 @@ export default function AdminPanel() {
 
                     {/* Email actions row */}
                     <div className="border-t border-border/40 pt-4">
-                      <Label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1 mb-2">
+                      <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1 mb-2">
                         <Send className="h-3 w-3" /> Enviar Email para {u.display_name}
                       </Label>
                       <div className="flex gap-2 flex-wrap">
                         {EMAIL_TEMPLATE_OPTIONS.map(t => (
-                          <Button key={t.value} size="sm" variant="outline" onClick={() => openEmailForUser(u, t.value)} className={cn("h-8 px-3 text-[10px] font-bold", t.color)}>
+                          <Button key={t.value} size="sm" variant="outline" onClick={() => openEmailForUser(u, t.value)} className={cn("h-8 px-3 text-xs font-bold", t.color)}>
                             {t.icon} {t.label}
                           </Button>
                         ))}
@@ -1076,7 +1076,7 @@ export default function AdminPanel() {
                         setEmailSubject(data.subject);
                         setEmailBody(data.body);
                       }}
-                      className={cn("px-2.5 py-1 rounded-md border text-[10px] font-bold transition-all", t.color)}
+                      className={cn("px-2.5 py-1 rounded-md border text-xs font-bold transition-all", t.color)}
                     >
                       {t.icon} {t.label}
                     </button>

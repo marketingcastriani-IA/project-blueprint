@@ -64,7 +64,7 @@ function InlineDatePicker({ date, onChange }: { date?: Date; onChange: (date?: D
         <Button
           variant="outline"
           className={cn(
-            "h-7 w-full justify-center text-[10px] px-1.5",
+            "h-7 w-full justify-center text-xs px-1.5",
             isEmpty
               ? "border border-muted-foreground/30 text-muted-foreground"
               : "border-success/50 text-success font-bold bg-success/10",
@@ -385,7 +385,7 @@ export default function DadosAoVivo() {
             <StatusIcon className={cn("w-3 h-3", status === "connecting" && "animate-spin", status === "connected" && "animate-pulse")} />
             {cfg.label}
             {status === "connected" && rows.size > 0 && (
-              <span className="text-[10px] opacity-70">· {rows.size} ticker{rows.size > 1 ? "s" : ""}</span>
+              <span className="text-xs opacity-70">· {rows.size} ticker{rows.size > 1 ? "s" : ""}</span>
             )}
           </Badge>
         </div>
@@ -668,14 +668,14 @@ export default function DadosAoVivo() {
                         )}
                         {/* Invested value in header */}
                         <div className="text-right shrink-0">
-                          <span className="text-[10px] text-muted-foreground block">Investido</span>
+                          <span className="text-xs text-muted-foreground block">Investido</span>
                           <span className="text-foreground font-bold text-sm font-mono">
                             R$<span className="text-lg">{Math.abs(op.investido).toFixed(2)}</span>
                           </span>
                         </div>
                       </div>
                       <div className="flex items-center justify-between mt-1">
-                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                        <span className="text-xs text-muted-foreground uppercase tracking-wider">
                           {op.underlying_asset || op.legs?.[0]?.asset || '—'}
                         </span>
                         {op.temDadoVivo && (
@@ -695,7 +695,7 @@ export default function DadosAoVivo() {
                       <div className="grid grid-cols-2 gap-3">
                         {/* Lucro */}
                         <div>
-                          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Lucro Atual</span>
+                          <span className="text-xs text-muted-foreground uppercase tracking-wider">Lucro Atual</span>
                           <div className={cn(
                             "text-xl font-extrabold font-mono mt-0.5",
                             isProfit ? "text-success" : isLoss ? "text-destructive" : "text-foreground"
@@ -710,7 +710,7 @@ export default function DadosAoVivo() {
                         </div>
                         {/* % Lucro */}
                         <div>
-                          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">% Lucro Hoje</span>
+                          <span className="text-xs text-muted-foreground uppercase tracking-wider">% Lucro Hoje</span>
                           <div className="mt-0.5">
                             {op.temDadoVivo ? (
                               <span className={cn(
@@ -731,7 +731,7 @@ export default function DadosAoVivo() {
                         {/* CDI comparison */}
                         {op.temDadoVivo && op.cdiReturn > 0 && (
                           <div className="col-span-2">
-                            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">vs CDI ({op.bizDays} dias úteis)</span>
+                            <span className="text-xs text-muted-foreground uppercase tracking-wider">vs CDI ({op.bizDays} dias úteis)</span>
                             <div className="mt-0.5">
                               <span className={cn(
                                 "inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-sm font-bold font-mono",
@@ -740,7 +740,7 @@ export default function DadosAoVivo() {
                                   : "bg-warning/15 text-warning"
                               )}>
                                 {op.cdiPct >= 100 ? '▲' : '▼'} {op.cdiPct.toFixed(0)}% do CDI
-                                <span className="text-[10px] font-normal opacity-70 ml-1">
+                                <span className="text-xs font-normal opacity-70 ml-1">
                                   (CDI: R${op.cdiReturn.toFixed(2)})
                                 </span>
                               </span>
@@ -752,15 +752,15 @@ export default function DadosAoVivo() {
                       {/* Legs badge + live indicator */}
                       <div className="flex items-center justify-between pt-1 border-t border-border/50">
                         <div className="flex items-center gap-2">
-                          <Badge className="bg-warning/90 text-warning-foreground font-bold text-[10px] px-2">
+                          <Badge className="bg-warning/90 text-warning-foreground font-bold text-xs px-2">
                             {op.legs?.length || 0} perna{(op.legs?.length || 0) > 1 ? 's' : ''}
                           </Badge>
                           {op.temDadoVivo ? (
-                            <span className="flex items-center gap-1 text-[10px] text-success font-medium">
+                            <span className="flex items-center gap-1 text-xs text-success font-medium">
                               <Activity className="w-3 h-3 animate-pulse" /> Ao Vivo
                             </span>
                           ) : (
-                            <span className="text-[10px] text-muted-foreground">Offline</span>
+                            <span className="text-xs text-muted-foreground">Offline</span>
                           )}
                         </div>
                         <Button

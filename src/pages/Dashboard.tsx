@@ -134,7 +134,7 @@ function PortfolioSummary({ userId }: { userId: string }) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="border-border/40 bg-card/80">
           <CardContent className="py-3 px-4">
-            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Resultado Total</p>
+            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Resultado Total</p>
             <p className={cn("text-xl font-black tracking-tighter", stats.totalPL >= 0 ? "text-success" : "text-destructive")}>
               R$ {stats.totalPL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </p>
@@ -142,7 +142,7 @@ function PortfolioSummary({ userId }: { userId: string }) {
         </Card>
         <Card className="border-border/40 bg-card/80">
           <CardContent className="py-3 px-4">
-            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">ROI Consolidado</p>
+            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">ROI Consolidado</p>
             <p className={cn("text-xl font-black tracking-tighter", stats.roi >= 0 ? "text-success" : "text-destructive")}>
               {stats.roi >= 0 ? '+' : ''}{stats.roi.toFixed(2)}%
             </p>
@@ -150,16 +150,16 @@ function PortfolioSummary({ userId }: { userId: string }) {
         </Card>
         <Card className="border-border/40 bg-card/80">
           <CardContent className="py-3 px-4">
-            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Operações</p>
+            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Operações</p>
             <div className="flex items-baseline gap-2">
               <p className="text-xl font-black tracking-tighter text-foreground">{stats.openCount + stats.closedCount}</p>
-              <span className="text-[10px] text-muted-foreground font-bold">{stats.openCount} abertas · {stats.closedCount} fechadas</span>
+              <span className="text-xs text-muted-foreground font-bold">{stats.openCount} abertas · {stats.closedCount} fechadas</span>
             </div>
           </CardContent>
         </Card>
         <Card className="border-border/40 bg-card/80">
           <CardContent className="py-3 px-4">
-            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Taxa de Acerto</p>
+            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Taxa de Acerto</p>
             <p className={cn("text-xl font-black tracking-tighter", stats.winRate >= 50 ? "text-success" : "text-warning")}>
               {stats.winRate.toFixed(0)}%
             </p>
@@ -427,7 +427,7 @@ export default function Dashboard() {
               onClick={() => navigate('/settings')} 
               size="sm"
               className={cn(
-                "shrink-0 font-black uppercase tracking-widest text-[10px] sm:text-xs",
+                "shrink-0 font-black uppercase tracking-widest text-xs sm:text-xs",
                 isLimitReached || access.daysRemaining <= 2
                   ? "bg-white text-destructive hover:bg-white/90 shadow-lg animate-pulse"
                   : "bg-black text-yellow-400 hover:bg-black/80 shadow-lg"
@@ -456,7 +456,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-base sm:text-lg font-black uppercase tracking-tight text-foreground flex items-center gap-2">
                   Calculadora CDI × Opções
-                  <Badge className="bg-yellow-400 text-black font-black text-[9px] border-0 animate-pulse">NOVO</Badge>
+                  <Badge className="bg-yellow-400 text-black font-black text-xs border-0 animate-pulse">NOVO</Badge>
                 </p>
                 <p className="text-xs sm:text-sm text-muted-foreground font-medium">
                   Compare o rendimento da renda fixa com sua estrutura — com ou sem IR
@@ -548,7 +548,7 @@ export default function Dashboard() {
                     <p className="text-xs font-medium leading-relaxed">
                       Nossa IA analisa sua estrutura, calcula a eficiência vs CDI e fornece um relatório detalhado de riscos, cenários de mercado e um veredito profissional.
                     </p>
-                    <p className="text-[10px] font-black text-success uppercase tracking-widest">
+                    <p className="text-xs font-black text-success uppercase tracking-widest">
                       Aperte aqui e descubra os segredos da sua estrutura!
                     </p>
                   </div>
@@ -594,7 +594,7 @@ export default function Dashboard() {
                 <Label className="flex items-center gap-2 text-sm font-bold">
                   Nome da análise
                   {legs.length > 0 && !hasManuallyNamed && (
-                    <Badge variant="outline" className="text-[9px] border-primary/30 text-primary animate-pulse">
+                    <Badge variant="outline" className="text-xs border-primary/30 text-primary animate-pulse">
                       <Wand2 className="h-2 w-2 mr-1" /> Auto
                     </Badge>
                   )}
@@ -619,7 +619,7 @@ export default function Dashboard() {
                   onChange={e => setEntryDate(e.target.value)}
                   className="font-black text-base h-14 border-2 border-primary/50 bg-background/80 hover:border-primary transition-all cursor-pointer"
                 />
-                <p className="text-[10px] sm:text-xs text-primary/70 leading-relaxed">
+                <p className="text-xs sm:text-xs text-primary/70 leading-relaxed">
                   Informe a <span className="font-black text-primary">data de entrada correta</span> para que o cálculo do CDI reflita o período exato da operação.
                 </p>
               </div>
@@ -650,7 +650,7 @@ export default function Dashboard() {
                         <Camera className="h-8 w-8" />
                       </div>
                       <div className="space-y-1">
-                        <Badge className="bg-primary text-primary-foreground text-[10px] font-black px-2">IA POWERED</Badge>
+                        <Badge className="bg-primary text-primary-foreground text-xs font-black px-2">IA POWERED</Badge>
                         <h3 className="text-2xl font-black tracking-tight flex items-center gap-2">
                           Upload de Imagem
                         </h3>
@@ -672,7 +672,7 @@ export default function Dashboard() {
                         <Keyboard className="h-8 w-8" />
                       </div>
                       <div className="space-y-1">
-                        <Badge variant="outline" className="text-[10px] font-bold px-2">PRECISO</Badge>
+                        <Badge variant="outline" className="text-xs font-bold px-2">PRECISO</Badge>
                         <h3 className="text-2xl font-black tracking-tight">Entrada Manual</h3>
                       </div>
                     </div>

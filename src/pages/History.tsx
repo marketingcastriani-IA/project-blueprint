@@ -242,24 +242,24 @@ export default function History() {
             <div className="flex items-center gap-1.5 flex-1 min-w-0">
               <span className="font-extrabold text-base text-primary-foreground truncate tracking-tight">{a.name}</span>
               {m?.isRiskFree && (
-                <Badge className="text-[9px] font-black bg-success/20 text-success border-success/40 gap-0.5 px-1.5">
+                <Badge className="text-xs font-black bg-success/20 text-success border-success/40 gap-0.5 px-1.5">
                   <ShieldCheck className="h-2.5 w-2.5" /> Zero
                 </Badge>
               )}
             </div>
             <div className="text-right shrink-0">
-              <span className="text-[10px] text-primary-foreground/60 block">Investido</span>
+              <span className="text-xs text-primary-foreground/60 block">Investido</span>
               <span className="text-primary-foreground font-bold text-sm font-mono">
                 R$<span className="text-lg">{Math.abs(investido).toFixed(2)}</span>
               </span>
             </div>
           </div>
           <div className="flex items-center justify-between mt-1">
-            <span className="text-[10px] text-primary-foreground/60 uppercase tracking-wider">
+            <span className="text-xs text-primary-foreground/60 uppercase tracking-wider">
               {a.underlying_asset || legs[0]?.asset || '—'}
             </span>
             {a.expiry_date && (
-              <span className="text-[10px] text-primary-foreground/70">
+              <span className="text-xs text-primary-foreground/70">
                 Venc: {(() => {
                   const [y, mo, d] = a.expiry_date!.split('-').map(Number);
                   return new Date(y, mo - 1, d).toLocaleDateString('pt-BR');
@@ -274,7 +274,7 @@ export default function History() {
           <div className="grid grid-cols-2 gap-3">
             {/* Lucro Máx */}
             <div>
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Lucro Máximo</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">Lucro Máximo</span>
               <div className={cn("text-xl font-extrabold font-mono mt-0.5", m && (m.maxGain === 'Ilimitado' || (typeof m.maxGain === 'number' && m.maxGain > 0)) ? "text-success" : "text-foreground")}>
                 {m ? (
                   <>
@@ -286,7 +286,7 @@ export default function History() {
             </div>
             {/* Risco */}
             <div>
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Risco Máximo</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">Risco Máximo</span>
               <div className="mt-0.5">
                 {m ? (
                   <span className={cn(
@@ -307,7 +307,7 @@ export default function History() {
           {/* CDI comparison */}
           {cdiReturn > 0 && (
             <div>
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">vs CDI ({bizDays} dias úteis)</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">vs CDI ({bizDays} dias úteis)</span>
               <div className="mt-0.5">
                 <span className={cn(
                   "inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-sm font-bold font-mono",
@@ -316,7 +316,7 @@ export default function History() {
                     : "bg-warning/15 text-warning"
                 )}>
                   {cdiEfficiency != null && cdiEfficiency >= 100 ? '▲' : '▼'} {cdiEfficiency ?? 0}% do CDI
-                  <span className="text-[10px] font-normal opacity-70 ml-1">
+                  <span className="text-xs font-normal opacity-70 ml-1">
                     (CDI: R${cdiReturn.toFixed(2)})
                   </span>
                 </span>
@@ -327,7 +327,7 @@ export default function History() {
           {/* Breakevens */}
           {m && m.breakevens.length > 0 && (
             <div>
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+              <span className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1">
                 <Target className="h-3 w-3" /> Breakeven
               </span>
               <p className="text-sm font-bold text-foreground mt-0.5">
@@ -339,11 +339,11 @@ export default function History() {
           {/* Footer: legs badge + actions */}
           <div className="flex items-center justify-between pt-1 border-t border-border/50">
             <div className="flex items-center gap-2">
-              <Badge className="bg-warning/90 text-warning-foreground font-bold text-[10px] px-2">
+              <Badge className="bg-warning/90 text-warning-foreground font-bold text-xs px-2">
                 {legs.length} perna{legs.length > 1 ? 's' : ''}
               </Badge>
               {m?.strategyLabel && (
-              <Badge variant="outline" className="text-[10px] border-primary/30 !text-black dark:!text-white font-bold bg-primary/10">
+              <Badge variant="outline" className="text-xs border-primary/30 !text-black dark:!text-white font-bold bg-primary/10">
                   {m.strategyLabel}
                 </Badge>
               )}
@@ -398,15 +398,15 @@ export default function History() {
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="text-base font-bold tracking-tight">{a.name}</p>
                 {a.underlying_asset && (
-                  <Badge variant="outline" className="text-[10px] border-muted-foreground/30 text-muted-foreground font-bold">
+                  <Badge variant="outline" className="text-xs border-muted-foreground/30 text-muted-foreground font-bold">
                     {a.underlying_asset}
                   </Badge>
                 )}
-                <Badge className="text-[10px] font-black uppercase tracking-widest bg-muted text-muted-foreground">
+                <Badge className="text-xs font-black uppercase tracking-widest bg-muted text-muted-foreground">
                   Encerrada
                 </Badge>
               </div>
-              <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
+              <div className="flex items-center gap-4 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Clock className="h-3 w-3" />
                   {new Date(a.created_at).toLocaleDateString('pt-BR')}
@@ -512,7 +512,7 @@ export default function History() {
               </SelectContent>
             </Select>
             {(filterMonth !== 'all' || filterYear !== 'all' || searchQuery) && (
-              <Button variant="ghost" size="sm" onClick={() => { setFilterMonth('all'); setFilterYear('all'); setSearchQuery(''); }} className="text-[10px] font-black uppercase">
+              <Button variant="ghost" size="sm" onClick={() => { setFilterMonth('all'); setFilterYear('all'); setSearchQuery(''); }} className="text-xs font-black uppercase">
                 Limpar Filtros
               </Button>
             )}

@@ -136,11 +136,11 @@ export default function Settings() {
           <CardContent className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
-                <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Simulações Realizadas</p>
+                <p className="text-xs font-black uppercase text-muted-foreground mb-1">Simulações Realizadas</p>
                 <p className="text-2xl font-black">{access.simulationsCount}</p>
               </div>
               <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
-                <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Status da Assinatura</p>
+                <p className="text-xs font-black uppercase text-muted-foreground mb-1">Status da Assinatura</p>
                 <p className="text-2xl font-black">{access.planType === 'pro' ? 'PRO' : 'FREE'}</p>
                 {access.planType === 'free' && access.daysRemaining !== null && (
                   <p className={cn("text-sm font-bold mt-1", access.daysRemaining <= 2 ? "text-destructive" : "text-warning")}>
@@ -178,7 +178,7 @@ export default function Settings() {
                     )}
                   >
                     Anual
-                    <Badge className="absolute -top-2 -right-2 bg-success text-success-foreground text-[9px] font-black px-1.5 py-0.5">-{annualDiscountPercent}%</Badge>
+                    <Badge className="absolute -top-2 -right-2 bg-success text-success-foreground text-xs font-black px-1.5 py-0.5">-{annualDiscountPercent}%</Badge>
                   </button>
                 </div>
 
@@ -326,7 +326,7 @@ export default function Settings() {
                 </Button>
               </div>
             </div>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+            <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">
               Tempo médio de resposta: 24 horas úteis.
             </p>
           </CardContent>

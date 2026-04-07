@@ -652,9 +652,9 @@ function StrategyCard({ strategy }: { strategy: Strategy }) {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-muted/50 border-b border-border/40">
-                      <th className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-widest">Greek</th>
-                      <th className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-widest">Sinal</th>
-                      <th className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-widest">Impacto</th>
+                      <th className="px-3 py-2 text-left text-xs font-black uppercase tracking-widest">Greek</th>
+                      <th className="px-3 py-2 text-left text-xs font-black uppercase tracking-widest">Sinal</th>
+                      <th className="px-3 py-2 text-left text-xs font-black uppercase tracking-widest">Impacto</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -699,7 +699,7 @@ function StrategyCard({ strategy }: { strategy: Strategy }) {
               <div className="rounded-xl overflow-hidden border border-border/30 bg-background">
                 <img src={strategy.payoffImage} alt={`Payoff ${strategy.title}`} className="w-full h-auto" loading="lazy" />
               </div>
-              <p className="text-[10px] text-muted-foreground mt-2 text-center">Resultado líquido no vencimento em função do preço do ativo-objeto.</p>
+              <p className="text-xs text-muted-foreground mt-2 text-center">Resultado líquido no vencimento em função do preço do ativo-objeto.</p>
             </AccordionContent>
           </AccordionItem>
 
@@ -756,13 +756,13 @@ export default function Manual() {
             <table className="w-full text-sm min-w-[700px]">
               <thead>
                 <tr className="border-b-2 border-primary/20 bg-primary/5">
-                  <th className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-widest">Estratégia</th>
-                  <th className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-widest">Direção</th>
-                  <th className="px-3 py-2 text-center text-[10px] font-black uppercase tracking-widest">Vega</th>
-                  <th className="px-3 py-2 text-center text-[10px] font-black uppercase tracking-widest">Theta</th>
-                  <th className="px-3 py-2 text-center text-[10px] font-black uppercase tracking-widest">Delta</th>
-                  <th className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-widest">Complexidade</th>
-                  <th className="px-3 py-2 text-left text-[10px] font-black uppercase tracking-widest">Risco Máx.</th>
+                  <th className="px-3 py-2 text-left text-xs font-black uppercase tracking-widest">Estratégia</th>
+                  <th className="px-3 py-2 text-left text-xs font-black uppercase tracking-widest">Direção</th>
+                  <th className="px-3 py-2 text-center text-xs font-black uppercase tracking-widest">Vega</th>
+                  <th className="px-3 py-2 text-center text-xs font-black uppercase tracking-widest">Theta</th>
+                  <th className="px-3 py-2 text-center text-xs font-black uppercase tracking-widest">Delta</th>
+                  <th className="px-3 py-2 text-left text-xs font-black uppercase tracking-widest">Complexidade</th>
+                  <th className="px-3 py-2 text-left text-xs font-black uppercase tracking-widest">Risco Máx.</th>
                 </tr>
               </thead>
               <tbody>
@@ -774,7 +774,7 @@ export default function Manual() {
                     <td className={cn("px-3 py-2 text-center font-bold", row.theta.includes('+') ? 'text-success' : row.theta.includes('–') ? 'text-destructive' : 'text-muted-foreground')}>{row.theta}</td>
                     <td className={cn("px-3 py-2 text-center font-bold", row.delta.includes('+') ? 'text-success' : row.delta.includes('–') ? 'text-destructive' : 'text-muted-foreground')}>{row.delta}</td>
                     <td className="px-3 py-2">
-                      <Badge variant="outline" className={cn("text-[10px]",
+                      <Badge variant="outline" className={cn("text-xs",
                         row.complexity === 'Baixa' ? 'border-success/30 text-success' :
                         row.complexity === 'Média' ? 'border-warning/30 text-warning' :
                         'border-destructive/30 text-destructive'

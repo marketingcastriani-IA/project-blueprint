@@ -123,11 +123,11 @@ export default function AIInsights({ analysis, loading = false, isRiskFree = fal
               <Progress value={(analysis.score || 0) * 10} className="h-4 bg-primary/10" />
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <div className="rounded-xl bg-muted/30 p-3 border border-border/50">
-                  <p className="text-[9px] font-black uppercase text-muted-foreground mb-1">Risco</p>
+                  <p className="text-xs font-black uppercase text-muted-foreground mb-1">Risco</p>
                   <p className={cn("text-sm font-black", riskColors[analysis.risk_level])}>{analysis.risk_level || 'N/A'}</p>
                 </div>
                 <div className="rounded-xl bg-muted/30 p-3 border border-border/50">
-                  <p className="text-[9px] font-black uppercase text-muted-foreground mb-1">Sucesso</p>
+                  <p className="text-xs font-black uppercase text-muted-foreground mb-1">Sucesso</p>
                   <p className="text-sm font-black">{analysis.probability_success || 'N/A'}</p>
                 </div>
               </div>
