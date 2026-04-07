@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { PayoffPoint, Leg } from '@/lib/types';
-import { calculatePayoffAtExpiry, calculateOptionPrice } from '@/lib/payoff';
+import { calculatePayoffAtExpiry, calculateOptionPrice, calculateCDIReturn } from '@/lib/payoff';
 import {
   ComposedChart,
   Line,
@@ -20,6 +20,9 @@ interface PayoffHeatmapProps {
   currentSpotPrice?: number | null;
   legs?: Leg[];
   daysToExpiry?: number;
+  cdiRate?: number;
+  netCost?: number;
+  montageTotal?: number;
 }
 
 const TIME_SLICES = [
@@ -77,8 +80,12 @@ export default function PayoffHeatmap({
   currentSpotPrice,
   legs,
   daysToExpiry = 30,
+  cdiRate = 0,
+  netCost = 0,
+  montageTotal,
 }: PayoffHeatmapProps) {
   const hasLegs = legs && legs.length > 0;
+  const investedCapital = Math.max(Math.abs(montageTotal ?? netCost ?? 0), 1);
 
   const chartData = useMemo(() => {
     if (data.length === 0) return [];
@@ -127,9 +134,14 @@ export default function PayoffHeatmap({
       point['profitArea'] = expiryProfit >= 0 ? expiryProfit : 0;
       point['lossArea'] = expiryProfit < 0 ? expiryProfit : 0;
 
+      // CDI line
+      if (cdiRate > 0 && daysToExpiry > 0) {
+        point['cdiLine'] = calculateCDIReturn(investedCapital, cdiRate, daysToExpiry, false);
+      }
+
       return point;
     });
-  }, [data, legs, daysToExpiry, hasLegs]);
+  }, [data, legs, daysToExpiry, hasLegs, cdiRate, investedCapital]);
 
   if (data.length === 0) {
     return (
@@ -203,13 +215,13 @@ export default function PayoffHeatmap({
             )}
           />
 
-          {/* Zero line */}
+          {/* Zero line — bold dark */}
           <ReferenceLine
             y={0}
-            stroke="hsl(var(--muted-foreground))"
-            strokeDasharray="6 3"
-            strokeOpacity={0.4}
-            strokeWidth={1.5}
+            stroke="hsl(var(--foreground))"
+            strokeOpacity={0.7}
+            strokeWidth={2.5}
+            label={{ value: 'ZERO', position: 'insideRight', fill: 'hsl(var(--foreground))', fontSize: 9, fontWeight: 900, opacity: 0.5 }}
           />
 
           {/* Breakeven lines */}
@@ -278,6 +290,19 @@ export default function PayoffHeatmap({
               isAnimationActive={false}
             />
           ))}
+
+          {/* CDI line — prominent */}
+          {cdiRate > 0 && daysToExpiry > 0 && (
+            <Line
+              name="── CDI ──"
+              type="monotone"
+              dataKey="cdiLine"
+              stroke="hsl(45, 95%, 55%)"
+              strokeWidth={2.5}
+              dot={false}
+              isAnimationActive={false}
+            />
+          )}
         </ComposedChart>
       </ResponsiveContainer>
     </div>
