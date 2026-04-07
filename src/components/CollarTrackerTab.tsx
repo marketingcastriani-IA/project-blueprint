@@ -720,17 +720,60 @@ export default function CollarTrackerTab() {
           const isRiskFree = rentAlta !== null && rentBaixa !== null && rentNeutra !== null
             && rentBaixa >= -0.01 && rentNeutra >= -0.01 && rentAlta >= -0.01;
 
-          let qualityScore = 50;
+          // CDI comparison metrics
+          const diffCdiBaixa = (rentBaixa !== null && cdiPeriodo !== null) ? rentBaixa - cdiPeriodo : null;
+          const diffCdiAlta = (rentAlta !== null && cdiPeriodo !== null) ? rentAlta - cdiPeriodo : null;
+
+          // Custo líquido como % do ativo
+          const custoLiquidoPct = (custoCollar !== null && stockAsk !== null && stockAsk > 0)
+            ? (custoCollar / stockAsk) * 100 : null;
+
+          // PER (Protection Efficiency Ratio)
+          let per: number | null = null;
+          if (stockAsk !== null && stockAsk > 0) {
+            const downsideProtegido = stockAsk - putStrike;
+            per = (custoLiquidoPct !== null && Math.abs(custoLiquidoPct) > 0.01)
+              ? Math.abs(((downsideProtegido / stockAsk) * 100) / custoLiquidoPct)
+              : (custoLiquidoPct !== null && Math.abs(custoLiquidoPct) <= 0.01 ? Infinity : null);
+          }
+
+          // Quality Score — fórmula combinada com pesos CDI
+          // w1=0.30 rentAlta vs CDI | w2=0.25 proteção (risco zero) | w3=0.20 custo | w4=0.15 PER | w5=0.10 estrutura
+          let qualityScore = 0;
           if (rentAlta !== null && rentBaixa !== null && cdiPeriodo !== null) {
-            if (isRiskFree) qualityScore += 30;
-            if (rentAlta > cdiPeriodo) qualityScore += 20;
-            if (rentBaixa > cdiPeriodo) qualityScore += 15;
-            if (custoTipo === "Zero-Cost") qualityScore += 10;
-            if (custoTipo === "Crédito") qualityScore += 15;
-            if (distPutPct !== null && distPutPct >= -15 && distPutPct <= -5) qualityScore += 10;
-            if (distCallPct !== null && distCallPct >= 5 && distCallPct <= 15) qualityScore += 10;
-            if (!isRiskFree && rentBaixa < -10) qualityScore -= 20;
-            if (riskRewardRatio !== null && riskRewardRatio > 2) qualityScore += 5;
+            // Componente 1: Rent. Alta vs CDI (0-30 pts)
+            const altaVsCdi = diffCdiAlta ?? 0;
+            const comp1 = altaVsCdi > 0
+              ? Math.min(30, 15 + altaVsCdi * 3)  // acima CDI: 15-30
+              : Math.max(0, 15 + altaVsCdi * 3);   // abaixo CDI: 0-15
+
+            // Componente 2: Proteção / Risco Zero (0-25 pts)
+            let comp2 = 0;
+            if (isRiskFree) comp2 = 25;
+            else if (rentBaixa >= 0) comp2 = 20;
+            else if (diffCdiBaixa !== null && diffCdiBaixa >= -2) comp2 = 15;
+            else if (diffCdiBaixa !== null && diffCdiBaixa >= -5) comp2 = 8;
+            else comp2 = 0;
+
+            // Componente 3: Custo do collar (0-20 pts)
+            let comp3 = 10; // base
+            if (custoTipo === "Crédito") comp3 = 20;
+            else if (custoTipo === "Zero-Cost") comp3 = 15;
+            else if (custoLiquidoPct !== null) {
+              comp3 = Math.max(0, 10 - Math.abs(custoLiquidoPct) * 2);
+            }
+
+            // Componente 4: PER (0-15 pts)
+            let comp4 = 0;
+            if (per === Infinity) comp4 = 15;
+            else if (per !== null) comp4 = Math.min(15, per * 3);
+
+            // Componente 5: Estrutura / distância strikes (0-10 pts)
+            let comp5 = 5; // base
+            if (distPutPct !== null && distPutPct >= -15 && distPutPct <= -3) comp5 += 2.5;
+            if (distCallPct !== null && distCallPct >= 3 && distCallPct <= 15) comp5 += 2.5;
+
+            qualityScore = Math.round(comp1 + comp2 + comp3 + comp4 + comp5);
           }
           qualityScore = Math.max(0, Math.min(100, qualityScore));
 
@@ -744,6 +787,7 @@ export default function CollarTrackerTab() {
             rating, tipo, custoTipo,
             distPutPct, distCallPct, riskRewardRatio, qualityScore,
             isRiskFree,
+            diffCdiBaixa, diffCdiAlta, per, custoLiquidoPct,
           });
         }
       }
