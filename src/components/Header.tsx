@@ -8,6 +8,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import InstallAppButton from '@/components/InstallAppButton';
 
 export default function Header() {
   const { signOut, user } = useAuth();
