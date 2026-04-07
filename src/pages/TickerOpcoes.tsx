@@ -164,9 +164,11 @@ export default function TickerOpcoes() {
   const displayed = filtered.slice(0, 200);
 
   // ─── BOX OPPORTUNITIES ─────────────────────────────────────
+  // Uses RTD BID/ASK when available (same logic as Box Tracker):
+  // Custo = (Stock ASK + Put ASK) - Call BID
+  // Lucro = Strike - Custo
   const boxOpportunities = useMemo(() => {
     if (selectedFamily === "all" || precoBaseNum <= 0) return [];
-    // Group filtered options by strike+vencimento
     const groups = new Map<string, { calls: B3Option[]; puts: B3Option[] }>();
     filtered.forEach((o) => {
       const key = `${o.strike}|${o.vencimento}`;
@@ -176,6 +178,10 @@ export default function TickerOpcoes() {
       else g.puts.push(o);
     });
 
+    // Stock price: prefer ASK from RTD, fallback to precoBaseNum
+    const stockRow = stockTicker ? rows.get(stockTicker) : null;
+    const stockAsk = stockRow?.ofVenda ?? stockRow?.ultimo ?? precoBaseNum;
+
     const opportunities: Array<{
       strike: number;
       vencimento: string;
@@ -184,25 +190,54 @@ export default function TickerOpcoes() {
       custo: number;
       lucro: number;
       lucroPct: number;
+      stockPrice: number;
+      callPrice: number;
+      putPrice: number;
+      isLive: boolean;
     }> = [];
 
     groups.forEach((g) => {
       if (g.calls.length === 0 || g.puts.length === 0) return;
       const call = g.calls[0];
       const put = g.puts[0];
-      if (call.precoUltimo <= 0 || put.precoUltimo <= 0) return;
-      // Custo Box = (Preço Ação + Preço Put) - Preço Call
-      const custo = (precoBaseNum + put.precoUltimo) - call.precoUltimo;
+
+      // RTD prices: Call BID (selling), Put ASK (buying)
+      const callRow = rows.get(call.ticker);
+      const putRow = rows.get(put.ticker);
+      const callBid = callRow?.ofCompra ?? null;
+      const putAsk = putRow?.ofVenda ?? null;
+      const isLive = callBid !== null && callBid > 0 && putAsk !== null && putAsk > 0 && stockAsk > 0;
+
+      const callPrice = isLive ? callBid! : call.precoUltimo;
+      const putPrice = isLive ? putAsk! : put.precoUltimo;
+      const usedStock = isLive ? stockAsk : precoBaseNum;
+
+      if (callPrice <= 0 || putPrice <= 0) return;
+
+      const custo = (usedStock + putPrice) - callPrice;
       if (custo <= 0) return;
       const lucro = call.strike - custo;
       const lucroPct = (lucro / custo) * 100;
       if (lucro > 0) {
-        opportunities.push({ strike: call.strike, vencimento: call.vencimento, call, put, custo, lucro, lucroPct });
+        opportunities.push({
+          strike: call.strike, vencimento: call.vencimento,
+          call, put, custo, lucro, lucroPct,
+          stockPrice: usedStock, callPrice, putPrice, isLive,
+        });
       }
     });
 
     return opportunities.sort((a, b) => b.lucroPct - a.lucroPct).slice(0, 10);
-  }, [filtered, selectedFamily, precoBaseNum]);
+  }, [filtered, selectedFamily, precoBaseNum, rows, stockTicker]);
+
+  // Subscribe opportunity option tickers to RTD for live BID/ASK
+  useEffect(() => {
+    if (status !== "connected" || boxOpportunities.length === 0) return;
+    for (const opp of boxOpportunities) {
+      addTicker(opp.call.ticker);
+      addTicker(opp.put.ticker);
+    }
+  }, [boxOpportunities, status, addTicker]);
 
   const toggleRow = useCallback((ticker: string) => {
     setSelectedRows((prev) => {
