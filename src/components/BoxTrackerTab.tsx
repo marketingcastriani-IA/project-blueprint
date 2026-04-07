@@ -95,6 +95,7 @@ interface StockFamily {
 interface SavedFamily {
   name: string;
   tickers: string[];
+  autoImported?: string[];
 }
 
 // ─── CONSTANTES ──────────────────────────────────────────────
