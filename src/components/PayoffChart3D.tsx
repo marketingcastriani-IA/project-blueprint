@@ -1,6 +1,6 @@
-import { useMemo, useRef, useState } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Text, Environment, ContactShadows, Float } from '@react-three/drei';
+import { useMemo, useRef } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Text, Environment, ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 import { PayoffPoint } from '@/lib/types';
 import { Leg } from '@/lib/types';
@@ -13,65 +13,45 @@ interface PayoffChart3DProps {
   daysToExpiry?: number;
 }
 
-// Smooth color gradient: deep blue → cyan → green → yellow → red
+/* ─── Color mapping ─── */
 function profitToColor(profit: number, maxAbs: number): [number, number, number] {
-  const t = Math.max(-1, Math.min(1, profit / maxAbs)); // -1 to 1
-  
-  if (t > 0.5) {
-    // Strong profit: bright green → gold
-    const s = (t - 0.5) * 2;
-    return [0.2 + s * 0.6, 0.85 - s * 0.15, 0.15 - s * 0.1];
-  } else if (t > 0) {
-    // Mild profit: teal → green
-    const s = t * 2;
-    return [0.05, 0.45 + s * 0.4, 0.55 - s * 0.4];
-  } else if (t > -0.5) {
-    // Mild loss: blue → purple
-    const s = Math.abs(t) * 2;
-    return [0.15 + s * 0.3, 0.15 + s * 0.05, 0.5 + s * 0.2];
-  } else {
-    // Strong loss: purple → deep red
-    const s = (Math.abs(t) - 0.5) * 2;
-    return [0.45 + s * 0.4, 0.1 - s * 0.05, 0.6 - s * 0.45];
-  }
+  const t = Math.max(-1, Math.min(1, profit / (maxAbs || 1)));
+  if (t > 0.3) return [0.15 + t * 0.3, 0.75 + t * 0.2, 0.3];
+  if (t > 0)    return [0.1, 0.5 + t * 0.8, 0.5 + t * 0.3];
+  if (t > -0.3) return [0.3 + Math.abs(t) * 0.5, 0.15, 0.4 + Math.abs(t) * 0.3];
+  return [0.6 + Math.abs(t) * 0.35, 0.08, 0.15];
 }
 
-function generateSurfaceData(data: PayoffPoint[]) {
-  const timeSteps = 30;
+/* ─── Surface geometry builder ─── */
+function buildSurface(data: PayoffPoint[]) {
+  const timeSteps = 25;
   const priceSteps = data.length;
+  if (priceSteps === 0) return null;
+
   const positions: number[] = [];
   const colors: number[] = [];
-  const uvs: number[] = [];
 
-  const minPrice = data[0]?.price ?? 0;
-  const maxPrice = data[data.length - 1]?.price ?? 100;
-  const priceRange = maxPrice - minPrice || 1;
+  const minP = data[0].price;
+  const maxP = data[priceSteps - 1].price;
+  const range = maxP - minP || 1;
 
   let maxAbs = 1;
-  for (const p of data) {
-    const abs = Math.max(Math.abs(p.profitAtExpiry), Math.abs(p.profitToday));
-    if (abs > maxAbs) maxAbs = abs;
+  for (const d of data) {
+    const a = Math.max(Math.abs(d.profitAtExpiry), Math.abs(d.profitToday));
+    if (a > maxAbs) maxAbs = a;
   }
 
-  const yScale = 3.5 / maxAbs;
-  const xScale = 10 / priceRange;
-  const zScale = 7 / timeSteps;
+  const yS = 3 / maxAbs;
+  const xS = 8 / range;
+  const zS = 6 / timeSteps;
 
   for (let ti = 0; ti <= timeSteps; ti++) {
     const tFrac = ti / timeSteps;
+    const smooth = tFrac * tFrac * (3 - 2 * tFrac);
     for (let pi = 0; pi < priceSteps; pi++) {
-      const p = data[pi];
-      // Smooth cubic interpolation for more natural curve evolution
-      const smoothT = tFrac * tFrac * (3 - 2 * tFrac);
-      const profit = p.profitToday + (p.profitAtExpiry - p.profitToday) * smoothT;
-
-      const x = (p.price - minPrice) * xScale - 5;
-      const y = profit * yScale;
-      const z = tFrac * timeSteps * zScale - 3.5;
-
-      positions.push(x, y, z);
-      uvs.push(pi / (priceSteps - 1), tFrac);
-
+      const d = data[pi];
+      const profit = d.profitToday + (d.profitAtExpiry - d.profitToday) * smooth;
+      positions.push((d.price - minP) * xS - 4, profit * yS, tFrac * timeSteps * zS - 3);
       const [r, g, b] = profitToColor(profit, maxAbs);
       colors.push(r, g, b);
     }
@@ -81,144 +61,178 @@ function generateSurfaceData(data: PayoffPoint[]) {
   for (let ti = 0; ti < timeSteps; ti++) {
     for (let pi = 0; pi < priceSteps - 1; pi++) {
       const a = ti * priceSteps + pi;
-      const b = a + 1;
       const c = (ti + 1) * priceSteps + pi;
-      const d = c + 1;
-      indices.push(a, b, c);
-      indices.push(b, d, c);
+      indices.push(a, a + 1, c);
+      indices.push(a + 1, c + 1, c);
     }
   }
 
-  return { positions, colors, indices, uvs, priceSteps, timeSteps };
+  return { positions, colors, indices, minP, maxP, maxAbs, yS, xS };
 }
 
-function GlassSurface({ data }: { data: PayoffPoint[] }) {
-  const meshRef = useRef<THREE.Mesh>(null);
-
-  const geometry = useMemo(() => {
-    const { positions, colors, indices, uvs } = generateSurfaceData(data);
-    const geom = new THREE.BufferGeometry();
-    geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-    geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-    geom.setIndex(indices);
-    geom.computeVertexNormals();
-    return geom;
+/* ─── Surface mesh ─── */
+function Surface({ data }: { data: PayoffPoint[] }) {
+  const geom = useMemo(() => {
+    const s = buildSurface(data);
+    if (!s) return null;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(s.positions, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(s.colors, 3));
+    g.setIndex(s.indices);
+    g.computeVertexNormals();
+    return g;
   }, [data]);
 
+  if (!geom) return null;
+
   return (
-    <mesh ref={meshRef} geometry={geometry} castShadow receiveShadow>
+    <mesh geometry={geom} castShadow receiveShadow>
       <meshPhysicalMaterial
         vertexColors
         side={THREE.DoubleSide}
         transparent
-        opacity={0.92}
-        roughness={0.15}
-        metalness={0.1}
-        clearcoat={0.8}
-        clearcoatRoughness={0.1}
-        reflectivity={0.6}
-        envMapIntensity={0.8}
+        opacity={0.9}
+        roughness={0.2}
+        metalness={0.05}
+        clearcoat={0.6}
+        clearcoatRoughness={0.15}
+        envMapIntensity={0.6}
       />
     </mesh>
   );
 }
 
-function GlowEdges({ data }: { data: PayoffPoint[] }) {
-  const geometry = useMemo(() => {
-    const { positions, indices } = generateSurfaceData(data);
-    const geom = new THREE.BufferGeometry();
-    geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geom.setIndex(indices);
-    return geom;
+/* ─── Wireframe overlay ─── */
+function Wireframe({ data }: { data: PayoffPoint[] }) {
+  const geom = useMemo(() => {
+    const s = buildSurface(data);
+    if (!s) return null;
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(s.positions, 3));
+    g.setIndex(s.indices);
+    return g;
   }, [data]);
 
+  if (!geom) return null;
+
   return (
-    <mesh geometry={geometry}>
-      <meshBasicMaterial wireframe color="#00e5ff" opacity={0.08} transparent />
+    <mesh geometry={geom}>
+      <meshBasicMaterial wireframe color="#66bbff" opacity={0.06} transparent />
     </mesh>
   );
 }
 
-// Zero plane with glass effect
+/* ─── Zero plane ─── */
 function ZeroPlane() {
   return (
     <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-      <planeGeometry args={[12, 9]} />
-      <meshPhysicalMaterial
-        color="#4488ff"
-        transparent
-        opacity={0.04}
-        roughness={0.5}
-        side={THREE.DoubleSide}
-      />
+      <planeGeometry args={[10, 8]} />
+      <meshBasicMaterial color="#4488ff" transparent opacity={0.04} side={THREE.DoubleSide} />
     </mesh>
   );
 }
 
-// Glowing grid lines on the floor
+/* ─── Floor grid ─── */
 function FloorGrid() {
-  const gridRef = useRef<THREE.Group>(null);
-  
   const lines = useMemo(() => {
-    const material = new THREE.LineBasicMaterial({ color: '#2244aa', transparent: true, opacity: 0.15 });
-    const geometries: THREE.BufferGeometry[] = [];
-    
-    // X lines
-    for (let i = -5; i <= 5; i += 1) {
-      const geom = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(i, -3.5, -4),
-        new THREE.Vector3(i, -3.5, 4),
-      ]);
-      geometries.push(geom);
+    const pts: [number, number, number, number, number, number][] = [];
+    for (let i = -4; i <= 4; i++) {
+      pts.push([i, -3, -3.5, i, -3, 3.5]);
+      pts.push([-4, -3, i * 3.5 / 4, 4, -3, i * 3.5 / 4]);
     }
-    // Z lines
-    for (let i = -4; i <= 4; i += 1) {
-      const geom = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(-5, -3.5, i),
-        new THREE.Vector3(5, -3.5, i),
-      ]);
-      geometries.push(geom);
-    }
-    
-    return geometries.map((g, idx) => ({ geometry: g, material, key: idx }));
+    return pts;
   }, []);
 
   return (
-    <group ref={gridRef}>
-      {lines.map(({ geometry, material, key }) => (
-        <lineSegments key={key} geometry={geometry} material={material} />
-      ))}
+    <group>
+      {lines.map(([x1, y1, z1, x2, y2, z2], i) => {
+        const geom = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(x1, y1, z1),
+          new THREE.Vector3(x2, y2, z2),
+        ]);
+        return (
+          <lineSegments key={i} geometry={geom}>
+            <lineBasicMaterial color="#334477" transparent opacity={0.2} />
+          </lineSegments>
+        );
+      })}
     </group>
   );
 }
 
-// Breakeven markers as glowing pillars
-function BreakevenMarkers({ breakevens, data }: { breakevens: number[]; data: PayoffPoint[] }) {
-  const minPrice = data[0]?.price ?? 0;
-  const maxPrice = data[data.length - 1]?.price ?? 100;
-  const priceRange = maxPrice - minPrice || 1;
-  const xScale = 10 / priceRange;
+/* ─── Price tick marks along X axis ─── */
+function PriceTicks({ data }: { data: PayoffPoint[] }) {
+  if (!data || data.length === 0) return null;
+  const minP = data[0].price;
+  const maxP = data[data.length - 1].price;
+  const range = maxP - minP || 1;
+  const xS = 8 / range;
+
+  // Show ~5 ticks
+  const step = Math.ceil(range / 5 / 5) * 5;
+  const start = Math.ceil(minP / step) * step;
+  const ticks: number[] = [];
+  for (let p = start; p <= maxP; p += step) ticks.push(p);
 
   return (
     <>
-      {breakevens.map((be, i) => {
-        const x = (be - minPrice) * xScale - 5;
-        if (x < -5.5 || x > 5.5) return null;
+      {ticks.map((p) => {
+        const x = (p - minP) * xS - 4;
         return (
-          <group key={i} position={[x, 0, -3.5]}>
-            <mesh>
-              <cylinderGeometry args={[0.02, 0.02, 7, 8]} />
-              <meshBasicMaterial color="#ffaa00" transparent opacity={0.5} />
-            </mesh>
+          <group key={p}>
             <Text
-              position={[0, 3.8, 0]}
-              fontSize={0.22}
-              color="#ffcc44"
+              position={[x, -3.3, 3.8]}
+              fontSize={0.2}
+              color="#88aacc"
               anchorX="center"
-              anchorY="bottom"
+              anchorY="top"
             >
-              BE {be.toFixed(0)}
+              {p.toFixed(0)}
+            </Text>
+            {/* Small tick line */}
+            <mesh position={[x, -3, 3.6]}>
+              <boxGeometry args={[0.02, 0.02, 0.3]} />
+              <meshBasicMaterial color="#88aacc" transparent opacity={0.3} />
+            </mesh>
+          </group>
+        );
+      })}
+    </>
+  );
+}
+
+/* ─── Profit scale ticks along Y axis ─── */
+function ProfitTicks({ data }: { data: PayoffPoint[] }) {
+  if (!data || data.length === 0) return null;
+  let maxAbs = 1;
+  for (const d of data) {
+    const a = Math.max(Math.abs(d.profitAtExpiry), Math.abs(d.profitToday));
+    if (a > maxAbs) maxAbs = a;
+  }
+  const yS = 3 / maxAbs;
+
+  const step = Math.ceil(maxAbs / 3 / 100) * 100 || 50;
+  const ticks: number[] = [0];
+  for (let v = step; v <= maxAbs * 1.1; v += step) {
+    ticks.push(v);
+    ticks.push(-v);
+  }
+
+  return (
+    <>
+      {ticks.map((v) => {
+        const y = v * yS;
+        if (Math.abs(y) > 3.5) return null;
+        return (
+          <group key={v}>
+            <Text
+              position={[-4.5, y, 3.8]}
+              fontSize={0.18}
+              color={v > 0 ? '#66cc88' : v < 0 ? '#cc6666' : '#888888'}
+              anchorX="right"
+              anchorY="middle"
+            >
+              {v > 0 ? `+${v.toFixed(0)}` : v.toFixed(0)}
             </Text>
           </group>
         );
@@ -227,72 +241,99 @@ function BreakevenMarkers({ breakevens, data }: { breakevens: number[]; data: Pa
   );
 }
 
-function AxisLabels({ data }: { data: PayoffPoint[] }) {
-  const minPrice = data[0]?.price ?? 0;
-  const maxPrice = data[data.length - 1]?.price ?? 100;
-  
+/* ─── Axis title labels ─── */
+function AxisLabels() {
   return (
     <>
-      <Text position={[0, -4.2, -4.5]} fontSize={0.28} color="#6699cc" anchorX="center" font={undefined}>
-        Preço do Ativo ({minPrice.toFixed(0)} → {maxPrice.toFixed(0)})
+      <Text position={[0, -3.8, 4.5]} fontSize={0.25} color="#88bbdd" anchorX="center">
+        Preço do Ativo →
       </Text>
-      <Text position={[-6, 0, 0]} fontSize={0.28} color="#6699cc" rotation={[0, Math.PI / 2, 0]} anchorX="center" font={undefined}>
+      <Text
+        position={[-5.2, 0, 4]}
+        fontSize={0.25}
+        color="#88bbdd"
+        rotation={[0, 0, Math.PI / 2]}
+        anchorX="center"
+      >
         Lucro / Prejuízo (R$)
       </Text>
-      <Text position={[5.5, -4.2, 0]} fontSize={0.24} color="#6699cc" rotation={[0, -Math.PI / 5, 0]} anchorX="center" font={undefined}>
-        T+0 → Vencimento
+      <Text
+        position={[4.5, -3.8, 0]}
+        fontSize={0.22}
+        color="#88bbdd"
+        rotation={[0, -Math.PI / 6, 0]}
+        anchorX="center"
+      >
+        Hoje → Vencimento
       </Text>
     </>
   );
 }
 
-function AnimatedScene({ children }: { children: React.ReactNode }) {
-  const groupRef = useRef<THREE.Group>(null);
-  
-  useFrame(({ clock }) => {
-    if (groupRef.current) {
-      // Gentle float
-      groupRef.current.position.y = Math.sin(clock.getElapsedTime() * 0.5) * 0.05;
-    }
-  });
-
-  return <group ref={groupRef}>{children}</group>;
-}
-
-// Ambient particles for depth
-function Particles() {
-  const count = 60;
-  const meshRef = useRef<THREE.Points>(null);
-
-  const positions = useMemo(() => {
-    const pos = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 14;
-      pos[i * 3 + 1] = (Math.random() - 0.5) * 8;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 10;
-    }
-    return pos;
-  }, []);
-
-  useFrame(({ clock }) => {
-    if (meshRef.current) {
-      meshRef.current.rotation.y = clock.getElapsedTime() * 0.02;
-    }
-  });
+/* ─── Breakeven markers ─── */
+function BreakevenMarkers({ breakevens, data }: { breakevens: number[]; data: PayoffPoint[] }) {
+  if (!data || data.length === 0) return null;
+  const minP = data[0].price;
+  const maxP = data[data.length - 1].price;
+  const range = maxP - minP || 1;
+  const xS = 8 / range;
 
   return (
-    <points ref={meshRef}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          args={[positions, 3]}
-        />
-      </bufferGeometry>
-      <pointsMaterial size={0.04} color="#4488ff" transparent opacity={0.3} sizeAttenuation />
-    </points>
+    <>
+      {breakevens.map((be, i) => {
+        const x = (be - minP) * xS - 4;
+        if (x < -5 || x > 5) return null;
+        return (
+          <group key={i} position={[x, 0, -3]}>
+            <mesh>
+              <cylinderGeometry args={[0.015, 0.015, 6, 6]} />
+              <meshBasicMaterial color="#ffbb33" transparent opacity={0.45} />
+            </mesh>
+            <Text position={[0, 3.3, 0]} fontSize={0.2} color="#ffcc55" anchorX="center">
+              BE {be.toFixed(1)}
+            </Text>
+          </group>
+        );
+      })}
+    </>
   );
 }
 
+/* ─── Spot price vertical line ─── */
+function SpotMarker({ spot, data }: { spot: number; data: PayoffPoint[] }) {
+  if (!data || data.length === 0) return null;
+  const minP = data[0].price;
+  const maxP = data[data.length - 1].price;
+  const range = maxP - minP || 1;
+  const xS = 8 / range;
+  const x = (spot - minP) * xS - 4;
+  if (x < -5 || x > 5) return null;
+
+  return (
+    <group position={[x, 0, -3]}>
+      <mesh>
+        <cylinderGeometry args={[0.025, 0.025, 6, 8]} />
+        <meshBasicMaterial color="#00ccff" transparent opacity={0.5} />
+      </mesh>
+      <Text position={[0, 3.3, 0]} fontSize={0.2} color="#00eeff" anchorX="center">
+        Spot {spot.toFixed(1)}
+      </Text>
+    </group>
+  );
+}
+
+/* ─── Gentle animation ─── */
+function AnimatedGroup({ children }: { children: React.ReactNode }) {
+  const ref = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    if (ref.current) {
+      ref.current.position.y = Math.sin(clock.getElapsedTime() * 0.4) * 0.03;
+    }
+  });
+  return <group ref={ref}>{children}</group>;
+}
+
+/* ─── Main component ─── */
 export default function PayoffChart3D({ data, breakevens, currentSpotPrice }: PayoffChart3DProps) {
   if (!data || data.length === 0) {
     return (
@@ -303,86 +344,73 @@ export default function PayoffChart3D({ data, breakevens, currentSpotPrice }: Pa
   }
 
   return (
-    <div className="h-[500px] w-full rounded-xl overflow-hidden border border-primary/20 bg-[#070b14] relative">
-      {/* Corner accent glow */}
-      <div className="absolute top-0 left-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-40 h-40 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
-      
+    <div className="h-[500px] w-full rounded-xl overflow-hidden border border-primary/20 relative" style={{ background: '#080e1a' }}>
       <Canvas
-        camera={{ position: [8, 6, 10], fov: 45 }}
+        camera={{ position: [7, 5, 9], fov: 48 }}
         dpr={[1, 2]}
-        gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.2 }}
+        gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.1 }}
         shadows
       >
-        {/* Lighting */}
-        <ambientLight intensity={0.3} />
-        <directionalLight 
-          position={[8, 12, 6]} 
-          intensity={1.2} 
-          castShadow 
-          shadow-mapSize={[1024, 1024]}
-          color="#ddeeff"
-        />
-        <directionalLight position={[-6, 8, -4]} intensity={0.4} color="#aaccff" />
-        <pointLight position={[0, 5, 0]} intensity={0.3} color="#00aaff" distance={15} />
-        
-        {/* Environment for reflections */}
-        <Environment preset="night" />
-        <fog attach="fog" args={['#070b14', 12, 28]} />
+        <ambientLight intensity={0.4} />
+        <directionalLight position={[6, 10, 5]} intensity={1} castShadow color="#ddeeff" />
+        <directionalLight position={[-5, 6, -3]} intensity={0.35} color="#aaccff" />
+        <pointLight position={[0, 4, 0]} intensity={0.25} color="#00aaff" distance={12} />
 
-        <AnimatedScene>
-          <GlassSurface data={data} />
-          <GlowEdges data={data} />
+        <Environment preset="night" />
+        <fog attach="fog" args={['#080e1a', 14, 30]} />
+
+        <AnimatedGroup>
+          <Surface data={data} />
+          <Wireframe data={data} />
           <ZeroPlane />
           <FloorGrid />
+          <PriceTicks data={data} />
+          <ProfitTicks data={data} />
+          <AxisLabels />
           <BreakevenMarkers breakevens={breakevens} data={data} />
-          <AxisLabels data={data} />
-          <Particles />
-          
-          <ContactShadows
-            position={[0, -3.5, 0]}
-            opacity={0.3}
-            scale={14}
-            blur={2.5}
-            far={5}
-            color="#001133"
-          />
-        </AnimatedScene>
+          {currentSpotPrice && <SpotMarker spot={currentSpotPrice} data={data} />}
+          <ContactShadows position={[0, -3, 0]} opacity={0.25} scale={12} blur={2} far={4} color="#001133" />
+        </AnimatedGroup>
 
         <OrbitControls
           enablePan
           enableZoom
           enableRotate
           autoRotate
-          autoRotateSpeed={0.4}
+          autoRotateSpeed={0.35}
           maxPolarAngle={Math.PI / 1.6}
-          minPolarAngle={Math.PI / 8}
-          maxDistance={20}
+          minPolarAngle={Math.PI / 7}
+          maxDistance={18}
           minDistance={5}
           dampingFactor={0.05}
           enableDamping
         />
       </Canvas>
-      
-      {/* Legend overlay */}
-      <div className="absolute bottom-3 left-3 flex gap-3 text-xs font-medium pointer-events-none">
+
+      {/* Legend */}
+      <div className="absolute bottom-3 left-3 flex gap-3 text-xs font-medium pointer-events-none select-none">
         <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]" />
-          <span className="text-emerald-300/80">Lucro</span>
+          <span className="w-2 h-2 rounded-full" style={{ background: '#44cc88', boxShadow: '0 0 6px #44cc8866' }} />
+          <span style={{ color: '#88ddaa' }}>Lucro</span>
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-red-400 shadow-[0_0_6px_rgba(248,113,113,0.5)]" />
-          <span className="text-red-300/80">Prejuízo</span>
+          <span className="w-2 h-2 rounded-full" style={{ background: '#dd5555', boxShadow: '0 0 6px #dd555566' }} />
+          <span style={{ color: '#dd8888' }}>Prejuízo</span>
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.5)]" />
-          <span className="text-amber-300/80">Breakeven</span>
+          <span className="w-2 h-2 rounded-full" style={{ background: '#ffbb33', boxShadow: '0 0 6px #ffbb3366' }} />
+          <span style={{ color: '#ffcc77' }}>Breakeven</span>
         </span>
+        {currentSpotPrice && (
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full" style={{ background: '#00ccff', boxShadow: '0 0 6px #00ccff66' }} />
+            <span style={{ color: '#88ddff' }}>Spot</span>
+          </span>
+        )}
       </div>
-      
-      {/* Interaction hint */}
-      <div className="absolute top-3 right-3 text-xs text-muted-foreground/50 pointer-events-none">
-        🖱️ Arraste para girar · Scroll para zoom
+
+      <div className="absolute top-3 right-3 text-xs pointer-events-none select-none" style={{ color: '#556688' }}>
+        🖱️ Arraste · Scroll zoom
       </div>
     </div>
   );
