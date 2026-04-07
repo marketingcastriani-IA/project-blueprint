@@ -1345,24 +1345,36 @@ export default function BoxTracker() {
         </div>
       ) : (
         <div className="space-y-4">
-          {families.map((family) => (
-            <FamilyCard
-              key={family.id}
-              family={family}
-              rows={rows}
-              quantidade={quantidade}
-              calculateBoxPairs={calculateBoxPairs}
-              onRemoveFamily={removeFamily}
-              onToggleExpand={toggleExpand}
-              onAddTickers={processTickerSymbols}
-              onRemoveTicker={removeTicker}
-              onFileUpload={handleFileUpload}
-              descontarIRAcoes={descontarIRAcoes}
-              descontarIRRendaFixa={descontarIRRendaFixa}
-              winnerKey={winnerKey}
-              cdiAnual={cdiAnual}
-            />
-          ))}
+          {families.map((family) => {
+            // Resolve stock ticker for this family
+            let resolvedStockTicker = `${family.name}4`;
+            for (const s of ["4", "3", "11"]) {
+              const candidate = rows.get(`${family.name}${s}`);
+              if (candidate && (candidate.ofCompra || candidate.ofVenda || candidate.ultimo)) {
+                resolvedStockTicker = `${family.name}${s}`;
+                break;
+              }
+            }
+            return (
+              <FamilyCard
+                key={family.id}
+                family={family}
+                rows={rows}
+                quantidade={quantidade}
+                calculateBoxPairs={calculateBoxPairs}
+                onRemoveFamily={removeFamily}
+                onToggleExpand={toggleExpand}
+                onAddTickers={processTickerSymbols}
+                onRemoveTicker={removeTicker}
+                onFileUpload={handleFileUpload}
+                descontarIRAcoes={descontarIRAcoes}
+                descontarIRRendaFixa={descontarIRRendaFixa}
+                winnerKey={winnerKey}
+                cdiAnual={cdiAnual}
+                stockTicker={resolvedStockTicker}
+              />
+            );
+          })}
         </div>
       )}
     </div>
@@ -1384,6 +1396,7 @@ interface FamilyCardProps {
   descontarIRRendaFixa: boolean;
   winnerKey: string | null;
   cdiAnual: number;
+  stockTicker: string;
 }
 
 function FamilyCard({
@@ -1400,6 +1413,7 @@ function FamilyCard({
   descontarIRRendaFixa,
   winnerKey,
   cdiAnual,
+  stockTicker,
 }: FamilyCardProps) {
   const [showPaste, setShowPaste] = useState(false);
   const [pasteText, setPasteText] = useState("");
