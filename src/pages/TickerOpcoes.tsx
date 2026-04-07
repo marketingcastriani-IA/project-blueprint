@@ -322,7 +322,7 @@ export default function TickerOpcoes() {
                           title="Copiar ticker"
                         >
                           {copiedTicker === opt.ticker ? (
-                            <Check className="h-3.5 w-3.5 text-green-500" />
+                            <Check className="h-3.5 w-3.5 text-primary" />
                           ) : (
                             <Copy className="h-3.5 w-3.5 text-muted-foreground" />
                           )}
