@@ -65,8 +65,15 @@ export default function InstallAppButton({ variant = 'header' }: { variant?: 'he
         deferredPrompt = null;
       }
     } else {
-      // No native prompt available — show desktop manual instructions
-      setShowDesktopTip(true);
+      // No native prompt (likely iframe/preview) — open published URL directly
+      // so the browser can trigger the install prompt there
+      const publishedUrl = 'https://opoesxpro.lovable.app';
+      if (window.location.origin !== publishedUrl) {
+        window.open(publishedUrl, '_blank');
+      } else {
+        // Already on published site but no prompt — show manual tip
+        setShowDesktopTip(true);
+      }
     }
   };
 
