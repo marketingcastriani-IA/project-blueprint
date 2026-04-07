@@ -323,14 +323,28 @@ export default function BoxTracker() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
   }, [families]);
 
+  // Derive stock ticker from family name (e.g., PETR -> PETR4, VALE -> VALE3)
+  const familyStockTickers = useCallback((familyName: string): string => {
+    const candidates = [`${familyName}4`, `${familyName}3`, `${familyName}11`];
+    for (const c of candidates) {
+      if (rows.has(c)) return c;
+    }
+    // Default: try 4 first (most common for blue chips), then 3
+    return `${familyName}4`;
+  }, [rows]);
+
   // Auto-subscribe tickers
   useEffect(() => {
     if (status !== "connected") return;
     families.forEach((f) => {
-      bridgeAddTicker(f.name);
+      const stockTicker = familyStockTickers(f.name);
+      bridgeAddTicker(stockTicker);
+      // Also try the other suffix to discover which one works
+      const altSuffixes = ["3", "4", "11"];
+      altSuffixes.forEach((s) => bridgeAddTicker(`${f.name}${s}`));
       f.tickers.forEach((t) => bridgeAddTicker(t.symbol));
     });
-  }, [status, families, bridgeAddTicker]);
+  }, [status, families, bridgeAddTicker, familyStockTickers]);
 
   const handleSaveVenc = () => {
     if (vencimentoManual) {
@@ -434,7 +448,19 @@ export default function BoxTracker() {
 
   const calculateBoxPairs = useCallback(
     (family: StockFamily): BoxPair[] => {
-      const stockRow = rows.get(family.name);
+      // Try stock ticker with different suffixes (PETR4, PETR3, PETR11)
+      const stockTicker = familyStockTickers(family.name);
+      let stockRow = rows.get(stockTicker);
+      // Fallback: try all suffixes
+      if (!stockRow || (!stockRow.ofCompra && !stockRow.ofVenda && !stockRow.ultimo)) {
+        for (const s of ["4", "3", "11"]) {
+          const candidate = rows.get(`${family.name}${s}`);
+          if (candidate && (candidate.ofCompra || candidate.ofVenda || candidate.ultimo)) {
+            stockRow = candidate;
+            break;
+          }
+        }
+      }
       const stockBid = getPrice(stockRow, "ofCompra");
       const stockAsk = getPrice(stockRow, "ofVenda");
       const qty = quantidade;
@@ -534,7 +560,7 @@ export default function BoxTracker() {
       pairs.sort((a, b) => (b.lucroPercent ?? -999) - (a.lucroPercent ?? -999));
       return pairs;
     },
-    [rows, quantidade, vencimentoManual, descontarIRAcoes, descontarIRRendaFixa, cdiAnual, getStrikeAndExpiry]
+    [rows, quantidade, vencimentoManual, descontarIRAcoes, descontarIRRendaFixa, cdiAnual, getStrikeAndExpiry, familyStockTickers]
   );
 
   // Global ranking — only the #1 best box per family

@@ -117,6 +117,20 @@ export default function TickerOpcoes() {
     return result;
   }, [options, selectedFamily, selectedVencimento, selectedTipo, search, precoBaseNum, strikeMinCalc, strikeMaxCalc, sortField, sortDir]);
 
+  // Set of strike|vencimento keys that have both CALL and PUT (paired for box)
+  const pairedStrikeKeys = useMemo(() => {
+    const callKeys = new Set<string>();
+    const putKeys = new Set<string>();
+    filtered.forEach((o) => {
+      const key = `${o.strike}|${o.vencimento}`;
+      if (o.tipo === "CALL") callKeys.add(key);
+      else putKeys.add(key);
+    });
+    const paired = new Set<string>();
+    callKeys.forEach((k) => { if (putKeys.has(k)) paired.add(k); });
+    return paired;
+  }, [filtered]);
+
   const displayed = filtered.slice(0, 200);
 
   // ─── BOX OPPORTUNITIES ─────────────────────────────────────
@@ -672,10 +686,11 @@ export default function TickerOpcoes() {
                   displayed.map((opt, i) => {
                     const distPct = precoBaseNum > 0 ? ((opt.strike - precoBaseNum) / precoBaseNum) * 100 : null;
                     const isSentToRtd = sentToRtd.has(opt.ticker);
+                    const isPaired = pairedStrikeKeys.has(`${opt.strike}|${opt.vencimento}`);
                     return (
                       <TableRow
                         key={`${opt.ticker}-${i}`}
-                        className={`transition-colors ${selectedRows.has(opt.ticker) ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-muted/30"}`}
+                        className={`transition-colors ${selectedRows.has(opt.ticker) ? "bg-primary/5 hover:bg-primary/10" : isPaired ? "hover:bg-muted/30" : "hover:bg-muted/30 opacity-60"}`}
                       >
                         <TableCell>
                           <input
@@ -685,7 +700,16 @@ export default function TickerOpcoes() {
                             className="accent-primary rounded"
                           />
                         </TableCell>
-                        <TableCell className="font-mono font-bold text-foreground tracking-wide">{opt.ticker}</TableCell>
+                        <TableCell className="font-mono font-bold text-foreground tracking-wide">
+                          <span className="flex items-center gap-1.5">
+                            {opt.ticker}
+                            {isPaired && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-bold" title="Par Call+Put disponível neste strike">
+                                <Box className="h-2.5 w-2.5" /> PAR
+                              </span>
+                            )}
+                          </span>
+                        </TableCell>
                         <TableCell>
                           <Badge variant="secondary" className="text-[10px] font-semibold">{opt.family}</Badge>
                         </TableCell>
