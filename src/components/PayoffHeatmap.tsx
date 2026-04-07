@@ -290,6 +290,19 @@ export default function PayoffHeatmap({
               isAnimationActive={false}
             />
           ))}
+
+          {/* CDI line — prominent */}
+          {cdiRate > 0 && daysToExpiry > 0 && (
+            <Line
+              name="── CDI ──"
+              type="monotone"
+              dataKey="cdiLine"
+              stroke="hsl(45, 95%, 55%)"
+              strokeWidth={2.5}
+              dot={false}
+              isAnimationActive={false}
+            />
+          )}
         </ComposedChart>
       </ResponsiveContainer>
     </div>
