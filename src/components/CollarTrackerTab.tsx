@@ -1516,32 +1516,48 @@ export default function CollarTrackerTab() {
           </div>
 
           {/* Metrics row */}
-          <div className="px-5 py-3 grid grid-cols-2 sm:grid-cols-5 gap-3 border-b border-border/30 bg-muted/10">
+          <div className="px-5 py-3 grid grid-cols-2 sm:grid-cols-4 gap-3 border-b border-border/30 bg-muted/10">
             <div>
               <p className="text-xs font-black uppercase text-muted-foreground flex items-center gap-1">
                 <TrendingUp className="h-3 w-3 text-success" /> Ganho Máx (Teto)
               </p>
               <p className="text-sm font-black text-success">{formatPercent(selectedCollar.rentAlta)}</p>
+              {selectedCollar.diffCdiAlta !== null && (
+                <p className={cn("text-[10px] font-bold font-mono", selectedCollar.diffCdiAlta >= 0 ? "text-success" : "text-destructive")}>
+                  {selectedCollar.diffCdiAlta >= 0 ? "+" : ""}{selectedCollar.diffCdiAlta.toFixed(2).replace(".", ",")} pp vs CDI
+                </p>
+              )}
             </div>
             <div>
               <p className="text-xs font-black uppercase text-muted-foreground flex items-center gap-1">
                 <TrendingDown className="h-3 w-3 text-destructive" /> Perda Máx (Piso)
               </p>
               <p className="text-sm font-black text-destructive">{formatPercent(selectedCollar.rentBaixa)}</p>
+              {selectedCollar.diffCdiBaixa !== null && (
+                <p className={cn("text-[10px] font-bold font-mono", selectedCollar.diffCdiBaixa >= 0 ? "text-success" : "text-destructive")}>
+                  {selectedCollar.diffCdiBaixa >= 0 ? "+" : ""}{selectedCollar.diffCdiBaixa.toFixed(2).replace(".", ",")} pp vs CDI
+                </p>
+              )}
             </div>
             <div>
               <p className="text-xs font-black uppercase text-muted-foreground">Custo Collar</p>
               <p className={cn("text-sm font-black", (selectedCollar.custoCollar ?? 0) <= 0 ? "text-success" : "text-warning")}>
                 {formatBRL(selectedCollar.custoCollar)}
               </p>
-            </div>
-            <div>
-              <p className="text-xs font-black uppercase text-muted-foreground">Breakeven</p>
-              <p className="text-sm font-black text-foreground">{selectedBreakeven ? formatBRL(selectedBreakeven) : "—"}</p>
+              {selectedCollar.custoLiquidoPct !== null && (
+                <p className="text-[10px] font-mono text-muted-foreground">
+                  {selectedCollar.custoLiquidoPct.toFixed(2).replace(".", ",")}% do ativo
+                </p>
+              )}
             </div>
             <div>
               <p className="text-xs font-black uppercase text-muted-foreground">CDI Período</p>
               <p className="text-sm font-black text-warning">{formatPercent(selectedCollar.cdiPeriodo)}</p>
+              {selectedCollar.per !== null && (
+                <p className="text-[10px] font-mono text-muted-foreground">
+                  PER: {selectedCollar.per === Infinity ? "∞" : selectedCollar.per.toFixed(1)}
+                </p>
+              )}
             </div>
           </div>
 
