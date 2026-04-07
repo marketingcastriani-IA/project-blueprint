@@ -72,32 +72,6 @@ const CustomTooltip = ({ active, payload, label, displayMode }: any) => {
   );
 };
 
-// Zone labels rendered as customized content in ComposedChart
-const ZoneLabels = (props: any) => {
-  const { yAxisMap, offset } = props;
-  if (!yAxisMap) return null;
-  const yAxis = Object.values(yAxisMap)[0] as any;
-  if (!yAxis?.scale) return null;
-
-  const domain = yAxis.scale.domain() || [0, 0];
-  const [minY, maxY] = domain;
-  const left = (offset?.left || 65) + 20;
-
-  return (
-    <g>
-      {maxY > 0 && (
-        <text x={left} y={yAxis.scale(maxY * 0.45)} fill="hsl(142, 76%, 40%)" opacity={0.2} fontSize={15} fontWeight={900} letterSpacing="0.15em">
-          ZONA DE LUCRO
-        </text>
-      )}
-      {minY < 0 && (
-        <text x={left} y={yAxis.scale(minY * 0.45)} fill="hsl(0, 80%, 55%)" opacity={0.2} fontSize={15} fontWeight={900} letterSpacing="0.15em">
-          ZONA DE PERDA
-        </text>
-      )}
-    </g>
-  );
-};
 
 // Greeks panel component (moved out of tooltip)
 const GreeksPanel = ({ legs, currentSpotPrice, daysToExpiry, cdiRate }: {
