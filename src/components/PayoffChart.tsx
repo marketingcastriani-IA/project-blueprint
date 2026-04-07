@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, lazy, Suspense } from 'react';
 import { PayoffPoint } from '@/lib/types';
 import { Leg } from '@/lib/types';
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
@@ -6,7 +6,9 @@ import { Area, CartesianGrid, ReferenceLine, XAxis, YAxis, Line, ComposedChart, 
 import { calculateCDIReturn, calculatePortfolioGreeks } from '@/lib/payoff';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Target, Percent, DollarSign, Layers } from 'lucide-react';
+import { TrendingUp, TrendingDown, Target, Percent, DollarSign, Layers, Box } from 'lucide-react';
+
+const PayoffChart3D = lazy(() => import('./PayoffChart3D'));
 
 interface PayoffChartProps {
   data: PayoffPoint[];
@@ -97,6 +99,7 @@ export default function PayoffChart({
   legs
 }: PayoffChartProps) {
   const [displayMode, setDisplayMode] = useState<'value' | 'percent'>('value');
+  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
 
   const investedCapital = useMemo(() => Math.max(Math.abs(montageTotal ?? netCost ?? 0), 1), [montageTotal, netCost]);
   const factor = displayMode === 'percent' ? (100 / investedCapital) : 1;
@@ -162,74 +165,96 @@ export default function PayoffChart({
           <p className="text-sm font-bold">{breakevens.length > 0 ? `R$ ${breakevens[0].toFixed(2)}` : 'N/A'}</p>
         </div>
         <div className="flex items-center justify-end gap-1">
+          <Button variant={viewMode === '2d' ? 'default' : 'outline'} size="sm" className="h-8 px-3 text-xs font-bold" onClick={() => setViewMode('2d')}><Layers className="h-3 w-3 mr-1" /> 2D</Button>
+          <Button variant={viewMode === '3d' ? 'default' : 'outline'} size="sm" className="h-8 px-3 text-xs font-bold" onClick={() => setViewMode('3d')}><Box className="h-3 w-3 mr-1" /> 3D</Button>
+          <div className="w-px h-6 bg-border mx-1" />
           <Button variant={displayMode === 'value' ? 'default' : 'outline'} size="sm" className="h-8 px-3 text-xs font-bold" onClick={() => setDisplayMode('value')}><DollarSign className="h-3 w-3 mr-1" /> VALOR</Button>
           <Button variant={displayMode === 'percent' ? 'default' : 'outline'} size="sm" className="h-8 px-3 text-xs font-bold" onClick={() => setDisplayMode('percent')}><Percent className="h-3 w-3 mr-1" /> % ROI</Button>
         </div>
       </div>
 
-      <ChartContainer config={chartConfig} className="h-[450px] w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} margin={{ top: 25, right: 30, left: 10, bottom: 0 }}>
-            <defs>
-              <linearGradient id="lossGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.4} /><stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.05} /></linearGradient>
-              <linearGradient id="orangeGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(38 92% 50%)" stopOpacity={0.4} /><stop offset="100%" stopColor="hsl(38 92% 50%)" stopOpacity={0.05} /></linearGradient>
-              <linearGradient id="greenGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={0.4} /><stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0.05} /></linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-border" opacity={0.3} />
-            <XAxis type="number" dataKey="price" domain={[minPrice, maxPrice]} tickFormatter={(v) => v.toFixed(2)} className="text-xs" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-            <YAxis tickFormatter={(v) => displayMode === 'percent' ? `${v.toFixed(1)}%` : v.toFixed(0)} className="text-xs" stroke="hsl(var(--muted-foreground))" fontSize={11} width={60} />
-            
-            <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" strokeOpacity={0.5} />
-            
-            {entrySpotPrice && (
-              <ReferenceLine 
-                x={entrySpotPrice} 
-                stroke="hsl(var(--muted-foreground))" 
-                strokeWidth={2} 
-                strokeDasharray="3 3"
-                label={{ value: `ENTRADA: ${entrySpotPrice.toFixed(2)}`, position: 'top', fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 700 }} 
-              />
-            )}
+      {viewMode === '3d' ? (
+        <Suspense fallback={
+          <div className="h-[450px] flex items-center justify-center bg-muted/20 rounded-xl border border-border/50">
+            <div className="flex flex-col items-center gap-3">
+              <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+              <span className="text-sm text-muted-foreground">Carregando visualização 3D...</span>
+            </div>
+          </div>
+        }>
+          <PayoffChart3D
+            data={data}
+            breakevens={breakevens}
+            currentSpotPrice={currentSpotPrice}
+            legs={legs}
+            daysToExpiry={daysToExpiry}
+          />
+        </Suspense>
+      ) : (
+        <ChartContainer config={chartConfig} className="h-[450px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={chartData} margin={{ top: 25, right: 30, left: 10, bottom: 0 }}>
+              <defs>
+                <linearGradient id="lossGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.4} /><stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.05} /></linearGradient>
+                <linearGradient id="orangeGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(38 92% 50%)" stopOpacity={0.4} /><stop offset="100%" stopColor="hsl(38 92% 50%)" stopOpacity={0.05} /></linearGradient>
+                <linearGradient id="greenGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={0.4} /><stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0.05} /></linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" opacity={0.3} />
+              <XAxis type="number" dataKey="price" domain={[minPrice, maxPrice]} tickFormatter={(v) => v.toFixed(2)} className="text-xs" stroke="hsl(var(--muted-foreground))" fontSize={11} />
+              <YAxis tickFormatter={(v) => displayMode === 'percent' ? `${v.toFixed(1)}%` : v.toFixed(0)} className="text-xs" stroke="hsl(var(--muted-foreground))" fontSize={11} width={60} />
+              
+              <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" strokeOpacity={0.5} />
+              
+              {entrySpotPrice && (
+                <ReferenceLine 
+                  x={entrySpotPrice} 
+                  stroke="hsl(var(--muted-foreground))" 
+                  strokeWidth={2} 
+                  strokeDasharray="3 3"
+                  label={{ value: `ENTRADA: ${entrySpotPrice.toFixed(2)}`, position: 'top', fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 700 }} 
+                />
+              )}
 
-            {currentPnL !== null && currentPnL !== undefined && (
-              <ReferenceLine 
-                y={currentPnL * factor} 
-                stroke="hsl(var(--primary))" 
-                strokeWidth={2} 
-                strokeDasharray="3 3"
-                label={{ value: `SAÍDA ATUAL: ${formatVal(currentPnL)}`, position: 'insideBottomRight', fill: 'hsl(var(--primary))', fontSize: 10, fontWeight: 900 }}
-              />
-            )}
+              {currentPnL !== null && currentPnL !== undefined && (
+                <ReferenceLine 
+                  y={currentPnL * factor} 
+                  stroke="hsl(var(--primary))" 
+                  strokeWidth={2} 
+                  strokeDasharray="3 3"
+                  label={{ value: `SAÍDA ATUAL: ${formatVal(currentPnL)}`, position: 'insideBottomRight', fill: 'hsl(var(--primary))', fontSize: 10, fontWeight: 900 }}
+                />
+              )}
 
-            {currentSpotPrice && (
-              <ReferenceLine x={currentSpotPrice} stroke="hsl(var(--primary))" strokeWidth={3} label={{ value: `PREÇO ATUAL ${currentSpotPrice.toFixed(2)}`, position: 'top', fill: 'hsl(var(--primary))', fontSize: 12, fontWeight: 900 }} />
-            )}
+              {currentSpotPrice && (
+                <ReferenceLine x={currentSpotPrice} stroke="hsl(var(--primary))" strokeWidth={3} label={{ value: `PREÇO ATUAL ${currentSpotPrice.toFixed(2)}`, position: 'top', fill: 'hsl(var(--primary))', fontSize: 12, fontWeight: 900 }} />
+              )}
 
-            {currentSpotPrice && currentPnL !== null && (
-              <ReferenceDot x={currentSpotPrice} y={currentPnL * factor} r={6} fill="hsl(var(--primary))" stroke="white" strokeWidth={2} className="animate-pulse" />
-            )}
-            
-            <ChartTooltip content={<CustomTooltip displayMode={displayMode} legs={legs} daysToExpiry={daysToExpiry} cdiRate={cdiRate} />} />
-            
-            {/* Áreas de Payoff (3 Cores) */}
-            <Area type="monotone" dataKey="belowZero" stroke="none" fill="url(#lossGradient)" isAnimationActive={false} />
-            <Area type="monotone" dataKey="betweenZeroCdi" stackId="positive" stroke="none" fill="url(#orangeGradient)" isAnimationActive={false} />
-            <Area type="monotone" dataKey="aboveCdi" stackId="positive" stroke="none" fill="url(#greenGradient)" isAnimationActive={false} />
-            
-            {/* Linhas de Referência */}
-            <Line name="CDI" type="monotone" dataKey="cdiLine" stroke="hsl(45 95% 55%)" strokeWidth={2} strokeDasharray="3 3" dot={false} isAnimationActive={false} />
-            <Line name="Hoje (T+0)" type="monotone" dataKey="profitToday" stroke="hsl(var(--info))" strokeWidth={2} strokeDasharray="5 5" dot={false} isAnimationActive={false} />
-            <Line name="No Vencimento" type="monotone" dataKey="profitAtExpiry" stroke="hsl(var(--chart-profit))" strokeWidth={2.5} dot={false} isAnimationActive={false} />
-            
-            {simulationData && (
-              <>
-                <Line name="Simulação (Venc.)" type="monotone" dataKey="simulatedAtExpiry" stroke="hsl(var(--primary))" strokeWidth={3} strokeDasharray="10 5" dot={false} isAnimationActive={false} />
-                <Line name="CDI do Período" type="monotone" dataKey="periodCdiLine" stroke="hsl(38 92% 50%)" strokeWidth={2} strokeDasharray="2 2" dot={false} isAnimationActive={false} />
-              </>
-            )}
-          </ComposedChart>
-        </ResponsiveContainer>
-      </ChartContainer>
+              {currentSpotPrice && currentPnL !== null && (
+                <ReferenceDot x={currentSpotPrice} y={currentPnL * factor} r={6} fill="hsl(var(--primary))" stroke="white" strokeWidth={2} className="animate-pulse" />
+              )}
+              
+              <ChartTooltip content={<CustomTooltip displayMode={displayMode} legs={legs} daysToExpiry={daysToExpiry} cdiRate={cdiRate} />} />
+              
+              {/* Áreas de Payoff (3 Cores) */}
+              <Area type="monotone" dataKey="belowZero" stroke="none" fill="url(#lossGradient)" isAnimationActive={false} />
+              <Area type="monotone" dataKey="betweenZeroCdi" stackId="positive" stroke="none" fill="url(#orangeGradient)" isAnimationActive={false} />
+              <Area type="monotone" dataKey="aboveCdi" stackId="positive" stroke="none" fill="url(#greenGradient)" isAnimationActive={false} />
+              
+              {/* Linhas de Referência */}
+              <Line name="CDI" type="monotone" dataKey="cdiLine" stroke="hsl(45 95% 55%)" strokeWidth={2} strokeDasharray="3 3" dot={false} isAnimationActive={false} />
+              <Line name="Hoje (T+0)" type="monotone" dataKey="profitToday" stroke="hsl(var(--info))" strokeWidth={2} strokeDasharray="5 5" dot={false} isAnimationActive={false} />
+              <Line name="No Vencimento" type="monotone" dataKey="profitAtExpiry" stroke="hsl(var(--chart-profit))" strokeWidth={2.5} dot={false} isAnimationActive={false} />
+              
+              {simulationData && (
+                <>
+                  <Line name="Simulação (Venc.)" type="monotone" dataKey="simulatedAtExpiry" stroke="hsl(var(--primary))" strokeWidth={3} strokeDasharray="10 5" dot={false} isAnimationActive={false} />
+                  <Line name="CDI do Período" type="monotone" dataKey="periodCdiLine" stroke="hsl(38 92% 50%)" strokeWidth={2} strokeDasharray="2 2" dot={false} isAnimationActive={false} />
+                </>
+              )}
+            </ComposedChart>
+          </ResponsiveContainer>
+        </ChartContainer>
+      )}
     </div>
   );
 }
