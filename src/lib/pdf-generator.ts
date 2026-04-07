@@ -532,6 +532,8 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
       ['É recomendação de investimento?', 'Não. É uma ferramenta de simulação. Consulte um profissional antes de operar.'],
       ['Como a IA funciona?', 'Utiliza IA (OpenAI) para avaliar risco/retorno e sugerir ajustes na estrutura.'],
       ['Diferença Free vs PRO?', 'Free: acesso básico com limites. PRO: simulações ilimitadas e todos os recursos.'],
+      ['O que é Ticker Opções B3?', 'Banco com 99.000+ opções da B3. Busca inteligente, pares Call+Put e integração com Box/Tempo Real.'],
+      ['O que é o Rastreador de Collar?', 'Monitora proteção de carteira (Ação+Put+Call) em tempo real com cálculo de piso, teto e custo.'],
     ],
     ...TABLE_STYLES,
     columnStyles: { 0: { cellWidth: 45, fontStyle: 'bold' as const } },
