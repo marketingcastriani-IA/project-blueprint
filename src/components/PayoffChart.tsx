@@ -166,7 +166,7 @@ export default function PayoffChart({
         </div>
         <div className="flex items-center justify-end gap-1">
           <Button variant={viewMode === '2d' ? 'default' : 'outline'} size="sm" className="h-8 px-3 text-xs font-bold" onClick={() => setViewMode('2d')}><Layers className="h-3 w-3 mr-1" /> 2D</Button>
-          <Button variant={viewMode === '3d' ? 'default' : 'outline'} size="sm" className="h-8 px-3 text-xs font-bold" onClick={() => setViewMode('3d')}><Box className="h-3 w-3 mr-1" /> 3D</Button>
+          <Button variant={viewMode === '3d' ? 'default' : 'outline'} size="sm" className="h-8 px-3 text-xs font-bold" onClick={() => setViewMode('3d')}><Grid3X3 className="h-3 w-3 mr-1" /> Heatmap</Button>
           <div className="w-px h-6 bg-border mx-1" />
           <Button variant={displayMode === 'value' ? 'default' : 'outline'} size="sm" className="h-8 px-3 text-xs font-bold" onClick={() => setDisplayMode('value')}><DollarSign className="h-3 w-3 mr-1" /> VALOR</Button>
           <Button variant={displayMode === 'percent' ? 'default' : 'outline'} size="sm" className="h-8 px-3 text-xs font-bold" onClick={() => setDisplayMode('percent')}><Percent className="h-3 w-3 mr-1" /> % ROI</Button>
@@ -182,7 +182,7 @@ export default function PayoffChart({
             </div>
           </div>
         }>
-          <PayoffChart3D
+          <PayoffHeatmap
             data={data}
             breakevens={breakevens}
             currentSpotPrice={currentSpotPrice}
