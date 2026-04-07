@@ -164,9 +164,11 @@ export default function TickerOpcoes() {
   const displayed = filtered.slice(0, 200);
 
   // ─── BOX OPPORTUNITIES ─────────────────────────────────────
+  // Uses RTD BID/ASK when available (same logic as Box Tracker):
+  // Custo = (Stock ASK + Put ASK) - Call BID
+  // Lucro = Strike - Custo
   const boxOpportunities = useMemo(() => {
     if (selectedFamily === "all" || precoBaseNum <= 0) return [];
-    // Group filtered options by strike+vencimento
     const groups = new Map<string, { calls: B3Option[]; puts: B3Option[] }>();
     filtered.forEach((o) => {
       const key = `${o.strike}|${o.vencimento}`;
@@ -176,6 +178,10 @@ export default function TickerOpcoes() {
       else g.puts.push(o);
     });
 
+    // Stock price: prefer ASK from RTD, fallback to precoBaseNum
+    const stockRow = stockTicker ? rows.get(stockTicker) : null;
+    const stockAsk = stockRow?.ofVenda ?? stockRow?.ultimo ?? precoBaseNum;
+
     const opportunities: Array<{
       strike: number;
       vencimento: string;
@@ -184,25 +190,54 @@ export default function TickerOpcoes() {
       custo: number;
       lucro: number;
       lucroPct: number;
+      stockPrice: number;
+      callPrice: number;
+      putPrice: number;
+      isLive: boolean;
     }> = [];
 
     groups.forEach((g) => {
       if (g.calls.length === 0 || g.puts.length === 0) return;
       const call = g.calls[0];
       const put = g.puts[0];
-      if (call.precoUltimo <= 0 || put.precoUltimo <= 0) return;
-      // Custo Box = (Preço Ação + Preço Put) - Preço Call
-      const custo = (precoBaseNum + put.precoUltimo) - call.precoUltimo;
+
+      // RTD prices: Call BID (selling), Put ASK (buying)
+      const callRow = rows.get(call.ticker);
+      const putRow = rows.get(put.ticker);
+      const callBid = callRow?.ofCompra ?? null;
+      const putAsk = putRow?.ofVenda ?? null;
+      const isLive = callBid !== null && callBid > 0 && putAsk !== null && putAsk > 0 && stockAsk > 0;
+
+      const callPrice = isLive ? callBid! : call.precoUltimo;
+      const putPrice = isLive ? putAsk! : put.precoUltimo;
+      const usedStock = isLive ? stockAsk : precoBaseNum;
+
+      if (callPrice <= 0 || putPrice <= 0) return;
+
+      const custo = (usedStock + putPrice) - callPrice;
       if (custo <= 0) return;
       const lucro = call.strike - custo;
       const lucroPct = (lucro / custo) * 100;
       if (lucro > 0) {
-        opportunities.push({ strike: call.strike, vencimento: call.vencimento, call, put, custo, lucro, lucroPct });
+        opportunities.push({
+          strike: call.strike, vencimento: call.vencimento,
+          call, put, custo, lucro, lucroPct,
+          stockPrice: usedStock, callPrice, putPrice, isLive,
+        });
       }
     });
 
     return opportunities.sort((a, b) => b.lucroPct - a.lucroPct).slice(0, 10);
-  }, [filtered, selectedFamily, precoBaseNum]);
+  }, [filtered, selectedFamily, precoBaseNum, rows, stockTicker]);
+
+  // Subscribe opportunity option tickers to RTD for live BID/ASK
+  useEffect(() => {
+    if (status !== "connected" || boxOpportunities.length === 0) return;
+    for (const opp of boxOpportunities) {
+      addTicker(opp.call.ticker);
+      addTicker(opp.put.ticker);
+    }
+  }, [boxOpportunities, status, addTicker]);
 
   const toggleRow = useCallback((ticker: string) => {
     setSelectedRows((prev) => {
@@ -639,10 +674,11 @@ export default function TickerOpcoes() {
             <div className="px-4 py-3 border-b border-primary/20 flex items-center gap-2">
               <Box className="h-4 w-4 text-primary" />
               <span className="text-sm font-semibold text-foreground">Oportunidades de Box</span>
+              <span className="text-[10px] text-muted-foreground ml-1">(Ação ASK + Put ASK) − Call BID</span>
               <Badge variant="default" className="text-xs ml-auto">{boxOpportunities.length} pares</Badge>
             </div>
             <div className="p-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2">
-              {boxOpportunities.map((opp, i) => (
+              {boxOpportunities.map((opp) => (
                 <button
                   key={`${opp.call.ticker}-${opp.put.ticker}`}
                   onClick={() => sendOpportunityToBox(opp.call, opp.put)}
@@ -650,9 +686,12 @@ export default function TickerOpcoes() {
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-xs font-bold text-foreground">Strike {opp.strike.toFixed(2)}</span>
-                    <Badge className={`text-xs font-bold border-0 ${opp.lucroPct > 1.5 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
-                      {opp.lucroPct.toFixed(2)}%
-                    </Badge>
+                    <div className="flex items-center gap-1">
+                      {opp.isLive && <Wifi className="h-2.5 w-2.5 text-primary" />}
+                      <Badge className={`text-xs font-bold border-0 ${opp.lucroPct > 1.5 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+                        {opp.lucroPct.toFixed(2)}%
+                      </Badge>
+                    </div>
                   </div>
                   <div className="text-xs text-muted-foreground space-y-0.5">
                     <div className="flex justify-between">
@@ -660,11 +699,11 @@ export default function TickerOpcoes() {
                       <span>P: {opp.put.ticker}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Ativo: {precoBaseNum.toFixed(2)}</span>
-                      <span>Call: {opp.call.precoUltimo.toFixed(2)}</span>
+                      <span>Ativo: {opp.stockPrice.toFixed(2)}</span>
+                      <span>Call: {opp.callPrice.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Put: {opp.put.precoUltimo.toFixed(2)}</span>
+                      <span>Put: {opp.putPrice.toFixed(2)}</span>
                       <span>Custo: {opp.custo.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
