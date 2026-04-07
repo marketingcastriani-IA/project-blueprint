@@ -93,6 +93,7 @@ export default function DadosAoVivo() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const accessControl = useAccessControl();
+  const { getStrikeAndExpiry } = useB3Options();
   const { status, rows, errorMsg, reconnectCount, connect, addTicker, removeTicker, updateRow } = useSharedRtdBridge();
 
   const [newTicker, setNewTicker] = useState("");
