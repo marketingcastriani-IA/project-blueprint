@@ -72,56 +72,26 @@ const CustomTooltip = ({ active, payload, label, displayMode }: any) => {
   );
 };
 
-// Zone labels rendered via customized prop
-const ZoneLabels = ({ formattedGraphicalItems, yAxisMap }: any) => {
-  if (!yAxisMap || !formattedGraphicalItems) return null;
+// Zone labels rendered as customized content in ComposedChart
+const ZoneLabels = (props: any) => {
+  const { yAxisMap, offset } = props;
+  if (!yAxisMap) return null;
   const yAxis = Object.values(yAxisMap)[0] as any;
-  if (!yAxis) return null;
+  if (!yAxis?.scale) return null;
 
-  const domain = yAxis.scale?.domain?.() || [0, 0];
-  const range = yAxis.scale?.range?.() || [0, 0];
-  const maxY = domain[1];
-  const minY = domain[0];
-
-  // Only show labels if there's meaningful positive/negative area
-  const showGain = maxY > 0;
-  const showLoss = minY < 0;
-
-  const yScale = yAxis.scale;
-  if (!yScale) return null;
-
-  // Position gain label at 60% of positive area
-  const gainY = showGain ? yScale(maxY * 0.5) : 0;
-  // Position loss label at 60% of negative area  
-  const lossY = showLoss ? yScale(minY * 0.5) : 0;
+  const domain = yAxis.scale.domain() || [0, 0];
+  const [minY, maxY] = domain;
+  const left = (offset?.left || 65) + 20;
 
   return (
     <g>
-      {showGain && (
-        <text
-          x={100}
-          y={gainY}
-          fill="hsl(142, 76%, 40%)"
-          opacity={0.25}
-          fontSize={16}
-          fontWeight={900}
-          letterSpacing="0.15em"
-          textAnchor="start"
-        >
+      {maxY > 0 && (
+        <text x={left} y={yAxis.scale(maxY * 0.45)} fill="hsl(142, 76%, 40%)" opacity={0.2} fontSize={15} fontWeight={900} letterSpacing="0.15em">
           ZONA DE LUCRO
         </text>
       )}
-      {showLoss && (
-        <text
-          x={100}
-          y={lossY}
-          fill="hsl(0, 80%, 55%)"
-          opacity={0.25}
-          fontSize={16}
-          fontWeight={900}
-          letterSpacing="0.15em"
-          textAnchor="start"
-        >
+      {minY < 0 && (
+        <text x={left} y={yAxis.scale(minY * 0.45)} fill="hsl(0, 80%, 55%)" opacity={0.2} fontSize={15} fontWeight={900} letterSpacing="0.15em">
           ZONA DE PERDA
         </text>
       )}
