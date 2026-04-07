@@ -63,32 +63,60 @@ export default function TickerOpcoes() {
   // RTD Bridge — auto-fill preço base from live data
   const { status, rows, addTicker } = useSharedRtdBridge();
 
+  // All candidate stock tickers for a family (try 4 first — most liquid PN shares)
+  const stockCandidates = useMemo(() => {
+    if (selectedFamily === "all") return [];
+    return [`${selectedFamily}4`, `${selectedFamily}3`, `${selectedFamily}11`];
+  }, [selectedFamily]);
+
   // Derive the stock ticker from family (e.g., VALE -> VALE3, PETR -> PETR4)
   const stockTicker = useMemo(() => {
+    if (stockCandidates.length === 0) return null;
+    // Pick the first candidate that has live data
+    for (const c of stockCandidates) {
+      const row = rows.get(c);
+      if (row?.ultimo && row.ultimo > 0) return c;
+    }
+    // Default to first candidate (usually ${family}4)
+    return stockCandidates[0];
+  }, [stockCandidates, rows]);
+
+  // Subscribe ALL candidate tickers to RTD when family is selected
+  useEffect(() => {
+    if (stockCandidates.length === 0 || status !== "connected") return;
+    for (const c of stockCandidates) {
+      addTicker(c);
+    }
+  }, [stockCandidates, status, addTicker]);
+
+  // Estimate underlying price from ATM option strikes when RTD is unavailable
+  const estimatedPriceFromOptions = useMemo(() => {
     if (selectedFamily === "all") return null;
-    const candidates = [`${selectedFamily}3`, `${selectedFamily}4`, `${selectedFamily}11`];
-    for (const c of candidates) {
-      if (rows.has(c)) return c;
-    }
-    return `${selectedFamily}3`;
-  }, [selectedFamily, rows]);
+    const familyOptions = options.filter((o) => o.family === selectedFamily && o.precoUltimo > 0);
+    if (familyOptions.length === 0) return null;
+    // Find the strike closest to the median strike — a rough proxy for ATM / underlying price
+    const strikes = familyOptions.map((o) => o.strike).sort((a, b) => a - b);
+    const medianStrike = strikes[Math.floor(strikes.length / 2)];
+    return medianStrike;
+  }, [selectedFamily, options]);
 
-  // Subscribe stock ticker to RTD when selected
+  // Auto-fill preço base from live data OR fallback to estimated price
   useEffect(() => {
+    if (precoBaseManual) return;
+    // Try live price first
     if (stockTicker && status === "connected") {
-      addTicker(stockTicker);
+      const row = rows.get(stockTicker);
+      const live = row?.ultimo;
+      if (live && live > 0) {
+        setPrecoBase(live.toFixed(2));
+        return;
+      }
     }
-  }, [stockTicker, status, addTicker]);
-
-  // Auto-fill preço base from live data (unless manually edited)
-  useEffect(() => {
-    if (precoBaseManual || !stockTicker || status !== "connected") return;
-    const row = rows.get(stockTicker);
-    const livePrice = row?.ultimo;
-    if (livePrice && livePrice > 0) {
-      setPrecoBase(livePrice.toFixed(2));
+    // Fallback: estimate from option strikes median
+    if (estimatedPriceFromOptions && estimatedPriceFromOptions > 0) {
+      setPrecoBase(estimatedPriceFromOptions.toFixed(2));
     }
-  }, [stockTicker, rows, status, precoBaseManual]);
+  }, [stockTicker, rows, status, precoBaseManual, estimatedPriceFromOptions]);
 
   const precoBaseNum = parseFloat(precoBase) || 0;
   const strikeMinCalc = precoBaseNum > 0 ? precoBaseNum * (1 - pctAbaixo / 100) : 0;
