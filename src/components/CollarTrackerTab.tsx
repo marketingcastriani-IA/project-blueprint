@@ -73,6 +73,9 @@ interface CollarResult {
   diffCdiAlta: number | null;    // rentAlta - cdiPeriodo (pp)
   per: number | null;            // Protection Efficiency Ratio
   custoLiquidoPct: number | null; // custo líquido como % do ativo
+  protecaoPct: number | null;    // downside protegido como % do ativo
+  upsidePct: number | null;      // upside permitido como % do ativo
+  scoreCombinado: number;        // 0.5*Proteção + 0.3*Upside - 0.2*Custo
 }
 
 interface StockFamily {
