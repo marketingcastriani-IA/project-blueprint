@@ -6,7 +6,7 @@ import { Area, CartesianGrid, ReferenceLine, XAxis, YAxis, Line, ComposedChart, 
 import { calculateCDIReturn, calculatePortfolioGreeks } from '@/lib/payoff';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Target, Percent, DollarSign, Layers, Grid3X3 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Target, Percent, DollarSign, Layers, Clock, Activity } from 'lucide-react';
 
 const PayoffHeatmap = lazy(() => import('./PayoffHeatmap'));
 
@@ -35,51 +35,68 @@ const chartConfig = {
 };
 
 const CustomTooltip = ({ active, payload, label, displayMode, legs, daysToExpiry, cdiRate }: any) => {
-  if (active && payload && payload.length) {
-    const format = (val: number) => {
-      if (displayMode === 'percent') return `${val.toFixed(2)}%`;
-      return `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-    };
+  if (!active || !payload?.length) return null;
 
-    // Calculate greeks at this spot price
-    const greeks = legs && legs.length > 0 && daysToExpiry > 0
-      ? calculatePortfolioGreeks(legs, label, daysToExpiry, cdiRate)
-      : null;
+  const format = (val: number) => {
+    if (displayMode === 'percent') return `${val.toFixed(2)}%`;
+    return `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+  };
 
-    return (
-      <div className="rounded-lg border border-border bg-card/95 p-3 shadow-xl backdrop-blur-sm">
-        <div className="mb-2 border-b border-border/50 pb-1">
-          <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Preço do Ativo</p>
-          <p className="text-sm font-bold font-mono">R$ {label.toFixed(2)}</p>
-        </div>
-        <div className="space-y-1.5">
-          {payload.map((p: any, i: number) => {
-            if (p.dataKey === 'belowZero' || p.dataKey === 'betweenZeroCdi' || p.dataKey === 'aboveCdi') return null;
-            return (
-              <div key={i} className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
-                  <span className="text-xs font-bold text-foreground/80">{p.name}</span>
-                </div>
-                <span className={cn("text-xs font-black font-mono", p.value >= 0 ? "text-success" : "text-destructive")}>
-                  {format(p.value)}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-        {greeks && (
-          <div className="mt-2 pt-2 border-t border-border/50 grid grid-cols-2 gap-x-4 gap-y-1">
-            <div className="flex justify-between"><span className="text-xs text-muted-foreground">Δ Delta</span><span className="text-xs font-mono font-bold">{greeks.delta}</span></div>
-            <div className="flex justify-between"><span className="text-xs text-muted-foreground">Γ Gamma</span><span className="text-xs font-mono font-bold">{greeks.gamma}</span></div>
-            <div className="flex justify-between"><span className="text-xs text-muted-foreground">Θ Theta</span><span className="text-xs font-mono font-bold">{greeks.theta}</span></div>
-            <div className="flex justify-between"><span className="text-xs text-muted-foreground">ν Vega</span><span className="text-xs font-mono font-bold">{greeks.vega}</span></div>
-          </div>
-        )}
+  const greeks = legs && legs.length > 0 && daysToExpiry > 0
+    ? calculatePortfolioGreeks(legs, label, daysToExpiry, cdiRate)
+    : null;
+
+  const filteredPayload = payload.filter((p: any) =>
+    !['belowZero', 'betweenZeroCdi', 'aboveCdi'].includes(p.dataKey)
+  );
+
+  return (
+    <div className="rounded-xl border border-border/60 bg-card/95 p-3.5 shadow-2xl backdrop-blur-md min-w-[220px]">
+      <div className="mb-2.5 border-b border-border/40 pb-2">
+        <p className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground mb-0.5">Preço do Ativo</p>
+        <p className="text-base font-bold font-mono text-foreground">R$ {Number(label).toFixed(2)}</p>
       </div>
-    );
-  }
-  return null;
+      <div className="space-y-2">
+        {filteredPayload.map((p: any, i: number) => (
+          <div key={i} className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="h-2.5 w-2.5 rounded-full shrink-0 ring-1 ring-white/10" style={{ backgroundColor: p.color }} />
+              <span className="text-[11px] font-medium text-foreground/70">{p.name}</span>
+            </div>
+            <span className={cn(
+              "text-[11px] font-black font-mono",
+              p.value >= 0 ? "text-emerald-400" : "text-red-400"
+            )}>
+              {format(p.value)}
+            </span>
+          </div>
+        ))}
+      </div>
+      {greeks && (
+        <div className="mt-2.5 pt-2.5 border-t border-border/40">
+          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-1.5">Greeks</p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+            <div className="flex justify-between">
+              <span className="text-[10px] text-muted-foreground">Δ Delta</span>
+              <span className="text-[10px] font-mono font-bold text-foreground/80">{greeks.delta}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[10px] text-muted-foreground">Γ Gamma</span>
+              <span className="text-[10px] font-mono font-bold text-foreground/80">{greeks.gamma}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[10px] text-muted-foreground">Θ Theta</span>
+              <span className="text-[10px] font-mono font-bold text-foreground/80">{greeks.theta}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[10px] text-muted-foreground">ν Vega</span>
+              <span className="text-[10px] font-mono font-bold text-foreground/80">{greeks.vega}</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default function PayoffChart({ 
@@ -99,7 +116,7 @@ export default function PayoffChart({
   legs
 }: PayoffChartProps) {
   const [displayMode, setDisplayMode] = useState<'value' | 'percent'>('value');
-  const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
+  const [viewMode, setViewMode] = useState<'2d' | 'temporal'>('2d');
 
   const investedCapital = useMemo(() => Math.max(Math.abs(montageTotal ?? netCost ?? 0), 1), [montageTotal, netCost]);
   const factor = displayMode === 'percent' ? (100 / investedCapital) : 1;
@@ -122,12 +139,10 @@ export default function PayoffChart({
         profitAtExpiry: profit * factor,
         profitToday: p.profitToday * factor,
         simulatedAtExpiry: simPoint ? simPoint.profitAtExpiry * factor : undefined,
-        // Lógica das 3 cores
         belowZero: (profit < 0 ? profit : 0) * factor,
         betweenZeroCdi: (profit > 0 ? Math.min(profit, cdi) : 0) * factor,
         aboveCdi: (profit > cdi ? profit - cdi : 0) * factor,
         cdiLine: cdi * factor,
-        // Linha do CDI do período para simulação
         periodCdiLine: simCdi * factor,
       };
     });
@@ -143,42 +158,106 @@ export default function PayoffChart({
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
 
+  // Compute risk/reward ratio
+  const riskRewardRatio = useMemo(() => {
+    if (!maxGain || !maxLoss || maxGain === 'Ilimitado' || maxLoss === 'Ilimitado') return null;
+    const ratio = Math.abs(maxGain) / Math.abs(maxLoss);
+    return ratio.toFixed(2);
+  }, [maxGain, maxLoss]);
+
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-3 rounded-xl bg-muted/30 border border-border/50">
-          <p className="text-xs font-black uppercase text-muted-foreground mb-1 flex items-center gap-1">
+    <div className="space-y-4">
+      {/* Metrics row */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <div className="p-3 rounded-xl bg-muted/20 border border-border/40 hover:border-success/30 transition-colors">
+          <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
             <TrendingUp className="h-3 w-3 text-success" /> Lucro Máx.
           </p>
-          <p className="text-sm font-bold text-success">{formatVal(maxGain)}</p>
+          <p className="text-sm font-bold text-success font-mono">{formatVal(maxGain)}</p>
         </div>
-        <div className="p-3 rounded-xl bg-muted/30 border border-border/50">
-          <p className="text-xs font-black uppercase text-muted-foreground mb-1 flex items-center gap-1">
+        <div className="p-3 rounded-xl bg-muted/20 border border-border/40 hover:border-destructive/30 transition-colors">
+          <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
             <TrendingDown className="h-3 w-3 text-destructive" /> Risco Máx.
           </p>
-          <p className="text-sm font-bold text-destructive">{formatVal(maxLoss)}</p>
+          <p className="text-sm font-bold text-destructive font-mono">{formatVal(maxLoss)}</p>
         </div>
-        <div className="p-3 rounded-xl bg-muted/30 border border-border/50">
-          <p className="text-xs font-black uppercase text-muted-foreground mb-1 flex items-center gap-1">
+        <div className="p-3 rounded-xl bg-muted/20 border border-border/40 hover:border-warning/30 transition-colors">
+          <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
             <Target className="h-3 w-3 text-warning" /> Breakeven
           </p>
-          <p className="text-sm font-bold">{breakevens.length > 0 ? `R$ ${breakevens[0].toFixed(2)}` : 'N/A'}</p>
+          <p className="text-sm font-bold font-mono">
+            {breakevens.length > 0
+              ? breakevens.map((b) => `R$${b.toFixed(2)}`).join(' | ')
+              : 'N/A'}
+          </p>
         </div>
-        <div className="flex items-center justify-end gap-1">
-          <Button variant={viewMode === '2d' ? 'default' : 'outline'} size="sm" className="h-8 px-3 text-xs font-bold" onClick={() => setViewMode('2d')}><Layers className="h-3 w-3 mr-1" /> 2D</Button>
-          <Button variant={viewMode === '3d' ? 'default' : 'outline'} size="sm" className="h-8 px-3 text-xs font-bold" onClick={() => setViewMode('3d')}><Grid3X3 className="h-3 w-3 mr-1" /> Heatmap</Button>
-          <div className="w-px h-6 bg-border mx-1" />
-          <Button variant={displayMode === 'value' ? 'default' : 'outline'} size="sm" className="h-8 px-3 text-xs font-bold" onClick={() => setDisplayMode('value')}><DollarSign className="h-3 w-3 mr-1" /> VALOR</Button>
-          <Button variant={displayMode === 'percent' ? 'default' : 'outline'} size="sm" className="h-8 px-3 text-xs font-bold" onClick={() => setDisplayMode('percent')}><Percent className="h-3 w-3 mr-1" /> % ROI</Button>
+        {riskRewardRatio && (
+          <div className="p-3 rounded-xl bg-muted/20 border border-border/40 hover:border-primary/30 transition-colors">
+            <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
+              <Activity className="h-3 w-3 text-primary" /> Risco/Retorno
+            </p>
+            <p className="text-sm font-bold text-primary font-mono">1:{riskRewardRatio}</p>
+          </div>
+        )}
+        <div className="flex items-center justify-end gap-1 flex-wrap">
+          <div className="flex rounded-lg border border-border/40 overflow-hidden">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-8 px-3 text-[10px] font-bold rounded-none border-r border-border/40",
+                viewMode === '2d' && "bg-primary/15 text-primary"
+              )}
+              onClick={() => setViewMode('2d')}
+            >
+              <Layers className="h-3 w-3 mr-1" /> Payoff
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-8 px-3 text-[10px] font-bold rounded-none",
+                viewMode === 'temporal' && "bg-primary/15 text-primary"
+              )}
+              onClick={() => setViewMode('temporal')}
+            >
+              <Clock className="h-3 w-3 mr-1" /> Temporal
+            </Button>
+          </div>
+          <div className="w-px h-6 bg-border/40" />
+          <div className="flex rounded-lg border border-border/40 overflow-hidden">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-8 px-3 text-[10px] font-bold rounded-none border-r border-border/40",
+                displayMode === 'value' && "bg-primary/15 text-primary"
+              )}
+              onClick={() => setDisplayMode('value')}
+            >
+              <DollarSign className="h-3 w-3 mr-1" /> R$
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-8 px-3 text-[10px] font-bold rounded-none",
+                displayMode === 'percent' && "bg-primary/15 text-primary"
+              )}
+              onClick={() => setDisplayMode('percent')}
+            >
+              <Percent className="h-3 w-3 mr-1" /> %
+            </Button>
+          </div>
         </div>
       </div>
 
-      {viewMode === '3d' ? (
+      {viewMode === 'temporal' ? (
         <Suspense fallback={
-          <div className="h-[450px] flex items-center justify-center bg-muted/20 rounded-xl border border-border/50">
+          <div className="h-[450px] flex items-center justify-center bg-muted/10 rounded-xl border border-border/40">
             <div className="flex flex-col items-center gap-3">
               <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-              <span className="text-sm text-muted-foreground">Carregando visualização 3D...</span>
+              <span className="text-sm text-muted-foreground">Carregando gráfico temporal...</span>
             </div>
           </div>
         }>
@@ -191,69 +270,135 @@ export default function PayoffChart({
           />
         </Suspense>
       ) : (
-        <ChartContainer config={chartConfig} className="h-[450px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={chartData} margin={{ top: 25, right: 30, left: 10, bottom: 0 }}>
-              <defs>
-                <linearGradient id="lossGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.4} /><stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.05} /></linearGradient>
-                <linearGradient id="orangeGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(38 92% 50%)" stopOpacity={0.4} /><stop offset="100%" stopColor="hsl(38 92% 50%)" stopOpacity={0.05} /></linearGradient>
-                <linearGradient id="greenGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={0.4} /><stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0.05} /></linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border" opacity={0.3} />
-              <XAxis type="number" dataKey="price" domain={[minPrice, maxPrice]} tickFormatter={(v) => v.toFixed(2)} className="text-xs" stroke="hsl(var(--muted-foreground))" fontSize={11} />
-              <YAxis tickFormatter={(v) => displayMode === 'percent' ? `${v.toFixed(1)}%` : v.toFixed(0)} className="text-xs" stroke="hsl(var(--muted-foreground))" fontSize={11} width={60} />
-              
-              <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" strokeOpacity={0.5} />
-              
-              {entrySpotPrice && (
-                <ReferenceLine 
-                  x={entrySpotPrice} 
-                  stroke="hsl(var(--muted-foreground))" 
-                  strokeWidth={2} 
-                  strokeDasharray="3 3"
-                  label={{ value: `ENTRADA: ${entrySpotPrice.toFixed(2)}`, position: 'top', fill: 'hsl(var(--muted-foreground))', fontSize: 10, fontWeight: 700 }} 
+        <div className="rounded-xl border border-border/30 bg-card/20 p-1">
+          <ChartContainer config={chartConfig} className="h-[450px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={chartData} margin={{ top: 25, right: 25, left: 5, bottom: 20 }}>
+                <defs>
+                  <linearGradient id="lossGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.03} />
+                  </linearGradient>
+                  <linearGradient id="orangeGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(38 92% 50%)" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="hsl(38 92% 50%)" stopOpacity={0.03} />
+                  </linearGradient>
+                  <linearGradient id="greenGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0.03} />
+                  </linearGradient>
+                </defs>
+
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.15} />
+
+                <XAxis
+                  type="number"
+                  dataKey="price"
+                  domain={[minPrice, maxPrice]}
+                  tickFormatter={(v) => v.toFixed(0)}
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={10}
+                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                  label={{
+                    value: 'Preço do Ativo (R$)',
+                    position: 'insideBottom',
+                    offset: -8,
+                    fill: 'hsl(var(--muted-foreground))',
+                    fontSize: 10,
+                    fontWeight: 600,
+                  }}
                 />
-              )}
-
-              {currentPnL !== null && currentPnL !== undefined && (
-                <ReferenceLine 
-                  y={currentPnL * factor} 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={2} 
-                  strokeDasharray="3 3"
-                  label={{ value: `SAÍDA ATUAL: ${formatVal(currentPnL)}`, position: 'insideBottomRight', fill: 'hsl(var(--primary))', fontSize: 10, fontWeight: 900 }}
+                <YAxis
+                  tickFormatter={(v) => displayMode === 'percent' ? `${v.toFixed(1)}%` : `${v.toFixed(0)}`}
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={10}
+                  width={60}
+                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                  label={{
+                    value: displayMode === 'percent' ? 'ROI (%)' : 'Resultado (R$)',
+                    angle: -90,
+                    position: 'insideLeft',
+                    offset: 15,
+                    fill: 'hsl(var(--muted-foreground))',
+                    fontSize: 10,
+                    fontWeight: 600,
+                  }}
                 />
-              )}
 
-              {currentSpotPrice && (
-                <ReferenceLine x={currentSpotPrice} stroke="hsl(var(--primary))" strokeWidth={3} label={{ value: `PREÇO ATUAL ${currentSpotPrice.toFixed(2)}`, position: 'top', fill: 'hsl(var(--primary))', fontSize: 12, fontWeight: 900 }} />
-              )}
+                {/* Zero line */}
+                <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="6 3" strokeOpacity={0.4} strokeWidth={1.5} />
 
-              {currentSpotPrice && currentPnL !== null && (
-                <ReferenceDot x={currentSpotPrice} y={currentPnL * factor} r={6} fill="hsl(var(--primary))" stroke="white" strokeWidth={2} className="animate-pulse" />
-              )}
-              
-              <ChartTooltip content={<CustomTooltip displayMode={displayMode} legs={legs} daysToExpiry={daysToExpiry} cdiRate={cdiRate} />} />
-              
-              {/* Áreas de Payoff (3 Cores) */}
-              <Area type="monotone" dataKey="belowZero" stroke="none" fill="url(#lossGradient)" isAnimationActive={false} />
-              <Area type="monotone" dataKey="betweenZeroCdi" stackId="positive" stroke="none" fill="url(#orangeGradient)" isAnimationActive={false} />
-              <Area type="monotone" dataKey="aboveCdi" stackId="positive" stroke="none" fill="url(#greenGradient)" isAnimationActive={false} />
-              
-              {/* Linhas de Referência */}
-              <Line name="CDI" type="monotone" dataKey="cdiLine" stroke="hsl(45 95% 55%)" strokeWidth={2} strokeDasharray="3 3" dot={false} isAnimationActive={false} />
-              <Line name="Hoje (T+0)" type="monotone" dataKey="profitToday" stroke="hsl(var(--info))" strokeWidth={2} strokeDasharray="5 5" dot={false} isAnimationActive={false} />
-              <Line name="No Vencimento" type="monotone" dataKey="profitAtExpiry" stroke="hsl(var(--chart-profit))" strokeWidth={2.5} dot={false} isAnimationActive={false} />
-              
-              {simulationData && (
-                <>
-                  <Line name="Simulação (Venc.)" type="monotone" dataKey="simulatedAtExpiry" stroke="hsl(var(--primary))" strokeWidth={3} strokeDasharray="10 5" dot={false} isAnimationActive={false} />
-                  <Line name="CDI do Período" type="monotone" dataKey="periodCdiLine" stroke="hsl(38 92% 50%)" strokeWidth={2} strokeDasharray="2 2" dot={false} isAnimationActive={false} />
-                </>
-              )}
-            </ComposedChart>
-          </ResponsiveContainer>
-        </ChartContainer>
+                {/* Entry spot price */}
+                {entrySpotPrice && (
+                  <ReferenceLine 
+                    x={entrySpotPrice} 
+                    stroke="hsl(var(--muted-foreground))" 
+                    strokeWidth={1.5} 
+                    strokeDasharray="4 4"
+                    label={{ value: `ENTRADA ${entrySpotPrice.toFixed(2)}`, position: 'top', fill: 'hsl(var(--muted-foreground))', fontSize: 9, fontWeight: 700 }} 
+                  />
+                )}
+
+                {/* Current PnL line */}
+                {currentPnL !== null && currentPnL !== undefined && (
+                  <ReferenceLine 
+                    y={currentPnL * factor} 
+                    stroke="hsl(var(--primary))" 
+                    strokeWidth={1.5} 
+                    strokeDasharray="4 3"
+                    label={{ value: `P/L ATUAL: ${formatVal(currentPnL)}`, position: 'insideBottomRight', fill: 'hsl(var(--primary))', fontSize: 9, fontWeight: 900 }}
+                  />
+                )}
+
+                {/* Current spot */}
+                {currentSpotPrice && (
+                  <ReferenceLine
+                    x={currentSpotPrice}
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2.5}
+                    label={{ value: `SPOT ${currentSpotPrice.toFixed(2)}`, position: 'top', fill: 'hsl(var(--primary))', fontSize: 11, fontWeight: 900 }}
+                  />
+                )}
+
+                {/* Breakeven markers */}
+                {breakevens.map((be, i) => (
+                  <ReferenceLine
+                    key={`be-${i}`}
+                    x={be}
+                    stroke="hsl(45, 93%, 55%)"
+                    strokeWidth={1.5}
+                    strokeDasharray="5 3"
+                    label={{ value: `BE ${be.toFixed(2)}`, position: 'insideTopRight', fill: 'hsl(45, 93%, 55%)', fontSize: 9, fontWeight: 800 }}
+                  />
+                ))}
+
+                {/* Current position dot */}
+                {currentSpotPrice && currentPnL !== null && (
+                  <ReferenceDot x={currentSpotPrice} y={currentPnL * factor} r={7} fill="hsl(var(--primary))" stroke="hsl(var(--background))" strokeWidth={2.5} />
+                )}
+
+                <ChartTooltip content={<CustomTooltip displayMode={displayMode} legs={legs} daysToExpiry={daysToExpiry} cdiRate={cdiRate} />} />
+
+                {/* Colored areas */}
+                <Area type="monotone" dataKey="belowZero" stroke="none" fill="url(#lossGradient)" isAnimationActive={false} />
+                <Area type="monotone" dataKey="betweenZeroCdi" stackId="positive" stroke="none" fill="url(#orangeGradient)" isAnimationActive={false} />
+                <Area type="monotone" dataKey="aboveCdi" stackId="positive" stroke="none" fill="url(#greenGradient)" isAnimationActive={false} />
+
+                {/* Lines */}
+                <Line name="CDI" type="monotone" dataKey="cdiLine" stroke="hsl(45 95% 55%)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} isAnimationActive={false} />
+                <Line name="Hoje (T+0)" type="monotone" dataKey="profitToday" stroke="hsl(var(--info))" strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false} />
+                <Line name="No Vencimento" type="monotone" dataKey="profitAtExpiry" stroke="hsl(var(--chart-profit))" strokeWidth={2.5} dot={false} isAnimationActive={false} />
+
+                {simulationData && (
+                  <>
+                    <Line name="Simulação (Venc.)" type="monotone" dataKey="simulatedAtExpiry" stroke="hsl(var(--primary))" strokeWidth={3} strokeDasharray="10 5" dot={false} isAnimationActive={false} />
+                    <Line name="CDI do Período" type="monotone" dataKey="periodCdiLine" stroke="hsl(38 92% 50%)" strokeWidth={1.5} strokeDasharray="3 3" dot={false} isAnimationActive={false} />
+                  </>
+                )}
+              </ComposedChart>
+            </ResponsiveContainer>
+          </ChartContainer>
+        </div>
       )}
     </div>
   );
