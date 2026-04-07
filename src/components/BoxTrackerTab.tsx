@@ -35,7 +35,14 @@ import {
   Info,
   Database,
   ArrowRight,
+  Volume2,
+  VolumeX,
+  Smartphone,
+  Monitor,
+  Zap,
+  Download,
 } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 import { useNavigate } from "react-router-dom";
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 import { statusConfig } from "@/hooks/useRtdBridge";
