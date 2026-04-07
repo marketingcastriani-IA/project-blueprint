@@ -573,7 +573,7 @@ export default function TickerOpcoes() {
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</span>
                 <div>
                   <p className="text-xs font-semibold text-foreground">Envie automaticamente</p>
-                  <p className="text-xs leading-snug font-medium text-muted-foreground">Use "Tempo Real" ou "Rastrear Box" para enviar os tickers selecionados</p>
+                  <p className="text-xs leading-snug font-medium text-muted-foreground">Use "Tempo Real", "Rastrear Box" ou "Rastrear Collar" para enviar os tickers selecionados</p>
                 </div>
               </div>
             </div>
