@@ -788,6 +788,15 @@ export default function TickerOpcoes() {
                     <Box className="h-3.5 w-3.5" /> Rastrear Box
                   </Button>
                 )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={sendSelectedToCollar}
+                  className="gap-1.5 text-xs border-primary/40 text-primary hover:bg-primary/10"
+                  title="Enviar selecionados ao Rastrear Collar"
+                >
+                  <Shield className="h-3.5 w-3.5" /> Rastrear Collar
+                </Button>
               </>
             ) : (
               <span className="text-xs text-muted-foreground italic">Selecione opções na tabela para enviar</span>
