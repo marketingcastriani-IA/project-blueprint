@@ -373,11 +373,6 @@ export default function PayoffChart({
                 {/* Red loss zone */}
                 <Area type="monotone" dataKey="lossZone" stroke="hsl(0, 80%, 55%)" strokeWidth={0.5} strokeOpacity={0.3} fill="url(#lossZoneGrad)" isAnimationActive={false} legendType="none" />
 
-                {/* Zone labels via customized */}
-                {(() => {
-                  // We'll use ReferenceLine labels to indicate zones instead
-                  return null;
-                })()}
 
                 {/* Entry spot price */}
                 {entrySpotPrice && (
