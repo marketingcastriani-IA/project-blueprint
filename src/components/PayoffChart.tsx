@@ -47,7 +47,7 @@ const CustomTooltip = ({ active, payload, label, displayMode, legs, daysToExpiry
     : null;
 
   const filteredPayload = payload.filter((p: any) =>
-    !['belowZero', 'betweenZeroCdi', 'aboveCdi'].includes(p.dataKey)
+    !['gainZone', 'lossZone'].includes(p.dataKey)
   );
 
   return (
