@@ -1,15 +1,17 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useB3Options, type B3Option } from "@/contexts/B3OptionsContext";
 import ProfessionalLayout from "@/components/ProfessionalLayout";
+import Header from "@/components/Header";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Copy, Check, Filter, Database, ArrowUpDown, TrendingDown, TrendingUp, DollarSign, RotateCcw } from "lucide-react";
+import { Search, Copy, Check, Filter, Database, ArrowUpDown, TrendingDown, TrendingUp, DollarSign, RotateCcw, Wifi } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
+import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 
 const normalizeTickerSearch = (value: string) =>
   value.toUpperCase().replace(/[^A-Z0-9]/g, "").trim();
@@ -37,6 +39,7 @@ export default function TickerOpcoes() {
   const [selectedVencimento, setSelectedVencimento] = useState<string>("all");
   const [selectedTipo, setSelectedTipo] = useState<string>("all");
   const [precoBase, setPrecoBase] = useState("");
+  const [precoBaseManual, setPrecoBaseManual] = useState(false);
   const [pctAbaixo, setPctAbaixo] = useState(20);
   const [pctAcima, setPctAcima] = useState(20);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
@@ -44,9 +47,30 @@ export default function TickerOpcoes() {
   const [sortField, setSortField] = useState<"ticker" | "strike" | "vencimento" | "precoUltimo">("strike");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
+  // RTD Bridge — auto-fill preço base from live data
+  const { status, rows, addTicker } = useSharedRtdBridge();
+
+  // Subscribe family ticker to RTD when selected
+  useEffect(() => {
+    if (selectedFamily !== "all" && status === "connected") {
+      addTicker(selectedFamily);
+    }
+  }, [selectedFamily, status, addTicker]);
+
+  // Auto-fill preço base from live data (unless manually edited)
+  useEffect(() => {
+    if (precoBaseManual || selectedFamily === "all" || status !== "connected") return;
+    const row = rows.get(selectedFamily);
+    const livePrice = row?.ultimo;
+    if (livePrice && livePrice > 0) {
+      setPrecoBase(livePrice.toFixed(2));
+    }
+  }, [selectedFamily, rows, status, precoBaseManual]);
+
   const precoBaseNum = parseFloat(precoBase) || 0;
   const strikeMinCalc = precoBaseNum > 0 ? precoBaseNum * (1 - pctAbaixo / 100) : 0;
   const strikeMaxCalc = precoBaseNum > 0 ? precoBaseNum * (1 + pctAcima / 100) : Infinity;
+  const livePrice = selectedFamily !== "all" ? rows.get(selectedFamily)?.ultimo : null;
 
   const filtered = useMemo(() => {
     let result = dedupeOptionsByTicker(options);
@@ -114,6 +138,7 @@ export default function TickerOpcoes() {
     setSelectedVencimento("all");
     setSelectedTipo("all");
     setPrecoBase("");
+    setPrecoBaseManual(false);
     setPctAbaixo(20);
     setPctAcima(20);
     setSelectedRows(new Set());
@@ -129,6 +154,7 @@ export default function TickerOpcoes() {
   if (loading) {
     return (
       <ProfessionalLayout>
+        <Header />
         <div className="p-6 space-y-4">
           <Skeleton className="h-10 w-64" />
           <div className="grid grid-cols-3 gap-4">
@@ -146,6 +172,7 @@ export default function TickerOpcoes() {
 
   return (
     <ProfessionalLayout>
+      <Header />
       <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -240,7 +267,14 @@ export default function TickerOpcoes() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                 <div>
-                  <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Preço do Ativo (R$)</label>
+                  <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider mb-1.5 flex items-center gap-1.5">
+                    Preço do Ativo (R$)
+                    {livePrice && livePrice > 0 && !precoBaseManual && (
+                      <span className="flex items-center gap-0.5 text-primary">
+                        <Wifi className="h-3 w-3" /> ao vivo
+                      </span>
+                    )}
+                  </label>
                   <div className="relative">
                     <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -248,7 +282,7 @@ export default function TickerOpcoes() {
                       step="0.01"
                       placeholder="Ex: 35.50"
                       value={precoBase}
-                      onChange={(e) => setPrecoBase(e.target.value)}
+                      onChange={(e) => { setPrecoBase(e.target.value); setPrecoBaseManual(true); }}
                       className="pl-9 h-9 text-sm bg-background/50 font-mono"
                     />
                   </div>
