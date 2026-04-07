@@ -50,27 +50,40 @@ export default function TickerOpcoes() {
   // RTD Bridge — auto-fill preço base from live data
   const { status, rows, addTicker } = useSharedRtdBridge();
 
-  // Subscribe family ticker to RTD when selected
-  useEffect(() => {
-    if (selectedFamily !== "all" && status === "connected") {
-      addTicker(selectedFamily);
+  // Derive the stock ticker from family (e.g., VALE -> VALE3, PETR -> PETR4)
+  const stockTicker = useMemo(() => {
+    if (selectedFamily === "all") return null;
+    // Common suffixes: try 3 first (ON), then 4 (PN), then 11 (unit)
+    const candidates = [`${selectedFamily}3`, `${selectedFamily}4`, `${selectedFamily}11`];
+    // Check if any candidate already exists in RTD rows
+    for (const c of candidates) {
+      if (rows.has(c)) return c;
     }
-  }, [selectedFamily, status, addTicker]);
+    // Default to suffix 3 (most common)
+    return `${selectedFamily}3`;
+  }, [selectedFamily, rows]);
+
+  // Subscribe stock ticker to RTD when selected
+  useEffect(() => {
+    if (stockTicker && status === "connected") {
+      addTicker(stockTicker);
+    }
+  }, [stockTicker, status, addTicker]);
 
   // Auto-fill preço base from live data (unless manually edited)
   useEffect(() => {
-    if (precoBaseManual || selectedFamily === "all" || status !== "connected") return;
-    const row = rows.get(selectedFamily);
+    if (precoBaseManual || !stockTicker || status !== "connected") return;
+    const row = rows.get(stockTicker);
     const livePrice = row?.ultimo;
     if (livePrice && livePrice > 0) {
       setPrecoBase(livePrice.toFixed(2));
     }
-  }, [selectedFamily, rows, status, precoBaseManual]);
+  }, [stockTicker, rows, status, precoBaseManual]);
 
   const precoBaseNum = parseFloat(precoBase) || 0;
   const strikeMinCalc = precoBaseNum > 0 ? precoBaseNum * (1 - pctAbaixo / 100) : 0;
   const strikeMaxCalc = precoBaseNum > 0 ? precoBaseNum * (1 + pctAcima / 100) : Infinity;
-  const livePrice = selectedFamily !== "all" ? rows.get(selectedFamily)?.ultimo : null;
+  const livePrice = stockTicker ? rows.get(stockTicker)?.ultimo ?? null : null;
 
   const filtered = useMemo(() => {
     let result = dedupeOptionsByTicker(options);
