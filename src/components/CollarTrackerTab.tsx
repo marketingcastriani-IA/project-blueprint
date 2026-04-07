@@ -67,6 +67,11 @@ interface CollarResult {
   riskRewardRatio: number | null;
   qualityScore: number;
   isRiskFree: boolean;
+  // CDI comparison
+  diffCdiBaixa: number | null;   // rentBaixa - cdiPeriodo (pp)
+  diffCdiAlta: number | null;    // rentAlta - cdiPeriodo (pp)
+  per: number | null;            // Protection Efficiency Ratio
+  custoLiquidoPct: number | null; // custo líquido como % do ativo
 }
 
 interface StockFamily {
@@ -715,17 +720,60 @@ export default function CollarTrackerTab() {
           const isRiskFree = rentAlta !== null && rentBaixa !== null && rentNeutra !== null
             && rentBaixa >= -0.01 && rentNeutra >= -0.01 && rentAlta >= -0.01;
 
-          let qualityScore = 50;
+          // CDI comparison metrics
+          const diffCdiBaixa = (rentBaixa !== null && cdiPeriodo !== null) ? rentBaixa - cdiPeriodo : null;
+          const diffCdiAlta = (rentAlta !== null && cdiPeriodo !== null) ? rentAlta - cdiPeriodo : null;
+
+          // Custo líquido como % do ativo
+          const custoLiquidoPct = (custoCollar !== null && stockAsk !== null && stockAsk > 0)
+            ? (custoCollar / stockAsk) * 100 : null;
+
+          // PER (Protection Efficiency Ratio)
+          let per: number | null = null;
+          if (stockAsk !== null && stockAsk > 0) {
+            const downsideProtegido = stockAsk - putStrike;
+            per = (custoLiquidoPct !== null && Math.abs(custoLiquidoPct) > 0.01)
+              ? Math.abs(((downsideProtegido / stockAsk) * 100) / custoLiquidoPct)
+              : (custoLiquidoPct !== null && Math.abs(custoLiquidoPct) <= 0.01 ? Infinity : null);
+          }
+
+          // Quality Score — fórmula combinada com pesos CDI
+          // w1=0.30 rentAlta vs CDI | w2=0.25 proteção (risco zero) | w3=0.20 custo | w4=0.15 PER | w5=0.10 estrutura
+          let qualityScore = 0;
           if (rentAlta !== null && rentBaixa !== null && cdiPeriodo !== null) {
-            if (isRiskFree) qualityScore += 30;
-            if (rentAlta > cdiPeriodo) qualityScore += 20;
-            if (rentBaixa > cdiPeriodo) qualityScore += 15;
-            if (custoTipo === "Zero-Cost") qualityScore += 10;
-            if (custoTipo === "Crédito") qualityScore += 15;
-            if (distPutPct !== null && distPutPct >= -15 && distPutPct <= -5) qualityScore += 10;
-            if (distCallPct !== null && distCallPct >= 5 && distCallPct <= 15) qualityScore += 10;
-            if (!isRiskFree && rentBaixa < -10) qualityScore -= 20;
-            if (riskRewardRatio !== null && riskRewardRatio > 2) qualityScore += 5;
+            // Componente 1: Rent. Alta vs CDI (0-30 pts)
+            const altaVsCdi = diffCdiAlta ?? 0;
+            const comp1 = altaVsCdi > 0
+              ? Math.min(30, 15 + altaVsCdi * 3)  // acima CDI: 15-30
+              : Math.max(0, 15 + altaVsCdi * 3);   // abaixo CDI: 0-15
+
+            // Componente 2: Proteção / Risco Zero (0-25 pts)
+            let comp2 = 0;
+            if (isRiskFree) comp2 = 25;
+            else if (rentBaixa >= 0) comp2 = 20;
+            else if (diffCdiBaixa !== null && diffCdiBaixa >= -2) comp2 = 15;
+            else if (diffCdiBaixa !== null && diffCdiBaixa >= -5) comp2 = 8;
+            else comp2 = 0;
+
+            // Componente 3: Custo do collar (0-20 pts)
+            let comp3 = 10; // base
+            if (custoTipo === "Crédito") comp3 = 20;
+            else if (custoTipo === "Zero-Cost") comp3 = 15;
+            else if (custoLiquidoPct !== null) {
+              comp3 = Math.max(0, 10 - Math.abs(custoLiquidoPct) * 2);
+            }
+
+            // Componente 4: PER (0-15 pts)
+            let comp4 = 0;
+            if (per === Infinity) comp4 = 15;
+            else if (per !== null) comp4 = Math.min(15, per * 3);
+
+            // Componente 5: Estrutura / distância strikes (0-10 pts)
+            let comp5 = 5; // base
+            if (distPutPct !== null && distPutPct >= -15 && distPutPct <= -3) comp5 += 2.5;
+            if (distCallPct !== null && distCallPct >= 3 && distCallPct <= 15) comp5 += 2.5;
+
+            qualityScore = Math.round(comp1 + comp2 + comp3 + comp4 + comp5);
           }
           qualityScore = Math.max(0, Math.min(100, qualityScore));
 
@@ -739,6 +787,7 @@ export default function CollarTrackerTab() {
             rating, tipo, custoTipo,
             distPutPct, distCallPct, riskRewardRatio, qualityScore,
             isRiskFree,
+            diffCdiBaixa, diffCdiAlta, per, custoLiquidoPct,
           });
         }
       }
@@ -1467,32 +1516,48 @@ export default function CollarTrackerTab() {
           </div>
 
           {/* Metrics row */}
-          <div className="px-5 py-3 grid grid-cols-2 sm:grid-cols-5 gap-3 border-b border-border/30 bg-muted/10">
+          <div className="px-5 py-3 grid grid-cols-2 sm:grid-cols-4 gap-3 border-b border-border/30 bg-muted/10">
             <div>
               <p className="text-xs font-black uppercase text-muted-foreground flex items-center gap-1">
                 <TrendingUp className="h-3 w-3 text-success" /> Ganho Máx (Teto)
               </p>
               <p className="text-sm font-black text-success">{formatPercent(selectedCollar.rentAlta)}</p>
+              {selectedCollar.diffCdiAlta !== null && (
+                <p className={cn("text-[10px] font-bold font-mono", selectedCollar.diffCdiAlta >= 0 ? "text-success" : "text-destructive")}>
+                  {selectedCollar.diffCdiAlta >= 0 ? "+" : ""}{selectedCollar.diffCdiAlta.toFixed(2).replace(".", ",")} pp vs CDI
+                </p>
+              )}
             </div>
             <div>
               <p className="text-xs font-black uppercase text-muted-foreground flex items-center gap-1">
                 <TrendingDown className="h-3 w-3 text-destructive" /> Perda Máx (Piso)
               </p>
               <p className="text-sm font-black text-destructive">{formatPercent(selectedCollar.rentBaixa)}</p>
+              {selectedCollar.diffCdiBaixa !== null && (
+                <p className={cn("text-[10px] font-bold font-mono", selectedCollar.diffCdiBaixa >= 0 ? "text-success" : "text-destructive")}>
+                  {selectedCollar.diffCdiBaixa >= 0 ? "+" : ""}{selectedCollar.diffCdiBaixa.toFixed(2).replace(".", ",")} pp vs CDI
+                </p>
+              )}
             </div>
             <div>
               <p className="text-xs font-black uppercase text-muted-foreground">Custo Collar</p>
               <p className={cn("text-sm font-black", (selectedCollar.custoCollar ?? 0) <= 0 ? "text-success" : "text-warning")}>
                 {formatBRL(selectedCollar.custoCollar)}
               </p>
-            </div>
-            <div>
-              <p className="text-xs font-black uppercase text-muted-foreground">Breakeven</p>
-              <p className="text-sm font-black text-foreground">{selectedBreakeven ? formatBRL(selectedBreakeven) : "—"}</p>
+              {selectedCollar.custoLiquidoPct !== null && (
+                <p className="text-[10px] font-mono text-muted-foreground">
+                  {selectedCollar.custoLiquidoPct.toFixed(2).replace(".", ",")}% do ativo
+                </p>
+              )}
             </div>
             <div>
               <p className="text-xs font-black uppercase text-muted-foreground">CDI Período</p>
               <p className="text-sm font-black text-warning">{formatPercent(selectedCollar.cdiPeriodo)}</p>
+              {selectedCollar.per !== null && (
+                <p className="text-[10px] font-mono text-muted-foreground">
+                  PER: {selectedCollar.per === Infinity ? "∞" : selectedCollar.per.toFixed(1)}
+                </p>
+              )}
             </div>
           </div>
 
@@ -1721,6 +1786,9 @@ export default function CollarTrackerTab() {
                           <th className="text-right py-2 px-2">↔ Neutra</th>
                           <th className="text-right py-2 px-2">↑ Alta</th>
                           <th className="text-right py-2 px-2">CDI Per.</th>
+                          <th className="text-right py-2 px-2" title="Baixa vs CDI (pp)">↓ vs CDI</th>
+                          <th className="text-right py-2 px-2" title="Alta vs CDI (pp)">↑ vs CDI</th>
+                          <th className="text-right py-2 px-2" title="Protection Efficiency Ratio">PER</th>
                           <th className="text-center py-2 px-1">Score</th>
                           <th className="text-center py-2 px-2">Rating</th>
                         </tr>
@@ -1760,6 +1828,17 @@ export default function CollarTrackerTab() {
                               {formatPercent(c.rentAlta)}
                             </td>
                             <td className="py-2 px-2 text-right text-warning">{formatPercent(c.cdiPeriodo)}</td>
+                            <td className={cn("py-2 px-2 text-right font-bold font-mono",
+                              (c.diffCdiBaixa ?? 0) >= 0 ? "text-success" : "text-destructive")}>
+                              {c.diffCdiBaixa !== null ? `${c.diffCdiBaixa >= 0 ? "+" : ""}${c.diffCdiBaixa.toFixed(2).replace(".", ",")} pp` : "—"}
+                            </td>
+                            <td className={cn("py-2 px-2 text-right font-bold font-mono",
+                              (c.diffCdiAlta ?? 0) >= 0 ? "text-success" : "text-destructive")}>
+                              {c.diffCdiAlta !== null ? `${c.diffCdiAlta >= 0 ? "+" : ""}${c.diffCdiAlta.toFixed(2).replace(".", ",")} pp` : "—"}
+                            </td>
+                            <td className="py-2 px-2 text-right font-mono text-muted-foreground">
+                              {c.per === null ? "—" : c.per === Infinity ? "∞" : c.per.toFixed(1)}
+                            </td>
                             <td className="py-2 px-1 text-center">
                               <span className={cn("text-xs font-black px-1.5 py-0.5 rounded-full",
                                 c.qualityScore >= 80 ? "bg-success/10 text-success" :
