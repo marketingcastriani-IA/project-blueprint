@@ -39,6 +39,7 @@ export default function TickerOpcoes() {
   const [selectedVencimento, setSelectedVencimento] = useState<string>("all");
   const [selectedTipo, setSelectedTipo] = useState<string>("all");
   const [precoBase, setPrecoBase] = useState("");
+  const [precoBaseManual, setPrecoBaseManual] = useState(false);
   const [pctAbaixo, setPctAbaixo] = useState(20);
   const [pctAcima, setPctAcima] = useState(20);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
@@ -46,9 +47,30 @@ export default function TickerOpcoes() {
   const [sortField, setSortField] = useState<"ticker" | "strike" | "vencimento" | "precoUltimo">("strike");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
+  // RTD Bridge — auto-fill preço base from live data
+  const { status, rows, addTicker } = useSharedRtdBridge();
+
+  // Subscribe family ticker to RTD when selected
+  useEffect(() => {
+    if (selectedFamily !== "all" && status === "connected") {
+      addTicker(selectedFamily);
+    }
+  }, [selectedFamily, status, addTicker]);
+
+  // Auto-fill preço base from live data (unless manually edited)
+  useEffect(() => {
+    if (precoBaseManual || selectedFamily === "all" || status !== "connected") return;
+    const row = rows.get(selectedFamily);
+    const livePrice = row?.ultimo;
+    if (livePrice && livePrice > 0) {
+      setPrecoBase(livePrice.toFixed(2));
+    }
+  }, [selectedFamily, rows, status, precoBaseManual]);
+
   const precoBaseNum = parseFloat(precoBase) || 0;
   const strikeMinCalc = precoBaseNum > 0 ? precoBaseNum * (1 - pctAbaixo / 100) : 0;
   const strikeMaxCalc = precoBaseNum > 0 ? precoBaseNum * (1 + pctAcima / 100) : Infinity;
+  const livePrice = selectedFamily !== "all" ? rows.get(selectedFamily)?.ultimo : null;
 
   const filtered = useMemo(() => {
     let result = dedupeOptionsByTicker(options);
