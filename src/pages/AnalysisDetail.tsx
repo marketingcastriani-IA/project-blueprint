@@ -388,7 +388,7 @@ export default function AnalysisDetail() {
             <Card className="border-primary/20 bg-gradient-to-br from-primary/[0.03] to-card shadow-sm">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Lucro Atual (PnL)</span>
+                  <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Lucro Atual (PnL)</span>
                   <div className={cn("p-1.5 rounded-lg", currentPnL >= 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive")}>
                     <TrendingUp className="h-4 w-4" />
                   </div>
@@ -407,7 +407,7 @@ export default function AnalysisDetail() {
             <Card className="border-warning/20 bg-gradient-to-br from-warning/[0.03] to-card shadow-sm">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Custo Oportunidade (CDI)</span>
+                  <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Custo Oportunidade (CDI)</span>
                   <div className="p-1.5 rounded-lg bg-warning/10 text-warning">
                     <Clock className="h-4 w-4" />
                   </div>
@@ -420,14 +420,14 @@ export default function AnalysisDetail() {
                      {periodMetrics.cdiRoi.toFixed(2)}% ROI
                    </Badge>
                 </div>
-                <p className="text-[9px] font-bold text-muted-foreground uppercase mt-1">Rendimento no período da operação</p>
+                <p className="text-xs font-bold text-muted-foreground uppercase mt-1">Rendimento no período da operação</p>
               </CardContent>
             </Card>
 
             <Card className={cn("border-2 shadow-md transition-all", periodMetrics.efficiency >= 100 ? "border-success/30 bg-success/5" : "border-destructive/30 bg-destructive/5")}>
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Eficiência vs CDI</span>
+                  <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Eficiência vs CDI</span>
                   <div className={cn("p-1.5 rounded-lg", periodMetrics.efficiency >= 100 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive")}>
                     <Target className="h-4 w-4" />
                   </div>
@@ -435,7 +435,7 @@ export default function AnalysisDetail() {
                  <p className={cn("text-4xl font-black tracking-tighter", periodMetrics.efficiency >= 100 ? "text-success" : "text-destructive")}>
                    {periodMetrics.efficiency.toFixed(0)}% <span className="text-base font-bold">do CDI</span>
                  </p>
-                <p className="text-[9px] font-black text-muted-foreground uppercase mt-1 flex items-center gap-1">
+                <p className="text-xs font-black text-muted-foreground uppercase mt-1 flex items-center gap-1">
                   {periodMetrics.efficiency >= 100 ? <><Zap className="h-3 w-3 text-success" /> ✓ Superando o CDI</> : <><AlertTriangle className="h-3 w-3 text-destructive" /> ✗ Abaixo do CDI</>}
                 </p>
               </CardContent>
@@ -490,7 +490,7 @@ export default function AnalysisDetail() {
                         {exitAnalysis.verdict}
                       </Badge>
                       <div className="flex flex-col">
-                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Score de Eficiência</span>
+                        <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">Score de Eficiência</span>
                         <span className="text-lg font-black text-primary">{exitAnalysis.efficiency_score}/100</span>
                       </div>
                     </div>
@@ -502,7 +502,7 @@ export default function AnalysisDetail() {
                   </div>
                   <div className="grid gap-6 md:grid-cols-2">
                     <div className="space-y-2">
-                      <p className="text-[10px] font-black uppercase text-primary flex items-center gap-1">
+                      <p className="text-xs font-black uppercase text-primary flex items-center gap-1">
                         <Target className="h-3 w-3" /> Justificativa Técnica
                       </p>
                       <p className="text-sm font-bold leading-relaxed text-foreground/90 italic">
@@ -510,7 +510,7 @@ export default function AnalysisDetail() {
                       </p>
                     </div>
                     <div className="space-y-2">
-                      <p className="text-[10px] font-black uppercase text-destructive flex items-center gap-1">
+                      <p className="text-xs font-black uppercase text-destructive flex items-center gap-1">
                         <AlertTriangle className="h-3 w-3" /> Risco Residual
                       </p>
                       <p className="text-sm font-medium leading-relaxed text-muted-foreground">
@@ -541,7 +541,7 @@ export default function AnalysisDetail() {
             </CardTitle>
             <div className="flex items-center gap-2">
               {isSimulating && <Badge className="bg-primary animate-pulse">MODO SIMULAÇÃO</Badge>}
-              <Badge variant="outline" className="text-[10px]">{legs.length} perna{legs.length !== 1 ? 's' : ''}</Badge>
+              <Badge variant="outline" className="text-xs">{legs.length} perna{legs.length !== 1 ? 's' : ''}</Badge>
             </div>
           </CardHeader>
           <CardContent>
@@ -557,14 +557,14 @@ export default function AnalysisDetail() {
                     <th className="text-right py-2">Qtd</th>
                     <th className="text-center py-2">
                       <div className="flex flex-col items-center gap-0.5">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-success flex items-center gap-1">
+                        <span className="text-xs font-bold uppercase tracking-wider text-success flex items-center gap-1">
                           <Wifi className="w-3 h-3" /> Tempo Real
                         </span>
                       </div>
                     </th>
                     <th className="text-center py-2">
                       <div className="flex flex-col items-center gap-0.5">
-                        <span className="text-[11px] font-black uppercase tracking-widest text-destructive animate-pulse">
+                        <span className="text-xs font-black uppercase tracking-widest text-destructive animate-pulse">
                           ⚡ VALOR DE SAÍDA ⚡
                         </span>
                       </div>
@@ -596,12 +596,12 @@ export default function AnalysisDetail() {
                           )}
                         </td>
                         <td className="py-3">
-                          <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider">
+                          <Badge variant="outline" className="text-xs font-bold uppercase tracking-wider">
                             {leg.option_type === 'stock' ? '🏢 ATIVO' : leg.option_type.toUpperCase()}
                           </Badge>
                         </td>
                         <td className="py-3">
-                          <Badge className={cn("text-[10px] font-black uppercase tracking-widest border", exitColor)}>
+                          <Badge className={cn("text-xs font-black uppercase tracking-widest border", exitColor)}>
                             {exitAction}
                           </Badge>
                         </td>

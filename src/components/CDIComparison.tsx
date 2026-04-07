@@ -180,7 +180,7 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
               </div>
               <div>
                 <Label className="text-base sm:text-lg font-black text-primary uppercase tracking-wide">📅 DATA DE VENCIMENTO PARA COMPARAR COM CDI</Label>
-                <p className="text-[10px] sm:text-xs text-primary/70 font-semibold uppercase tracking-wider">Campo obrigatório para cálculo</p>
+                <p className="text-xs sm:text-xs text-primary/70 font-semibold uppercase tracking-wider">Campo obrigatório para cálculo</p>
               </div>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">

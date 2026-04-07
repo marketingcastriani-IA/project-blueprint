@@ -659,7 +659,7 @@ export default function BoxTracker() {
             </span>
             Rastreador de Box
           </h1>
-          <p className="text-[11px] md:text-xs text-muted-foreground mt-1.5 font-medium">
+          <p className="text-xs md:text-xs text-muted-foreground mt-1.5 font-medium">
             Custo = (Ação + Put) − Call · Lucro = Strike − Custo
           </p>
         </div>
@@ -731,21 +731,21 @@ export default function BoxTracker() {
               <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</span>
               <div>
                 <p className="text-xs font-semibold text-foreground">Adicione uma família</p>
-                <p className="text-[10px] text-muted-foreground">Digite o nome base (ex: PETR, VALE) ou envie tickers automaticamente do <strong>Opções B3</strong></p>
+                <p className="text-xs text-muted-foreground">Digite o nome base (ex: PETR, VALE) ou envie tickers automaticamente do <strong>Opções B3</strong></p>
               </div>
             </div>
             <div className="flex items-start gap-2.5">
               <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</span>
               <div>
                 <p className="text-xs font-semibold text-foreground">Tickers automáticos</p>
-                <p className="text-[10px] text-muted-foreground">Conecte o Bridge para preços ao vivo — os tickers vindos do Opções B3 entram automaticamente</p>
+                <p className="text-xs text-muted-foreground">Conecte o Bridge para preços ao vivo — os tickers vindos do Opções B3 entram automaticamente</p>
               </div>
             </div>
             <div className="flex items-start gap-2.5">
               <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</span>
               <div>
                 <p className="text-xs font-semibold text-foreground">Ranking & Alertas</p>
-                <p className="text-[10px] text-muted-foreground">Os melhores boxes aparecem no ranking com comparação ao CDI do período</p>
+                <p className="text-xs text-muted-foreground">Os melhores boxes aparecem no ranking com comparação ao CDI do período</p>
               </div>
             </div>
           </div>
@@ -827,7 +827,7 @@ export default function BoxTracker() {
             {descontarIRAcoes ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
             IR Ações {IR_ACOES}%
             <span className={cn(
-              "text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider",
+              "text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider",
               descontarIRAcoes ? "bg-success/20 text-success" : "bg-destructive/15 text-destructive"
             )}>
               {descontarIRAcoes ? "ON" : "OFF"}
@@ -846,7 +846,7 @@ export default function BoxTracker() {
             {descontarIRRendaFixa ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
             IR Renda Fixa {IR_RENDA_FIXA}%
             <span className={cn(
-              "text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider",
+              "text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider",
               descontarIRRendaFixa ? "bg-success/20 text-success" : "bg-destructive/15 text-destructive"
             )}>
               {descontarIRRendaFixa ? "ON" : "OFF"}
@@ -877,12 +877,12 @@ export default function BoxTracker() {
                 {notifEnabled ? <Bell className="w-5 h-5 animate-bounce" /> : <BellOff className="w-5 h-5" />}
                 <span className="flex flex-col items-start leading-tight">
                   <span className="text-xs font-bold">Alerta Push</span>
-                  <span className="text-[10px] font-normal opacity-60">
+                  <span className="text-xs font-normal opacity-60">
                     {notifEnabled ? "Ativo · PC + Celular" : "Clique para ativar"}
                   </span>
                 </span>
                 <span className={cn(
-                  "text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ml-auto",
+                  "text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ml-auto",
                   notifEnabled ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"
                 )}>
                   {notifEnabled ? "ON" : "OFF"}
@@ -911,7 +911,7 @@ export default function BoxTracker() {
 
               {/* Platform badge */}
               {notifEnabled && (
-                <span className="hidden sm:flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
+                <span className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
                   <Monitor className="w-3 h-3" />
                   <Smartphone className="w-3 h-3" />
                   {(() => {
@@ -963,7 +963,7 @@ export default function BoxTracker() {
                   step={5}
                   className="w-full"
                 />
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   📩 Você será notificado quando um box superar <strong>{notifThreshold}%</strong> do CDI
                 </p>
               </div>
@@ -988,7 +988,7 @@ export default function BoxTracker() {
                   step={5}
                   className="w-full"
                 />
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   🚨 Alerta urgente com vibração extra quando superar <strong>{notifThresholdUrgent}%</strong> do CDI
                 </p>
               </div>
@@ -1005,7 +1005,7 @@ export default function BoxTracker() {
                       <Download className="w-3.5 h-3.5 text-primary" />
                       <span className="text-xs font-bold text-foreground">Instale o app para alertas no celular</span>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] text-muted-foreground">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-muted-foreground">
                       <div className="flex items-start gap-1.5">
                         <Monitor className="w-3 h-3 mt-0.5 text-primary shrink-0" />
                         <span><strong>Chrome PC:</strong> Clique no ícone de instalação na barra de URL</span>
@@ -1037,7 +1037,7 @@ export default function BoxTracker() {
                     setAlertHistory([]);
                     localStorage.removeItem(ALERT_HISTORY_KEY);
                   }}
-                  className="text-[10px] text-destructive hover:underline font-medium"
+                  className="text-xs text-destructive hover:underline font-medium"
                 >
                   Limpar tudo
                 </button>
@@ -1045,7 +1045,7 @@ export default function BoxTracker() {
               <div className="space-y-1.5 max-h-48 overflow-y-auto">
                 {alertHistory.map((entry) => (
                   <div key={entry.id} className={cn(
-                    "flex flex-wrap items-center gap-2 text-[11px] px-3 py-2 rounded-xl border",
+                    "flex flex-wrap items-center gap-2 text-xs px-3 py-2 rounded-xl border",
                     entry.cdiPercent >= notifThresholdUrgent
                       ? "bg-warning/10 border-warning/30"
                       : "bg-muted/50 border-border/50"
@@ -1107,7 +1107,7 @@ export default function BoxTracker() {
                     height={512}
                   />
                   <div className="flex-1 min-w-0">
-                    <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold block">
+                    <span className="text-xs text-muted-foreground uppercase tracking-widest font-bold block">
                       {i === 0 ? "Melhor Box" : i === 1 ? "2º Melhor" : "3º Melhor"}
                     </span>
                     <span className="text-xl font-extrabold text-foreground tracking-tight">{pair.familyName}</span>
@@ -1120,13 +1120,13 @@ export default function BoxTracker() {
                   )}
                   {/* % CDI big display */}
                   <div className="text-right shrink-0">
-                    <span className="text-[9px] text-muted-foreground uppercase tracking-wider block">% CDI</span>
+                    <span className="text-xs text-muted-foreground uppercase tracking-wider block">% CDI</span>
                     {pctCdi !== null ? (
                       <>
                         <span className={cn("text-3xl font-extrabold tracking-tighter", isAboveCdi ? "text-success" : "text-destructive")}>
                           {pctCdi.toFixed(0)}%
                         </span>
-                        <span className={cn("text-[9px] font-semibold block", isAboveCdi ? "text-success" : "text-destructive")}>
+                        <span className={cn("text-xs font-semibold block", isAboveCdi ? "text-success" : "text-destructive")}>
                           {isAboveCdi ? `▲ ${(pctCdi - 100).toFixed(0)}% acima` : `▼ ${(100 - pctCdi).toFixed(0)}% abaixo`}
                         </span>
                       </>
@@ -1154,20 +1154,20 @@ export default function BoxTracker() {
 
                   {/* 🔧 COMO MONTAR — 3 pontas */}
                   <div className="rounded-xl border border-border bg-muted/20 p-3.5">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold mb-2.5 flex items-center gap-1.5">
+                    <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold mb-2.5 flex items-center gap-1.5">
                       🔧 Como montar este Box
                     </p>
                     <div className="space-y-2">
                       {/* Ponta 1: Comprar Ação */}
                       <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
-                          <span className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[10px] font-bold">1</span>
+                          <span className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-bold">1</span>
                           <span className="font-medium text-foreground">Comprar <span className="font-bold">{pair.familyName}</span></span>
                         </div>
                         <div className="text-right font-mono">
                           <span className="font-bold text-foreground">{pair.stockAsk !== null ? formatBRL(pair.stockAsk) : "—"}</span>
                           {capitalAcao !== null && (
-                            <span className="text-[10px] text-muted-foreground block">
+                            <span className="text-xs text-muted-foreground block">
                               {quantidade}x = {formatBRL(capitalAcao)}
                             </span>
                           )}
@@ -1176,13 +1176,13 @@ export default function BoxTracker() {
                       {/* Ponta 2: Vender CALL */}
                       <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
-                          <span className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[10px] font-bold">2</span>
+                          <span className="w-5 h-5 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xs font-bold">2</span>
                           <span className="font-medium text-foreground">Vender <span className="font-bold text-primary">{pair.callSymbol ?? "—"}</span></span>
                         </div>
                         <div className="text-right font-mono">
                           <span className="font-bold text-success">{pair.callBid !== null ? formatBRL(pair.callBid) : "—"}</span>
                           {creditoCall !== null && (
-                            <span className="text-[10px] text-success block">
+                            <span className="text-xs text-success block">
                               +{formatBRL(creditoCall)} crédito
                             </span>
                           )}
@@ -1191,13 +1191,13 @@ export default function BoxTracker() {
                       {/* Ponta 3: Comprar PUT */}
                       <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
-                          <span className="w-5 h-5 rounded-full bg-destructive/15 text-destructive flex items-center justify-center text-[10px] font-bold">3</span>
+                          <span className="w-5 h-5 rounded-full bg-destructive/15 text-destructive flex items-center justify-center text-xs font-bold">3</span>
                           <span className="font-medium text-foreground">Comprar <span className="font-bold text-destructive">{pair.putSymbol ?? "—"}</span></span>
                         </div>
                         <div className="text-right font-mono">
                           <span className="font-bold text-foreground">{pair.putAsk !== null ? formatBRL(pair.putAsk) : "—"}</span>
                           {capitalPut !== null && (
-                            <span className="text-[10px] text-muted-foreground block">
+                            <span className="text-xs text-muted-foreground block">
                               {quantidade}x = {formatBRL(capitalPut)}
                             </span>
                           )}
@@ -1205,7 +1205,7 @@ export default function BoxTracker() {
                       </div>
                       {/* Total */}
                       <div className="flex items-center justify-between text-sm pt-2 border-t border-border/50">
-                        <span className="font-bold text-muted-foreground uppercase text-[10px] tracking-wider">Capital necessário</span>
+                        <span className="font-bold text-muted-foreground uppercase text-xs tracking-wider">Capital necessário</span>
                         <span className="font-extrabold text-foreground text-base font-mono">
                           {capitalTotal !== null ? formatBRL(capitalTotal) : "—"}
                         </span>
@@ -1216,23 +1216,23 @@ export default function BoxTracker() {
                   {/* Métricas Grid */}
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 pt-3 border-t border-border/30">
                     <div>
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Custo Box</p>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Custo Box</p>
                       <p className="text-sm font-bold text-warning">{formatBRL(pair.compraBox)}</p>
                     </div>
                     <div>
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Lucro (1){descontarIRAcoes ? " líq" : ""}</p>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Lucro (1){descontarIRAcoes ? " líq" : ""}</p>
                       <p className="text-sm font-bold text-success">{formatBRL(lucroDisplay)}</p>
                     </div>
                     <div>
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Total ({quantidade}x)</p>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Total ({quantidade}x)</p>
                       <p className="text-sm font-bold text-success">{formatBRL(lucroTotalDisplay)}</p>
                     </div>
                     <div>
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">CDI Per.{descontarIRRendaFixa ? " líq" : ""}</p>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-0.5">CDI Per.{descontarIRRendaFixa ? " líq" : ""}</p>
                       <p className="text-sm font-bold text-warning">{cdiDisplay !== null ? formatPercent(cdiDisplay) : "—"}</p>
                     </div>
                     <div>
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Retorno{descontarIRAcoes ? " líq" : ""}</p>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-0.5">Retorno{descontarIRAcoes ? " líq" : ""}</p>
                       <p className="text-sm font-bold text-success">{formatPercent(lucroPercentDisplay)}</p>
                     </div>
                   </div>
@@ -1255,7 +1255,7 @@ export default function BoxTracker() {
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="text-muted-foreground border-b border-border text-[10px] uppercase tracking-wider">
+                <tr className="text-muted-foreground border-b border-border text-xs uppercase tracking-wider">
                   <th className="text-left py-2.5 pr-2 font-semibold">#</th>
                   <th className="text-left py-2.5 pr-2 font-semibold">Ativo</th>
                   <th className="text-left py-2.5 pr-2 font-semibold text-primary">CALL</th>
@@ -1312,7 +1312,7 @@ export default function BoxTracker() {
       {/* CONTROLES: Quantidade e Adicionar Família */}
       <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-6 items-stretch sm:items-end">
         <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Quantidade</label>
+          <label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Quantidade</label>
           <input
             type="number"
             value={quantidade}
@@ -1339,7 +1339,7 @@ export default function BoxTracker() {
               Adicionar
             </button>
           </div>
-          <p className="text-[10px] text-muted-foreground ml-1">Digite apenas o nome base sem número — ex: PETR, VALE, BBDC</p>
+          <p className="text-xs text-muted-foreground ml-1">Digite apenas o nome base sem número — ex: PETR, VALE, BBDC</p>
         </div>
       </div>
 
@@ -1491,7 +1491,7 @@ function FamilyCard({
           </button>
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-bold text-orange-600 dark:text-orange-300 text-base">{family.name}</span>
-            <span className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground border border-border/50" title="Ticker do ativo usado para preço">
+            <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground border border-border/50" title="Ticker do ativo usado para preço">
               {stockTicker}
             </span>
             {hasLiveStock ? (
@@ -1639,19 +1639,19 @@ function FamilyCard({
                 {/* Group headers */}
                 <tr className="border-b border-border">
                   <th className="px-3 py-1" />
-                  <th colSpan={2} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-gray-200 dark:bg-zinc-600/80 text-gray-700 dark:text-zinc-100 border-x border-gray-300 dark:border-zinc-500/60">
+                  <th colSpan={2} className="px-2 py-2 text-center text-xs uppercase tracking-widest font-black bg-gray-200 dark:bg-zinc-600/80 text-gray-700 dark:text-zinc-100 border-x border-gray-300 dark:border-zinc-500/60">
                     ATIVO
                   </th>
-                  <th colSpan={3} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-blue-100 dark:bg-blue-700/50 text-blue-700 dark:text-blue-200 border-x border-blue-300 dark:border-blue-500/40">
+                  <th colSpan={3} className="px-2 py-2 text-center text-xs uppercase tracking-widest font-black bg-blue-100 dark:bg-blue-700/50 text-blue-700 dark:text-blue-200 border-x border-blue-300 dark:border-blue-500/40">
                     📘 CALL
                   </th>
-                  <th colSpan={3} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-red-100 dark:bg-red-700/50 text-red-700 dark:text-red-200 border-x border-red-300 dark:border-red-500/40">
+                  <th colSpan={3} className="px-2 py-2 text-center text-xs uppercase tracking-widest font-black bg-red-100 dark:bg-red-700/50 text-red-700 dark:text-red-200 border-x border-red-300 dark:border-red-500/40">
                     📕 PUT
                   </th>
-                  <th colSpan={6} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-orange-100 dark:bg-orange-700/50 text-orange-700 dark:text-orange-200 border-x border-orange-300 dark:border-orange-500/40">
+                  <th colSpan={6} className="px-2 py-2 text-center text-xs uppercase tracking-widest font-black bg-orange-100 dark:bg-orange-700/50 text-orange-700 dark:text-orange-200 border-x border-orange-300 dark:border-orange-500/40">
                     💰 BOX SPREAD
                   </th>
-                  <th colSpan={2} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest font-black bg-amber-100 dark:bg-amber-700/50 text-amber-700 dark:text-amber-200 border-x border-amber-300 dark:border-amber-500/40">
+                  <th colSpan={2} className="px-2 py-2 text-center text-xs uppercase tracking-widest font-black bg-amber-100 dark:bg-amber-700/50 text-amber-700 dark:text-amber-200 border-x border-amber-300 dark:border-amber-500/40">
                     📊 CDI
                   </th>
                   <th className="px-2 py-1" />
@@ -1742,7 +1742,7 @@ function FamilyCard({
                       <td className="px-2 py-2 text-right text-red-700 dark:text-red-200 bg-red-50/50 dark:bg-red-950/10">{formatBRL(pair.putAsk)}</td>
                       {/* Box Spread */}
                       <td className="px-2 py-2 text-right font-semibold bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100">{formatBRL(displayStrike)}</td>
-                      <td className="px-2 py-2 text-center text-muted-foreground text-[10px]">
+                      <td className="px-2 py-2 text-center text-muted-foreground text-xs">
                         {pair.vencimento ?? "—"}
                         {pair.diasUteis !== null && (
                           <span className="block text-amber-600 dark:text-amber-500/70 font-bold">{pair.diasUteis}du</span>

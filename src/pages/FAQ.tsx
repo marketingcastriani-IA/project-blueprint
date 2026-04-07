@@ -50,7 +50,7 @@ const FeatureSection = ({ icon: Icon, title, children, badge }: { icon: React.Co
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-black tracking-tight">{title}</h2>
             {badge && (
-              <Badge variant="outline" className="text-[9px] border-primary/30 text-primary font-bold uppercase tracking-widest">
+              <Badge variant="outline" className="text-xs border-primary/30 text-primary font-bold uppercase tracking-widest">
                 {badge}
               </Badge>
             )}
@@ -130,7 +130,7 @@ export default function FAQ() {
                 <item.icon className="h-5 w-5 text-primary shrink-0" />
                 <div>
                   <p className="text-xs font-bold">{item.label}</p>
-                  <p className="text-[10px] text-muted-foreground">{item.desc}</p>
+                  <p className="text-xs text-muted-foreground">{item.desc}</p>
                 </div>
               </div>
             ))}
@@ -261,7 +261,7 @@ export default function FAQ() {
               ].map(item => (
                 <div key={item.label} className="p-3 rounded-xl bg-muted/30 border border-border/50">
                   <p className="text-xs font-bold">{item.label}</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">{item.desc}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
                 </div>
               ))}
             </div>
@@ -405,7 +405,7 @@ export default function FAQ() {
               ].map(item => (
                 <div key={item.label} className="p-3 rounded-xl bg-muted/30 border border-border/50">
                   <p className="text-xs font-bold">{item.label}</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">{item.desc}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
                 </div>
               ))}
             </div>
@@ -500,7 +500,7 @@ export default function FAQ() {
               ].map(item => (
                 <div key={item.label} className="p-3 rounded-xl bg-muted/30 border border-border/50">
                   <p className="text-xs font-bold">{item.label}</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">{item.desc}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
                 </div>
               ))}
             </div>
@@ -584,7 +584,7 @@ export default function FAQ() {
               ].map(item => (
                 <div key={item.label} className="p-3 rounded-xl bg-muted/30 border border-border/50">
                   <p className="text-xs font-bold">{item.label}</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">{item.desc}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
                 </div>
               ))}
             </div>
@@ -653,8 +653,8 @@ export default function FAQ() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-muted/50 border-b border-border/40">
-                    <th className="px-4 py-2 text-left text-[10px] font-black uppercase tracking-widest">Atalho</th>
-                    <th className="px-4 py-2 text-left text-[10px] font-black uppercase tracking-widest">Ação</th>
+                    <th className="px-4 py-2 text-left text-xs font-black uppercase tracking-widest">Atalho</th>
+                    <th className="px-4 py-2 text-left text-xs font-black uppercase tracking-widest">Ação</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -668,7 +668,7 @@ export default function FAQ() {
                   ].map((item, i) => (
                     <tr key={i} className={i % 2 === 0 ? 'bg-muted/20' : ''}>
                       <td className="px-4 py-2">
-                        <kbd className="px-2 py-1 rounded bg-muted border border-border text-[10px] font-mono font-bold">{item.key}</kbd>
+                        <kbd className="px-2 py-1 rounded bg-muted border border-border text-xs font-mono font-bold">{item.key}</kbd>
                       </td>
                       <td className="px-4 py-2 text-xs text-muted-foreground">{item.action}</td>
                     </tr>
@@ -705,7 +705,7 @@ export default function FAQ() {
               ].map(item => (
                 <div key={item.label} className="p-3 rounded-xl bg-muted/30 border border-border/50">
                   <p className="text-xs font-bold">{item.label}</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">{item.desc}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
                 </div>
               ))}
             </div>
@@ -763,7 +763,7 @@ export default function FAQ() {
               ].map(item => (
                 <div key={item.label} className="p-3 rounded-xl bg-muted/30 border border-border/50">
                   <p className="text-xs font-bold">{item.label}</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">{item.desc}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
                 </div>
               ))}
             </div>
@@ -900,7 +900,7 @@ export default function FAQ() {
             <Shield className="h-4 w-4 text-muted-foreground" />
             <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Aviso Legal</span>
           </div>
-          <p className="text-[10px] text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-xs text-muted-foreground max-w-2xl mx-auto">
             O Opções PRO X é uma ferramenta de simulação e análise educacional baseada nas regras da B3. 
             Não constitui recomendação de investimento. Os resultados são simulados e podem não refletir condições reais de mercado. 
             Verifique com sua corretora antes de operar.

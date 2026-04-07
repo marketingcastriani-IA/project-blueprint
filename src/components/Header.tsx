@@ -3,7 +3,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import { Button } from '@/components/ui/button';
 
-import { Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, ShieldCheck, Briefcase, Settings, Zap, PieChart, HelpCircle, Sparkles, Palette, BookOpen, Radio, BarChart2, Calculator, Database } from 'lucide-react';
+import { Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, ShieldCheck, Briefcase, Settings, Zap, PieChart, HelpCircle, Sparkles, Palette, BookOpen, Radio, BarChart2, Calculator, Database, Waves, TreePine } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
@@ -57,7 +57,7 @@ export default function Header() {
         onClick={() => navigate(item.path)}
         className={cn(
           'flex items-center gap-1.5 rounded-lg font-black uppercase tracking-widest transition-all whitespace-nowrap',
-          'px-3 py-2 text-[11px] lg:text-xs lg:px-4',
+          'px-3 py-2 text-xs lg:text-xs lg:px-4',
           isHighlight && !isActive && 'bg-yellow-400/90 text-black hover:bg-yellow-300 shadow-[0_0_16px_rgba(250,204,21,0.5)] animate-pulse border border-yellow-300/50',
           isHighlight && isActive && 'bg-yellow-400 text-black shadow-[0_0_20px_rgba(250,204,21,0.6)] ring-2 ring-yellow-300',
           isRealtime && !isHighlight && 'text-red-100 bg-red-600 hover:bg-red-500 animate-pulse shadow-[0_0_16px_rgba(239,68,68,0.5)] border border-red-400/50',
@@ -100,7 +100,7 @@ export default function Header() {
           {isFree && (
             <Button 
               onClick={() => navigate('/settings')}
-              className="hidden sm:flex h-8 px-3 bg-yellow-400 hover:bg-yellow-300 text-black font-black text-[9px] uppercase tracking-widest animate-pulse shadow-[0_0_15px_rgba(250,204,21,0.6)] border-b-2 border-black/20"
+              className="hidden sm:flex h-8 px-3 bg-yellow-400 hover:bg-yellow-300 text-black font-black text-xs uppercase tracking-widest animate-pulse shadow-[0_0_15px_rgba(250,204,21,0.6)] border-b-2 border-black/20"
             >
               <Zap className="h-3 w-3 mr-1 fill-current" /> ASSINE PRO
             </Button>
@@ -145,17 +145,19 @@ export default function Header() {
           </nav>
           <div className="flex items-center gap-1">
             <Palette className="h-3 w-3 text-muted-foreground mr-1" />
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mr-2">Tema:</span>
+            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mr-2">Tema:</span>
             {([
               { key: 'light' as const, label: 'Branco', icon: Sun },
               { key: 'dark' as const, label: 'Dark', icon: Moon },
               { key: 'destaque' as const, label: 'Destaque', icon: Sparkles },
+              { key: 'midnight' as const, label: 'Midnight', icon: Waves },
+              { key: 'forest' as const, label: 'Forest', icon: TreePine },
             ]).map(item => (
               <button
                 key={item.key}
                 onClick={() => setTheme(item.key)}
                 className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all',
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all',
                   theme === item.key
                     ? 'bg-primary text-primary-foreground ring-1 ring-primary/30'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
@@ -190,7 +192,7 @@ export default function Header() {
                     key={item.path}
                     onClick={() => { navigate(item.path); setMobileOpen(false); }}
                     className={cn(
-                      'flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all',
+                      'flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all',
                       isRealtime && 'text-red-100 bg-red-600 animate-pulse',
                       isRealtime && isActive && 'ring-2 ring-red-300',
                       !isRealtime && isActive && 'bg-primary-foreground/20 text-primary-foreground',
@@ -206,17 +208,19 @@ export default function Header() {
             {/* Theme selector mobile */}
             <div className="flex items-center gap-1 pt-2 mt-1 border-t border-primary-foreground/10">
               <Palette className="h-3 w-3 text-primary-foreground/60 ml-1" />
-              <span className="text-[9px] font-semibold uppercase tracking-widest text-primary-foreground/60 mr-1">Tema:</span>
+              <span className="text-xs font-semibold uppercase tracking-widest text-primary-foreground/60 mr-1">Tema:</span>
               {([
                 { key: 'light' as const, label: 'Branco', icon: Sun },
                 { key: 'dark' as const, label: 'Dark', icon: Moon },
                 { key: 'destaque' as const, label: 'Destaque', icon: Sparkles },
+                { key: 'midnight' as const, label: 'Midnight', icon: Waves },
+                { key: 'forest' as const, label: 'Forest', icon: TreePine },
               ]).map(item => (
                 <button
                   key={item.key}
                   onClick={() => setTheme(item.key)}
                   className={cn(
-                    'flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-semibold transition-all',
+                    'flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all',
                     theme === item.key
                       ? 'bg-primary-foreground/20 text-primary-foreground ring-1 ring-primary-foreground/30'
                       : 'text-primary-foreground/60 hover:bg-primary-foreground/10 hover:text-primary-foreground'

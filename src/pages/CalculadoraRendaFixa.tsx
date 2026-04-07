@@ -390,7 +390,7 @@ export default function CalculadoraRendaFixa() {
                   <TrendingUp className="h-3.5 w-3.5" />
                   Lucro da Estrutura de Opções (%)
                 </Label>
-                <p className="text-[10px] text-muted-foreground mb-1">
+                <p className="text-xs text-muted-foreground mb-1">
                   Insira o % de lucro da sua estrutura para comparar com renda fixa
                 </p>
                 <div className="relative mt-1">
@@ -488,7 +488,7 @@ export default function CalculadoraRendaFixa() {
 
                 <div className="flex items-center justify-center gap-4 py-2">
                   <div className="text-center">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
                       Opções {incluirIROpcoes ? '(líq.)' : '(bruto)'}
                     </p>
                     <p className="text-2xl font-black font-mono text-foreground">
@@ -497,7 +497,7 @@ export default function CalculadoraRendaFixa() {
                   </div>
                   <ArrowRight className="h-5 w-5 text-muted-foreground" />
                   <div className="text-center">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
                       Renda Fixa {incluirIRRF ? '(líq.)' : '(bruto)'}
                     </p>
                     <p className="text-2xl font-black font-mono text-foreground">
@@ -633,7 +633,7 @@ function MetricBox({
           : "bg-muted/30 border-border"
       )}
     >
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-1">
+      <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-1">
         {label}
       </p>
       <p

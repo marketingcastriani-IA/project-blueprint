@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
-type Theme = 'light' | 'dark' | 'destaque';
+type Theme = 'light' | 'dark' | 'destaque' | 'midnight' | 'forest';
 
 interface ThemeContextType {
   theme: Theme;
@@ -18,7 +18,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.remove('light', 'dark', 'destaque');
+    root.classList.remove('light', 'dark', 'destaque', 'midnight', 'forest');
     root.classList.add(theme);
     localStorage.setItem('opcoesx-theme', theme);
   }, [theme]);

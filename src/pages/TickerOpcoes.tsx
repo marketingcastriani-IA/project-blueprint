@@ -517,14 +517,14 @@ export default function TickerOpcoes() {
             <Filter className="h-4 w-4 text-primary" />
             <span className="text-sm font-semibold text-foreground">Filtros</span>
             {hasActiveFilters && (
-              <Badge variant="secondary" className="text-[10px] ml-auto">{filtered.length} resultados</Badge>
+              <Badge variant="secondary" className="text-xs ml-auto">{filtered.length} resultados</Badge>
             )}
           </div>
           <div className="p-4 space-y-4">
             {/* Row 1: Search + Family + Vencimento + Tipo */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="col-span-2 md:col-span-1">
-                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Buscar Ticker</label>
+                <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Buscar Ticker</label>
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -536,7 +536,7 @@ export default function TickerOpcoes() {
                 </div>
               </div>
               <div>
-                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Ativo Base</label>
+                <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Ativo Base</label>
                 <Select value={selectedFamily} onValueChange={setSelectedFamily}>
                   <SelectTrigger className="h-9 text-sm bg-background/50"><SelectValue /></SelectTrigger>
                   <SelectContent className="max-h-[300px]">
@@ -546,7 +546,7 @@ export default function TickerOpcoes() {
                 </Select>
               </div>
               <div>
-                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Vencimento</label>
+                <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Vencimento</label>
                 <Select value={selectedVencimento} onValueChange={setSelectedVencimento}>
                   <SelectTrigger className="h-9 text-sm bg-background/50"><SelectValue /></SelectTrigger>
                   <SelectContent className="max-h-[300px]">
@@ -556,7 +556,7 @@ export default function TickerOpcoes() {
                 </Select>
               </div>
               <div>
-                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Tipo</label>
+                <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Tipo</label>
                 <Select value={selectedTipo} onValueChange={setSelectedTipo}>
                   <SelectTrigger className="h-9 text-sm bg-background/50"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -571,18 +571,18 @@ export default function TickerOpcoes() {
             {/* Row 2: Strike % Range */}
             <div className="rounded-lg border border-border/30 bg-background/30 p-3 space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider flex items-center gap-1.5">
+                <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider flex items-center gap-1.5">
                   <DollarSign className="h-3.5 w-3.5" /> Filtrar Strike por % do Preço Base
                 </label>
                 {precoBaseNum > 0 && (
-                  <span className="text-[10px] font-mono text-primary">
+                  <span className="text-xs font-mono text-primary">
                     R$ {strikeMinCalc.toFixed(2)} — R$ {strikeMaxCalc.toFixed(2)}
                   </span>
                 )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                 <div>
-                  <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider mb-1.5 flex items-center gap-1.5">
+                  <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1.5 flex items-center gap-1.5">
                     Preço do Ativo (R$)
                     {livePrice && livePrice > 0 && !precoBaseManual && (
                       <span className="flex items-center gap-0.5 text-primary">
@@ -603,7 +603,7 @@ export default function TickerOpcoes() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider mb-1.5 flex items-center gap-1">
+                  <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1.5 flex items-center gap-1">
                     <TrendingDown className="h-3 w-3 text-destructive" /> Abaixo: {pctAbaixo}%
                   </label>
                   <Slider
@@ -616,7 +616,7 @@ export default function TickerOpcoes() {
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider mb-1.5 flex items-center gap-1">
+                  <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1.5 flex items-center gap-1">
                     <TrendingUp className="h-3 w-3 text-primary" /> Acima: {pctAcima}%
                   </label>
                   <Slider
@@ -639,7 +639,7 @@ export default function TickerOpcoes() {
             <div className="px-4 py-3 border-b border-primary/20 flex items-center gap-2">
               <Box className="h-4 w-4 text-primary" />
               <span className="text-sm font-semibold text-foreground">Oportunidades de Box</span>
-              <Badge variant="default" className="text-[10px] ml-auto">{boxOpportunities.length} pares</Badge>
+              <Badge variant="default" className="text-xs ml-auto">{boxOpportunities.length} pares</Badge>
             </div>
             <div className="p-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2">
               {boxOpportunities.map((opp, i) => (
@@ -650,11 +650,11 @@ export default function TickerOpcoes() {
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-xs font-bold text-foreground">Strike {opp.strike.toFixed(2)}</span>
-                    <Badge className={`text-[9px] font-bold border-0 ${opp.lucroPct > 1.5 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+                    <Badge className={`text-xs font-bold border-0 ${opp.lucroPct > 1.5 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
                       {opp.lucroPct.toFixed(2)}%
                     </Badge>
                   </div>
-                  <div className="text-[10px] text-muted-foreground space-y-0.5">
+                  <div className="text-xs text-muted-foreground space-y-0.5">
                     <div className="flex justify-between">
                       <span>C: {opp.call.ticker}</span>
                       <span>P: {opp.put.ticker}</span>
@@ -663,9 +663,9 @@ export default function TickerOpcoes() {
                       <span>Custo: {opp.custo.toFixed(2)}</span>
                       <span className="text-primary font-semibold">Lucro: {opp.lucro.toFixed(2)}</span>
                     </div>
-                    <div className="text-[9px]">{opp.vencimento}</div>
+                    <div className="text-xs">{opp.vencimento}</div>
                   </div>
-                  <div className="flex items-center gap-1 mt-1.5 text-[9px] text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 mt-1.5 text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
                     <Send className="h-2.5 w-2.5" /> Enviar ao Box Tracker
                   </div>
                 </button>
@@ -682,7 +682,7 @@ export default function TickerOpcoes() {
               {filtered.length > 200 && <span className="text-primary/70"> (200 visíveis)</span>}
             </span>
             {selectedRows.size > 0 && (
-              <Badge variant="default" className="text-[10px]">{selectedRows.size} selecionadas</Badge>
+              <Badge variant="default" className="text-xs">{selectedRows.size} selecionadas</Badge>
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -800,7 +800,7 @@ export default function TickerOpcoes() {
                               <TooltipProvider delayDuration={200}>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-primary/15 text-primary text-[9px] font-bold border border-primary/20 cursor-help">
+                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-primary/15 text-primary text-xs font-bold border border-primary/20 cursor-help">
                                       <Box className="h-2.5 w-2.5" /> PAR
                                     </span>
                                   </TooltipTrigger>
@@ -813,13 +813,13 @@ export default function TickerOpcoes() {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary" className="text-[10px] font-semibold">{opt.family}</Badge>
+                          <Badge variant="secondary" className="text-xs font-semibold">{opt.family}</Badge>
                         </TableCell>
                         <TableCell className="font-mono tabular-nums">{opt.strike.toFixed(2)}</TableCell>
                         <TableCell className="text-sm tabular-nums">{opt.vencimento}</TableCell>
                         <TableCell>
                           <Badge
-                            className={`text-[10px] font-bold border-0 ${
+                            className={`text-xs font-bold border-0 ${
                               opt.tipo === "CALL"
                                 ? "bg-primary/15 text-primary"
                                 : "bg-destructive/15 text-destructive"

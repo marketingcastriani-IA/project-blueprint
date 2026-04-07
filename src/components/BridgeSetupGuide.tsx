@@ -148,7 +148,7 @@ export default function BridgeSetupGuide({ status, errorMsg, reconnectCount, con
                           {step.title}
                         </span>
                         {step.important && (
-                          <Badge variant="destructive" className="text-[9px] px-1.5 py-0 h-4 font-black uppercase">
+                          <Badge variant="destructive" className="text-xs px-1.5 py-0 h-4 font-black uppercase">
                             <ShieldCheck className="w-2.5 h-2.5 mr-0.5" />
                             Admin obrigatório
                           </Badge>
