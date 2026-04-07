@@ -76,6 +76,7 @@ const App = () => (
             <ErrorBoundary>
               <AnimatedRoutes />
             </ErrorBoundary>
+            <Footer />
           </BrowserRouter>
         </TooltipProvider>
         </B3OptionsProvider>
