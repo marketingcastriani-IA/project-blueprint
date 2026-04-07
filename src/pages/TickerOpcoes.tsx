@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useB3Options, type B3Option } from "@/contexts/B3OptionsContext";
 import ProfessionalLayout from "@/components/ProfessionalLayout";
 import Header from "@/components/Header";
@@ -7,11 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Copy, Check, Filter, Database, ArrowUpDown, TrendingDown, TrendingUp, DollarSign, RotateCcw, Wifi } from "lucide-react";
+import { Search, Copy, Check, Filter, Database, ArrowUpDown, TrendingDown, TrendingUp, DollarSign, RotateCcw, Wifi, Radio, Box, Zap, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const normalizeTickerSearch = (value: string) =>
   value.toUpperCase().replace(/[^A-Z0-9]/g, "").trim();
@@ -32,8 +34,16 @@ const filterOptionsByTicker = (items: B3Option[], rawQuery: string) => {
   return items.filter((item) => normalizeTickerSearch(item.ticker).includes(query));
 };
 
+// Box Tracker localStorage types (must match BoxTrackerTab)
+interface SavedFamily {
+  name: string;
+  tickers: string[];
+}
+const BOX_STORAGE_KEY = "box-tracker-families";
+
 export default function TickerOpcoes() {
   const { options, families, vencimentos, loading } = useB3Options();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [selectedFamily, setSelectedFamily] = useState<string>("all");
   const [selectedVencimento, setSelectedVencimento] = useState<string>("all");
@@ -46,6 +56,7 @@ export default function TickerOpcoes() {
   const [copiedTicker, setCopiedTicker] = useState<string | null>(null);
   const [sortField, setSortField] = useState<"ticker" | "strike" | "vencimento" | "precoUltimo">("strike");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [sentToRtd, setSentToRtd] = useState<Set<string>>(new Set());
 
   // RTD Bridge — auto-fill preço base from live data
   const { status, rows, addTicker } = useSharedRtdBridge();
@@ -53,13 +64,10 @@ export default function TickerOpcoes() {
   // Derive the stock ticker from family (e.g., VALE -> VALE3, PETR -> PETR4)
   const stockTicker = useMemo(() => {
     if (selectedFamily === "all") return null;
-    // Common suffixes: try 3 first (ON), then 4 (PN), then 11 (unit)
     const candidates = [`${selectedFamily}3`, `${selectedFamily}4`, `${selectedFamily}11`];
-    // Check if any candidate already exists in RTD rows
     for (const c of candidates) {
       if (rows.has(c)) return c;
     }
-    // Default to suffix 3 (most common)
     return `${selectedFamily}3`;
   }, [selectedFamily, rows]);
 
@@ -110,6 +118,47 @@ export default function TickerOpcoes() {
   }, [options, selectedFamily, selectedVencimento, selectedTipo, search, precoBaseNum, strikeMinCalc, strikeMaxCalc, sortField, sortDir]);
 
   const displayed = filtered.slice(0, 200);
+
+  // ─── BOX OPPORTUNITIES ─────────────────────────────────────
+  const boxOpportunities = useMemo(() => {
+    if (selectedFamily === "all" || precoBaseNum <= 0) return [];
+    // Group filtered options by strike+vencimento
+    const groups = new Map<string, { calls: B3Option[]; puts: B3Option[] }>();
+    filtered.forEach((o) => {
+      const key = `${o.strike}|${o.vencimento}`;
+      if (!groups.has(key)) groups.set(key, { calls: [], puts: [] });
+      const g = groups.get(key)!;
+      if (o.tipo === "CALL") g.calls.push(o);
+      else g.puts.push(o);
+    });
+
+    const opportunities: Array<{
+      strike: number;
+      vencimento: string;
+      call: B3Option;
+      put: B3Option;
+      custo: number;
+      lucro: number;
+      lucroPct: number;
+    }> = [];
+
+    groups.forEach((g) => {
+      if (g.calls.length === 0 || g.puts.length === 0) return;
+      const call = g.calls[0];
+      const put = g.puts[0];
+      if (call.precoUltimo <= 0 || put.precoUltimo <= 0) return;
+      // Custo Box = (Preço Ação + Preço Put) - Preço Call
+      const custo = (precoBaseNum + put.precoUltimo) - call.precoUltimo;
+      if (custo <= 0) return;
+      const lucro = call.strike - custo;
+      const lucroPct = (lucro / custo) * 100;
+      if (lucro > 0) {
+        opportunities.push({ strike: call.strike, vencimento: call.vencimento, call, put, custo, lucro, lucroPct });
+      }
+    });
+
+    return opportunities.sort((a, b) => b.lucroPct - a.lucroPct).slice(0, 10);
+  }, [filtered, selectedFamily, precoBaseNum]);
 
   const toggleRow = useCallback((ticker: string) => {
     setSelectedRows((prev) => {
@@ -164,6 +213,128 @@ export default function TickerOpcoes() {
     return vencimentos.filter((v) => vSet.has(v));
   }, [selectedFamily, options, vencimentos]);
 
+  // ─── INTEGRATION: Send single ticker to RTD ────────────────
+  const sendToRtd = useCallback((ticker: string) => {
+    if (status !== "connected") {
+      toast.error("Bridge não conectado. Conecte o Profit RTD Bridge primeiro.");
+      return;
+    }
+    addTicker(ticker);
+    setSentToRtd((prev) => new Set(prev).add(ticker));
+    toast.success(`${ticker} adicionado ao Tempo Real`);
+  }, [status, addTicker]);
+
+  // ─── INTEGRATION: Send selected tickers to RTD (bulk) ──────
+  const sendSelectedToRtd = useCallback(() => {
+    if (status !== "connected") {
+      toast.error("Bridge não conectado. Conecte o Profit RTD Bridge primeiro.");
+      return;
+    }
+    const selected = filtered.filter((o) => selectedRows.has(o.ticker));
+    if (selected.length === 0) { toast.error("Nenhuma opção selecionada"); return; }
+    const limit = Math.min(selected.length, 20);
+    const toSend = selected.slice(0, limit);
+    toSend.forEach((o) => addTicker(o.ticker));
+    setSentToRtd((prev) => {
+      const next = new Set(prev);
+      toSend.forEach((o) => next.add(o.ticker));
+      return next;
+    });
+    toast.success(`${toSend.length} tickers enviados ao Tempo Real${selected.length > 20 ? " (máx 20)" : ""}`);
+  }, [status, addTicker, filtered, selectedRows]);
+
+  // ─── INTEGRATION: Monitor all family tickers ───────────────
+  const monitorFamily = useCallback(() => {
+    if (status !== "connected") {
+      toast.error("Bridge não conectado. Conecte o Profit RTD Bridge primeiro.");
+      return;
+    }
+    if (selectedFamily === "all") {
+      toast.error("Selecione uma família primeiro");
+      return;
+    }
+    // Get closest to ATM, limit 20
+    const familyOpts = filtered.slice(0, 20);
+    familyOpts.forEach((o) => addTicker(o.ticker));
+    setSentToRtd((prev) => {
+      const next = new Set(prev);
+      familyOpts.forEach((o) => next.add(o.ticker));
+      return next;
+    });
+    toast.success(`${familyOpts.length} opções de ${selectedFamily} enviadas ao Tempo Real`);
+  }, [status, addTicker, selectedFamily, filtered]);
+
+  // ─── INTEGRATION: Send selected pair to Box Tracker ────────
+  const sendSelectedToBox = useCallback(() => {
+    const selected = filtered.filter((o) => selectedRows.has(o.ticker));
+    const calls = selected.filter((o) => o.tipo === "CALL");
+    const puts = selected.filter((o) => o.tipo === "PUT");
+    if (calls.length === 0 || puts.length === 0) {
+      toast.error("Selecione pelo menos 1 CALL e 1 PUT");
+      return;
+    }
+    // Determine family name
+    const familyName = calls[0]?.family || puts[0]?.family || selectedFamily;
+    if (!familyName || familyName === "all") {
+      toast.error("Não foi possível determinar a família");
+      return;
+    }
+    // Build tickers list
+    const tickers = selected.map((o) => o.ticker);
+
+    // Load existing families from localStorage
+    let existingFamilies: SavedFamily[] = [];
+    try {
+      const saved = localStorage.getItem(BOX_STORAGE_KEY);
+      if (saved) existingFamilies = JSON.parse(saved);
+    } catch {}
+
+    // Check if family already exists, merge tickers
+    const existingIdx = existingFamilies.findIndex((f) => f.name === familyName);
+    if (existingIdx >= 0) {
+      const existing = new Set(existingFamilies[existingIdx].tickers);
+      tickers.forEach((t) => existing.add(t));
+      existingFamilies[existingIdx].tickers = Array.from(existing);
+    } else {
+      existingFamilies.push({ name: familyName, tickers });
+    }
+
+    localStorage.setItem(BOX_STORAGE_KEY, JSON.stringify(existingFamilies));
+    toast.success(`${tickers.length} tickers enviados ao Box Tracker (${familyName})`);
+    navigate("/box-tracker");
+  }, [filtered, selectedRows, selectedFamily, navigate]);
+
+  // ─── INTEGRATION: Send box opportunity to Box Tracker ──────
+  const sendOpportunityToBox = useCallback((call: B3Option, put: B3Option) => {
+    const familyName = call.family;
+    const tickers = [call.ticker, put.ticker];
+
+    let existingFamilies: SavedFamily[] = [];
+    try {
+      const saved = localStorage.getItem(BOX_STORAGE_KEY);
+      if (saved) existingFamilies = JSON.parse(saved);
+    } catch {}
+
+    const existingIdx = existingFamilies.findIndex((f) => f.name === familyName);
+    if (existingIdx >= 0) {
+      const existing = new Set(existingFamilies[existingIdx].tickers);
+      tickers.forEach((t) => existing.add(t));
+      existingFamilies[existingIdx].tickers = Array.from(existing);
+    } else {
+      existingFamilies.push({ name: familyName, tickers });
+    }
+
+    localStorage.setItem(BOX_STORAGE_KEY, JSON.stringify(existingFamilies));
+    toast.success(`Par ${call.ticker}/${put.ticker} enviado ao Box Tracker`);
+    navigate("/box-tracker");
+  }, [navigate]);
+
+  // Check if selection has valid call+put pair for box
+  const selectedHasBoxPair = useMemo(() => {
+    const selected = filtered.filter((o) => selectedRows.has(o.ticker));
+    return selected.some((o) => o.tipo === "CALL") && selected.some((o) => o.tipo === "PUT");
+  }, [filtered, selectedRows]);
+
   if (loading) {
     return (
       <ProfessionalLayout>
@@ -202,11 +373,24 @@ export default function TickerOpcoes() {
               </p>
             </div>
           </div>
-          {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={resetFilters} className="gap-1.5 text-muted-foreground hover:text-foreground">
-              <RotateCcw className="h-3.5 w-3.5" /> Limpar
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {selectedFamily !== "all" && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={monitorFamily}
+                className="gap-1.5 text-xs"
+                title="Monitorar as 20 opções mais próximas do ATM no Tempo Real"
+              >
+                <Radio className="h-3.5 w-3.5" /> Monitorar {selectedFamily}
+              </Button>
+            )}
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={resetFilters} className="gap-1.5 text-muted-foreground hover:text-foreground">
+                <RotateCcw className="h-3.5 w-3.5" /> Limpar
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Filters */}
@@ -331,8 +515,49 @@ export default function TickerOpcoes() {
           </div>
         </div>
 
+        {/* Box Opportunities */}
+        {boxOpportunities.length > 0 && (
+          <div className="rounded-xl border border-primary/30 bg-primary/5 backdrop-blur-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-primary/20 flex items-center gap-2">
+              <Box className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold text-foreground">Oportunidades de Box</span>
+              <Badge variant="default" className="text-[10px] ml-auto">{boxOpportunities.length} pares</Badge>
+            </div>
+            <div className="p-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2">
+              {boxOpportunities.map((opp, i) => (
+                <button
+                  key={`${opp.call.ticker}-${opp.put.ticker}`}
+                  onClick={() => sendOpportunityToBox(opp.call, opp.put)}
+                  className="text-left rounded-lg border border-border/50 bg-card/80 p-3 hover:bg-primary/10 hover:border-primary/40 transition-all group"
+                >
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-bold text-foreground">Strike {opp.strike.toFixed(2)}</span>
+                    <Badge className={`text-[9px] font-bold border-0 ${opp.lucroPct > 1.5 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+                      {opp.lucroPct.toFixed(2)}%
+                    </Badge>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground space-y-0.5">
+                    <div className="flex justify-between">
+                      <span>C: {opp.call.ticker}</span>
+                      <span>P: {opp.put.ticker}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Custo: {opp.custo.toFixed(2)}</span>
+                      <span className="text-primary font-semibold">Lucro: {opp.lucro.toFixed(2)}</span>
+                    </div>
+                    <div className="text-[9px]">{opp.vencimento}</div>
+                  </div>
+                  <div className="flex items-center gap-1 mt-1.5 text-[9px] text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Send className="h-2.5 w-2.5" /> Enviar ao Box Tracker
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Actions bar */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">
               {filtered.length.toLocaleString()} resultados
@@ -342,15 +567,41 @@ export default function TickerOpcoes() {
               <Badge variant="default" className="text-[10px]">{selectedRows.size} selecionadas</Badge>
             )}
           </div>
-          <Button
-            size="sm"
-            variant={selectedRows.size > 0 ? "default" : "outline"}
-            onClick={copySelection}
-            disabled={selectedRows.size === 0}
-            className="gap-2 transition-all"
-          >
-            <Copy className="h-3.5 w-3.5" /> Copiar Seleção
-          </Button>
+          <div className="flex items-center gap-2">
+            {selectedRows.size > 0 && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={sendSelectedToRtd}
+                  className="gap-1.5 text-xs"
+                  title="Enviar selecionados ao Tempo Real (máx 20)"
+                >
+                  <Radio className="h-3.5 w-3.5" /> Tempo Real
+                </Button>
+                {selectedHasBoxPair && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={sendSelectedToBox}
+                    className="gap-1.5 text-xs border-primary/40 text-primary hover:bg-primary/10"
+                    title="Enviar Call+Put selecionados ao Box Tracker"
+                  >
+                    <Box className="h-3.5 w-3.5" /> Box Tracker
+                  </Button>
+                )}
+              </>
+            )}
+            <Button
+              size="sm"
+              variant={selectedRows.size > 0 ? "default" : "outline"}
+              onClick={copySelection}
+              disabled={selectedRows.size === 0}
+              className="gap-2 transition-all"
+            >
+              <Copy className="h-3.5 w-3.5" /> Copiar
+            </Button>
+          </div>
         </div>
 
         {/* Table */}
@@ -392,13 +643,13 @@ export default function TickerOpcoes() {
                   {precoBaseNum > 0 && (
                     <TableHead className="text-right text-xs font-bold uppercase tracking-wider">Dist %</TableHead>
                   )}
-                  <TableHead className="w-10"></TableHead>
+                  <TableHead className="w-20 text-xs font-bold uppercase tracking-wider text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {displayed.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={precoBaseNum > 0 ? 9 : 8} className="text-center py-16 text-muted-foreground">
+                    <TableCell colSpan={precoBaseNum > 0 ? 10 : 9} className="text-center py-16 text-muted-foreground">
                       <Database className="h-8 w-8 mx-auto mb-2 opacity-30" />
                       <p className="text-sm">Nenhuma opção encontrada</p>
                       <p className="text-xs mt-1">Ajuste os filtros para ver resultados</p>
@@ -407,6 +658,7 @@ export default function TickerOpcoes() {
                 ) : (
                   displayed.map((opt, i) => {
                     const distPct = precoBaseNum > 0 ? ((opt.strike - precoBaseNum) / precoBaseNum) * 100 : null;
+                    const isSentToRtd = sentToRtd.has(opt.ticker);
                     return (
                       <TableRow
                         key={`${opt.ticker}-${i}`}
@@ -448,17 +700,30 @@ export default function TickerOpcoes() {
                           </TableCell>
                         )}
                         <TableCell>
-                          <button
-                            onClick={() => copyTicker(opt.ticker)}
-                            className="p-1.5 rounded-md hover:bg-muted transition-colors"
-                            title="Copiar ticker"
-                          >
-                            {copiedTicker === opt.ticker ? (
-                              <Check className="h-3.5 w-3.5 text-primary" />
-                            ) : (
-                              <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-                            )}
-                          </button>
+                          <div className="flex items-center justify-center gap-0.5">
+                            <button
+                              onClick={() => sendToRtd(opt.ticker)}
+                              className={`p-1.5 rounded-md transition-colors ${isSentToRtd ? "text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                              title={isSentToRtd ? "Já enviado ao Tempo Real" : "Enviar ao Tempo Real"}
+                            >
+                              {isSentToRtd ? (
+                                <Check className="h-3.5 w-3.5" />
+                              ) : (
+                                <Radio className="h-3.5 w-3.5" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => copyTicker(opt.ticker)}
+                              className="p-1.5 rounded-md hover:bg-muted transition-colors"
+                              title="Copiar ticker"
+                            >
+                              {copiedTicker === opt.ticker ? (
+                                <Check className="h-3.5 w-3.5 text-primary" />
+                              ) : (
+                                <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                              )}
+                            </button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
