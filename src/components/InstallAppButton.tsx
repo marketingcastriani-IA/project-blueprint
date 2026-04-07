@@ -31,7 +31,7 @@ export default function InstallAppButton({ variant = 'header' }: { variant?: 'he
       return;
     }
 
-    // Android / Desktop Chrome
+    // Android / Desktop Chrome - listen for native prompt
     const handler = (e: Event) => {
       e.preventDefault();
       deferredPrompt = e as BeforeInstallPromptEvent;
@@ -40,7 +40,13 @@ export default function InstallAppButton({ variant = 'header' }: { variant?: 'he
     window.addEventListener('beforeinstallprompt', handler);
 
     // Already captured
-    if (deferredPrompt) setCanInstall(true);
+    if (deferredPrompt) {
+      setCanInstall(true);
+    } else {
+      // Always show the button — if native prompt isn't available,
+      // we'll show manual instructions on click
+      setCanInstall(true);
+    }
 
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
