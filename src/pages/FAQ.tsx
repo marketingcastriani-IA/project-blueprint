@@ -7,7 +7,7 @@ import {
   Zap, Target, ArrowRight, CheckCircle2, AlertTriangle, HelpCircle,
   Camera, Brain, PieChart, Calculator, Shield, Eye, Download,
   Radio, Wifi, Activity, Trophy, Box, Settings, Terminal,
-  Keyboard, Palette, BookOpenCheck, Lock, Bell, Layers
+  Keyboard, Palette, BookOpenCheck, Lock, Bell, Layers, Search, Database
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,9 @@ import faqDiversificador from '@/assets/pdf-diversificador.jpg';
 import faqTempoReal from '@/assets/pdf-tempo-real.jpg';
 import faqRastreadorBox from '@/assets/pdf-box-ranking.jpg';
 import faqBridgeSetup from '@/assets/pdf-tempo-real.jpg';
+import faqTickerOpcoes from '@/assets/pdf-ticker-opcoes.jpg';
+import faqTickerOpcoesBusca from '@/assets/pdf-ticker-opcoes-busca.jpg';
+import faqTickerOpcoesTabela from '@/assets/pdf-ticker-opcoes-tabela.jpg';
 
 const StepCard = ({ step, title, description, icon: Icon }: { step: number; title: string; description: string; icon: React.ComponentType<{ className?: string }> }) => (
   <div className="flex gap-4 items-start">
@@ -103,6 +106,9 @@ export default function FAQ() {
                 diversificador: faqDiversificador,
                 temporeal: faqTempoReal,
                 box: faqRastreadorBox,
+                tickerOpcoes: faqTickerOpcoes,
+                tickerOpcoesBusca: faqTickerOpcoesBusca,
+                tickerOpcoesTabela: faqTickerOpcoesTabela,
               };
               await generateFAQPdf(faqImages);
               toast.success('PDF do manual baixado!');
@@ -641,6 +647,69 @@ export default function FAQ() {
           </div>
         </FeatureSection>
 
+        {/* ─── TICKER OPÇÕES B3 ─── */}
+        <FeatureSection icon={Database} title="Ticker Opções B3 — Banco de Opções" badge="NOVO">
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              O módulo <strong className="text-foreground">Ticker Opções B3</strong> centraliza um banco de dados com mais de 
+              <strong className="text-foreground"> 99.000 opções</strong> listadas na B3. Pesquise por ticker, filtre por família, 
+              vencimento e tipo (Call/Put), e identifique pares Call+Put automaticamente para montagem de Box e outras estratégias.
+            </p>
+
+            <ScreenshotImage src={faqTickerOpcoes} alt="Ticker Opções B3 - Banco de Opções" />
+
+            <div className="space-y-4">
+              <StepCard 
+                step={1} icon={Search}
+                title="Busque por Ticker ou Família" 
+                description="Digite o código da ação (ex: PETR, VALE) no campo de busca. O sistema utiliza busca inteligente com hierarquia de precisão: Exata > Inicia com > Contém. Filtre por ativo base, vencimento e tipo."
+              />
+              <StepCard 
+                step={2} icon={Target}
+                title="Filtros de Strike por % do Preço Base" 
+                description="Use os sliders de 'Abaixo' e 'Acima' para filtrar strikes por distância percentual do preço do ativo. O preço base é sincronizado automaticamente via RTD Bridge ou estimado pela mediana dos strikes."
+              />
+              <StepCard 
+                step={3} icon={CheckCircle2}
+                title="Identifique Pares Call+Put" 
+                description="Opções com par correspondente (mesmo strike e vencimento) são marcadas com o badge 'PAR'. Ideal para identificar rapidamente componentes de Box Spread, Straddle e outras estruturas."
+              />
+              <StepCard 
+                step={4} icon={Activity}
+                title="Envie para Tempo Real ou Box Tracker" 
+                description="Selecione opções na tabela com checkbox e envie diretamente para o módulo Tempo Real ou Rastreador de Box com um clique. Também é possível copiar os tickers selecionados."
+              />
+            </div>
+
+            <ScreenshotImage src={faqTickerOpcoesTabela} alt="Tabela de opções PETR com dados e pares" />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { label: '99.000+ Opções', desc: 'Banco de dados completo com todas as opções listadas na B3' },
+                { label: 'Pares Automáticos', desc: 'Identificação automática de pares Call+Put com badge visual' },
+                { label: 'Filtros Avançados', desc: 'Busca por ticker, família, vencimento, tipo e distância do strike' },
+                { label: 'Integração Direta', desc: 'Envie tickers selecionados para Tempo Real ou Box Tracker em 1 clique' },
+              ].map(item => (
+                <div key={item.label} className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                  <p className="text-xs font-bold">{item.label}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+              <div className="flex items-start gap-2">
+                <Eye className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  <strong className="text-foreground">Oportunidades de Box:</strong> Na parte inferior da página, o sistema identifica 
+                  automaticamente oportunidades de Box Spread comparando pares Call+Put de mesmo strike. 
+                  O cálculo usa BID/ASK em tempo real quando o RTD Bridge está conectado, garantindo valores realistas de execução.
+                </p>
+              </div>
+            </div>
+          </div>
+        </FeatureSection>
+
         {/* ─── ATALHOS DE TECLADO ─── */}
         <FeatureSection icon={Keyboard} title="Atalhos de Teclado" badge="Power User">
           <div className="space-y-4">
@@ -889,6 +958,15 @@ export default function FAQ() {
                 O simulador de análise funciona com prints de qualquer corretora — basta fazer upload da imagem. 
                 Os módulos de Tempo Real e Rastreador de Box/Collar dependem especificamente do Profit Pro (Nelogica), 
                 que é usado por corretoras como XP, Clear, Rico, Inter, BTG e outras que oferecem a plataforma.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="q16">
+              <AccordionTrigger className="text-sm font-bold">O que é o módulo Ticker Opções B3?</AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground">
+                É um banco de dados com mais de 99.000 opções listadas na B3. Você pode pesquisar por ticker, 
+                filtrar por família, vencimento e tipo (Call/Put), identificar pares Call+Put automaticamente e 
+                enviar tickers selecionados diretamente para o Tempo Real ou Rastreador de Box. 
+                Também identifica oportunidades de Box Spread comparando pares de mesmo strike.
               </AccordionContent>
             </AccordionItem>
           </Accordion>

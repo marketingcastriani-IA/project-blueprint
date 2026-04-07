@@ -16,6 +16,9 @@ import pdfTemasCores from '@/assets/pdf-temas-cores.jpg';
 import pdfManualTabela from '@/assets/pdf-manual-tabela.jpg';
 import pdfManualGrafico from '@/assets/pdf-manual-grafico.jpg';
 import pdfTomadaDecisao from '@/assets/pdf-tomada-decisao.jpg';
+import pdfTickerOpcoes from '@/assets/pdf-ticker-opcoes.jpg';
+import pdfTickerOpcoesBusca from '@/assets/pdf-ticker-opcoes-busca.jpg';
+import pdfTickerOpcoesTabela from '@/assets/pdf-ticker-opcoes-tabela.jpg';
 
 export const landingImages: PdfImageMap = {
   analysis: pdfNovaAnalise,
@@ -34,6 +37,9 @@ export const landingImages: PdfImageMap = {
   manualTabela: pdfManualTabela,
   manualGrafico: pdfManualGrafico,
   tomadaDecisao: pdfTomadaDecisao,
+  tickerOpcoes: pdfTickerOpcoes,
+  tickerOpcoesBusca: pdfTickerOpcoesBusca,
+  tickerOpcoesTabela: pdfTickerOpcoesTabela,
   // Keys used by FAQ manual PDF
   historico: pdfHistorico,
   temporeal: pdfTempoReal,

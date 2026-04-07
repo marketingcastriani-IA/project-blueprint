@@ -196,9 +196,11 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     '9. Diversificador de Estratégias',
     '10. Dados ao Vivo (Tempo Real)',
     '11. Rastreador de Box',
-    '12. Temas e Personalização',
-    '13. Tabelas de Referência',
-    '14. Perguntas Frequentes',
+    '12. Ticker Opções B3',
+    '13. Rastreador de Collar',
+    '14. Temas e Personalização',
+    '15. Tabelas de Referência',
+    '16. Perguntas Frequentes',
   ];
   doc.setFontSize(10);
   doc.setTextColor(...COLORS.gray);
@@ -234,6 +236,8 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
       ['Diversificador', 'Planejamento de alocação entre diferentes estratégias'],
       ['Dados ao Vivo', 'Preços em tempo real via integração com Profit Pro'],
       ['Rastreador de Box', 'Ranking dos melhores boxes da B3 em tempo real'],
+      ['Ticker Opções B3', 'Banco com 99.000+ opções, busca inteligente e pares Call+Put'],
+      ['Rastreador de Collar', 'Monitoramento de proteção de carteira com collars em tempo real'],
     ],
     ...TABLE_STYLES,
   });
@@ -424,9 +428,64 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     ({ newY: y } = addImageToPdf(doc, boxTabelaImg, y, 182, 120));
   }
 
-  // ── 12. TEMAS ──
+  // ── 12. TICKER OPÇÕES B3 ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '12. Temas e Personalização', y);
+  y = addSectionTitle(doc, '12. Ticker Opções B3 — Banco de Opções', y);
+  y = addParagraph(doc, 'O módulo Ticker Opções B3 centraliza um banco de dados com mais de 99.000 opções listadas na B3. Pesquise por ticker, filtre por família, vencimento e tipo (Call/Put), identifique pares Call+Put automaticamente e envie tickers para Tempo Real ou Box Tracker.', y);
+
+  const tickerImg = getImg('tickerOpcoes');
+  if (tickerImg) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, tickerImg, y, 182, 120));
+  }
+
+  const tickerBuscaImg = getImg('tickerOpcoesBusca');
+  if (tickerBuscaImg) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, tickerBuscaImg, y, 182, 120));
+  }
+
+  const tickerTabelaImg = getImg('tickerOpcoesTabela');
+  if (tickerTabelaImg) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, tickerTabelaImg, y, 182, 120));
+  }
+
+  y = addTable(doc, {
+    startY: y,
+    head: [['Recurso', 'Descrição']],
+    body: [
+      ['Busca Inteligente', 'Hierarquia de precisão: Exata > Inicia com > Contém'],
+      ['Pares Call+Put', 'Identificação automática com badge PAR para Box/Straddle'],
+      ['Filtros de Strike', 'Sliders de distância percentual acima/abaixo do preço base'],
+      ['Integração', 'Envie tickers selecionados para Tempo Real ou Box Tracker'],
+      ['Oportunidades de Box', 'Detecção automática de oportunidades com cálculo BID/ASK'],
+    ],
+    ...TABLE_STYLES,
+    columnStyles: { 0: { cellWidth: 45, fontStyle: 'bold' as const } },
+  });
+
+  // ── 13. RASTREADOR DE COLLAR ──
+  y = checkPageBreak(doc, y, 50);
+  y = addSectionTitle(doc, '13. Rastreador de Collar', y);
+  y = addParagraph(doc, 'O Rastreador de Collar monitora combinações de proteção de carteira (Ação + Put comprada + Call vendida) em tempo real. Calcula custo de proteção, piso (floor), teto (cap) e identifica collars de custo zero.', y);
+
+  y = addTable(doc, {
+    startY: y,
+    head: [['Métrica', 'Descrição']],
+    body: [
+      ['Floor (Piso)', 'Perda máxima limitada pelo strike da put de proteção'],
+      ['Cap (Teto)', 'Ganho máximo limitado pelo strike da call vendida'],
+      ['Custo Líquido', 'Prêmio da put - Prêmio da call (idealmente zero)'],
+      ['Rentabilidade', 'Retorno máximo comparado ao CDI do período'],
+    ],
+    ...TABLE_STYLES,
+    columnStyles: { 0: { cellWidth: 45, fontStyle: 'bold' as const } },
+  });
+
+  // ── 14. TEMAS ──
+  y = checkPageBreak(doc, y, 50);
+  y = addSectionTitle(doc, '14. Temas e Personalização', y);
   y = addParagraph(doc, 'Escolha entre tema claro e escuro, com paleta de cores profissional otimizada para diferentes condições de luminosidade. As configurações ficam salvas no seu perfil.', y);
 
   const temasImg = getImg('temasCores');
@@ -435,9 +494,9 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     ({ newY: y } = addImageToPdf(doc, temasImg, y, 182, 120));
   }
 
-  // ── 13. TABELAS DE REFERÊNCIA ──
+  // ── 15. TABELAS DE REFERÊNCIA ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '13. Tabelas de Referência', y);
+  y = addSectionTitle(doc, '15. Tabelas de Referência', y);
   y = addParagraph(doc, 'Referência rápida com tabelas detalhadas de funcionalidades, atalhos de teclado e parâmetros do sistema.', y);
 
   const manualTabelaImg = getImg('manualTabela');
@@ -458,9 +517,9 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     ({ newY: y } = addImageToPdf(doc, tomadaImg, y, 182, 120));
   }
 
-  // ── 14. PERGUNTAS FREQUENTES ──
+  // ── 16. PERGUNTAS FREQUENTES ──
   y = checkPageBreak(doc, y, 80);
-  y = addSectionTitle(doc, '14. Perguntas Frequentes', y);
+  y = addSectionTitle(doc, '16. Perguntas Frequentes', y);
 
   y = addTable(doc, {
     startY: y,
@@ -473,6 +532,8 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
       ['É recomendação de investimento?', 'Não. É uma ferramenta de simulação. Consulte um profissional antes de operar.'],
       ['Como a IA funciona?', 'Utiliza IA (OpenAI) para avaliar risco/retorno e sugerir ajustes na estrutura.'],
       ['Diferença Free vs PRO?', 'Free: acesso básico com limites. PRO: simulações ilimitadas e todos os recursos.'],
+      ['O que é Ticker Opções B3?', 'Banco com 99.000+ opções da B3. Busca inteligente, pares Call+Put e integração com Box/Tempo Real.'],
+      ['O que é o Rastreador de Collar?', 'Monitora proteção de carteira (Ação+Put+Call) em tempo real com cálculo de piso, teto e custo.'],
     ],
     ...TABLE_STYLES,
     columnStyles: { 0: { cellWidth: 45, fontStyle: 'bold' as const } },
@@ -918,6 +979,7 @@ const LANDING_FEATURES: { key: string; title: string; desc: string; extraKeys?: 
   { key: 'portfolio', title: 'Portfolio P&L', desc: 'Acompanhe P&L consolidado, ROI total e taxa de acerto das suas operações.' },
   { key: 'diversificador', title: 'Diversificador', desc: 'Gerencie a alocação do seu patrimônio entre estratégias com balanceamento automático.' },
   { key: 'box', title: 'Rastreador de Box - AO VIVO', desc: 'Rastreie os melhores boxes da B3 em tempo real. Ranking com troféus e % do CDI.', extraKeys: ['boxTabela'] },
+  { key: 'tickerOpcoes', title: 'Ticker Opções B3 — 99.000+ Opções', desc: 'Banco de dados completo da B3 com busca inteligente, pares Call+Put, filtros de strike e integração direta com Tempo Real e Box Tracker.', extraKeys: ['tickerOpcoesBusca', 'tickerOpcoesTabela'] },
   { key: 'calcCdi', title: 'Calculadora CDI × Opções', desc: 'Compare o rendimento de qualquer estratégia com a renda fixa.' },
   { key: 'temasCores', title: 'Temas e Personalização', desc: 'Escolha entre tema claro e escuro, com paleta profissional para qualquer condição.' },
   { key: 'tomadaDecisao', title: 'Tomada de Decisão com IA', desc: 'Use o veredito da IA para decidir quando manter ou encerrar uma operação.' },
