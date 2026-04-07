@@ -134,9 +134,14 @@ export default function PayoffHeatmap({
       point['profitArea'] = expiryProfit >= 0 ? expiryProfit : 0;
       point['lossArea'] = expiryProfit < 0 ? expiryProfit : 0;
 
+      // CDI line
+      if (cdiRate > 0 && daysToExpiry > 0) {
+        point['cdiLine'] = calculateCDIReturn(investedCapital, cdiRate, daysToExpiry, false);
+      }
+
       return point;
     });
-  }, [data, legs, daysToExpiry, hasLegs]);
+  }, [data, legs, daysToExpiry, hasLegs, cdiRate, investedCapital]);
 
   if (data.length === 0) {
     return (
