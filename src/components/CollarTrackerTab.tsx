@@ -85,12 +85,14 @@ interface StockFamily {
   name: string;
   tickers: OptionTicker[];
   expanded: boolean;
+  quantidade: number;
 }
 
 interface SavedFamily {
   name: string;
   tickers: string[];
   autoImported?: string[];
+  quantidade?: number;
 }
 
 interface AlertEntry {
@@ -464,6 +466,7 @@ export default function CollarTrackerTab() {
         const loaded: StockFamily[] = parsed.map((sf) => ({
           id: generateId(),
           name: sf.name,
+          quantidade: sf.quantidade ?? 100,
           tickers: sf.tickers.map((sym) => {
             const b3Info = getStrikeAndExpiry(sym);
             return {
@@ -493,6 +496,7 @@ export default function CollarTrackerTab() {
       name: f.name,
       tickers: f.tickers.map((t) => t.symbol),
       autoImported: Array.from(autoImportedMap.get(f.name) || []),
+      quantidade: f.quantidade,
     }));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
   }, [families, autoImportedMap]);
@@ -521,7 +525,7 @@ export default function CollarTrackerTab() {
     const name = newFamilyName.trim().toUpperCase();
     if (!name) return;
     if (families.find((f) => f.name === name)) return;
-    setFamilies((prev) => [...prev, { id: generateId(), name, tickers: [], expanded: true }]);
+    setFamilies((prev) => [...prev, { id: generateId(), name, tickers: [], expanded: true, quantidade: 100 }]);
     setNewFamilyName("");
     if (status === "connected") bridgeAddTicker(name);
   }, [newFamilyName, families, status, bridgeAddTicker]);
@@ -962,37 +966,46 @@ export default function CollarTrackerTab() {
                   <ShieldCheck className="w-3.5 h-3.5 text-success" />
                 </div>
                 <p className="text-lg font-black text-foreground">{c.familyName}</p>
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Lucro Máx</p>
-                    <p className="text-sm font-black text-success">{formatPercent(c.maxProfitPct)}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Perda Máx</p>
-                    <p className={cn("text-sm font-black", (c.maxLossPct ?? 0) >= 0 ? "text-success" : "text-destructive")}>
-                      {formatPercent(c.maxLossPct)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Net</p>
-                    <p className={cn("text-sm font-black", (c.netCostCredit ?? 0) >= 0 ? "text-success" : "text-destructive")}>
-                      {formatBRL(c.netCostCredit)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Score</p>
-                    <p className={cn("text-sm font-black",
-                      c.qualityScore >= 80 ? "text-success" :
-                      c.qualityScore >= 60 ? "text-warning" : "text-muted-foreground"
-                    )}>{c.qualityScore}</p>
-                  </div>
-                </div>
-                {c.vencimento && (
-                  <p className="text-[10px] text-muted-foreground mt-2">
-                    Venc: <span className="font-bold text-foreground">{c.vencimento}</span>
-                    {c.diasUteis !== null && <span> · {c.diasUteis}du</span>}
-                  </p>
-                )}
+                {(() => {
+                  const fam = families.find(f => f.name === c.familyName);
+                  const qty = fam?.quantidade ?? 100;
+                  const S0 = c.tipo === "Alta" ? c.stockAsk! : c.stockBid!;
+                  return (
+                    <>
+                      <div className="mt-2 grid grid-cols-2 gap-2">
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase font-bold">Lucro Máx</p>
+                          <p className="text-sm font-black text-success">{formatPercent(c.maxProfitPct)}</p>
+                          <p className="text-[9px] font-mono text-success">{formatBRL((c.maxProfitAbs ?? 0) * qty)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase font-bold">Investimento</p>
+                          <p className="text-sm font-black text-foreground">{formatBRL(S0 * qty)}</p>
+                          <p className="text-[9px] font-mono text-muted-foreground">{qty} ações</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase font-bold">Net</p>
+                          <p className={cn("text-sm font-black", (c.netCostCredit ?? 0) >= 0 ? "text-success" : "text-destructive")}>
+                            {formatBRL(c.netCostCredit)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase font-bold">Score</p>
+                          <p className={cn("text-sm font-black",
+                            c.qualityScore >= 80 ? "text-success" :
+                            c.qualityScore >= 60 ? "text-warning" : "text-muted-foreground"
+                          )}>{c.qualityScore}</p>
+                        </div>
+                      </div>
+                      {c.vencimento && (
+                        <p className="text-[10px] text-muted-foreground mt-2">
+                          Venc: <span className="font-bold text-foreground">{c.vencimento}</span>
+                          {c.diasUteis !== null && <span> · {c.diasUteis}du</span>}
+                        </p>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             );
           })}
@@ -1014,48 +1027,68 @@ export default function CollarTrackerTab() {
           </div>
 
           {/* Metrics row */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 p-4 border-b border-border/50 bg-muted/10">
-            <div>
-              <p className="text-xs font-black uppercase text-muted-foreground">Lucro Máximo</p>
-              <p className="text-sm font-black text-success">{formatPercent(selectedCollar.maxProfitPct)}</p>
-              <p className="text-[10px] font-mono text-success">{formatBRL(selectedCollar.maxProfitAbs)}</p>
-            </div>
-            <div>
-              <p className="text-xs font-black uppercase text-muted-foreground">Perda Máxima</p>
-              <p className={cn("text-sm font-black", (selectedCollar.maxLossPct ?? 0) >= 0 ? "text-success" : "text-destructive")}>
-                {formatPercent(selectedCollar.maxLossPct)}
-              </p>
-              <p className={cn("text-[10px] font-mono", (selectedCollar.maxLossAbs ?? 0) >= 0 ? "text-success" : "text-destructive")}>
-                {formatBRL(selectedCollar.maxLossAbs)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-black uppercase text-muted-foreground">Net Cost/Credit</p>
-              <p className={cn("text-sm font-black", (selectedCollar.netCostCredit ?? 0) >= 0 ? "text-success" : "text-destructive")}>
-                {formatBRL(selectedCollar.netCostCredit)}
-              </p>
-              <p className="text-[10px] font-mono text-muted-foreground">
-                {(selectedCollar.netCostCredit ?? 0) >= 0 ? "Crédito" : "Débito"}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-black uppercase text-muted-foreground">Break-even</p>
-              <p className="text-sm font-black text-foreground">{formatBRL(selectedCollar.breakeven)}</p>
-            </div>
-            <div>
-              <p className="text-xs font-black uppercase text-muted-foreground">Margem Risco Zero</p>
-              <p className="text-sm font-black text-success">{formatBRL(selectedCollar.riskFreeMargin)}</p>
-            </div>
-            <div>
-              <p className="text-xs font-black uppercase text-muted-foreground">CDI Período</p>
-              <p className="text-sm font-black text-warning">{formatPercent(selectedCollar.cdiPeriodo)}</p>
-              {selectedCollar.diffCdiProfit !== null && (
-                <p className={cn("text-[10px] font-bold font-mono", selectedCollar.diffCdiProfit >= 0 ? "text-success" : "text-destructive")}>
-                  {selectedCollar.diffCdiProfit >= 0 ? "+" : ""}{selectedCollar.diffCdiProfit.toFixed(2).replace(".", ",")} pp vs CDI
-                </p>
-              )}
-            </div>
-          </div>
+          {(() => {
+            const selFamily = families.find(f => f.name === selectedCollar.familyName);
+            const qty = selFamily?.quantidade ?? 100;
+            const S0 = selectedCollar.tipo === "Alta" ? selectedCollar.stockAsk! : selectedCollar.stockBid!;
+            const investTotal = S0 * qty;
+            const lucroTotal = (selectedCollar.maxProfitAbs ?? 0) * qty;
+            const perdaTotal = (selectedCollar.maxLossAbs ?? 0) * qty;
+            return (
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-4 p-4 border-b border-border/50 bg-muted/10">
+                <div>
+                  <p className="text-xs font-black uppercase text-muted-foreground">Investimento</p>
+                  <p className="text-sm font-black text-foreground">{formatBRL(investTotal)}</p>
+                  <p className="text-[10px] font-mono text-muted-foreground">{qty} × {formatBRL(S0)}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase text-muted-foreground">Lucro Máximo</p>
+                  <p className="text-sm font-black text-success">{formatPercent(selectedCollar.maxProfitPct)}</p>
+                  <p className="text-[10px] font-mono text-success">{formatBRL(lucroTotal)}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase text-muted-foreground">Perda Máxima</p>
+                  <p className={cn("text-sm font-black", (selectedCollar.maxLossPct ?? 0) >= 0 ? "text-success" : "text-destructive")}>
+                    {formatPercent(selectedCollar.maxLossPct)}
+                  </p>
+                  <p className={cn("text-[10px] font-mono", perdaTotal >= 0 ? "text-success" : "text-destructive")}>
+                    {formatBRL(perdaTotal)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase text-muted-foreground">Net Cost/Credit</p>
+                  <p className={cn("text-sm font-black", (selectedCollar.netCostCredit ?? 0) >= 0 ? "text-success" : "text-destructive")}>
+                    {formatBRL(selectedCollar.netCostCredit)}
+                  </p>
+                  <p className="text-[10px] font-mono text-muted-foreground">
+                    Total: {formatBRL((selectedCollar.netCostCredit ?? 0) * qty)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase text-muted-foreground">Break-even</p>
+                  <p className="text-sm font-black text-foreground">{formatBRL(selectedCollar.breakeven)}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase text-muted-foreground">Margem Risco Zero</p>
+                  <p className="text-sm font-black text-success">{formatBRL(selectedCollar.riskFreeMargin)}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase text-muted-foreground">CDI Período</p>
+                  <p className="text-sm font-black text-warning">{formatPercent(selectedCollar.cdiPeriodo)}</p>
+                  {selectedCollar.diffCdiProfit !== null && (
+                    <p className={cn("text-[10px] font-bold font-mono", selectedCollar.diffCdiProfit >= 0 ? "text-success" : "text-destructive")}>
+                      {selectedCollar.diffCdiProfit >= 0 ? "+" : ""}{selectedCollar.diffCdiProfit.toFixed(2).replace(".", ",")} pp vs CDI
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase text-muted-foreground">Retorno R$</p>
+                  <p className="text-sm font-black text-success">{formatBRL(lucroTotal)}</p>
+                  <p className="text-[10px] font-mono text-muted-foreground">em {qty} ações</p>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Chart */}
           <div className="px-3 py-4">
@@ -1394,7 +1427,7 @@ export default function CollarTrackerTab() {
 
         return (
           <div key={family.id} className="rounded-2xl border-2 border-primary/30 bg-card overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between px-4 py-3 bg-muted/30 border-b border-border/50">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 py-3 bg-muted/30 border-b border-border/50 gap-2">
               <button onClick={() => toggleExpand(family.id)} className="flex items-center gap-3 flex-1">
                 {family.expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                 <span className="font-black text-base text-foreground">{family.name}</span>
@@ -1410,6 +1443,24 @@ export default function CollarTrackerTab() {
                   </span>
                 )}
               </button>
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-wider whitespace-nowrap">Qtd Ações:</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={family.quantidade}
+                  onChange={(e) => {
+                    const val = Math.max(1, parseInt(e.target.value) || 1);
+                    setFamilies(prev => prev.map(f => f.id === family.id ? { ...f, quantidade: val } : f));
+                  }}
+                  className="w-20 bg-background border border-input rounded-lg px-2 py-1 text-sm text-center font-bold font-mono focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                {stockPrice && (
+                  <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                    Invest: <span className="font-black text-foreground">{formatBRL(stockPrice * family.quantidade)}</span>
+                  </span>
+                )}
+              </div>
               <button onClick={() => removeFamily(family.id)} className="p-2 text-destructive/60 hover:text-destructive transition-colors">
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -1484,7 +1535,9 @@ export default function CollarTrackerTab() {
                           <th className="text-right py-2 px-2">P Put</th>
                           <th className="text-right py-2 px-2 font-black" title="Crédito/Débito líquido">Net</th>
                           <th className="text-right py-2 px-2 font-black" title="Lucro máximo %">Lucro Máx%</th>
+                          <th className="text-right py-2 px-2 font-black" title="Lucro máximo em R$ (qty)">Lucro R$</th>
                           <th className="text-right py-2 px-2" title="Perda máxima %">Perda Máx%</th>
+                          <th className="text-right py-2 px-2" title="Investimento total (qty × preço)">Invest. R$</th>
                           <th className="text-right py-2 px-2" title="Break-even">B.E.</th>
                           <th className="text-right py-2 px-2" title="Margem acima de risco zero">Margem</th>
                           <th className="text-center py-2 px-2">Venc.</th>
@@ -1524,8 +1577,14 @@ export default function CollarTrackerTab() {
                               <td className="py-2 px-2 text-right font-black text-success">
                                 {formatPercent(c.maxProfitPct)}
                               </td>
+                              <td className="py-2 px-2 text-right font-black text-success font-mono">
+                                {c.maxProfitAbs !== null ? formatBRL(c.maxProfitAbs * family.quantidade) : "—"}
+                              </td>
                               <td className={cn("py-2 px-2 text-right font-bold", (c.maxLossPct ?? 0) >= 0 ? "text-success" : "text-destructive")}>
                                 {formatPercent(c.maxLossPct)}
+                              </td>
+                              <td className="py-2 px-2 text-right font-mono font-bold text-muted-foreground">
+                                {c.tipo === "Alta" && c.stockAsk ? formatBRL(c.stockAsk * family.quantidade) : c.tipo === "Baixa" && c.stockBid ? formatBRL(c.stockBid * family.quantidade) : "—"}
                               </td>
                               <td className="py-2 px-2 text-right font-mono font-bold text-foreground">
                                 {formatBRL(c.breakeven)}
