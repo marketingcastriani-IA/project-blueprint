@@ -13,7 +13,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     const stored = localStorage.getItem('opcoesx-theme');
-    return (stored as Theme) || 'dark';
+    return (stored as Theme) || 'light';
   });
 
   useEffect(() => {

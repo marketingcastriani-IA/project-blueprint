@@ -30,6 +30,7 @@ import TickerOpcoes from "./pages/TickerOpcoes";
 
 import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/ScrollToTop";
+import Footer from "./components/Footer";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +76,7 @@ const App = () => (
             <ErrorBoundary>
               <AnimatedRoutes />
             </ErrorBoundary>
+            <Footer />
           </BrowserRouter>
         </TooltipProvider>
         </B3OptionsProvider>
