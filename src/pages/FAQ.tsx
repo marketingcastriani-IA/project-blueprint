@@ -7,7 +7,7 @@ import {
   Zap, Target, ArrowRight, CheckCircle2, AlertTriangle, HelpCircle,
   Camera, Brain, PieChart, Calculator, Shield, Eye, Download,
   Radio, Wifi, Activity, Trophy, Box, Settings, Terminal,
-  Keyboard, Palette, BookOpenCheck, Lock, Bell, Layers
+  Keyboard, Palette, BookOpenCheck, Lock, Bell, Layers, Search, Database
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,9 @@ import faqDiversificador from '@/assets/pdf-diversificador.jpg';
 import faqTempoReal from '@/assets/pdf-tempo-real.jpg';
 import faqRastreadorBox from '@/assets/pdf-box-ranking.jpg';
 import faqBridgeSetup from '@/assets/pdf-tempo-real.jpg';
+import faqTickerOpcoes from '@/assets/pdf-ticker-opcoes.jpg';
+import faqTickerOpcoesBusca from '@/assets/pdf-ticker-opcoes-busca.jpg';
+import faqTickerOpcoesTabela from '@/assets/pdf-ticker-opcoes-tabela.jpg';
 
 const StepCard = ({ step, title, description, icon: Icon }: { step: number; title: string; description: string; icon: React.ComponentType<{ className?: string }> }) => (
   <div className="flex gap-4 items-start">
