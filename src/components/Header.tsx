@@ -90,39 +90,6 @@ export default function Header() {
             )}>
               {access.planType === 'pro' ? 'PRO' : 'FREE'}
             </Badge>
-            {/* RTD Live Indicator */}
-            <div
-              className={cn(
-                "hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border transition-all",
-                rtdStatus === 'connected'
-                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-400/40 shadow-[0_0_10px_rgba(16,185,129,0.4)]"
-                  : rtdStatus === 'connecting'
-                  ? "bg-yellow-500/20 text-yellow-300 border-yellow-400/40 animate-pulse"
-                  : "bg-red-500/10 text-red-400/60 border-red-400/20"
-              )}
-              title={rtdStatus === 'connected' ? 'Bridge RTD conectado — dados ao vivo' : rtdStatus === 'connecting' ? 'Conectando ao Bridge...' : 'Bridge RTD desconectado'}
-            >
-              {rtdStatus === 'connected' ? (
-                <>
-                  <Wifi className="h-3 w-3 animate-pulse" />
-                  <span>LIVE</span>
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                  </span>
-                </>
-              ) : rtdStatus === 'connecting' ? (
-                <>
-                  <Wifi className="h-3 w-3" />
-                  <span>...</span>
-                </>
-              ) : (
-                <>
-                  <WifiOff className="h-3 w-3" />
-                  <span>OFF</span>
-                </>
-              )}
-            </div>
           </button>
           <InstallAppButton />
         </div>
@@ -182,6 +149,39 @@ export default function Header() {
               );
             })}
           </nav>
+          {/* RTD Live Indicator */}
+          <div
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border-2 transition-all cursor-default",
+              rtdStatus === 'connected'
+                ? "bg-emerald-500/20 text-emerald-500 dark:text-emerald-400 border-emerald-500/50 shadow-[0_0_16px_rgba(16,185,129,0.5)]"
+                : rtdStatus === 'connecting'
+                ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/50 animate-pulse shadow-[0_0_12px_rgba(234,179,8,0.4)]"
+                : "bg-muted text-muted-foreground border-border"
+            )}
+            title={rtdStatus === 'connected' ? 'Bridge RTD conectado — dados ao vivo' : rtdStatus === 'connecting' ? 'Conectando ao Bridge...' : 'Bridge RTD desconectado'}
+          >
+            {rtdStatus === 'connected' ? (
+              <>
+                <Wifi className="h-4 w-4" />
+                <span>LIVE</span>
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                </span>
+              </>
+            ) : rtdStatus === 'connecting' ? (
+              <>
+                <Wifi className="h-4 w-4" />
+                <span>CONECTANDO</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="h-4 w-4" />
+                <span>OFFLINE</span>
+              </>
+            )}
+          </div>
           <div className="flex items-center gap-1">
             <Palette className="h-3 w-3 text-muted-foreground mr-1" />
             <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mr-2">Tema:</span>
