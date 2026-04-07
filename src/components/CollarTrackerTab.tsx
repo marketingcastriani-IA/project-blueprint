@@ -1336,6 +1336,41 @@ export default function CollarTrackerTab() {
         <p className="text-xs text-muted-foreground mt-2">
           📐 Zona ideal: PUT 5-15% abaixo · CALL 5-15% acima · Custo ≈ zero · Rent. &gt; CDI
         </p>
+
+        {/* MÉTODO DE RANKING */}
+        <div className="mt-4 pt-4 border-t border-border/50">
+          <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">
+            📊 Método de Ranking
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {([
+              { key: "score" as RankingMethod, label: "Quality Score", desc: "Fórmula CDI ponderada (5 componentes)" },
+              { key: "custo" as RankingMethod, label: "Custo Líquido", desc: "Menor custo = melhor proteção" },
+              { key: "per" as RankingMethod, label: "Eficiência (PER)", desc: "Proteção / Custo — maior = melhor" },
+              { key: "combinado" as RankingMethod, label: "Score Combinado", desc: "0.5×Proteção + 0.3×Upside – 0.2×Custo" },
+            ]).map((m) => (
+              <button
+                key={m.key}
+                onClick={() => setRankingMethod(m.key)}
+                title={m.desc}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-xs font-bold border transition-all",
+                  rankingMethod === m.key
+                    ? "bg-foreground text-background border-foreground"
+                    : "bg-background text-foreground border-border hover:border-foreground/50"
+                )}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-1.5">
+            {rankingMethod === "score" && "Quality Score (0-100): 30% Rent. Alta vs CDI · 25% Proteção · 20% Custo · 15% PER · 10% Estrutura"}
+            {rankingMethod === "custo" && "Custo Líquido = Prêmio Put – Prêmio Call · Menor valor = melhor (mais barato montar a proteção)"}
+            {rankingMethod === "per" && "PER = Proteção (%) / |Custo Líquido (%)| · Maior valor = mais proteção por unidade de custo"}
+            {rankingMethod === "combinado" && "Score = 0.5 × Proteção(%) + 0.3 × Upside(%) – 0.2 × Custo(%) · Maior valor = melhor equilíbrio"}
+          </p>
+        </div>
       </div>
 
       {/* VENCIMENTO */}
