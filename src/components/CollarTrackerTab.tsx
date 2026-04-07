@@ -1398,7 +1398,7 @@ export default function CollarTrackerTab() {
 
         return (
           <div key={family.id} className="rounded-2xl border-2 border-primary/30 bg-card overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between px-4 py-3 bg-muted/30 border-b border-border/50">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 py-3 bg-muted/30 border-b border-border/50 gap-2">
               <button onClick={() => toggleExpand(family.id)} className="flex items-center gap-3 flex-1">
                 {family.expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
                 <span className="font-black text-base text-foreground">{family.name}</span>
@@ -1414,6 +1414,24 @@ export default function CollarTrackerTab() {
                   </span>
                 )}
               </button>
+              <div className="flex items-center gap-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-wider whitespace-nowrap">Qtd Ações:</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={family.quantidade}
+                  onChange={(e) => {
+                    const val = Math.max(1, parseInt(e.target.value) || 1);
+                    setFamilies(prev => prev.map(f => f.id === family.id ? { ...f, quantidade: val } : f));
+                  }}
+                  className="w-20 bg-background border border-input rounded-lg px-2 py-1 text-sm text-center font-bold font-mono focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                {stockPrice && (
+                  <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                    Invest: <span className="font-black text-foreground">{formatBRL(stockPrice * family.quantidade)}</span>
+                  </span>
+                )}
+              </div>
               <button onClick={() => removeFamily(family.id)} className="p-2 text-destructive/60 hover:text-destructive transition-colors">
                 <Trash2 className="w-4 h-4" />
               </button>
