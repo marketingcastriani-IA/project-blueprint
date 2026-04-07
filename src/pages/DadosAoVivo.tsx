@@ -6,7 +6,7 @@ import {
   Radio, Plus, Trash2, Wifi, WifiOff, RefreshCw,
   TrendingUp, TrendingDown, Activity, AlertTriangle, CheckCircle2,
   Terminal, Download, ExternalLink, Info, Save, CalendarIcon, Loader2,
-  Edit, DollarSign, Percent, Briefcase, Zap
+  Edit, DollarSign, Percent, Briefcase, Zap, BookOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import PayoffChart from "@/components/PayoffChart";
+import BridgeSetupGuide from "@/components/BridgeSetupGuide";
 import MetricsCards from "@/components/MetricsCards";
 import { Leg, PayoffPoint } from "@/lib/types";
 import { calculatePayoffAtExpiry, calculatePayoffToday, calculateMetrics } from "@/lib/payoff";
@@ -391,64 +392,12 @@ export default function DadosAoVivo() {
 
         {/* Setup guide — shown when not connected */}
         {status !== "connected" && (
-          <Card className="border-warning/20 bg-warning/5">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2 text-warning">
-                <Terminal className="w-4 h-4" />
-                Configure o Bridge uma vez — depois é automático
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <ol className="space-y-2 text-sm text-muted-foreground">
-                {[
-                  { n: "1", text: "Abra o Profit Pro (Nelogica) e faça login" },
-                  { n: "2", text: "Baixe o ProfitRTD Bridge (botão abaixo) e descompacte em qualquer pasta" },
-                  { n: "3", text: 'Execute "iniciar_bridge.bat" como Administrador — exige .NET 6 (sem Excel!)' },
-                  { n: "4", text: 'Aguarde a janela exibir "WebSocket rodando na porta 8765"' },
-                  { n: "5", text: "Este app detecta e conecta automaticamente. Pronto!" },
-                ].map((s) => (
-                  <li key={s.n} className="flex items-start gap-3">
-                    <span className="shrink-0 w-5 h-5 rounded-full bg-warning/20 text-warning text-xs flex items-center justify-center font-bold mt-0.5">
-                      {s.n}
-                    </span>
-                    <span>{s.text}</span>
-                  </li>
-                ))}
-              </ol>
-
-              {errorMsg && (
-                <div className="flex items-start gap-2 p-3 rounded bg-destructive/10 border border-destructive/20 text-xs text-destructive">
-                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>{errorMsg}</span>
-                </div>
-              )}
-
-              <div className="flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" className="gap-2 text-warning border-warning/30" asChild>
-                  <a href="/downloads/ProfitRTDBridge.zip" download>
-                    <Download className="w-3 h-3" /> Baixar ProfitRTD Bridge
-                  </a>
-                </Button>
-                <Button size="sm" variant="outline" className="gap-2" onClick={connect}>
-                  <RefreshCw className="w-3 h-3" />
-                  Tentar Reconectar {reconnectCount > 0 && `(${reconnectCount}/10)`}
-                </Button>
-                <Button size="sm" variant="ghost" className="gap-2 text-muted-foreground" asChild>
-                  <a href="https://dotnet.microsoft.com/download/dotnet/6.0" target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="w-3 h-3" /> Instalar .NET 6 SDK
-                  </a>
-                </Button>
-              </div>
-
-              <div className="p-3 rounded bg-info/10 border border-info/20 text-xs text-info flex items-start gap-2">
-                <Info className="w-3 h-3 shrink-0 mt-0.5" />
-                <span>
-                   O bridge v3.2 acessa o RTD do Profit <strong>diretamente via COM — sem precisar de Excel</strong>. Roda{' '}
-                   <strong>localmente na sua máquina</strong> e transmite via WebSocket. <strong>Nenhum dado sai da sua rede local.</strong>
-                 </span>
-              </div>
-            </CardContent>
-          </Card>
+          <BridgeSetupGuide
+            status={status}
+            errorMsg={errorMsg}
+            reconnectCount={reconnectCount}
+            connect={connect}
+          />
         )}
 
         {/* Connected: add ticker */}
