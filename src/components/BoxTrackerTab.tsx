@@ -672,6 +672,45 @@ export default function BoxTracker() {
         </div>
       )}
 
+      {/* Instructional Banner */}
+      {showBoxInstructions && (
+        <div className="mb-5 rounded-xl border border-primary/20 bg-primary/5 backdrop-blur-sm p-4 relative">
+          <button
+            onClick={dismissBoxInstructions}
+            className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <div className="flex items-center gap-2 mb-3">
+            <Info className="h-4 w-4 text-primary" />
+            <span className="text-sm font-bold text-foreground">Como usar o Box Tracker</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="flex items-start gap-2.5">
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</span>
+              <div>
+                <p className="text-xs font-semibold text-foreground">Adicione uma família</p>
+                <p className="text-[10px] text-muted-foreground">Digite o nome base (ex: PETR, VALE) ou envie tickers automaticamente do <strong>Opções B3</strong></p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</span>
+              <div>
+                <p className="text-xs font-semibold text-foreground">Tickers automáticos</p>
+                <p className="text-[10px] text-muted-foreground">Conecte o Bridge para preços ao vivo — os tickers vindos do Opções B3 entram automaticamente</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</span>
+              <div>
+                <p className="text-xs font-semibold text-foreground">Ranking & Alertas</p>
+                <p className="text-[10px] text-muted-foreground">Os melhores boxes aparecem no ranking com comparação ao CDI do período</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* CONTROLS GRID — CDI + IR + Alertas */}
       <div className="mb-6 space-y-3">
         {/* Row 1: CDI + IR toggles */}
