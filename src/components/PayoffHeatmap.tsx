@@ -80,8 +80,12 @@ export default function PayoffHeatmap({
   currentSpotPrice,
   legs,
   daysToExpiry = 30,
+  cdiRate = 0,
+  netCost = 0,
+  montageTotal,
 }: PayoffHeatmapProps) {
   const hasLegs = legs && legs.length > 0;
+  const investedCapital = Math.max(Math.abs(montageTotal ?? netCost ?? 0), 1);
 
   const chartData = useMemo(() => {
     if (data.length === 0) return [];
