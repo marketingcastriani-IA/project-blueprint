@@ -117,6 +117,20 @@ export default function TickerOpcoes() {
     return result;
   }, [options, selectedFamily, selectedVencimento, selectedTipo, search, precoBaseNum, strikeMinCalc, strikeMaxCalc, sortField, sortDir]);
 
+  // Set of strike|vencimento keys that have both CALL and PUT (paired for box)
+  const pairedStrikeKeys = useMemo(() => {
+    const callKeys = new Set<string>();
+    const putKeys = new Set<string>();
+    filtered.forEach((o) => {
+      const key = `${o.strike}|${o.vencimento}`;
+      if (o.tipo === "CALL") callKeys.add(key);
+      else putKeys.add(key);
+    });
+    const paired = new Set<string>();
+    callKeys.forEach((k) => { if (putKeys.has(k)) paired.add(k); });
+    return paired;
+  }, [filtered]);
+
   const displayed = filtered.slice(0, 200);
 
   // ─── BOX OPPORTUNITIES ─────────────────────────────────────
