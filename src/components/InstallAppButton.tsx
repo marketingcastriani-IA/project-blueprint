@@ -14,6 +14,7 @@ export default function InstallAppButton({ variant = 'header' }: { variant?: 'he
   const [canInstall, setCanInstall] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [showIOSTip, setShowIOSTip] = useState(false);
+  const [showDesktopTip, setShowDesktopTip] = useState(false);
   const [dismissed, setDismissed] = useState(() => sessionStorage.getItem('install-dismissed') === '1');
 
   useEffect(() => {
