@@ -582,7 +582,7 @@ export default function BoxTracker() {
         type: 'BOX_ALERT',
         title,
         body,
-        tag: 'box-tracker-alert',
+        tag: data?.priority === 'urgent' ? 'box-tracker-urgent' : 'box-tracker-alert',
         data,
       });
       return;
@@ -592,7 +592,7 @@ export default function BoxTracker() {
       new Notification(title, {
         body,
         icon: '/favicon.png',
-        tag: 'box-tracker-alert',
+        tag: data?.priority === 'urgent' ? 'box-tracker-urgent' : 'box-tracker-alert',
       });
     }
   }, []);
@@ -608,6 +608,7 @@ export default function BoxTracker() {
     if (best.lucroPercent === null || best.cdiPeriodo === null || best.cdiPeriodo <= 0) return;
 
     const cdiPercent = (best.lucroPercent / best.cdiPeriodo) * 100;
+    const isUrgent = cdiPercent >= notifThresholdUrgent;
     
     if (cdiPercent >= notifThreshold) {
       lastNotifRef.current = now;
@@ -627,13 +628,24 @@ export default function BoxTracker() {
         return updated;
       });
 
+      const lucroStr = best.lucro !== null ? `R$ ${best.lucro.toFixed(2)}` : '';
+      const vencStr = best.vencimento || '';
+      
       sendPushNotification(
-        `🚀 BOX ${best.familyName} ACIMA DO CDI!`,
-        `📊 ${cdiPercent.toFixed(0)}% do CDI · Strike R$ ${best.strike.toFixed(2)} · Lucro ${best.lucroPercent.toFixed(2)}%\n🎯 Meta: ≥ ${notifThreshold}% CDI`,
-        { url: '/box-tracker', familyName: best.familyName, cdiPercent }
+        isUrgent
+          ? `🚨 URGENTE! BOX ${best.familyName} — ${cdiPercent.toFixed(0)}% CDI!`
+          : `🚀 BOX ${best.familyName} ACIMA DO CDI!`,
+        `📊 ${cdiPercent.toFixed(0)}% do CDI · Strike R$ ${best.strike.toFixed(2)}\n💰 Lucro: ${lucroStr} (${best.lucroPercent.toFixed(2)}%)${vencStr ? `\n📅 Venc: ${vencStr}` : ''}\n🎯 Meta: ≥ ${notifThreshold}% CDI`,
+        { 
+          url: '/box-tracker', 
+          familyName: best.familyName, 
+          cdiPercent,
+          priority: isUrgent ? 'urgent' : 'normal',
+          sound: soundEnabled,
+        }
       );
     }
-  }, [topPairs, notifEnabled, notifThreshold, sendPushNotification]);
+  }, [topPairs, notifEnabled, notifThreshold, notifThresholdUrgent, soundEnabled, sendPushNotification]);
 
   // ─── RENDER ───────────────────────────────────────────────
   return (
