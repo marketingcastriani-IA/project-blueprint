@@ -732,13 +732,23 @@ export default function CollarTrackerTab() {
           const custoLiquidoPct = (custoCollar !== null && stockAsk !== null && stockAsk > 0)
             ? (custoCollar / stockAsk) * 100 : null;
 
+          // Proteção e Upside como % do ativo
+          const protecaoPct = (stockAsk !== null && stockAsk > 0) ? ((stockAsk - putStrike) / stockAsk) * 100 : null;
+          const upsidePct = (stockAsk !== null && stockAsk > 0) ? ((callStrike - stockAsk) / stockAsk) * 100 : null;
+
           // PER (Protection Efficiency Ratio)
           let per: number | null = null;
-          if (stockAsk !== null && stockAsk > 0) {
-            const downsideProtegido = stockAsk - putStrike;
-            per = (custoLiquidoPct !== null && Math.abs(custoLiquidoPct) > 0.01)
-              ? Math.abs(((downsideProtegido / stockAsk) * 100) / custoLiquidoPct)
-              : (custoLiquidoPct !== null && Math.abs(custoLiquidoPct) <= 0.01 ? Infinity : null);
+          if (protecaoPct !== null && custoLiquidoPct !== null) {
+            per = Math.abs(custoLiquidoPct) > 0.01
+              ? Math.abs(protecaoPct / custoLiquidoPct)
+              : (custoLiquidoPct <= 0.01 ? Infinity : null);
+          }
+
+          // Score Combinado (fórmula do comparador)
+          // 0.5*Proteção + 0.3*Upside - 0.2*Custo
+          let scoreCombinado = 0;
+          if (protecaoPct !== null && upsidePct !== null && custoLiquidoPct !== null) {
+            scoreCombinado = 0.5 * protecaoPct + 0.3 * upsidePct - 0.2 * custoLiquidoPct;
           }
 
           // Quality Score — fórmula combinada com pesos CDI
@@ -792,11 +802,25 @@ export default function CollarTrackerTab() {
             distPutPct, distCallPct, riskRewardRatio, qualityScore,
             isRiskFree,
             diffCdiBaixa, diffCdiAlta, per, custoLiquidoPct,
+            protecaoPct, upsidePct, scoreCombinado,
           });
         }
       }
 
-      results.sort((a, b) => b.qualityScore - a.qualityScore);
+      // Sort based on ranking method
+      results.sort((a, b) => {
+        switch (rankingMethod) {
+          case "custo":
+            return (a.custoCollar ?? 999) - (b.custoCollar ?? 999);
+          case "per":
+            return ((b.per === Infinity ? 9999 : b.per) ?? -1) - ((a.per === Infinity ? 9999 : a.per) ?? -1);
+          case "combinado":
+            return b.scoreCombinado - a.scoreCombinado;
+          case "score":
+          default:
+            return b.qualityScore - a.qualityScore;
+        }
+      });
       return results;
     },
     [rows, vencimentoManual, cdiAnual, getStrikeAndExpiry, familyStockTickers]
