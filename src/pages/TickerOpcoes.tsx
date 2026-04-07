@@ -650,7 +650,7 @@ export default function TickerOpcoes() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            {selectedRows.size > 0 && (
+            {selectedRows.size > 0 ? (
               <>
                 <Button
                   size="sm"
