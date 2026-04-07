@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Copy, Check, Filter, Database, ArrowUpDown, TrendingDown, TrendingUp, DollarSign, RotateCcw, Wifi, Radio, Box, Zap, Send, Info, X as XIcon } from "lucide-react";
+import { Search, Copy, Check, Filter, Database, ArrowUpDown, TrendingDown, TrendingUp, DollarSign, RotateCcw, Wifi, Radio, Box, Zap, Send, Info, X as XIcon, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
@@ -42,6 +42,7 @@ interface SavedFamily {
   autoImported?: string[];
 }
 const BOX_STORAGE_KEY = "box-tracker-families";
+const COLLAR_STORAGE_KEY = "collar-tracker-families";
 
 export default function TickerOpcoes() {
   const { options, families, vencimentos, loading } = useB3Options();
@@ -400,6 +401,39 @@ export default function TickerOpcoes() {
     navigate("/box-tracker");
   }, [filtered, selectedRows, selectedFamily, navigate]);
 
+  // ─── INTEGRATION: Send selected to Collar Tracker ─────────
+  const sendSelectedToCollar = useCallback(() => {
+    const selected = filtered.filter((o) => selectedRows.has(o.ticker));
+    const familyName = selected[0]?.family || selectedFamily;
+    if (!familyName || familyName === "all") {
+      toast.error("Não foi possível determinar a família");
+      return;
+    }
+    const tickers = selected.map((o) => o.ticker);
+
+    let existingFamilies: SavedFamily[] = [];
+    try {
+      const saved = localStorage.getItem(COLLAR_STORAGE_KEY);
+      if (saved) existingFamilies = JSON.parse(saved);
+    } catch {}
+
+    const existingIdx = existingFamilies.findIndex((f) => f.name === familyName);
+    if (existingIdx >= 0) {
+      const existing = new Set(existingFamilies[existingIdx].tickers);
+      tickers.forEach((t) => existing.add(t));
+      existingFamilies[existingIdx].tickers = Array.from(existing);
+      const autoSet = new Set(existingFamilies[existingIdx].autoImported || []);
+      tickers.forEach((t) => autoSet.add(t));
+      existingFamilies[existingIdx].autoImported = Array.from(autoSet);
+    } else {
+      existingFamilies.push({ name: familyName, tickers, autoImported: [...tickers] });
+    }
+
+    localStorage.setItem(COLLAR_STORAGE_KEY, JSON.stringify(existingFamilies));
+    toast.success(`${tickers.length} tickers enviados ao Rastrear Collar (${familyName})`);
+    navigate("/collar-tracker");
+  }, [filtered, selectedRows, selectedFamily, navigate]);
+
   // ─── INTEGRATION: Send box opportunity to Box Tracker ──────
   const sendOpportunityToBox = useCallback((call: B3Option, put: B3Option) => {
     const familyName = call.family;
@@ -539,7 +573,7 @@ export default function TickerOpcoes() {
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</span>
                 <div>
                   <p className="text-xs font-semibold text-foreground">Envie automaticamente</p>
-                  <p className="text-xs leading-snug font-medium text-muted-foreground">Use "Tempo Real" ou "Rastrear Box" para enviar os tickers selecionados</p>
+                  <p className="text-xs leading-snug font-medium text-muted-foreground">Use "Tempo Real", "Rastrear Box" ou "Rastrear Collar" para enviar os tickers selecionados</p>
                 </div>
               </div>
             </div>
@@ -754,6 +788,15 @@ export default function TickerOpcoes() {
                     <Box className="h-3.5 w-3.5" /> Rastrear Box
                   </Button>
                 )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={sendSelectedToCollar}
+                  className="gap-1.5 text-xs border-primary/40 text-primary hover:bg-primary/10"
+                  title="Enviar selecionados ao Rastrear Collar"
+                >
+                  <Shield className="h-3.5 w-3.5" /> Rastrear Collar
+                </Button>
               </>
             ) : (
               <span className="text-xs text-muted-foreground italic">Selecione opções na tabela para enviar</span>
