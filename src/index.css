@@ -21,7 +21,7 @@
     --secondary: 210 20% 94%;
     --secondary-foreground: 222 47% 11%;
     --muted: 210 20% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted-foreground: 215 20% 35%;
     --accent: 195 100% 45%;
     --accent-foreground: 0 0% 100%;
     
@@ -113,9 +113,19 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Plus Jakarta Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: 'kern' 1, 'liga' 1;
   }
   .font-mono {
     font-family: 'JetBrains Mono', monospace;
+  }
+  /* Ensure small text stays sharp and readable */
+  p, span, label, small, .text-xs, .text-sm, .text-muted-foreground {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   /* Fix para o ícone de calendário no input type="date" no tema dark */
