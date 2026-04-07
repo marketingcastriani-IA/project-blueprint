@@ -824,7 +824,7 @@ export default function CollarTrackerTab() {
       });
       return results;
     },
-    [rows, vencimentoManual, cdiAnual, getStrikeAndExpiry, familyStockTickers]
+    [rows, vencimentoManual, cdiAnual, getStrikeAndExpiry, familyStockTickers, rankingMethod]
   );
 
   // Global best per family (memoized)
@@ -836,7 +836,14 @@ export default function CollarTrackerTab() {
       const best = collars.find((c) => c.rentAlta !== null && c.stockAsk !== null);
       if (best) bestPerFamily.push({ ...best, familyName: f.name });
     });
-    bestPerFamily.sort((a, b) => b.qualityScore - a.qualityScore);
+    bestPerFamily.sort((a, b) => {
+      switch (rankingMethod) {
+        case "custo": return (a.custoCollar ?? 999) - (b.custoCollar ?? 999);
+        case "per": return ((b.per === Infinity ? 9999 : b.per) ?? -1) - ((a.per === Infinity ? 9999 : a.per) ?? -1);
+        case "combinado": return b.scoreCombinado - a.scoreCombinado;
+        default: return b.qualityScore - a.qualityScore;
+      }
+    });
     return bestPerFamily.slice(0, 10);
   }, [families, calculateCollars]);
 
