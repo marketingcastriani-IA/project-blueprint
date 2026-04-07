@@ -1,46 +1,53 @@
 
 
-# Melhorias de UX: Instruções Claras + Melhorias em Opções B3 e Box Tracker
+# Badge "Auto" + Sistema de Alertas CDI Moderno
 
-## O que será feito
+## Resumo
 
-Adicionar instruções visuais claras para guiar o usuário nos fluxos de Opções B3 → Box Tracker, e implementar melhorias de usabilidade em ambas as telas.
+Adicionar badge "Auto" nos tickers importados do Opções B3 e modernizar o sistema de alertas push para funcionar tanto no celular quanto no PC, com UI mais moderna e configurável.
 
 ---
 
-## 1. Instruções na tela — Opções B3
+## 1. Badge "Auto" nos tickers importados
 
 **Arquivo**: `src/pages/TickerOpcoes.tsx`
+- Ao salvar tickers no localStorage (`BOX_STORAGE_KEY`), adicionar um campo `autoImported: string[]` na estrutura `SavedFamily` com a lista de tickers que vieram do Opções B3
 
-- Adicionar um **banner de instrução** abaixo do header com ícones e passos numerados:
-  1. "Selecione uma família (ex: PETR) e filtre por vencimento"
-  2. "Marque os tickers com checkbox — opções com PAR são ideais para Box"
-  3. "Use os botões 'Tempo Real' ou 'Box Tracker' para enviar automaticamente"
-- O banner terá um botão "Entendi" que salva no `localStorage` para não aparecer novamente
-- Quando nenhuma opção está selecionada, mostrar **texto-guia** nos botões de ação: "Selecione opções na tabela para enviar"
+**Arquivo**: `src/components/BoxTrackerTab.tsx`
+- Atualizar `SavedFamily` para incluir `autoImported?: string[]`
+- Na renderização dos tickers (tanto nos pares quanto nos tickers avulsos), verificar se o ticker está na lista `autoImported` e exibir um badge compacto com ícone de Database e texto "Auto" em cor primária
+- Tickers adicionados manualmente (paste/upload) não terão o badge
 
-## 2. Instruções na tela — Box Tracker
+---
+
+## 2. Modernizar o sistema de alertas CDI
 
 **Arquivo**: `src/components/BoxTrackerTab.tsx`
 
-- Adicionar banner instrucional similar no topo:
-  1. "Adicione uma família (ex: PETR) ou envie tickers automaticamente do Opções B3"
-  2. "Os tickers são preenchidos automaticamente — basta conectar o Bridge para ver preços ao vivo"
-  3. "Os melhores boxes aparecem no ranking com comparação ao CDI"
-- O estado vazio (nenhuma família) será melhorado com instruções mais claras e um **botão direto "Ir ao Opções B3"** para facilitar o fluxo
-- Destacar visualmente que tickers vindos do Opções B3 entram automaticamente
+### 2.1 Redesign do painel de alertas (Row 2)
+- Substituir o botão simples "Alerta Push" por um **card moderno** com:
+  - Animação de sino pulsante quando ativo
+  - Slider visual para definir o threshold (% CDI) ao invés de input de texto
+  - Preview do tipo de alerta: "Você será notificado quando um box superar X% do CDI"
+  - Badge indicando "PC + Celular" quando PWA instalada, ou "Apenas PC" quando no navegador
 
-## 3. Melhorias adicionais — Opções B3
+### 2.2 Notificações mais ricas
+- Melhorar o conteúdo da notificação push com mais dados: família, strike, lucro em R$, % CDI, e vencimento
+- Adicionar som de alerta configurável (toggle já existe `NOTIF_SOUND_ENABLED_KEY` mas sem implementação visual)
+- Implementar o toggle de som na UI com um botão ao lado do toggle de alertas
 
-- **Tooltip nos badges PAR**: explicar "Este strike tem Call e Put disponíveis — ideal para montar Box"
-- **Contador de pares** no header dos filtros: "X pares Call+Put disponíveis"
-- **Highlight mais forte** nas linhas com PAR (borda esquerda colorida ao invés de apenas opacity)
+### 2.3 Guia de instalação PWA
+- Quando o usuário ativa alertas e o app NÃO está instalado como PWA, mostrar um **mini-guia** explicando como instalar:
+  - Chrome PC: "Clique no ícone de instalação na barra de URL"
+  - Chrome Mobile: "Menu → Adicionar à tela inicial"
+  - Safari iOS: "Compartilhar → Adicionar à Tela de Início"
+- Detectar se o app está rodando como PWA via `window.matchMedia('(display-mode: standalone)')` e ocultar o guia quando já instalado
 
-## 4. Melhorias adicionais — Box Tracker
-
-- **Botão "Ir ao Opções B3"** no card de família vazio e no estado vazio geral, para facilitar navegação
-- **Badge "Auto"** nos tickers que vieram do Opções B3 (via localStorage flag)
-- **Melhorar placeholder** do input de família: adicionar texto explicativo abaixo ("Digite apenas o nome base: PETR, VALE, BBDC — sem número")
+### 2.4 Múltiplos níveis de alerta
+- Permitir configurar **2 níveis de alerta**: 
+  - Nível 1 (padrão): threshold configurável (ex: 110% CDI) — notificação normal
+  - Nível 2 (urgente): threshold mais alto (ex: 130% CDI) — notificação com vibração extra e visual diferente no histórico
+- Armazenar ambos no localStorage
 
 ---
 
@@ -48,6 +55,7 @@ Adicionar instruções visuais claras para guiar o usuário nos fluxos de Opçõ
 
 | Arquivo | Mudança |
 |---|---|
-| `src/pages/TickerOpcoes.tsx` | Banner instrucional, tooltip PAR, highlight melhorado, contador de pares |
-| `src/components/BoxTrackerTab.tsx` | Banner instrucional, botão "Ir ao Opções B3", placeholder melhorado, estado vazio aprimorado |
+| `src/pages/TickerOpcoes.tsx` | Salvar `autoImported` no localStorage ao enviar tickers |
+| `src/components/BoxTrackerTab.tsx` | Badge "Auto", redesign alertas, slider threshold, guia PWA, níveis de alerta, toggle som |
+| `public/sw.js` | Suporte a prioridade de notificação (urgente vs normal) |
 
