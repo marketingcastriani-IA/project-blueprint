@@ -57,12 +57,16 @@ export default function InstallAppButton({ variant = 'header' }: { variant?: 'he
       setShowIOSTip(true);
       return;
     }
-    if (!deferredPrompt) return;
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setCanInstall(false);
-      deferredPrompt = null;
+    if (deferredPrompt) {
+      await deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setCanInstall(false);
+        deferredPrompt = null;
+      }
+    } else {
+      // No native prompt available — show desktop manual instructions
+      setShowDesktopTip(true);
     }
   };
 
