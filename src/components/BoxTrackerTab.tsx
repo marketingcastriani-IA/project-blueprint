@@ -1385,6 +1385,7 @@ export default function BoxTracker() {
                 winnerKey={winnerKey}
                 cdiAnual={cdiAnual}
                 stockTicker={resolvedStockTicker}
+                autoImported={autoImportedMap.get(family.name)}
               />
             );
           })}
@@ -1410,6 +1411,7 @@ interface FamilyCardProps {
   winnerKey: string | null;
   cdiAnual: number;
   stockTicker: string;
+  autoImported?: Set<string>;
 }
 
 function FamilyCard({
@@ -1427,6 +1429,7 @@ function FamilyCard({
   winnerKey,
   cdiAnual,
   stockTicker,
+  autoImported,
 }: FamilyCardProps) {
   const [showPaste, setShowPaste] = useState(false);
   const [pasteText, setPasteText] = useState("");
