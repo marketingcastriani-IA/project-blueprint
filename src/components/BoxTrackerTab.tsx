@@ -497,7 +497,7 @@ export default function BoxTracker() {
           }
         }
 
-        const vencParaCalculo = vencimentoManual || vencimento;
+        const vencParaCalculo = vencimento;
         const diasUteis = calcDiasUteis(vencParaCalculo);
         const cdiPeriodo = diasUteis !== null && diasUteis > 0 ? calcCdiPeriodo(diasUteis, cdiAnual) : null;
 
@@ -528,7 +528,7 @@ export default function BoxTracker() {
       pairs.sort((a, b) => (b.lucroPercent ?? -999) - (a.lucroPercent ?? -999));
       return pairs;
     },
-    [rows, quantidade, vencimentoManual, descontarIRAcoes, descontarIRRendaFixa, cdiAnual, getStrikeAndExpiry, familyStockTickers]
+    [rows, quantidade, descontarIRAcoes, descontarIRRendaFixa, cdiAnual, getStrikeAndExpiry, familyStockTickers]
   );
 
   // Global ranking — only the #1 best box per family
@@ -544,7 +544,7 @@ export default function BoxTracker() {
   const isConnected = status === "connected";
   const statusCfg = statusConfig[status];
 
-  const diasUteisVenc = calcDiasUteis(vencimentoManual);
+  
 
   // Determine winner
   const winnerKey = topPairs.length > 0 ? `${topPairs[0].familyName}-${topPairs[0].strike}` : null;
