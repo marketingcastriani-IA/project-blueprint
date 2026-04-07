@@ -496,6 +496,7 @@ export default function CollarTrackerTab() {
       name: f.name,
       tickers: f.tickers.map((t) => t.symbol),
       autoImported: Array.from(autoImportedMap.get(f.name) || []),
+      quantidade: f.quantidade,
     }));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
   }, [families, autoImportedMap]);
