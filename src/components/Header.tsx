@@ -3,7 +3,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import { Button } from '@/components/ui/button';
 
-import { Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, ShieldCheck, Briefcase, Settings, Zap, PieChart, HelpCircle, Sparkles, Palette, BookOpen, Radio, BarChart2, Calculator, Database } from 'lucide-react';
+import { Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, ShieldCheck, Briefcase, Settings, Zap, PieChart, HelpCircle, Sparkles, Palette, BookOpen, Radio, BarChart2, Calculator, Database, Waves, TreePine } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
@@ -150,6 +150,8 @@ export default function Header() {
               { key: 'light' as const, label: 'Branco', icon: Sun },
               { key: 'dark' as const, label: 'Dark', icon: Moon },
               { key: 'destaque' as const, label: 'Destaque', icon: Sparkles },
+              { key: 'midnight' as const, label: 'Midnight', icon: Waves },
+              { key: 'forest' as const, label: 'Forest', icon: TreePine },
             ]).map(item => (
               <button
                 key={item.key}
@@ -211,6 +213,8 @@ export default function Header() {
                 { key: 'light' as const, label: 'Branco', icon: Sun },
                 { key: 'dark' as const, label: 'Dark', icon: Moon },
                 { key: 'destaque' as const, label: 'Destaque', icon: Sparkles },
+                { key: 'midnight' as const, label: 'Midnight', icon: Waves },
+                { key: 'forest' as const, label: 'Forest', icon: TreePine },
               ]).map(item => (
                 <button
                   key={item.key}
