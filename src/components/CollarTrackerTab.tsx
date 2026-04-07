@@ -1,9 +1,10 @@
 // ============================================================
 // RASTREADOR DE COLLAR - Tempo Real via Profit RTD Bridge
-// Payoff = S_T - S_0 + max(K_put - S_T, 0) - max(S_T - K_call, 0) + (P_call - P_put)
-// R_max = (K_call - S_0 + (P_call - P_put)) / S_0
-// R_min = (K_put - S_0 + (P_call - P_put)) / S_0
-// Custo = P_put - P_call (ideal: ~0 = collar financiado)
+// Collar = Compra Ativo + Compra Put OTM + Venda Call OTM
+// Net Cost/Credit = Prêmio Call - Prêmio Put (positivo = crédito)
+// Max Profit % = ((Strike Call - Preço Ativo) + Net) / Preço Ativo
+// Max Loss %   = ((Strike Put  - Preço Ativo) + Net) / Preço Ativo
+// Break-even   = Preço Ativo - Net (ajustado pelo custo/crédito)
 // ============================================================
 
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
@@ -31,9 +32,8 @@ import trophySilver from "@/assets/trophy-silver.png";
 import trophyBronze from "@/assets/trophy-bronze.png";
 
 // ─── TIPOS ───────────────────────────────────────────────────
-type CollarTipo = "Normal" | "Baixa" | "ATM" | "Calendário";
-type CollarCusto = "Zero-Cost" | "Crédito" | "Débito";
-type RankingMethod = "score" | "custo" | "per" | "combinado";
+type CollarTipo = "Zero Cost" | "Bullish" | "Income";
+type RankingMethod = "score" | "netcost" | "maxprofit" | "breakeven";
 
 interface OptionTicker {
   id: string;
@@ -53,29 +53,30 @@ interface CollarResult {
   putAsk: number | null;
   stockAsk: number | null;
   stockUlt: number | null;
-  custoCollar: number | null;
+  // Core metrics
+  netCostCredit: number | null;       // P_call - P_put (positive=credit)
+  maxProfitPct: number | null;        // ((K_call - S0) + Net) / S0
+  maxLossPct: number | null;          // ((K_put - S0) + Net) / S0
+  breakeven: number | null;           // S0 - Net
+  // Scenario returns
   rentBaixa: number | null;
   rentNeutra: number | null;
   rentAlta: number | null;
+  // Time & CDI
   vencimento: string | null;
   diasUteis: number | null;
   cdiPeriodo: number | null;
-  rating: number;
+  // Classification
   tipo: CollarTipo;
-  custoTipo: CollarCusto;
   distPutPct: number | null;
   distCallPct: number | null;
-  riskRewardRatio: number | null;
+  // CDI comparison
+  diffCdiBaixa: number | null;
+  diffCdiAlta: number | null;
+  // Scores
   qualityScore: number;
   isRiskFree: boolean;
-  // CDI comparison
-  diffCdiBaixa: number | null;   // rentBaixa - cdiPeriodo (pp)
-  diffCdiAlta: number | null;    // rentAlta - cdiPeriodo (pp)
-  per: number | null;            // Protection Efficiency Ratio
-  custoLiquidoPct: number | null; // custo líquido como % do ativo
-  protecaoPct: number | null;    // downside protegido como % do ativo
-  upsidePct: number | null;      // upside permitido como % do ativo
-  scoreCombinado: number;        // 0.5*Proteção + 0.3*Upside - 0.2*Custo
+  rating: number;
 }
 
 interface StockFamily {
@@ -207,6 +208,37 @@ function calcMeses(diasUteis: number | null): string {
   return meses < 1 ? `${diasUteis}d` : `${meses.toFixed(1)}m`;
 }
 
+// ─── COLLAR TYPE CLASSIFICATION ──────────────────────────────
+// 1. Zero Cost: Put 3-5% OTM, Call prêmio ≈ Put prêmio (netCost ≈ 0)
+// 2. Bullish: Put 7-10% OTM, Call >10% OTM (net debit, large upside)
+// 3. Income: Put ATM/slightly OTM (0-3%), Call ATM/slightly OTM (net credit, tight range)
+function classifyCollar(
+  distPutPct: number | null,
+  distCallPct: number | null,
+  netCostCredit: number | null,
+  stockPrice: number | null,
+): CollarTipo {
+  if (distPutPct === null || distCallPct === null || netCostCredit === null || stockPrice === null || stockPrice === 0) {
+    return "Zero Cost";
+  }
+  const putDist = Math.abs(distPutPct); // distance below (positive number)
+  const callDist = distCallPct;          // distance above (positive number)
+  const netPct = (netCostCredit / stockPrice) * 100;
+
+  // Income: Put very close (0-3% OTM), Call close, generates net credit (>0.5% of asset)
+  if (putDist <= 3.5 && callDist <= 5 && netPct > 0.3) {
+    return "Income";
+  }
+
+  // Bullish: Put far OTM (>6%), Call far OTM (>8%)
+  if (putDist >= 6 && callDist >= 8) {
+    return "Bullish";
+  }
+
+  // Zero Cost: moderate distances, net cost ≈ 0
+  return "Zero Cost";
+}
+
 // ─── PAYOFF DATA GENERATION ──────────────────────────────────
 interface CollarPayoffPoint {
   price: number;
@@ -291,6 +323,31 @@ const CollarChartTooltip = ({ active, payload, label }: any) => {
   );
 };
 
+// ─── TIPO BADGE CONFIG ───────────────────────────────────────
+const TIPO_CONFIG: Record<CollarTipo, { label: string; emoji: string; desc: string; bgClass: string; textClass: string }> = {
+  "Zero Cost": {
+    label: "Zero Cost",
+    emoji: "⚖️",
+    desc: "Prêmio da Call cobre o custo da Put",
+    bgClass: "bg-blue-100 dark:bg-blue-900/40",
+    textClass: "text-blue-700 dark:text-blue-300",
+  },
+  "Bullish": {
+    label: "Bullish",
+    emoji: "🚀",
+    desc: "Proteção leve, grande espaço para alta",
+    bgClass: "bg-emerald-100 dark:bg-emerald-900/40",
+    textClass: "text-emerald-700 dark:text-emerald-300",
+  },
+  "Income": {
+    label: "Income",
+    emoji: "💰",
+    desc: "Gera crédito, proteção agressiva",
+    bgClass: "bg-amber-100 dark:bg-amber-900/40",
+    textClass: "text-amber-700 dark:text-amber-300",
+  },
+};
+
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────
 export default function CollarTrackerTab() {
   const { getStrikeAndExpiry } = useB3Options();
@@ -302,7 +359,6 @@ export default function CollarTrackerTab() {
   const [vencSaved, setVencSaved] = useState(false);
   const [editingVenc, setEditingVenc] = useState(false);
   const [filterTipo, setFilterTipo] = useState<CollarTipo | "Todos">("Todos");
-  const [filterCusto, setFilterCusto] = useState<CollarCusto | "Todos">("Todos");
   const [hideNegative, setHideNegative] = useState(false);
   const [onlyRiskFree, setOnlyRiskFree] = useState(false);
   const [rankingMethod, setRankingMethod] = useState<RankingMethod>("score");
@@ -346,7 +402,6 @@ export default function CollarTrackerTab() {
   });
   const [showAlertHistory, setShowAlertHistory] = useState(false);
 
-  // Instructional banner
   const [showInstructions, setShowInstructions] = useState(() => {
     try { return localStorage.getItem("collar-tracker-instructions-dismissed") !== "true"; } catch { return true; }
   });
@@ -357,7 +412,6 @@ export default function CollarTrackerTab() {
 
   const { status, rows, connect, addTicker: bridgeAddTicker } = useSharedRtdBridge();
 
-  // Helper: send message to Service Worker
   const postToSW = useCallback(async (message: object) => {
     if (!('serviceWorker' in navigator)) return false;
     if (navigator.serviceWorker.controller) {
@@ -366,15 +420,11 @@ export default function CollarTrackerTab() {
     }
     try {
       const reg = await navigator.serviceWorker.ready;
-      if (reg.active) {
-        reg.active.postMessage(message);
-        return true;
-      }
+      if (reg.active) { reg.active.postMessage(message); return true; }
     } catch {}
     return false;
   }, []);
 
-  // Push notification sender
   const sendPushNotification = useCallback(async (title: string, body: string, data?: any) => {
     const tag = data?.priority === 'urgent' ? 'collar-tracker-urgent' : 'collar-tracker-alert';
     const sent = await postToSW({ type: 'BOX_ALERT', title, body, tag, data });
@@ -384,7 +434,6 @@ export default function CollarTrackerTab() {
     }
   }, [postToSW]);
 
-  // Toggle notifications
   const toggleNotifications = useCallback(async () => {
     if (notifEnabled) {
       setNotifEnabled(false);
@@ -413,54 +462,32 @@ export default function CollarTrackerTab() {
         });
       }
     } else {
-      alert("Permissão de notificação negada.\n\n📱 No celular: Configurações → Notificações → Permitir\n💻 No PC: Clique no 🔒 ao lado da URL → Permitir Notificações");
+      alert("Permissão de notificação negada.");
     }
   }, [notifEnabled, notifThreshold, postToSW]);
 
-  // Test alert
   const sendTestAlert = useCallback(async () => {
     const isIframe = window.self !== window.top;
     if (isIframe) {
-      toast({
-        title: "⚠️ Preview não suporta Push",
-        description: "Abra o site publicado ou instale o PWA para receber notificações push.",
-        variant: "destructive",
-      });
+      toast({ title: "⚠️ Preview não suporta Push", description: "Abra o site publicado ou instale o PWA.", variant: "destructive" });
       return;
     }
     if (!("Notification" in window)) {
-      toast({ title: "❌ Navegador incompatível", description: "Este navegador não suporta notificações.", variant: "destructive" });
+      toast({ title: "❌ Navegador incompatível", variant: "destructive" });
       return;
     }
     let perm = Notification.permission;
     if (perm === "default") perm = await Notification.requestPermission();
     if (perm !== "granted") {
-      toast({ title: "❌ Permissão negada", description: "Ative as notificações: clique no 🔒 ao lado da URL → Permitir Notificações", variant: "destructive" });
+      toast({ title: "❌ Permissão negada", variant: "destructive" });
       return;
     }
-
-    let swOk = false;
-    if ('serviceWorker' in navigator) {
-      try {
-        const reg = await navigator.serviceWorker.ready;
-        if (reg.active) swOk = true;
-      } catch {}
-    }
-
     await sendPushNotification(
       '🧪 Teste de Alerta Collar',
       `📊 Alerta teste — ${new Date().toLocaleTimeString('pt-BR')}\n🎯 Score Normal: ≥ ${notifThreshold}\n🚨 Score Urgente: ≥ ${notifThresholdUrgent}`,
       { url: '/collar-tracker', priority: 'normal', sound: soundEnabled }
     );
-
-    if (!swOk) {
-      try { new Notification('🧪 Teste Direto', { body: 'Fallback sem Service Worker', icon: '/favicon.png' }); } catch {}
-    }
-
-    toast({
-      title: swOk ? "✅ Alerta teste enviado!" : "⚠️ Alerta enviado (fallback)",
-      description: swOk ? "A notificação push deve aparecer agora." : "Service Worker indisponível.",
-    });
+    toast({ title: "✅ Alerta teste enviado!" });
   }, [sendPushNotification, notifThreshold, notifThresholdUrgent, soundEnabled, toast]);
 
   // Load vencimento
@@ -513,7 +540,6 @@ export default function CollarTrackerTab() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
   }, [families, autoImportedMap]);
 
-  // Derive stock ticker from family name
   const familyStockTickers = useCallback((familyName: string): string => {
     const candidates = [`${familyName}4`, `${familyName}3`, `${familyName}11`];
     for (const c of candidates) {
@@ -573,10 +599,7 @@ export default function CollarTrackerTab() {
       const symbols = rawText
         .split(/[\n,;\t\s]+/)
         .map((s) => s.trim().toUpperCase())
-        .filter((s) => {
-          if (s.length < 5) return false;
-          return /^[A-Z]{3,6}\d{0,2}[A-X]\d+$/.test(s);
-        });
+        .filter((s) => s.length >= 5 && /^[A-Z]{3,6}\d{0,2}[A-X]\d+$/.test(s));
       if (!symbols.length) return;
       const newTickers: OptionTicker[] = symbols.map((symbol) => {
         const b3Info = getStrikeAndExpiry(symbol);
@@ -662,7 +685,6 @@ export default function CollarTrackerTab() {
           const callStrikeRtd = (callRow?.strike && callRow.strike > 0) ? callRow.strike : null;
           const putStrikeRtd = (putRow?.strike && putRow.strike > 0) ? putRow.strike : null;
 
-          // Strike priority: RTD > B3 DB > ticker-parsed
           const b3CallInfo = getStrikeAndExpiry(call.symbol);
           const b3PutInfo = getStrikeAndExpiry(put.symbol);
           const callStrike = callStrikeRtd ?? ((b3CallInfo && b3CallInfo.strike > 0) ? b3CallInfo.strike : call.strike);
@@ -674,119 +696,99 @@ export default function CollarTrackerTab() {
           const diasUteis = calcDiasUteis(vencimento);
           const cdiPeriodo = diasUteis !== null && diasUteis > 0 ? calcCdiPeriodo(diasUteis, cdiAnual) : null;
 
-          let custoCollar: number | null = null;
+          // Skip invalid combinations: Call strike must be > Put strike
+          if (callStrike <= putStrike) continue;
+          // Call strike must be above stock price
+          if (stockAsk !== null && callStrike <= stockAsk * 0.98) continue;
+
+          let netCostCredit: number | null = null;
+          let maxProfitPct: number | null = null;
+          let maxLossPct: number | null = null;
+          let breakeven: number | null = null;
           let rentBaixa: number | null = null;
           let rentNeutra: number | null = null;
           let rentAlta: number | null = null;
 
-          if (stockAsk !== null && callBid !== null && putAsk !== null) {
+          if (stockAsk !== null && callBid !== null && putAsk !== null && stockAsk > 0) {
             const S0 = stockAsk;
             const Pcall = callBid;
             const Pput = putAsk;
 
-            custoCollar = Pput - Pcall;
+            // Net Cost/Credit: positive = credit (you receive), negative = debit (you pay)
+            netCostCredit = Pcall - Pput;
 
-            if (S0 > 0) {
-              rentAlta = ((callStrike - S0 + (Pcall - Pput)) / S0) * 100;
-              rentBaixa = ((putStrike - S0 + (Pcall - Pput)) / S0) * 100;
-              rentNeutra = ((Pcall - Pput) / S0) * 100;
-            }
+            // Max Profit % = ((K_call - S0) + Net) / S0
+            maxProfitPct = ((callStrike - S0) + netCostCredit) / S0 * 100;
+
+            // Max Loss % = ((K_put - S0) + Net) / S0
+            maxLossPct = ((putStrike - S0) + netCostCredit) / S0 * 100;
+
+            // Break-even = S0 - Net (price where P&L = 0)
+            breakeven = S0 - netCostCredit;
+
+            // Scenario returns (same formulas, different labels)
+            rentAlta = maxProfitPct;
+            rentBaixa = maxLossPct;
+            rentNeutra = (netCostCredit / S0) * 100;
           }
 
+          const distPutPct = stockAsk !== null && stockAsk > 0 ? ((putStrike - stockAsk) / stockAsk) * 100 : null;
+          const distCallPct = stockAsk !== null && stockAsk > 0 ? ((callStrike - stockAsk) / stockAsk) * 100 : null;
+
+          const tipo = classifyCollar(distPutPct, distCallPct, netCostCredit, stockAsk);
+
+          const isRiskFree = maxProfitPct !== null && maxLossPct !== null && rentNeutra !== null
+            && maxLossPct >= -0.01 && rentNeutra >= -0.01 && maxProfitPct >= -0.01;
+
+          const diffCdiBaixa = (rentBaixa !== null && cdiPeriodo !== null) ? rentBaixa - cdiPeriodo : null;
+          const diffCdiAlta = (rentAlta !== null && cdiPeriodo !== null) ? rentAlta - cdiPeriodo : null;
+
+          // Rating (stars)
           let rating = 1;
           if (cdiPeriodo !== null && rentBaixa !== null && rentNeutra !== null && rentAlta !== null) {
-            const aboveCdi = [rentBaixa >= cdiPeriodo, rentNeutra >= cdiPeriodo, rentAlta >= cdiPeriodo];
-            const count = aboveCdi.filter(Boolean).length;
+            const count = [rentBaixa >= cdiPeriodo, rentNeutra >= cdiPeriodo, rentAlta >= cdiPeriodo].filter(Boolean).length;
             if (count === 3) rating = 3;
             else if (count >= 1) rating = 2;
           }
 
-          let tipo: CollarTipo = "Normal";
-          const distPutPct = stockAsk !== null && stockAsk > 0 ? ((putStrike - stockAsk) / stockAsk) * 100 : null;
-          const distCallPct = stockAsk !== null && stockAsk > 0 ? ((callStrike - stockAsk) / stockAsk) * 100 : null;
-
-          if (callStrike < putStrike) {
-            tipo = "Baixa";
-          } else if (distPutPct !== null && Math.abs(distPutPct) < 2) {
-            tipo = "ATM";
-          } else {
-            tipo = "Normal";
-          }
-
-          let custoTipo: CollarCusto = "Débito";
-          if (custoCollar !== null) {
-            if (Math.abs(custoCollar) < 0.05) custoTipo = "Zero-Cost";
-            else if (custoCollar < 0) custoTipo = "Crédito";
-          }
-
-          const riskRewardRatio = (rentAlta !== null && rentBaixa !== null && rentBaixa !== 0)
-            ? Math.abs(rentAlta / rentBaixa) : null;
-
-          const isRiskFree = rentAlta !== null && rentBaixa !== null && rentNeutra !== null
-            && rentBaixa >= -0.01 && rentNeutra >= -0.01 && rentAlta >= -0.01;
-
-          // CDI comparison metrics
-          const diffCdiBaixa = (rentBaixa !== null && cdiPeriodo !== null) ? rentBaixa - cdiPeriodo : null;
-          const diffCdiAlta = (rentAlta !== null && cdiPeriodo !== null) ? rentAlta - cdiPeriodo : null;
-
-          // Custo líquido como % do ativo
-          const custoLiquidoPct = (custoCollar !== null && stockAsk !== null && stockAsk > 0)
-            ? (custoCollar / stockAsk) * 100 : null;
-
-          // Proteção e Upside como % do ativo
-          const protecaoPct = (stockAsk !== null && stockAsk > 0) ? ((stockAsk - putStrike) / stockAsk) * 100 : null;
-          const upsidePct = (stockAsk !== null && stockAsk > 0) ? ((callStrike - stockAsk) / stockAsk) * 100 : null;
-
-          // PER (Protection Efficiency Ratio)
-          let per: number | null = null;
-          if (protecaoPct !== null && custoLiquidoPct !== null) {
-            per = Math.abs(custoLiquidoPct) > 0.01
-              ? Math.abs(protecaoPct / custoLiquidoPct)
-              : (custoLiquidoPct <= 0.01 ? Infinity : null);
-          }
-
-          // Score Combinado (fórmula do comparador)
-          // 0.5*Proteção + 0.3*Upside - 0.2*Custo
-          let scoreCombinado = 0;
-          if (protecaoPct !== null && upsidePct !== null && custoLiquidoPct !== null) {
-            scoreCombinado = 0.5 * protecaoPct + 0.3 * upsidePct - 0.2 * custoLiquidoPct;
-          }
-
-          // Quality Score — fórmula combinada com pesos CDI
-          // w1=0.30 rentAlta vs CDI | w2=0.25 proteção (risco zero) | w3=0.20 custo | w4=0.15 PER | w5=0.10 estrutura
+          // Quality Score (0-100)
           let qualityScore = 0;
-          if (rentAlta !== null && rentBaixa !== null && cdiPeriodo !== null) {
-            // Componente 1: Rent. Alta vs CDI (0-30 pts)
+          if (maxProfitPct !== null && maxLossPct !== null && cdiPeriodo !== null) {
+            // Comp 1: Max Profit vs CDI (0-30)
             const altaVsCdi = diffCdiAlta ?? 0;
             const comp1 = altaVsCdi > 0
-              ? Math.min(30, 15 + altaVsCdi * 3)  // acima CDI: 15-30
-              : Math.max(0, 15 + altaVsCdi * 3);   // abaixo CDI: 0-15
+              ? Math.min(30, 15 + altaVsCdi * 3)
+              : Math.max(0, 15 + altaVsCdi * 3);
 
-            // Componente 2: Proteção / Risco Zero (0-25 pts)
+            // Comp 2: Protection / Risk-Free (0-25)
             let comp2 = 0;
             if (isRiskFree) comp2 = 25;
-            else if (rentBaixa >= 0) comp2 = 20;
+            else if (maxLossPct >= 0) comp2 = 20;
             else if (diffCdiBaixa !== null && diffCdiBaixa >= -2) comp2 = 15;
             else if (diffCdiBaixa !== null && diffCdiBaixa >= -5) comp2 = 8;
-            else comp2 = 0;
 
-            // Componente 3: Custo do collar (0-20 pts)
-            let comp3 = 10; // base
-            if (custoTipo === "Crédito") comp3 = 20;
-            else if (custoTipo === "Zero-Cost") comp3 = 15;
-            else if (custoLiquidoPct !== null) {
-              comp3 = Math.max(0, 10 - Math.abs(custoLiquidoPct) * 2);
+            // Comp 3: Net Cost/Credit (0-25)
+            let comp3 = 10;
+            if (netCostCredit !== null && netCostCredit > 0.01) comp3 = 25; // Credit
+            else if (netCostCredit !== null && Math.abs(netCostCredit) <= 0.05) comp3 = 20; // Zero Cost
+            else if (netCostCredit !== null && stockAsk) {
+              const netPct = Math.abs(netCostCredit / stockAsk) * 100;
+              comp3 = Math.max(0, 15 - netPct * 3);
             }
 
-            // Componente 4: PER (0-15 pts)
-            let comp4 = 0;
-            if (per === Infinity) comp4 = 15;
-            else if (per !== null) comp4 = Math.min(15, per * 3);
+            // Comp 4: Breakeven attractiveness (0-10)
+            let comp4 = 5;
+            if (breakeven !== null && stockAsk !== null && stockAsk > 0) {
+              const beDist = ((breakeven - stockAsk) / stockAsk) * 100;
+              if (beDist <= 0) comp4 = 10; // BE below current price = good
+              else if (beDist < 2) comp4 = 7;
+              else comp4 = Math.max(0, 5 - beDist);
+            }
 
-            // Componente 5: Estrutura / distância strikes (0-10 pts)
-            let comp5 = 5; // base
-            if (distPutPct !== null && distPutPct >= -15 && distPutPct <= -3) comp5 += 2.5;
-            if (distCallPct !== null && distCallPct >= 3 && distCallPct <= 15) comp5 += 2.5;
+            // Comp 5: Structure balance (0-10)
+            let comp5 = 5;
+            if (distPutPct !== null && distPutPct >= -15 && distPutPct <= -2) comp5 += 2.5;
+            if (distCallPct !== null && distCallPct >= 2 && distCallPct <= 15) comp5 += 2.5;
 
             qualityScore = Math.round(comp1 + comp2 + comp3 + comp4 + comp5);
           }
@@ -797,13 +799,12 @@ export default function CollarTrackerTab() {
             callStrike, putStrike,
             callStrikeRtd, putStrikeRtd,
             callBid, putAsk, stockAsk, stockUlt,
-            custoCollar, rentBaixa, rentNeutra, rentAlta,
+            netCostCredit, maxProfitPct, maxLossPct, breakeven,
+            rentBaixa, rentNeutra, rentAlta,
             vencimento, diasUteis, cdiPeriodo,
-            rating, tipo, custoTipo,
-            distPutPct, distCallPct, riskRewardRatio, qualityScore,
-            isRiskFree,
-            diffCdiBaixa, diffCdiAlta, per, custoLiquidoPct,
-            protecaoPct, upsidePct, scoreCombinado,
+            tipo, distPutPct, distCallPct,
+            diffCdiBaixa, diffCdiAlta,
+            qualityScore, isRiskFree, rating,
           });
         }
       }
@@ -811,12 +812,14 @@ export default function CollarTrackerTab() {
       // Sort based on ranking method
       results.sort((a, b) => {
         switch (rankingMethod) {
-          case "custo":
-            return (a.custoCollar ?? 999) - (b.custoCollar ?? 999);
-          case "per":
-            return ((b.per === Infinity ? 9999 : b.per) ?? -1) - ((a.per === Infinity ? 9999 : a.per) ?? -1);
-          case "combinado":
-            return b.scoreCombinado - a.scoreCombinado;
+          case "netcost":
+            // Higher net (more credit) = better
+            return (b.netCostCredit ?? -999) - (a.netCostCredit ?? -999);
+          case "maxprofit":
+            return (b.maxProfitPct ?? -999) - (a.maxProfitPct ?? -999);
+          case "breakeven":
+            // Lower breakeven = better (easier to profit)
+            return (a.breakeven ?? 9999) - (b.breakeven ?? 9999);
           case "score":
           default:
             return b.qualityScore - a.qualityScore;
@@ -827,7 +830,7 @@ export default function CollarTrackerTab() {
     [rows, vencimentoManual, cdiAnual, getStrikeAndExpiry, familyStockTickers, rankingMethod]
   );
 
-  // Global best per family (memoized)
+  // Global best per family
   const topCollars = useMemo(() => {
     const bestPerFamily: (CollarResult & { familyName: string })[] = [];
     families.forEach((f) => {
@@ -838,43 +841,38 @@ export default function CollarTrackerTab() {
     });
     bestPerFamily.sort((a, b) => {
       switch (rankingMethod) {
-        case "custo": return (a.custoCollar ?? 999) - (b.custoCollar ?? 999);
-        case "per": return ((b.per === Infinity ? 9999 : b.per) ?? -1) - ((a.per === Infinity ? 9999 : a.per) ?? -1);
-        case "combinado": return b.scoreCombinado - a.scoreCombinado;
+        case "netcost": return (b.netCostCredit ?? -999) - (a.netCostCredit ?? -999);
+        case "maxprofit": return (b.maxProfitPct ?? -999) - (a.maxProfitPct ?? -999);
+        case "breakeven": return (a.breakeven ?? 9999) - (b.breakeven ?? 9999);
         default: return b.qualityScore - a.qualityScore;
       }
     });
     return bestPerFamily.slice(0, 10);
   }, [families, calculateCollars]);
 
-  // Auto-select best collar for chart
   const topCollarsKey = topCollars.map(c => `${c.callSymbol}-${c.putSymbol}`).join(",");
   useEffect(() => {
     if (topCollars.length > 0) {
       const stillExists = selectedCollar && topCollars.some(
         c => c.callSymbol === selectedCollar.callSymbol && c.putSymbol === selectedCollar.putSymbol
       );
-      if (!stillExists) {
-        setSelectedCollar(topCollars[0]);
-      }
+      if (!stillExists) setSelectedCollar(topCollars[0]);
     } else {
       setSelectedCollar(null);
     }
   }, [topCollarsKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ─── PUSH ALERT TRIGGER ──────────────────────────────────────
+  // Push alert trigger
   useEffect(() => {
     if (!notifEnabled || !("Notification" in window) || Notification.permission !== "granted") return;
     if (topCollars.length === 0) return;
-
     const now = Date.now();
     if (now - lastNotifRef.current < NOTIF_COOLDOWN_MS) return;
-
     const best = topCollars[0];
     if (best.qualityScore < notifThreshold) return;
-
     lastNotifRef.current = now;
     const isUrgent = best.qualityScore >= notifThresholdUrgent;
+    const netLabel = (best.netCostCredit ?? 0) >= 0 ? "Crédito" : "Débito";
 
     const entry: AlertEntry = {
       id: generateId(),
@@ -882,7 +880,7 @@ export default function CollarTrackerTab() {
       familyName: best.familyName,
       qualityScore: best.qualityScore,
       rentAlta: best.rentAlta ?? 0,
-      custoTipo: best.custoTipo,
+      custoTipo: netLabel,
     };
     setAlertHistory(prev => {
       const updated = [entry, ...prev].slice(0, 50);
@@ -894,14 +892,8 @@ export default function CollarTrackerTab() {
       isUrgent
         ? `🚨 URGENTE! COLLAR ${best.familyName} — Score ${best.qualityScore}!`
         : `🛡️ COLLAR ${best.familyName} — Score ${best.qualityScore}`,
-      `📊 Quality Score: ${best.qualityScore}/100\n📈 Rent. Alta: ${formatPercent(best.rentAlta)}\n💰 Custo: ${best.custoTipo}${best.isRiskFree ? '\n🛡️ RISCO ZERO!' : ''}`,
-      {
-        url: '/collar-tracker',
-        familyName: best.familyName,
-        qualityScore: best.qualityScore,
-        priority: isUrgent ? 'urgent' : 'normal',
-        sound: soundEnabled,
-      }
+      `📊 Score: ${best.qualityScore}/100\n📈 Max Profit: ${formatPercent(best.maxProfitPct)}\n💰 ${best.tipo}${best.isRiskFree ? '\n🛡️ RISCO ZERO!' : ''}`,
+      { url: '/collar-tracker', familyName: best.familyName, qualityScore: best.qualityScore, priority: isUrgent ? 'urgent' : 'normal', sound: soundEnabled }
     );
   }, [topCollars, notifEnabled, notifThreshold, notifThresholdUrgent, soundEnabled, sendPushNotification]);
 
@@ -920,16 +912,25 @@ export default function CollarTrackerTab() {
   }, [selectedCollar, cdiAnual]);
 
   const selectedBreakeven = useMemo(() => {
-    if (!selectedCollar?.stockAsk) return null;
-    const S0 = selectedCollar.stockAsk;
-    const Pcall = selectedCollar.callBid ?? 0;
-    const Pput = selectedCollar.putAsk ?? 0;
-    return S0 + Pput - Pcall;
+    if (!selectedCollar?.breakeven) return null;
+    return selectedCollar.breakeven;
   }, [selectedCollar]);
 
   const isConnected = status === "connected";
   const statusCfg = statusConfig[status];
   const diasUteisVenc = calcDiasUteis(vencimentoManual);
+
+  // Helper for net cost label
+  const getNetLabel = (net: number | null) => {
+    if (net === null) return "—";
+    if (Math.abs(net) < 0.05) return "Zero Cost";
+    return net > 0 ? "Crédito" : "Débito";
+  };
+  const getNetColor = (net: number | null) => {
+    if (net === null) return "text-muted-foreground";
+    if (Math.abs(net) < 0.05) return "text-warning";
+    return net > 0 ? "text-success" : "text-destructive";
+  };
 
   // ─── RENDER ───────────────────────────────────────────────
   return (
@@ -943,8 +944,8 @@ export default function CollarTrackerTab() {
             </span>
             Rastreador de Collar
           </h1>
-          <p className="text-xs md:text-xs text-muted-foreground mt-1.5 font-medium">
-            R↑ = (K_call − S₀ + P_call − P_put) / S₀ · R↓ = (K_put − S₀ + P_call − P_put) / S₀ · Custo = P_put − P_call
+          <p className="text-xs text-muted-foreground mt-1.5 font-medium">
+            Compra Ativo + Compra Put + Venda Call · Net = P_call − P_put · MaxProfit = (K_call − S₀ + Net)/S₀ · MaxLoss = (K_put − S₀ + Net)/S₀
           </p>
         </div>
 
@@ -994,36 +995,34 @@ export default function CollarTrackerTab() {
       {/* Instructional Banner */}
       {showInstructions && (
         <div className="mb-5 rounded-xl border border-primary/20 bg-primary/5 backdrop-blur-sm p-4 relative">
-          <button
-            onClick={dismissInstructions}
-            className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
-          >
+          <button onClick={dismissInstructions}
+            className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors">
             <X className="h-4 w-4" />
           </button>
           <div className="flex items-center gap-2 mb-3">
             <Info className="h-4 w-4 text-primary" />
-            <span className="text-sm font-bold text-foreground">Como usar o Rastreador de Collar</span>
+            <span className="text-sm font-bold text-foreground">Tipos de Collar</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="flex items-start gap-2.5">
-              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</span>
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">⚖️</span>
               <div>
-                <p className="text-xs font-semibold text-foreground">Adicione uma família</p>
-                <p className="text-xs text-muted-foreground">Digite o nome base (ex: PETR, VALE) ou envie tickers automaticamente do <strong>Opções B3</strong></p>
+                <p className="text-xs font-semibold text-foreground">Zero Cost Collar</p>
+                <p className="text-xs text-muted-foreground">Put 3-5% OTM, Call prêmio ≈ Put. Proteção gratuita com upside limitado.</p>
               </div>
             </div>
             <div className="flex items-start gap-2.5">
-              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</span>
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold">🚀</span>
               <div>
-                <p className="text-xs font-semibold text-foreground">Calls + Puts automáticas</p>
-                <p className="text-xs text-muted-foreground">Conecte o Bridge — o sistema calcula todas as combinações de Collar automaticamente</p>
+                <p className="text-xs font-semibold text-foreground">Bullish Collar</p>
+                <p className="text-xs text-muted-foreground">Put 7-10% OTM, Call &gt;10% OTM. Proteção contra cisnes negros, máximo upside.</p>
               </div>
             </div>
             <div className="flex items-start gap-2.5">
-              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</span>
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold">💰</span>
               <div>
-                <p className="text-xs font-semibold text-foreground">Ranking & Alertas</p>
-                <p className="text-xs text-muted-foreground">Os melhores collars aparecem no ranking com Quality Score e alertas push</p>
+                <p className="text-xs font-semibold text-foreground">Income Collar</p>
+                <p className="text-xs text-muted-foreground">Put ATM (0-3%), Call próxima. Gera crédito líquido em mercados laterais.</p>
               </div>
             </div>
           </div>
@@ -1077,7 +1076,7 @@ export default function CollarTrackerTab() {
           </div>
         </div>
 
-        {/* Row 2: Modern Alert Panel */}
+        {/* Row 2: Alert Panel */}
         <div className="rounded-2xl border-2 border-border bg-card p-4 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -1113,63 +1112,36 @@ export default function CollarTrackerTab() {
 
               {notifEnabled && (
                 <button
-                  onClick={() => {
-                    const next = !soundEnabled;
-                    setSoundEnabled(next);
-                    localStorage.setItem(NOTIF_SOUND_ENABLED_KEY, String(next));
-                  }}
+                  onClick={() => { const next = !soundEnabled; setSoundEnabled(next); localStorage.setItem(NOTIF_SOUND_ENABLED_KEY, String(next)); }}
                   className={cn(
                     "flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-xs font-semibold transition-all active:scale-[0.97]",
-                    soundEnabled
-                      ? "bg-primary/10 border-primary/30 text-primary"
-                      : "bg-muted border-border text-muted-foreground"
+                    soundEnabled ? "bg-primary/10 border-primary/30 text-primary" : "bg-muted border-border text-muted-foreground"
                   )}
-                  title={soundEnabled ? "Som ativado" : "Som desativado"}
                 >
                   {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
                 </button>
               )}
 
               {notifEnabled && (
-                <button
-                  onClick={sendTestAlert}
-                  className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-warning/30 bg-warning/10 text-warning text-xs font-semibold transition-all active:scale-[0.97] hover:bg-warning/20"
-                  title="Enviar notificação de teste"
-                >
+                <button onClick={sendTestAlert}
+                  className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-warning/30 bg-warning/10 text-warning text-xs font-semibold transition-all active:scale-[0.97] hover:bg-warning/20">
                   🧪 Testar
                 </button>
-              )}
-
-              {notifEnabled && (
-                <span className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
-                  <Monitor className="w-3 h-3" />
-                  <Smartphone className="w-3 h-3" />
-                  {(() => {
-                    try {
-                      return window.matchMedia('(display-mode: standalone)').matches ? 'PWA Instalado' : 'Navegador';
-                    } catch { return 'Navegador'; }
-                  })()}
-                </span>
               )}
             </div>
 
             {notifEnabled && alertHistory.length > 0 && (
-              <button
-                onClick={() => setShowAlertHistory(!showAlertHistory)}
+              <button onClick={() => setShowAlertHistory(!showAlertHistory)}
                 className={cn(
                   "flex items-center gap-1.5 px-4 py-2.5 rounded-2xl border text-xs font-semibold transition-all active:scale-[0.97]",
-                  showAlertHistory
-                    ? "bg-success/10 border-success/30 text-success"
-                    : "bg-card border-border text-muted-foreground hover:text-foreground"
-                )}
-              >
+                  showAlertHistory ? "bg-success/10 border-success/30 text-success" : "bg-card border-border text-muted-foreground hover:text-foreground"
+                )}>
                 🕐 Histórico ({alertHistory.length})
                 {showAlertHistory ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
               </button>
             )}
           </div>
 
-          {/* Sliders for thresholds */}
           {notifEnabled && (
             <div className="space-y-4 pt-2">
               <div className="space-y-2">
@@ -1180,22 +1152,8 @@ export default function CollarTrackerTab() {
                   </div>
                   <span className="text-sm font-extrabold text-success">Score ≥ {notifThreshold}</span>
                 </div>
-                <Slider
-                  value={[notifThreshold]}
-                  onValueChange={([val]) => {
-                    setNotifThreshold(val);
-                    localStorage.setItem(NOTIF_THRESHOLD_KEY, String(val));
-                  }}
-                  min={40}
-                  max={95}
-                  step={5}
-                  className="w-full"
-                />
-                <p className="text-xs text-muted-foreground">
-                  📩 Notificação quando o melhor collar atingir Quality Score ≥ <strong>{notifThreshold}</strong>
-                </p>
+                <Slider value={[notifThreshold]} onValueChange={([val]) => { setNotifThreshold(val); localStorage.setItem(NOTIF_THRESHOLD_KEY, String(val)); }} min={40} max={95} step={5} className="w-full" />
               </div>
-
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -1204,78 +1162,23 @@ export default function CollarTrackerTab() {
                   </div>
                   <span className="text-sm font-extrabold text-warning">Score ≥ {notifThresholdUrgent}</span>
                 </div>
-                <Slider
-                  value={[notifThresholdUrgent]}
-                  onValueChange={([val]) => {
-                    setNotifThresholdUrgent(val);
-                    localStorage.setItem(NOTIF_THRESHOLD_URGENT_KEY, String(val));
-                  }}
-                  min={60}
-                  max={100}
-                  step={5}
-                  className="w-full"
-                />
-                <p className="text-xs text-muted-foreground">
-                  🚨 Alerta urgente com vibração extra quando superar Score <strong>{notifThresholdUrgent}</strong>
-                </p>
+                <Slider value={[notifThresholdUrgent]} onValueChange={([val]) => { setNotifThresholdUrgent(val); localStorage.setItem(NOTIF_THRESHOLD_URGENT_KEY, String(val)); }} min={60} max={100} step={5} className="w-full" />
               </div>
-
-              {/* PWA Install Guide */}
-              {(() => {
-                try {
-                  const isPWA = window.matchMedia('(display-mode: standalone)').matches;
-                  if (isPWA) return null;
-                } catch {}
-                return (
-                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Download className="w-3.5 h-3.5 text-primary" />
-                      <span className="text-xs font-bold text-foreground">Instale o app para alertas no celular</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-muted-foreground">
-                      <div className="flex items-start gap-1.5">
-                        <Monitor className="w-3 h-3 mt-0.5 text-primary shrink-0" />
-                        <span><strong>Chrome PC:</strong> Clique no ícone de instalação na barra de URL</span>
-                      </div>
-                      <div className="flex items-start gap-1.5">
-                        <Smartphone className="w-3 h-3 mt-0.5 text-primary shrink-0" />
-                        <span><strong>Android:</strong> Menu ⋮ → Adicionar à tela inicial</span>
-                      </div>
-                      <div className="flex items-start gap-1.5">
-                        <Smartphone className="w-3 h-3 mt-0.5 text-primary shrink-0" />
-                        <span><strong>iPhone:</strong> Compartilhar ↑ → Tela de Início</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
             </div>
           )}
 
-          {/* Alert History Panel */}
           {showAlertHistory && alertHistory.length > 0 && (
             <div className="rounded-xl border border-border bg-muted/30 p-3 animate-fade-in">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                  🔔 Histórico de Alertas
-                </h3>
-                <button
-                  onClick={() => {
-                    setAlertHistory([]);
-                    localStorage.removeItem(ALERT_HISTORY_KEY);
-                  }}
-                  className="text-xs text-destructive hover:underline font-medium"
-                >
-                  Limpar tudo
-                </button>
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">🔔 Histórico de Alertas</h3>
+                <button onClick={() => { setAlertHistory([]); localStorage.removeItem(ALERT_HISTORY_KEY); }}
+                  className="text-xs text-destructive hover:underline font-medium">Limpar tudo</button>
               </div>
               <div className="space-y-1.5 max-h-48 overflow-y-auto">
                 {alertHistory.map((entry) => (
                   <div key={entry.id} className={cn(
                     "flex flex-wrap items-center gap-2 text-xs px-3 py-2 rounded-xl border",
-                    entry.qualityScore >= notifThresholdUrgent
-                      ? "bg-warning/10 border-warning/30"
-                      : "bg-muted/50 border-border/50"
+                    entry.qualityScore >= notifThresholdUrgent ? "bg-warning/10 border-warning/30" : "bg-muted/50 border-border/50"
                   )}>
                     {entry.qualityScore >= notifThresholdUrgent && <Zap className="w-3 h-3 text-warning" />}
                     <span className="text-muted-foreground">{entry.time}</span>
@@ -1290,10 +1193,10 @@ export default function CollarTrackerTab() {
         </div>
       </div>
 
-      {/* FILTROS INTELIGENTES */}
+      {/* FILTROS */}
       <div className="mb-5 p-4 rounded-2xl border border-border bg-card shadow-sm">
         <h3 className="text-xs font-black text-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-          🎯 Filtros de Seleção de Strike
+          🎯 Filtros & Ranking
         </h3>
         <div className="flex flex-wrap gap-3 items-center">
           <div className="flex items-center gap-2">
@@ -1301,19 +1204,9 @@ export default function CollarTrackerTab() {
             <select value={filterTipo} onChange={(e) => setFilterTipo(e.target.value as CollarTipo | "Todos")}
               className="bg-background border border-input rounded-lg px-2 py-1.5 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary">
               <option value="Todos">Todos</option>
-              <option value="Normal">Normal (Put OTM + Call OTM)</option>
-              <option value="ATM">ATM (Put próxima do preço)</option>
-              <option value="Baixa">Baixa (Call abaixo da Put)</option>
-            </select>
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-muted-foreground uppercase tracking-wider">Custo:</label>
-            <select value={filterCusto} onChange={(e) => setFilterCusto(e.target.value as CollarCusto | "Todos")}
-              className="bg-background border border-input rounded-lg px-2 py-1.5 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary">
-              <option value="Todos">Todos</option>
-              <option value="Zero-Cost">Zero-Cost</option>
-              <option value="Crédito">Crédito</option>
-              <option value="Débito">Débito</option>
+              <option value="Zero Cost">⚖️ Zero Cost</option>
+              <option value="Bullish">🚀 Bullish</option>
+              <option value="Income">💰 Income</option>
             </select>
           </div>
           <button
@@ -1333,42 +1226,33 @@ export default function CollarTrackerTab() {
             Só Risco Zero
           </button>
         </div>
-        <p className="text-xs text-muted-foreground mt-2">
-          📐 Zona ideal: PUT 5-15% abaixo · CALL 5-15% acima · Custo ≈ zero · Rent. &gt; CDI
-        </p>
 
-        {/* MÉTODO DE RANKING */}
+        {/* RANKING METHOD */}
         <div className="mt-4 pt-4 border-t border-border/50">
-          <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">
-            📊 Método de Ranking
-          </h4>
+          <h4 className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">📊 Método de Ranking</h4>
           <div className="flex flex-wrap gap-2">
             {([
-              { key: "score" as RankingMethod, label: "Quality Score", desc: "Fórmula CDI ponderada (5 componentes)" },
-              { key: "custo" as RankingMethod, label: "Custo Líquido", desc: "Menor custo = melhor proteção" },
-              { key: "per" as RankingMethod, label: "Eficiência (PER)", desc: "Proteção / Custo — maior = melhor" },
-              { key: "combinado" as RankingMethod, label: "Score Combinado", desc: "0.5×Proteção + 0.3×Upside – 0.2×Custo" },
+              { key: "score" as RankingMethod, label: "Quality Score", desc: "Fórmula ponderada (5 componentes)" },
+              { key: "netcost" as RankingMethod, label: "Net Cost/Credit", desc: "Maior crédito líquido = melhor" },
+              { key: "maxprofit" as RankingMethod, label: "Max Profit %", desc: "Maior lucro máximo percentual" },
+              { key: "breakeven" as RankingMethod, label: "Break-even", desc: "Menor break-even = mais seguro" },
             ]).map((m) => (
-              <button
-                key={m.key}
-                onClick={() => setRankingMethod(m.key)}
-                title={m.desc}
+              <button key={m.key} onClick={() => setRankingMethod(m.key)} title={m.desc}
                 className={cn(
                   "px-3 py-1.5 rounded-lg text-xs font-bold border transition-all",
                   rankingMethod === m.key
                     ? "bg-foreground text-background border-foreground"
                     : "bg-background text-foreground border-border hover:border-foreground/50"
-                )}
-              >
+                )}>
                 {m.label}
               </button>
             ))}
           </div>
           <p className="text-[10px] text-muted-foreground mt-1.5">
-            {rankingMethod === "score" && "Quality Score (0-100): 30% Rent. Alta vs CDI · 25% Proteção · 20% Custo · 15% PER · 10% Estrutura"}
-            {rankingMethod === "custo" && "Custo Líquido = Prêmio Put – Prêmio Call · Menor valor = melhor (mais barato montar a proteção)"}
-            {rankingMethod === "per" && "PER = Proteção (%) / |Custo Líquido (%)| · Maior valor = mais proteção por unidade de custo"}
-            {rankingMethod === "combinado" && "Score = 0.5 × Proteção(%) + 0.3 × Upside(%) – 0.2 × Custo(%) · Maior valor = melhor equilíbrio"}
+            {rankingMethod === "score" && "Quality Score (0-100): 30% MaxProfit vs CDI · 25% Proteção · 25% Net Cost · 10% Break-even · 10% Estrutura"}
+            {rankingMethod === "netcost" && "Net = Prêmio Call − Prêmio Put · Positivo = Crédito · Negativo = Débito"}
+            {rankingMethod === "maxprofit" && "Max Profit % = ((Strike Call − Preço Ativo) + Net) / Preço Ativo"}
+            {rankingMethod === "breakeven" && "Break-even = Preço Ativo − Net · Preço onde o P&L do collar = 0"}
           </p>
         </div>
       </div>
@@ -1452,6 +1336,7 @@ export default function CollarTrackerTab() {
           {topCollars.map((collar, i) => {
             const isWinner = i === 0;
             const trophyImg = i === 0 ? trophyGold : i === 1 ? trophySilver : trophyBronze;
+            const tipoCfg = TIPO_CONFIG[collar.tipo];
             return (
               <div key={`top-${i}`}
                 onClick={() => setSelectedCollar(collar)}
@@ -1470,28 +1355,22 @@ export default function CollarTrackerTab() {
                 )}
 
                 {/* Header */}
-                <div className={cn(
-                  "flex items-center gap-3 px-5 py-3",
-                  isWinner ? "bg-success/5" : "bg-muted/30"
-                )}>
+                <div className={cn("flex items-center gap-3 px-5 py-3", isWinner ? "bg-success/5" : "bg-muted/30")}>
                   <img src={trophyImg} alt="" className="w-8 h-8 object-contain" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-black text-foreground">{collar.familyName}</p>
                     <p className="text-xs text-muted-foreground">{formatBRL(collar.stockUlt ?? collar.stockAsk)}</p>
                   </div>
-                  <span className={cn("text-xs uppercase tracking-widest font-black px-2 py-0.5 rounded-full",
-                    collar.custoTipo === "Crédito" ? "bg-success/10 text-success" :
-                    collar.custoTipo === "Zero-Cost" ? "bg-warning/10 text-warning" :
-                    "bg-destructive/10 text-destructive")}>{collar.custoTipo}</span>
+                  <span className={cn("text-[10px] uppercase tracking-widest font-black px-2 py-0.5 rounded-full", tipoCfg.bgClass, tipoCfg.textClass)}>
+                    {tipoCfg.emoji} {tipoCfg.label}
+                  </span>
                 </div>
 
                 {/* Risk Free banner */}
                 {collar.isRiskFree && (
                   <div className="mx-4 mt-3 flex items-center gap-2 px-3 py-2 rounded-xl bg-success/10 border border-success/30 animate-pulse">
                     <ShieldCheck className="w-4 h-4 text-success" />
-                    <span className="text-xs font-black uppercase tracking-widest text-success">
-                      🛡️ Risco Zero
-                    </span>
+                    <span className="text-xs font-black uppercase tracking-widest text-success">🛡️ Risco Zero</span>
                   </div>
                 )}
 
@@ -1510,36 +1389,51 @@ export default function CollarTrackerTab() {
                     </div>
                   </div>
 
-                  {/* Custo */}
-                  <div className="bg-muted/50 rounded-lg px-3 py-2 flex items-center justify-between">
-                    <span className="text-xs font-bold text-muted-foreground uppercase">Custo Collar</span>
-                    <span className={cn("text-lg font-black", (collar.custoCollar ?? 0) <= 0 ? "text-success" : "text-destructive")}>
-                      {formatBRL(collar.custoCollar)} {(collar.custoCollar ?? 0) <= -0.05 ? "💰" : (collar.custoCollar ?? 0) < 0.05 ? "⚖️" : "💸"}
-                    </span>
+                  {/* Net Cost/Credit + Break-even */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-muted/50 rounded-lg px-3 py-2">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Net Cost/Credit</span>
+                      <p className={cn("text-lg font-black", getNetColor(collar.netCostCredit))}>
+                        {formatBRL(collar.netCostCredit)} {(collar.netCostCredit ?? 0) > 0.01 ? "💰" : Math.abs(collar.netCostCredit ?? 0) < 0.05 ? "⚖️" : "💸"}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">{getNetLabel(collar.netCostCredit)}</p>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg px-3 py-2">
+                      <span className="text-[10px] font-bold text-muted-foreground uppercase">Break-even</span>
+                      <p className="text-lg font-black text-foreground">{formatBRL(collar.breakeven)}</p>
+                      {collar.breakeven && collar.stockAsk && (
+                        <p className="text-[10px] text-muted-foreground">
+                          {((collar.breakeven - collar.stockAsk) / collar.stockAsk * 100).toFixed(2).replace(".", ",")}% do ativo
+                        </p>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Rentabilidade 3 cenários */}
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="text-center rounded-lg border border-destructive/20 bg-destructive/5 p-2">
-                      <TrendingDown className="w-3.5 h-3.5 mx-auto text-destructive mb-0.5" />
-                      <p className="text-xs text-destructive font-bold uppercase">Baixa</p>
-                      <p className={cn("text-sm font-black", (collar.rentBaixa ?? 0) >= 0 ? "text-success" : "text-destructive")}>
-                        {formatPercent(collar.rentBaixa)}
-                      </p>
-                    </div>
-                    <div className="text-center rounded-lg border border-warning/20 bg-warning/5 p-2">
-                      <Minus className="w-3.5 h-3.5 mx-auto text-warning mb-0.5" />
-                      <p className="text-xs text-warning font-bold uppercase">Neutra</p>
-                      <p className={cn("text-sm font-black", (collar.rentNeutra ?? 0) >= 0 ? "text-success" : "text-destructive")}>
-                        {formatPercent(collar.rentNeutra)}
-                      </p>
-                    </div>
+                  {/* Max Profit / Max Loss */}
+                  <div className="grid grid-cols-2 gap-2">
                     <div className="text-center rounded-lg border border-success/20 bg-success/5 p-2">
                       <TrendingUp className="w-3.5 h-3.5 mx-auto text-success mb-0.5" />
-                      <p className="text-xs text-success font-bold uppercase">Alta</p>
-                      <p className={cn("text-sm font-black", (collar.rentAlta ?? 0) >= 0 ? "text-success" : "text-destructive")}>
-                        {formatPercent(collar.rentAlta)}
+                      <p className="text-[10px] text-success font-bold uppercase">Max Profit</p>
+                      <p className={cn("text-sm font-black", (collar.maxProfitPct ?? 0) >= 0 ? "text-success" : "text-destructive")}>
+                        {formatPercent(collar.maxProfitPct)}
                       </p>
+                      {collar.diffCdiAlta !== null && (
+                        <p className={cn("text-[9px] font-bold font-mono", collar.diffCdiAlta >= 0 ? "text-success" : "text-destructive")}>
+                          {collar.diffCdiAlta >= 0 ? "+" : ""}{collar.diffCdiAlta.toFixed(2).replace(".", ",")} pp vs CDI
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-center rounded-lg border border-destructive/20 bg-destructive/5 p-2">
+                      <TrendingDown className="w-3.5 h-3.5 mx-auto text-destructive mb-0.5" />
+                      <p className="text-[10px] text-destructive font-bold uppercase">Max Loss</p>
+                      <p className={cn("text-sm font-black", (collar.maxLossPct ?? 0) >= 0 ? "text-success" : "text-destructive")}>
+                        {formatPercent(collar.maxLossPct)}
+                      </p>
+                      {collar.diffCdiBaixa !== null && (
+                        <p className={cn("text-[9px] font-bold font-mono", collar.diffCdiBaixa >= 0 ? "text-success" : "text-destructive")}>
+                          {collar.diffCdiBaixa >= 0 ? "+" : ""}{collar.diffCdiBaixa.toFixed(2).replace(".", ",")} pp vs CDI
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -1551,24 +1445,12 @@ export default function CollarTrackerTab() {
                     <span className="text-muted-foreground">
                       CDI: <span className="font-bold text-warning">{formatPercent(collar.cdiPeriodo)}</span>
                     </span>
-                    {(() => {
-                      const activeScore = rankingMethod === "combinado" ? collar.scoreCombinado.toFixed(1)
-                        : rankingMethod === "per" ? (collar.per === Infinity ? "∞" : collar.per?.toFixed(1) ?? "—")
-                        : rankingMethod === "custo" ? formatBRL(collar.custoCollar)
-                        : collar.qualityScore;
-                      const label = rankingMethod === "combinado" ? "Comb."
-                        : rankingMethod === "per" ? "PER"
-                        : rankingMethod === "custo" ? "Custo"
-                        : "Score";
-                      return (
-                        <span className={cn("font-black px-1.5 py-0.5 rounded-full text-xs",
-                          collar.qualityScore >= 80 ? "bg-success/10 text-success" :
-                          collar.qualityScore >= 60 ? "bg-warning/10 text-warning" :
-                          "bg-muted text-muted-foreground")}>
-                          {label} {activeScore}
-                        </span>
-                      );
-                    })()}
+                    <span className={cn("font-black px-1.5 py-0.5 rounded-full text-xs",
+                      collar.qualityScore >= 80 ? "bg-success/10 text-success" :
+                      collar.qualityScore >= 60 ? "bg-warning/10 text-warning" :
+                      "bg-muted text-muted-foreground")}>
+                      Score {collar.qualityScore}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1585,7 +1467,7 @@ export default function CollarTrackerTab() {
               <BarChart3 className="w-5 h-5 text-primary" />
               <div>
                 <h3 className="text-sm font-black text-foreground uppercase tracking-wider">
-                  Gráfico Payoff — Collar {selectedCollar.familyName}
+                  Gráfico Payoff — {selectedCollar.tipo} {selectedCollar.familyName}
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {selectedCollar.callSymbol} (V Call) + {selectedCollar.putSymbol} (C Put) · Score: {selectedCollar.qualityScore}
@@ -1602,9 +1484,9 @@ export default function CollarTrackerTab() {
           <div className="px-5 py-3 grid grid-cols-2 sm:grid-cols-4 gap-3 border-b border-border/30 bg-muted/10">
             <div>
               <p className="text-xs font-black uppercase text-muted-foreground flex items-center gap-1">
-                <TrendingUp className="h-3 w-3 text-success" /> Ganho Máx (Teto)
+                <TrendingUp className="h-3 w-3 text-success" /> Max Profit
               </p>
-              <p className="text-sm font-black text-success">{formatPercent(selectedCollar.rentAlta)}</p>
+              <p className="text-sm font-black text-success">{formatPercent(selectedCollar.maxProfitPct)}</p>
               {selectedCollar.diffCdiAlta !== null && (
                 <p className={cn("text-[10px] font-bold font-mono", selectedCollar.diffCdiAlta >= 0 ? "text-success" : "text-destructive")}>
                   {selectedCollar.diffCdiAlta >= 0 ? "+" : ""}{selectedCollar.diffCdiAlta.toFixed(2).replace(".", ",")} pp vs CDI
@@ -1613,9 +1495,9 @@ export default function CollarTrackerTab() {
             </div>
             <div>
               <p className="text-xs font-black uppercase text-muted-foreground flex items-center gap-1">
-                <TrendingDown className="h-3 w-3 text-destructive" /> Perda Máx (Piso)
+                <TrendingDown className="h-3 w-3 text-destructive" /> Max Loss
               </p>
-              <p className="text-sm font-black text-destructive">{formatPercent(selectedCollar.rentBaixa)}</p>
+              <p className="text-sm font-black text-destructive">{formatPercent(selectedCollar.maxLossPct)}</p>
               {selectedCollar.diffCdiBaixa !== null && (
                 <p className={cn("text-[10px] font-bold font-mono", selectedCollar.diffCdiBaixa >= 0 ? "text-success" : "text-destructive")}>
                   {selectedCollar.diffCdiBaixa >= 0 ? "+" : ""}{selectedCollar.diffCdiBaixa.toFixed(2).replace(".", ",")} pp vs CDI
@@ -1623,24 +1505,18 @@ export default function CollarTrackerTab() {
               )}
             </div>
             <div>
-              <p className="text-xs font-black uppercase text-muted-foreground">Custo Collar</p>
-              <p className={cn("text-sm font-black", (selectedCollar.custoCollar ?? 0) <= 0 ? "text-success" : "text-warning")}>
-                {formatBRL(selectedCollar.custoCollar)}
+              <p className="text-xs font-black uppercase text-muted-foreground">Net Cost/Credit</p>
+              <p className={cn("text-sm font-black", getNetColor(selectedCollar.netCostCredit))}>
+                {formatBRL(selectedCollar.netCostCredit)}
               </p>
-              {selectedCollar.custoLiquidoPct !== null && (
-                <p className="text-[10px] font-mono text-muted-foreground">
-                  {selectedCollar.custoLiquidoPct.toFixed(2).replace(".", ",")}% do ativo
-                </p>
-              )}
+              <p className="text-[10px] font-mono text-muted-foreground">{getNetLabel(selectedCollar.netCostCredit)}</p>
             </div>
             <div>
-              <p className="text-xs font-black uppercase text-muted-foreground">CDI Período</p>
-              <p className="text-sm font-black text-warning">{formatPercent(selectedCollar.cdiPeriodo)}</p>
-              {selectedCollar.per !== null && (
-                <p className="text-[10px] font-mono text-muted-foreground">
-                  PER: {selectedCollar.per === Infinity ? "∞" : selectedCollar.per.toFixed(1)}
-                </p>
-              )}
+              <p className="text-xs font-black uppercase text-muted-foreground">Break-even</p>
+              <p className="text-sm font-black text-foreground">{formatBRL(selectedCollar.breakeven)}</p>
+              <p className="text-[10px] font-mono text-muted-foreground">
+                CDI Per.: {formatPercent(selectedCollar.cdiPeriodo)}
+              </p>
             </div>
           </div>
 
@@ -1746,13 +1622,11 @@ export default function CollarTrackerTab() {
           <Plus className="w-4 h-4 text-primary" /> Adicionar Ação
         </h3>
         <div className="flex gap-2">
-          <input
-            type="text" value={newFamilyName}
+          <input type="text" value={newFamilyName}
             onChange={(e) => setNewFamilyName(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === "Enter" && addFamily()}
             placeholder="Ex: PETR, VALE, BOVA"
-            className="flex-1 bg-background border border-input rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary"
-          />
+            className="flex-1 bg-background border border-input rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary" />
           <button onClick={addFamily}
             className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full text-sm font-bold transition-all shadow-md active:scale-[0.97]">
             <Plus className="w-4 h-4" /> Adicionar
@@ -1765,8 +1639,7 @@ export default function CollarTrackerTab() {
         const allCollars = calculateCollars(family);
         const collars = allCollars.filter((c) => {
           if (filterTipo !== "Todos" && c.tipo !== filterTipo) return false;
-          if (filterCusto !== "Todos" && c.custoTipo !== filterCusto) return false;
-          if (hideNegative && c.rentAlta !== null && c.rentAlta < 0) return false;
+          if (hideNegative && c.maxProfitPct !== null && c.maxProfitPct < 0) return false;
           if (onlyRiskFree && !c.isRiskFree) return false;
           return true;
         });
@@ -1798,17 +1671,14 @@ export default function CollarTrackerTab() {
                 {/* Add tickers */}
                 <div className="flex flex-wrap gap-2">
                   <div className="flex-1 min-w-[200px]">
-                    <input
-                      type="text"
-                      placeholder="Cole tickers: PETRB28 PETRN28 ..."
+                    <input type="text" placeholder="Cole tickers: PETRB28 PETRN28 ..."
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           processTickerSymbols(family.id, (e.target as HTMLInputElement).value);
                           (e.target as HTMLInputElement).value = "";
                         }
                       }}
-                      className="w-full bg-background border border-input rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
+                      className="w-full bg-background border border-input rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary" />
                   </div>
                   <label className="flex items-center gap-2 px-3 py-2 bg-muted hover:bg-muted/80 rounded-lg text-xs font-bold cursor-pointer transition-colors">
                     <Upload className="w-3.5 h-3.5" /> Arquivo
@@ -1857,98 +1727,85 @@ export default function CollarTrackerTab() {
                       <thead>
                         <tr className="border-b border-border text-xs uppercase tracking-wider text-muted-foreground">
                           <th className="text-center py-2 px-1">🛡️</th>
-                          <th className="text-center py-2 px-1">Tipo</th>
+                          <th className="text-center py-2 px-1" title="Tipo: Zero Cost / Bullish / Income">Tipo</th>
                           <th className="text-left py-2 px-2">V Call</th>
                           <th className="text-left py-2 px-2">C Put</th>
                           <th className="text-right py-2 px-2 bg-muted/50">Strike Call</th>
                           <th className="text-right py-2 px-2 bg-muted/50">Strike Put</th>
                           <th className="text-right py-2 px-2">Call Bid</th>
                           <th className="text-right py-2 px-2">Put Ask</th>
-                          <th className="text-right py-2 px-2 font-black">Custo</th>
-                          <th className="text-right py-2 px-2">↓ Baixa</th>
-                          <th className="text-right py-2 px-2">↔ Neutra</th>
-                          <th className="text-right py-2 px-2">↑ Alta</th>
+                          <th className="text-right py-2 px-2 font-black" title="P_call - P_put (+ = crédito)">Net</th>
+                          <th className="text-right py-2 px-2" title="((K_call - S0) + Net) / S0">Max Profit%</th>
+                          <th className="text-right py-2 px-2" title="((K_put - S0) + Net) / S0">Max Loss%</th>
+                          <th className="text-right py-2 px-2" title="S0 - Net">Break-even</th>
                           <th className="text-right py-2 px-2">CDI Per.</th>
-                          <th className="text-right py-2 px-2" title="Baixa vs CDI (pp)">↓ vs CDI</th>
-                          <th className="text-right py-2 px-2" title="Alta vs CDI (pp)">↑ vs CDI</th>
-                          <th className="text-right py-2 px-2" title="Protection Efficiency Ratio">PER</th>
-                          <th className="text-right py-2 px-2" title="Proteção downside (%)">Prot.%</th>
-                          <th className="text-right py-2 px-2" title="Upside permitido (%)">Ups.%</th>
-                          <th className="text-center py-2 px-1" title="Quality Score CDI ponderado">QS</th>
-                          <th className="text-center py-2 px-1" title="Score Combinado: 0.5×Prot + 0.3×Ups – 0.2×Custo">SC</th>
+                          <th className="text-right py-2 px-2" title="Max Profit - CDI (pp)">↑ vs CDI</th>
+                          <th className="text-right py-2 px-2" title="Max Loss - CDI (pp)">↓ vs CDI</th>
+                          <th className="text-center py-2 px-1" title="Quality Score">Score</th>
                           <th className="text-center py-2 px-2">Rating</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {collars.map((c, ci) => (
-                          <tr key={ci}
-                            onClick={() => setSelectedCollar({ ...c, familyName: family.name })}
-                            className={cn("border-b border-border/30 hover:bg-muted/20 transition-colors cursor-pointer",
-                            ci === 0 && "bg-success/5",
-                            c.isRiskFree && "bg-success/5",
-                            selectedCollar?.callSymbol === c.callSymbol && selectedCollar?.putSymbol === c.putSymbol && "ring-2 ring-primary/50 bg-primary/5")}>
-                            <td className="py-2 px-1 text-center">
-                              {c.isRiskFree ? <ShieldCheck className="w-3.5 h-3.5 mx-auto text-success" /> : <span className="text-muted-foreground/30">—</span>}
-                            </td>
-                            <td className="py-2 px-1 text-center">
-                              <span className={cn("text-[8px] font-black px-1.5 py-0.5 rounded-full whitespace-nowrap",
-                                c.tipo === "Normal" ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300" :
-                                c.tipo === "ATM" ? "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300" :
-                                c.tipo === "Baixa" ? "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300" :
-                                "bg-muted text-muted-foreground")}>{c.tipo}</span>
-                            </td>
-                            <td className="py-2 px-2 font-bold text-blue-600 dark:text-blue-400">{c.callSymbol ?? "—"}</td>
-                            <td className="py-2 px-2 font-bold text-red-600 dark:text-red-400">{c.putSymbol ?? "—"}</td>
-                            <td className="py-2 px-2 text-right bg-muted/30 font-bold">{formatBRL(c.callStrike)}</td>
-                            <td className="py-2 px-2 text-right bg-muted/30 font-bold">{formatBRL(c.putStrike)}</td>
-                            <td className="py-2 px-2 text-right">{formatBRL(c.callBid)}</td>
-                            <td className="py-2 px-2 text-right">{formatBRL(c.putAsk)}</td>
-                            <td className={cn("py-2 px-2 text-right font-black", (c.custoCollar ?? 0) <= 0 ? "text-success" : "text-destructive")}>{formatBRL(c.custoCollar)}</td>
-                            <td className={cn("py-2 px-2 text-right font-bold", (c.rentBaixa ?? 0) >= 0 ? "text-success" : "text-destructive")}>
-                              {formatPercent(c.rentBaixa)}
-                            </td>
-                            <td className={cn("py-2 px-2 text-right font-bold", (c.rentNeutra ?? 0) >= 0 ? "text-success" : "text-destructive")}>
-                              {formatPercent(c.rentNeutra)}
-                            </td>
-                            <td className={cn("py-2 px-2 text-right font-bold", (c.rentAlta ?? 0) >= 0 ? "text-success" : "text-destructive")}>
-                              {formatPercent(c.rentAlta)}
-                            </td>
-                            <td className="py-2 px-2 text-right text-warning">{formatPercent(c.cdiPeriodo)}</td>
-                            <td className={cn("py-2 px-2 text-right font-bold font-mono",
-                              (c.diffCdiBaixa ?? 0) >= 0 ? "text-success" : "text-destructive")}>
-                              {c.diffCdiBaixa !== null ? `${c.diffCdiBaixa >= 0 ? "+" : ""}${c.diffCdiBaixa.toFixed(2).replace(".", ",")} pp` : "—"}
-                            </td>
-                            <td className={cn("py-2 px-2 text-right font-bold font-mono",
-                              (c.diffCdiAlta ?? 0) >= 0 ? "text-success" : "text-destructive")}>
-                              {c.diffCdiAlta !== null ? `${c.diffCdiAlta >= 0 ? "+" : ""}${c.diffCdiAlta.toFixed(2).replace(".", ",")} pp` : "—"}
-                            </td>
-                            <td className="py-2 px-2 text-right font-mono text-muted-foreground">
-                              {c.per === null ? "—" : c.per === Infinity ? "∞" : c.per.toFixed(1)}
-                            </td>
-                            <td className="py-2 px-2 text-right font-mono text-muted-foreground">
-                              {c.protecaoPct !== null ? `${c.protecaoPct.toFixed(1)}%` : "—"}
-                            </td>
-                            <td className="py-2 px-2 text-right font-mono text-muted-foreground">
-                              {c.upsidePct !== null ? `${c.upsidePct.toFixed(1)}%` : "—"}
-                            </td>
-                            <td className="py-2 px-1 text-center">
-                              <span className={cn("text-xs font-black px-1.5 py-0.5 rounded-full",
-                                c.qualityScore >= 80 ? "bg-success/10 text-success" :
-                                c.qualityScore >= 60 ? "bg-warning/10 text-warning" :
-                                "bg-muted text-muted-foreground")}>{c.qualityScore}</span>
-                            </td>
-                            <td className="py-2 px-1 text-center">
-                              <span className="text-xs font-bold text-muted-foreground">{c.scoreCombinado.toFixed(1)}</span>
-                            </td>
-                            <td className="py-2 px-2 text-center">
-                              <span className="flex items-center justify-center gap-0.5">
-                                {Array.from({ length: 3 }).map((_, si) => (
-                                  <Star key={si} className={cn("w-3 h-3", si < c.rating ? "text-amber-400 fill-amber-400" : "text-muted-foreground/20")} />
-                                ))}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
+                        {collars.map((c, ci) => {
+                          const tipoCfg = TIPO_CONFIG[c.tipo];
+                          return (
+                            <tr key={ci}
+                              onClick={() => setSelectedCollar({ ...c, familyName: family.name })}
+                              className={cn("border-b border-border/30 hover:bg-muted/20 transition-colors cursor-pointer",
+                              ci === 0 && "bg-success/5",
+                              c.isRiskFree && "bg-success/5",
+                              selectedCollar?.callSymbol === c.callSymbol && selectedCollar?.putSymbol === c.putSymbol && "ring-2 ring-primary/50 bg-primary/5")}>
+                              <td className="py-2 px-1 text-center">
+                                {c.isRiskFree ? <ShieldCheck className="w-3.5 h-3.5 mx-auto text-success" /> : <span className="text-muted-foreground/30">—</span>}
+                              </td>
+                              <td className="py-2 px-1 text-center">
+                                <span className={cn("text-[8px] font-black px-1.5 py-0.5 rounded-full whitespace-nowrap", tipoCfg.bgClass, tipoCfg.textClass)}>
+                                  {tipoCfg.emoji} {tipoCfg.label}
+                                </span>
+                              </td>
+                              <td className="py-2 px-2 font-bold text-blue-600 dark:text-blue-400">{c.callSymbol ?? "—"}</td>
+                              <td className="py-2 px-2 font-bold text-red-600 dark:text-red-400">{c.putSymbol ?? "—"}</td>
+                              <td className="py-2 px-2 text-right bg-muted/30 font-bold">{formatBRL(c.callStrike)}</td>
+                              <td className="py-2 px-2 text-right bg-muted/30 font-bold">{formatBRL(c.putStrike)}</td>
+                              <td className="py-2 px-2 text-right">{formatBRL(c.callBid)}</td>
+                              <td className="py-2 px-2 text-right">{formatBRL(c.putAsk)}</td>
+                              <td className={cn("py-2 px-2 text-right font-black", getNetColor(c.netCostCredit))}>
+                                {formatBRL(c.netCostCredit)}
+                              </td>
+                              <td className={cn("py-2 px-2 text-right font-bold", (c.maxProfitPct ?? 0) >= 0 ? "text-success" : "text-destructive")}>
+                                {formatPercent(c.maxProfitPct)}
+                              </td>
+                              <td className={cn("py-2 px-2 text-right font-bold", (c.maxLossPct ?? 0) >= 0 ? "text-success" : "text-destructive")}>
+                                {formatPercent(c.maxLossPct)}
+                              </td>
+                              <td className="py-2 px-2 text-right font-mono font-bold text-foreground">
+                                {formatBRL(c.breakeven)}
+                              </td>
+                              <td className="py-2 px-2 text-right text-warning">{formatPercent(c.cdiPeriodo)}</td>
+                              <td className={cn("py-2 px-2 text-right font-bold font-mono",
+                                (c.diffCdiAlta ?? 0) >= 0 ? "text-success" : "text-destructive")}>
+                                {c.diffCdiAlta !== null ? `${c.diffCdiAlta >= 0 ? "+" : ""}${c.diffCdiAlta.toFixed(2).replace(".", ",")} pp` : "—"}
+                              </td>
+                              <td className={cn("py-2 px-2 text-right font-bold font-mono",
+                                (c.diffCdiBaixa ?? 0) >= 0 ? "text-success" : "text-destructive")}>
+                                {c.diffCdiBaixa !== null ? `${c.diffCdiBaixa >= 0 ? "+" : ""}${c.diffCdiBaixa.toFixed(2).replace(".", ",")} pp` : "—"}
+                              </td>
+                              <td className="py-2 px-1 text-center">
+                                <span className={cn("text-xs font-black px-1.5 py-0.5 rounded-full",
+                                  c.qualityScore >= 80 ? "bg-success/10 text-success" :
+                                  c.qualityScore >= 60 ? "bg-warning/10 text-warning" :
+                                  "bg-muted text-muted-foreground")}>{c.qualityScore}</span>
+                              </td>
+                              <td className="py-2 px-2 text-center">
+                                <span className="flex items-center justify-center gap-0.5">
+                                  {Array.from({ length: 3 }).map((_, si) => (
+                                    <Star key={si} className={cn("w-3 h-3", si < c.rating ? "text-amber-400 fill-amber-400" : "text-muted-foreground/20")} />
+                                  ))}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
