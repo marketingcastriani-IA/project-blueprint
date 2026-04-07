@@ -35,7 +35,14 @@ import {
   Info,
   Database,
   ArrowRight,
+  Volume2,
+  VolumeX,
+  Smartphone,
+  Monitor,
+  Zap,
+  Download,
 } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 import { useNavigate } from "react-router-dom";
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 import { statusConfig } from "@/hooks/useRtdBridge";
@@ -88,6 +95,7 @@ interface StockFamily {
 interface SavedFamily {
   name: string;
   tickers: string[];
+  autoImported?: string[];
 }
 
 // ─── CONSTANTES ──────────────────────────────────────────────
@@ -100,6 +108,8 @@ const IR_RENDA_FIXA = 22.5;
 const NOTIF_ENABLED_KEY = "box-tracker-notif-enabled";
 const NOTIF_THRESHOLD_KEY = "box-tracker-notif-threshold";
 const NOTIF_THRESHOLD_DEFAULT = 110;
+const NOTIF_THRESHOLD_URGENT_KEY = "box-tracker-notif-threshold-urgent";
+const NOTIF_THRESHOLD_URGENT_DEFAULT = 130;
 const NOTIF_COOLDOWN_MS = 30_000; // 30s cooldown entre notificações
 const NOTIF_SOUND_ENABLED_KEY = "box-tracker-notif-sound";
 
@@ -202,9 +212,19 @@ export default function BoxTracker() {
       return saved ? parseFloat(saved) : NOTIF_THRESHOLD_DEFAULT;
     } catch { return NOTIF_THRESHOLD_DEFAULT; }
   });
-  const [editingThreshold, setEditingThreshold] = useState(false);
-  const [thresholdInput, setThresholdInput] = useState(String(notifThreshold));
+  const [notifThresholdUrgent, setNotifThresholdUrgent] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(NOTIF_THRESHOLD_URGENT_KEY);
+      return saved ? parseFloat(saved) : NOTIF_THRESHOLD_URGENT_DEFAULT;
+    } catch { return NOTIF_THRESHOLD_URGENT_DEFAULT; }
+  });
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
+    try { return localStorage.getItem(NOTIF_SOUND_ENABLED_KEY) !== "false"; } catch { return true; }
+  });
   const lastNotifRef = useRef<number>(0);
+
+  // Auto-imported tickers tracking
+  const [autoImportedMap, setAutoImportedMap] = useState<Map<string, Set<string>>>(new Map());
 
   // ─── HISTÓRICO DE ALERTAS ─────────────────────────────────
   interface AlertEntry {
@@ -293,18 +313,27 @@ export default function BoxTracker() {
           expanded: true,
         }));
         setFamilies(loaded);
+        // Load autoImported map
+        const autoMap = new Map<string, Set<string>>();
+        parsed.forEach((sf) => {
+          if (sf.autoImported && sf.autoImported.length > 0) {
+            autoMap.set(sf.name, new Set(sf.autoImported));
+          }
+        });
+        setAutoImportedMap(autoMap);
       }
     } catch {}
   }, []);
 
-  // Save families to localStorage
+  // Save families to localStorage (preserve autoImported)
   useEffect(() => {
     const toSave: SavedFamily[] = families.map((f) => ({
       name: f.name,
       tickers: f.tickers.map((t) => t.symbol),
+      autoImported: Array.from(autoImportedMap.get(f.name) || []),
     }));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-  }, [families]);
+  }, [families, autoImportedMap]);
 
   // Derive stock ticker from family name (e.g., PETR -> PETR4, VALE -> VALE3)
   const familyStockTickers = useCallback((familyName: string): string => {
@@ -553,7 +582,7 @@ export default function BoxTracker() {
         type: 'BOX_ALERT',
         title,
         body,
-        tag: 'box-tracker-alert',
+        tag: data?.priority === 'urgent' ? 'box-tracker-urgent' : 'box-tracker-alert',
         data,
       });
       return;
@@ -563,7 +592,7 @@ export default function BoxTracker() {
       new Notification(title, {
         body,
         icon: '/favicon.png',
-        tag: 'box-tracker-alert',
+        tag: data?.priority === 'urgent' ? 'box-tracker-urgent' : 'box-tracker-alert',
       });
     }
   }, []);
@@ -579,6 +608,7 @@ export default function BoxTracker() {
     if (best.lucroPercent === null || best.cdiPeriodo === null || best.cdiPeriodo <= 0) return;
 
     const cdiPercent = (best.lucroPercent / best.cdiPeriodo) * 100;
+    const isUrgent = cdiPercent >= notifThresholdUrgent;
     
     if (cdiPercent >= notifThreshold) {
       lastNotifRef.current = now;
@@ -598,13 +628,24 @@ export default function BoxTracker() {
         return updated;
       });
 
+      const lucroStr = best.lucro !== null ? `R$ ${best.lucro.toFixed(2)}` : '';
+      const vencStr = best.vencimento || '';
+      
       sendPushNotification(
-        `🚀 BOX ${best.familyName} ACIMA DO CDI!`,
-        `📊 ${cdiPercent.toFixed(0)}% do CDI · Strike R$ ${best.strike.toFixed(2)} · Lucro ${best.lucroPercent.toFixed(2)}%\n🎯 Meta: ≥ ${notifThreshold}% CDI`,
-        { url: '/box-tracker', familyName: best.familyName, cdiPercent }
+        isUrgent
+          ? `🚨 URGENTE! BOX ${best.familyName} — ${cdiPercent.toFixed(0)}% CDI!`
+          : `🚀 BOX ${best.familyName} ACIMA DO CDI!`,
+        `📊 ${cdiPercent.toFixed(0)}% do CDI · Strike R$ ${best.strike.toFixed(2)}\n💰 Lucro: ${lucroStr} (${best.lucroPercent.toFixed(2)}%)${vencStr ? `\n📅 Venc: ${vencStr}` : ''}\n🎯 Meta: ≥ ${notifThreshold}% CDI`,
+        { 
+          url: '/box-tracker', 
+          familyName: best.familyName, 
+          cdiPercent,
+          priority: isUrgent ? 'urgent' : 'normal',
+          sound: soundEnabled,
+        }
       );
     }
-  }, [topPairs, notifEnabled, notifThreshold, sendPushNotification]);
+  }, [topPairs, notifEnabled, notifThreshold, notifThresholdUrgent, soundEnabled, sendPushNotification]);
 
   // ─── RENDER ───────────────────────────────────────────────
   return (
@@ -813,142 +854,213 @@ export default function BoxTracker() {
           </button>
         </div>
 
-        {/* Row 2: Push Alert + Meta + Histórico */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-          <button
-            onClick={toggleNotifications}
-            className={cn(
-              "flex items-center gap-3 px-5 py-3 rounded-2xl border-2 text-sm font-bold transition-all relative overflow-hidden w-full sm:w-auto active:scale-[0.97]",
-              notifEnabled
-                ? "bg-success/10 border-success/40 text-success shadow-[0_0_20px_hsl(var(--success)/0.15)]"
-                : "bg-card border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
-            )}
-          >
-            {notifEnabled && (
-              <span className="absolute top-2 right-2 flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success"></span>
-              </span>
-            )}
-            {notifEnabled ? <Bell className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
-            <span className="flex flex-col items-start leading-tight">
-              <span className="text-xs font-bold">Alerta Push</span>
-              <span className="text-[10px] font-normal opacity-60">
-                {notifEnabled ? "Notificações ativas" : "Clique para ativar"}
-              </span>
-            </span>
-            <span className={cn(
-              "text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ml-auto",
-              notifEnabled ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"
-            )}>
-              {notifEnabled ? "ON" : "OFF"}
-            </span>
-          </button>
+        {/* Row 2: Modern Alert Panel */}
+        <div className="rounded-2xl border-2 border-border bg-card p-4 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            {/* Left: Toggle + Status */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggleNotifications}
+                className={cn(
+                  "flex items-center gap-3 px-5 py-3 rounded-2xl border-2 text-sm font-bold transition-all relative overflow-hidden active:scale-[0.97]",
+                  notifEnabled
+                    ? "bg-success/10 border-success/40 text-success shadow-[0_0_20px_hsl(var(--success)/0.15)]"
+                    : "bg-card border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                )}
+              >
+                {notifEnabled && (
+                  <span className="absolute top-2 right-2 flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success"></span>
+                  </span>
+                )}
+                {notifEnabled ? <Bell className="w-5 h-5 animate-bounce" /> : <BellOff className="w-5 h-5" />}
+                <span className="flex flex-col items-start leading-tight">
+                  <span className="text-xs font-bold">Alerta Push</span>
+                  <span className="text-[10px] font-normal opacity-60">
+                    {notifEnabled ? "Ativo · PC + Celular" : "Clique para ativar"}
+                  </span>
+                </span>
+                <span className={cn(
+                  "text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ml-auto",
+                  notifEnabled ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"
+                )}>
+                  {notifEnabled ? "ON" : "OFF"}
+                </span>
+              </button>
 
-          {/* Threshold editável */}
-          {notifEnabled && (
-            editingThreshold ? (
-              <div className="flex items-center gap-1.5 bg-card px-4 py-2.5 rounded-2xl border border-success/20">
-                <span className="text-xs text-muted-foreground font-medium">Meta ≥</span>
-                <input
-                  type="text"
-                  value={thresholdInput}
-                  onChange={(e) => setThresholdInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      const val = parseFloat(thresholdInput.replace(",", "."));
-                      if (!isNaN(val) && val > 0 && val <= 1000) {
-                        setNotifThreshold(val);
-                        localStorage.setItem(NOTIF_THRESHOLD_KEY, String(val));
-                        setEditingThreshold(false);
-                      }
-                    } else if (e.key === "Escape") {
-                      setThresholdInput(String(notifThreshold));
-                      setEditingThreshold(false);
-                    }
-                  }}
-                  className="w-16 bg-background border border-success/30 rounded-lg px-2 py-1 text-sm text-center font-bold text-success focus:outline-none focus:ring-2 focus:ring-success/30"
-                  autoFocus
-                />
-                <span className="text-xs font-medium text-success">% CDI</span>
+              {/* Sound toggle */}
+              {notifEnabled && (
                 <button
                   onClick={() => {
-                    const val = parseFloat(thresholdInput.replace(",", "."));
-                    if (!isNaN(val) && val > 0 && val <= 1000) {
-                      setNotifThreshold(val);
-                      localStorage.setItem(NOTIF_THRESHOLD_KEY, String(val));
-                      setEditingThreshold(false);
-                    }
+                    const next = !soundEnabled;
+                    setSoundEnabled(next);
+                    localStorage.setItem(NOTIF_SOUND_ENABLED_KEY, String(next));
                   }}
-                  className="p-1.5 bg-success hover:bg-success/90 text-success-foreground rounded-lg transition-colors active:scale-95"
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-xs font-semibold transition-all active:scale-[0.97]",
+                    soundEnabled
+                      ? "bg-primary/10 border-primary/30 text-primary"
+                      : "bg-muted border-border text-muted-foreground"
+                  )}
+                  title={soundEnabled ? "Som ativado" : "Som desativado"}
                 >
-                  <Save className="w-3 h-3" />
+                  {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
                 </button>
+              )}
+
+              {/* Platform badge */}
+              {notifEnabled && (
+                <span className="hidden sm:flex items-center gap-1.5 text-[10px] text-muted-foreground bg-muted px-3 py-1.5 rounded-full">
+                  <Monitor className="w-3 h-3" />
+                  <Smartphone className="w-3 h-3" />
+                  {(() => {
+                    try {
+                      return window.matchMedia('(display-mode: standalone)').matches ? 'PWA Instalado' : 'Navegador';
+                    } catch { return 'Navegador'; }
+                  })()}
+                </span>
+              )}
+            </div>
+
+            {/* Right: History button */}
+            {notifEnabled && alertHistory.length > 0 && (
+              <button
+                onClick={() => setShowAlertHistory(!showAlertHistory)}
+                className={cn(
+                  "flex items-center gap-1.5 px-4 py-2.5 rounded-2xl border text-xs font-semibold transition-all active:scale-[0.97]",
+                  showAlertHistory
+                    ? "bg-success/10 border-success/30 text-success"
+                    : "bg-card border-border text-muted-foreground hover:text-foreground"
+                )}
+              >
+                🕐 Histórico ({alertHistory.length})
+                {showAlertHistory ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
+            )}
+          </div>
+
+          {/* Sliders for thresholds */}
+          {notifEnabled && (
+            <div className="space-y-4 pt-2">
+              {/* Level 1: Normal */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-3.5 h-3.5 text-success" />
+                    <span className="text-xs font-bold text-foreground">Nível 1 — Normal</span>
+                  </div>
+                  <span className="text-sm font-extrabold text-success">{notifThreshold}% CDI</span>
+                </div>
+                <Slider
+                  value={[notifThreshold]}
+                  onValueChange={([val]) => {
+                    setNotifThreshold(val);
+                    localStorage.setItem(NOTIF_THRESHOLD_KEY, String(val));
+                  }}
+                  min={80}
+                  max={200}
+                  step={5}
+                  className="w-full"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  📩 Você será notificado quando um box superar <strong>{notifThreshold}%</strong> do CDI
+                </p>
+              </div>
+
+              {/* Level 2: Urgent */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-3.5 h-3.5 text-warning" />
+                    <span className="text-xs font-bold text-foreground">Nível 2 — Urgente</span>
+                  </div>
+                  <span className="text-sm font-extrabold text-warning">{notifThresholdUrgent}% CDI</span>
+                </div>
+                <Slider
+                  value={[notifThresholdUrgent]}
+                  onValueChange={([val]) => {
+                    setNotifThresholdUrgent(val);
+                    localStorage.setItem(NOTIF_THRESHOLD_URGENT_KEY, String(val));
+                  }}
+                  min={100}
+                  max={300}
+                  step={5}
+                  className="w-full"
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  🚨 Alerta urgente com vibração extra quando superar <strong>{notifThresholdUrgent}%</strong> do CDI
+                </p>
+              </div>
+
+              {/* PWA Install Guide */}
+              {(() => {
+                try {
+                  const isPWA = window.matchMedia('(display-mode: standalone)').matches;
+                  if (isPWA) return null;
+                } catch {}
+                return (
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Download className="w-3.5 h-3.5 text-primary" />
+                      <span className="text-xs font-bold text-foreground">Instale o app para alertas no celular</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px] text-muted-foreground">
+                      <div className="flex items-start gap-1.5">
+                        <Monitor className="w-3 h-3 mt-0.5 text-primary shrink-0" />
+                        <span><strong>Chrome PC:</strong> Clique no ícone de instalação na barra de URL</span>
+                      </div>
+                      <div className="flex items-start gap-1.5">
+                        <Smartphone className="w-3 h-3 mt-0.5 text-primary shrink-0" />
+                        <span><strong>Android:</strong> Menu ⋮ → Adicionar à tela inicial</span>
+                      </div>
+                      <div className="flex items-start gap-1.5">
+                        <Smartphone className="w-3 h-3 mt-0.5 text-primary shrink-0" />
+                        <span><strong>iPhone:</strong> Compartilhar ↑ → Tela de Início</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* Alert History Panel */}
+          {showAlertHistory && alertHistory.length > 0 && (
+            <div className="rounded-xl border border-border bg-muted/30 p-3 animate-fade-in">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  🔔 Histórico de Alertas
+                </h3>
                 <button
-                  onClick={() => { setThresholdInput(String(notifThreshold)); setEditingThreshold(false); }}
-                  className="p-1.5 bg-muted hover:bg-muted/80 text-muted-foreground rounded-lg transition-colors active:scale-95"
+                  onClick={() => {
+                    setAlertHistory([]);
+                    localStorage.removeItem(ALERT_HISTORY_KEY);
+                  }}
+                  className="text-[10px] text-destructive hover:underline font-medium"
                 >
-                  <X className="w-3 h-3" />
+                  Limpar tudo
                 </button>
               </div>
-            ) : (
-              <button
-                onClick={() => { setThresholdInput(String(notifThreshold)); setEditingThreshold(true); }}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-dashed border-success/30 text-sm font-bold text-success hover:border-success/50 hover:bg-success/5 transition-all cursor-pointer active:scale-[0.97]"
-                title="Clique para definir o limite de alerta em % do CDI"
-              >
-                🎯 ≥ {notifThreshold}% CDI
-                <Pencil className="w-3 h-3 opacity-40" />
-              </button>
-            )
-          )}
-          
-          {/* Botão Histórico de Alertas */}
-          {notifEnabled && alertHistory.length > 0 && (
-            <button
-              onClick={() => setShowAlertHistory(!showAlertHistory)}
-              className={cn(
-                "flex items-center gap-1.5 px-4 py-2.5 rounded-2xl border text-xs font-semibold transition-all active:scale-[0.97]",
-                showAlertHistory
-                  ? "bg-success/10 border-success/30 text-success"
-                  : "bg-card border-border text-muted-foreground hover:text-foreground"
-              )}
-            >
-              🕐 Histórico ({alertHistory.length})
-              {showAlertHistory ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-            </button>
+              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                {alertHistory.map((entry) => (
+                  <div key={entry.id} className={cn(
+                    "flex flex-wrap items-center gap-2 text-[11px] px-3 py-2 rounded-xl border",
+                    entry.cdiPercent >= notifThresholdUrgent
+                      ? "bg-warning/10 border-warning/30"
+                      : "bg-muted/50 border-border/50"
+                  )}>
+                    {entry.cdiPercent >= notifThresholdUrgent && <Zap className="w-3 h-3 text-warning" />}
+                    <span className="text-muted-foreground">{entry.time}</span>
+                    <span className="font-bold text-foreground">{entry.familyName}</span>
+                    <span className="text-muted-foreground">Strike {formatBRL(entry.strike)}</span>
+                    <span className="font-bold text-success">{entry.cdiPercent}% CDI</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
-
-        {/* Painel de Histórico de Alertas */}
-        {showAlertHistory && alertHistory.length > 0 && (
-          <div className="rounded-2xl border border-border bg-card p-4 animate-fade-in shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                🔔 Histórico de Alertas
-              </h3>
-              <button
-                onClick={() => {
-                  setAlertHistory([]);
-                  localStorage.removeItem(ALERT_HISTORY_KEY);
-                }}
-                className="text-[10px] text-destructive hover:underline font-medium"
-              >
-                Limpar tudo
-              </button>
-            </div>
-            <div className="space-y-1.5 max-h-48 overflow-y-auto">
-              {alertHistory.map((entry) => (
-                <div key={entry.id} className="flex flex-wrap items-center gap-2 text-[11px] px-3 py-2 rounded-xl bg-muted/50 border border-border/50">
-                  <span className="text-muted-foreground">{entry.time}</span>
-                  <span className="font-bold text-foreground">{entry.familyName}</span>
-                  <span className="text-muted-foreground">Strike {formatBRL(entry.strike)}</span>
-                  <span className="font-bold text-success">{entry.cdiPercent}% CDI</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
       {/* WINNER CARDS - Top 1 de cada ação */}
       {topPairs.length > 0 && (
@@ -1273,6 +1385,7 @@ export default function BoxTracker() {
                 winnerKey={winnerKey}
                 cdiAnual={cdiAnual}
                 stockTicker={resolvedStockTicker}
+                autoImported={autoImportedMap.get(family.name)}
               />
             );
           })}
@@ -1298,6 +1411,7 @@ interface FamilyCardProps {
   winnerKey: string | null;
   cdiAnual: number;
   stockTicker: string;
+  autoImported?: Set<string>;
 }
 
 function FamilyCard({
@@ -1315,6 +1429,7 @@ function FamilyCard({
   winnerKey,
   cdiAnual,
   stockTicker,
+  autoImported,
 }: FamilyCardProps) {
   const [showPaste, setShowPaste] = useState(false);
   const [pasteText, setPasteText] = useState("");
@@ -1594,7 +1709,14 @@ function FamilyCard({
                       {/* CALL */}
                       <td className="px-2 py-2 bg-blue-50/50 dark:bg-blue-950/10">
                         {pair.callSymbol ? (
-                          <span className="text-blue-600 dark:text-blue-300 font-semibold">{pair.callSymbol}</span>
+                          <span className="flex items-center gap-1">
+                            <span className="text-blue-600 dark:text-blue-300 font-semibold">{pair.callSymbol}</span>
+                            {autoImported?.has(pair.callSymbol) && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                                <Database className="w-2.5 h-2.5" />AUTO
+                              </span>
+                            )}
+                          </span>
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
@@ -1604,7 +1726,14 @@ function FamilyCard({
                       {/* PUT */}
                       <td className="px-2 py-2 bg-red-50/50 dark:bg-red-950/10">
                         {pair.putSymbol ? (
-                          <span className="text-red-600 dark:text-red-300 font-semibold">{pair.putSymbol}</span>
+                          <span className="flex items-center gap-1">
+                            <span className="text-red-600 dark:text-red-300 font-semibold">{pair.putSymbol}</span>
+                            {autoImported?.has(pair.putSymbol) && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                                <Database className="w-2.5 h-2.5" />AUTO
+                              </span>
+                            )}
+                          </span>
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
@@ -1700,13 +1829,20 @@ function FamilyCard({
                       >
                         <td className="px-3 py-2 text-muted-foreground">{family.name}</td>
                         <td className="px-2 py-2" colSpan={2}>
-                          <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${
-                            ticker.type === "CALL" ? "bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300" : "bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300"
-                          }`}>
-                            {ticker.type}: {ticker.symbol}
-                          </span>
-                          <span className="text-muted-foreground text-xs ml-2">
-                            (sem par {ticker.type === "CALL" ? "PUT" : "CALL"} no strike {formatBRL(ticker.strike)})
+                          <span className="flex items-center gap-1.5 flex-wrap">
+                            <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${
+                              ticker.type === "CALL" ? "bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300" : "bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300"
+                            }`}>
+                              {ticker.type}: {ticker.symbol}
+                            </span>
+                            {autoImported?.has(ticker.symbol) && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                                <Database className="w-2.5 h-2.5" />AUTO
+                              </span>
+                            )}
+                            <span className="text-muted-foreground text-xs">
+                              (sem par {ticker.type === "CALL" ? "PUT" : "CALL"} no strike {formatBRL(ticker.strike)})
+                            </span>
                           </span>
                         </td>
                         <td className="px-2 py-2 text-right text-muted-foreground" colSpan={3}>

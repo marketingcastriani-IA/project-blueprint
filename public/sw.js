@@ -19,15 +19,19 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'BOX_ALERT') {
     const { title, body, tag, data } = event.data;
+    const isUrgent = data?.priority === 'urgent';
     
     self.registration.showNotification(title, {
       body,
       icon: '/favicon.png',
       badge: '/favicon.png',
       tag: tag || 'box-tracker-alert',
-      vibrate: [200, 100, 200, 100, 300],
+      vibrate: isUrgent
+        ? [300, 100, 300, 100, 300, 100, 500]
+        : [200, 100, 200, 100, 300],
       requireInteraction: true,
       renotify: true,
+      silent: data?.sound === false,
       actions: [
         { action: 'open', title: '📊 Ver Box Tracker' },
         { action: 'dismiss', title: 'Dispensar' },
@@ -69,9 +73,6 @@ self.addEventListener('notificationclick', (event) => {
 
 // Handle fetch — network first, no aggressive caching (just SW for notifications)
 self.addEventListener('fetch', (event) => {
-  // Don't intercept oauth routes
   if (event.request.url.includes('/~oauth')) return;
-  
-  // Pass through all requests — we only need SW for notifications
   return;
 });
