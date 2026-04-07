@@ -490,21 +490,21 @@ export default function TickerOpcoes() {
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</span>
                 <div>
                   <p className="text-xs font-semibold text-foreground">Filtre por família e vencimento</p>
-                  <p className="text-[10px] text-muted-foreground">Selecione um ativo (ex: PETR) e o vencimento desejado</p>
+                  <p className="text-xs leading-snug font-medium text-muted-foreground">Selecione um ativo (ex: PETR) e o vencimento desejado</p>
                 </div>
               </div>
               <div className="flex items-start gap-2.5">
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</span>
                 <div>
                   <p className="text-xs font-semibold text-foreground">Selecione os tickers</p>
-                  <p className="text-[10px] text-muted-foreground">Marque com checkbox — opções com <span className="text-primary font-bold">PAR</span> são ideais para Box</p>
+                  <p className="text-xs leading-snug font-medium text-muted-foreground">Marque com checkbox — opções com <span className="text-primary font-bold">PAR</span> são ideais para Box</p>
                 </div>
               </div>
               <div className="flex items-start gap-2.5">
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</span>
                 <div>
                   <p className="text-xs font-semibold text-foreground">Envie automaticamente</p>
-                  <p className="text-[10px] text-muted-foreground">Use "Tempo Real" ou "Box Tracker" para enviar os tickers selecionados</p>
+                  <p className="text-xs leading-snug font-medium text-muted-foreground">Use "Tempo Real" ou "Box Tracker" para enviar os tickers selecionados</p>
                 </div>
               </div>
             </div>

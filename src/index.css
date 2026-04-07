@@ -21,7 +21,7 @@
     --secondary: 210 20% 94%;
     --secondary-foreground: 222 47% 11%;
     --muted: 210 20% 96%;
-    --muted-foreground: 215 20% 35%;
+    --muted-foreground: 215 22% 28%;
     --accent: 195 100% 45%;
     --accent-foreground: 0 0% 100%;
     
@@ -110,22 +110,33 @@
   * {
     @apply border-border;
   }
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: geometricPrecision;
+  }
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Plus Jakarta Sans', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-    font-feature-settings: 'kern' 1, 'liga' 1;
+    text-rendering: geometricPrecision;
+    font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
+    letter-spacing: -0.01em;
   }
   .font-mono {
     font-family: 'JetBrains Mono', monospace;
   }
-  /* Ensure small text stays sharp and readable */
-  p, span, label, small, .text-xs, .text-sm, .text-muted-foreground {
+
+  p, span, label, small, td, th, input, button, select, textarea {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
+    text-rendering: geometricPrecision;
+  }
+
+  ::placeholder {
+    color: hsl(var(--muted-foreground) / 0.92);
+    opacity: 1;
   }
 
   /* Fix para o ícone de calendário no input type="date" no tema dark */
