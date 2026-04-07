@@ -8,6 +8,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import InstallAppButton from '@/components/InstallAppButton';
 
 export default function Header() {
   const { signOut, user } = useAuth();
@@ -97,6 +98,7 @@ export default function Header() {
 
         {/* Right actions */}
         <div className="flex items-center gap-1.5 shrink-0">
+          <InstallAppButton />
           {isFree && (
             <Button 
               onClick={() => navigate('/settings')}
