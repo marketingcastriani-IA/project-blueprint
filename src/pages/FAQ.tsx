@@ -960,6 +960,15 @@ export default function FAQ() {
                 que é usado por corretoras como XP, Clear, Rico, Inter, BTG e outras que oferecem a plataforma.
               </AccordionContent>
             </AccordionItem>
+            <AccordionItem value="q16">
+              <AccordionTrigger className="text-sm font-bold">O que é o módulo Ticker Opções B3?</AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground">
+                É um banco de dados com mais de 99.000 opções listadas na B3. Você pode pesquisar por ticker, 
+                filtrar por família, vencimento e tipo (Call/Put), identificar pares Call+Put automaticamente e 
+                enviar tickers selecionados diretamente para o Tempo Real ou Rastreador de Box. 
+                Também identifica oportunidades de Box Spread comparando pares de mesmo strike.
+              </AccordionContent>
+            </AccordionItem>
           </Accordion>
         </FeatureSection>
 

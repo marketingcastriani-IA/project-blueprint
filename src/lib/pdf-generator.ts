@@ -196,9 +196,11 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     '9. Diversificador de Estratégias',
     '10. Dados ao Vivo (Tempo Real)',
     '11. Rastreador de Box',
-    '12. Temas e Personalização',
-    '13. Tabelas de Referência',
-    '14. Perguntas Frequentes',
+    '12. Ticker Opções B3',
+    '13. Rastreador de Collar',
+    '14. Temas e Personalização',
+    '15. Tabelas de Referência',
+    '16. Perguntas Frequentes',
   ];
   doc.setFontSize(10);
   doc.setTextColor(...COLORS.gray);
