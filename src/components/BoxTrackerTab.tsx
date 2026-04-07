@@ -594,26 +594,32 @@ export default function BoxTracker() {
 
   // ─── NOTIFICAÇÃO PUSH via Service Worker ────
   const sendPushNotification = useCallback(async (title: string, body: string, data?: any) => {
+    const tag = data?.priority === 'urgent' ? 'box-tracker-urgent' : 'box-tracker-alert';
     // Try Service Worker first (works when app is backgrounded on mobile)
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({
-        type: 'BOX_ALERT',
-        title,
-        body,
-        tag: data?.priority === 'urgent' ? 'box-tracker-urgent' : 'box-tracker-alert',
-        data,
-      });
-      return;
-    }
+    const sent = await postToSW({ type: 'BOX_ALERT', title, body, tag, data });
+    if (sent) return;
     // Fallback to regular Notification API
     if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, {
-        body,
-        icon: '/favicon.png',
-        tag: data?.priority === 'urgent' ? 'box-tracker-urgent' : 'box-tracker-alert',
-      });
+      new Notification(title, { body, icon: '/favicon.png', tag });
     }
-  }, []);
+  }, [postToSW]);
+
+  // Manual test alert
+  const sendTestAlert = useCallback(async () => {
+    if (!("Notification" in window) || Notification.permission !== "granted") {
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") {
+        alert("Permissão negada. Ative nas configurações do navegador.");
+        return;
+      }
+    }
+    await sendPushNotification(
+      '🧪 Teste de Alerta Box',
+      `📊 Alerta teste disparado às ${new Date().toLocaleTimeString('pt-BR')}\n🎯 Meta Normal: ≥ ${notifThreshold}% CDI\n🚨 Meta Urgente: ≥ ${notifThresholdUrgent}% CDI`,
+      { url: '/box-tracker', priority: 'normal', sound: soundEnabled }
+    );
+    toast({ title: "✅ Alerta teste enviado!", description: "Verifique se a notificação apareceu." });
+  }, [sendPushNotification, notifThreshold, notifThresholdUrgent, soundEnabled, toast]);
 
   useEffect(() => {
     if (!notifEnabled || !("Notification" in window) || Notification.permission !== "granted") return;
