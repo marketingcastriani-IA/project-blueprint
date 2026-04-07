@@ -262,7 +262,14 @@ export default function BoxTracker() {
 
   const { status, rows, connect, addTicker: bridgeAddTicker } = useSharedRtdBridge();
 
-
+  // Instructional banner
+  const [showBoxInstructions, setShowBoxInstructions] = useState(() => {
+    try { return localStorage.getItem("box-tracker-instructions-dismissed") !== "true"; } catch { return true; }
+  });
+  const dismissBoxInstructions = () => {
+    setShowBoxInstructions(false);
+    localStorage.setItem("box-tracker-instructions-dismissed", "true");
+  };
 
 
   // Load families from localStorage
