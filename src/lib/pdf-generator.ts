@@ -236,6 +236,8 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
       ['Diversificador', 'Planejamento de alocação entre diferentes estratégias'],
       ['Dados ao Vivo', 'Preços em tempo real via integração com Profit Pro'],
       ['Rastreador de Box', 'Ranking dos melhores boxes da B3 em tempo real'],
+      ['Ticker Opções B3', 'Banco com 99.000+ opções, busca inteligente e pares Call+Put'],
+      ['Rastreador de Collar', 'Monitoramento de proteção de carteira com collars em tempo real'],
     ],
     ...TABLE_STYLES,
   });
@@ -975,6 +977,7 @@ const LANDING_FEATURES: { key: string; title: string; desc: string; extraKeys?: 
   { key: 'portfolio', title: 'Portfolio P&L', desc: 'Acompanhe P&L consolidado, ROI total e taxa de acerto das suas operações.' },
   { key: 'diversificador', title: 'Diversificador', desc: 'Gerencie a alocação do seu patrimônio entre estratégias com balanceamento automático.' },
   { key: 'box', title: 'Rastreador de Box - AO VIVO', desc: 'Rastreie os melhores boxes da B3 em tempo real. Ranking com troféus e % do CDI.', extraKeys: ['boxTabela'] },
+  { key: 'tickerOpcoes', title: 'Ticker Opções B3 — 99.000+ Opções', desc: 'Banco de dados completo da B3 com busca inteligente, pares Call+Put, filtros de strike e integração direta com Tempo Real e Box Tracker.', extraKeys: ['tickerOpcoesBusca', 'tickerOpcoesTabela'] },
   { key: 'calcCdi', title: 'Calculadora CDI × Opções', desc: 'Compare o rendimento de qualquer estratégia com a renda fixa.' },
   { key: 'temasCores', title: 'Temas e Personalização', desc: 'Escolha entre tema claro e escuro, com paleta profissional para qualquer condição.' },
   { key: 'tomadaDecisao', title: 'Tomada de Decisão com IA', desc: 'Use o veredito da IA para decidir quando manter ou encerrar uma operação.' },
