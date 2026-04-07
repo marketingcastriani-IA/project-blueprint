@@ -673,6 +673,8 @@ export default function TickerOpcoes() {
                   </Button>
                 )}
               </>
+            ) : (
+              <span className="text-xs text-muted-foreground italic">Selecione opções na tabela para enviar</span>
             )}
             <Button
               size="sm"
