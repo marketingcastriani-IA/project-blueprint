@@ -26,6 +26,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import PayoffChart from "@/components/PayoffChart";
+import BridgeSetupGuide from "@/components/BridgeSetupGuide";
 import MetricsCards from "@/components/MetricsCards";
 import { Leg, PayoffPoint } from "@/lib/types";
 import { calculatePayoffAtExpiry, calculatePayoffToday, calculateMetrics } from "@/lib/payoff";
