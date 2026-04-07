@@ -106,6 +106,9 @@ export default function FAQ() {
                 diversificador: faqDiversificador,
                 temporeal: faqTempoReal,
                 box: faqRastreadorBox,
+                tickerOpcoes: faqTickerOpcoes,
+                tickerOpcoesBusca: faqTickerOpcoesBusca,
+                tickerOpcoesTabela: faqTickerOpcoesTabela,
               };
               await generateFAQPdf(faqImages);
               toast.success('PDF do manual baixado!');
