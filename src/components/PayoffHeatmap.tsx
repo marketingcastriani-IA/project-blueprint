@@ -20,6 +20,9 @@ interface PayoffHeatmapProps {
   currentSpotPrice?: number | null;
   legs?: Leg[];
   daysToExpiry?: number;
+  cdiRate?: number;
+  netCost?: number;
+  montageTotal?: number;
 }
 
 const TIME_SLICES = [

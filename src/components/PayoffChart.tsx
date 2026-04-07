@@ -322,8 +322,8 @@ export default function PayoffChart({
                   }}
                 />
 
-                {/* Zero line — bold separator */}
-                <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeOpacity={0.35} strokeWidth={2} />
+                {/* Zero line — bold dark separator */}
+                <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeOpacity={0.7} strokeWidth={2.5} label={{ value: 'ZERO', position: 'insideRight', fill: 'hsl(var(--foreground))', fontSize: 9, fontWeight: 900, opacity: 0.5 }} />
 
                 {/* Green gain zone */}
                 <Area type="monotone" dataKey="gainZone" stroke="none" fill="url(#gainZoneGrad)" isAnimationActive={false} legendType="none" />
