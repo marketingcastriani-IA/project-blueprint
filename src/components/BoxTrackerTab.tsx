@@ -189,6 +189,7 @@ function extractTypeFromTicker(symbol: string): "CALL" | "PUT" {
 export default function BoxTracker() {
   const { getStrikeAndExpiry, getByFamily } = useB3Options();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [families, setFamilies] = useState<StockFamily[]>([]);
   const [newFamilyName, setNewFamilyName] = useState("");
   const [quantidade, setQuantidade] = useState<number>(100);
