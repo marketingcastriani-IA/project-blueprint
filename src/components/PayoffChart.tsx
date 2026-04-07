@@ -6,9 +6,9 @@ import { Area, CartesianGrid, ReferenceLine, XAxis, YAxis, Line, ComposedChart, 
 import { calculateCDIReturn, calculatePortfolioGreeks } from '@/lib/payoff';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Target, Percent, DollarSign, Layers, Box } from 'lucide-react';
+import { TrendingUp, TrendingDown, Target, Percent, DollarSign, Layers, Grid3X3 } from 'lucide-react';
 
-const PayoffChart3D = lazy(() => import('./PayoffChart3D'));
+const PayoffHeatmap = lazy(() => import('./PayoffHeatmap'));
 
 interface PayoffChartProps {
   data: PayoffPoint[];
