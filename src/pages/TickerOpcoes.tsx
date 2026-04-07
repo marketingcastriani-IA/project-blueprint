@@ -279,8 +279,21 @@ export default function TickerOpcoes() {
       toast.error("Não foi possível determinar a família");
       return;
     }
-    // Build tickers list
-    const tickers = selected.map((o) => o.ticker);
+    // Only send matched Call+Put pairs (same strike)
+    const putsByStrike = new Map(puts.map((p) => [p.strike, p]));
+    const pairedTickers: string[] = [];
+    for (const call of calls) {
+      const matchingPut = putsByStrike.get(call.strike);
+      if (matchingPut) {
+        pairedTickers.push(call.ticker, matchingPut.ticker);
+        putsByStrike.delete(call.strike);
+      }
+    }
+    if (pairedTickers.length === 0) {
+      toast.error("Nenhum par Call+Put com mesmo strike encontrado na seleção");
+      return;
+    }
+    const tickers = pairedTickers;
 
     // Load existing families from localStorage
     let existingFamilies: SavedFamily[] = [];
