@@ -282,7 +282,12 @@ export default function PayoffChart({
           />
         </Suspense>
       ) : (
-        <div className="rounded-xl border border-border/30 bg-card/20 p-1 relative">
+        <div className="rounded-xl border border-border/30 bg-card/20 p-1 relative overflow-hidden">
+          {/* Zone text labels */}
+          <div className="absolute inset-0 pointer-events-none z-0 flex flex-col items-start justify-center pl-20">
+            <span className="text-[15px] font-black tracking-[0.15em] text-emerald-500/15 -mt-24">ZONA DE LUCRO</span>
+            <span className="text-[15px] font-black tracking-[0.15em] text-red-500/15 mt-24">ZONA DE PERDA</span>
+          </div>
           {/* Integrated mini-legend */}
           <div className="absolute top-3 left-14 z-10 flex flex-wrap gap-3 px-2.5 py-1.5 rounded-lg bg-card/80 backdrop-blur-sm border border-border/30">
             <div className="flex items-center gap-1.5">
