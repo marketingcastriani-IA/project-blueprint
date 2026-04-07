@@ -26,7 +26,7 @@ import {
   WifiOff,
   AlertTriangle,
   TrendingUp,
-  CalendarIcon,
+  
   Pencil,
   Save,
   ToggleLeft,
@@ -36,9 +36,9 @@ import {
 } from "lucide-react";
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 import { statusConfig } from "@/hooks/useRtdBridge";
-import { Calendar } from "@/components/ui/calendar";
+
 import { useB3Options } from "@/contexts/B3OptionsContext";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
 import { cn } from "@/lib/utils";
 
 // ─── TIPOS ───────────────────────────────────────────────────
@@ -89,7 +89,7 @@ interface SavedFamily {
 
 // ─── CONSTANTES ──────────────────────────────────────────────
 const STORAGE_KEY = "box-tracker-families";
-const VENC_STORAGE_KEY = "box-tracker-vencimento";
+
 const CDI_ANUAL_DEFAULT = 14.15;
 const CDI_STORAGE_KEY = "box-tracker-cdi-anual";
 const IR_ACOES = 15;
@@ -170,21 +170,6 @@ function extractTypeFromTicker(symbol: string): "CALL" | "PUT" {
   return "CALL";
 }
 
-function dateToStr(d: Date): string {
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  return `${dd}/${mm}/${yyyy}`;
-}
-
-function strToDate(s: string): Date | undefined {
-  if (!s) return undefined;
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
-    const [d, m, y] = s.split("/").map(Number);
-    return new Date(y, m - 1, d);
-  }
-  return undefined;
-}
 
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────
 export default function BoxTracker() {
@@ -192,9 +177,6 @@ export default function BoxTracker() {
   const [families, setFamilies] = useState<StockFamily[]>([]);
   const [newFamilyName, setNewFamilyName] = useState("");
   const [quantidade, setQuantidade] = useState<number>(100);
-  const [vencimentoManual, setVencimentoManual] = useState<string>("");
-  const [vencSaved, setVencSaved] = useState(false);
-  const [editingVenc, setEditingVenc] = useState(false);
   const [descontarIRAcoes, setDescontarIRAcoes] = useState(false);
   const [descontarIRRendaFixa, setDescontarIRRendaFixa] = useState(false);
   const [cdiAnual, setCdiAnual] = useState<number>(() => {
@@ -278,16 +260,6 @@ export default function BoxTracker() {
 
 
 
-  // Load vencimento from localStorage
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(VENC_STORAGE_KEY);
-      if (saved) {
-        setVencimentoManual(saved);
-        setVencSaved(true);
-      }
-    } catch {}
-  }, []);
 
   // Load families from localStorage
   useEffect(() => {
@@ -346,25 +318,6 @@ export default function BoxTracker() {
     });
   }, [status, families, bridgeAddTicker, familyStockTickers]);
 
-  const handleSaveVenc = () => {
-    if (vencimentoManual) {
-      localStorage.setItem(VENC_STORAGE_KEY, vencimentoManual);
-      setVencSaved(true);
-      setEditingVenc(false);
-    }
-  };
-
-  const handleEditVenc = () => {
-    setVencSaved(false);
-    setEditingVenc(true);
-  };
-
-  const handleDeleteVenc = () => {
-    setVencimentoManual("");
-    setVencSaved(false);
-    setEditingVenc(false);
-    localStorage.removeItem(VENC_STORAGE_KEY);
-  };
 
   const addFamily = useCallback(() => {
     const name = newFamilyName.trim().toUpperCase();
@@ -529,7 +482,7 @@ export default function BoxTracker() {
           }
         }
 
-        const vencParaCalculo = vencimentoManual || vencimento;
+        const vencParaCalculo = vencimento;
         const diasUteis = calcDiasUteis(vencParaCalculo);
         const cdiPeriodo = diasUteis !== null && diasUteis > 0 ? calcCdiPeriodo(diasUteis, cdiAnual) : null;
 
@@ -560,7 +513,7 @@ export default function BoxTracker() {
       pairs.sort((a, b) => (b.lucroPercent ?? -999) - (a.lucroPercent ?? -999));
       return pairs;
     },
-    [rows, quantidade, vencimentoManual, descontarIRAcoes, descontarIRRendaFixa, cdiAnual, getStrikeAndExpiry, familyStockTickers]
+    [rows, quantidade, descontarIRAcoes, descontarIRRendaFixa, cdiAnual, getStrikeAndExpiry, familyStockTickers]
   );
 
   // Global ranking — only the #1 best box per family
@@ -576,7 +529,7 @@ export default function BoxTracker() {
   const isConnected = status === "connected";
   const statusCfg = statusConfig[status];
 
-  const diasUteisVenc = calcDiasUteis(vencimentoManual);
+  
 
   // Determine winner
   const winnerKey = topPairs.length > 0 ? `${topPairs[0].familyName}-${topPairs[0].strike}` : null;
@@ -947,117 +900,6 @@ export default function BoxTracker() {
           </div>
         )}
       </div>
-
-      {/* DATA DE VENCIMENTO */}
-      <div className="mb-6">
-        <div className={cn(
-          "rounded-2xl border p-5 transition-all shadow-sm",
-          vencSaved
-            ? "bg-card border-warning/30"
-            : "bg-card border-border"
-        )}>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-xs font-bold text-muted-foreground flex items-center gap-2 uppercase tracking-widest">
-              <CalendarIcon className="w-4 h-4 text-warning" />
-              Data de Vencimento
-            </h3>
-            {vencSaved && (
-              <div className="flex gap-2">
-                <button
-                  onClick={handleEditVenc}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs bg-card hover:bg-muted border border-border rounded-full text-foreground font-semibold transition-all active:scale-95"
-                >
-                  <Pencil className="w-3 h-3" /> Editar
-                </button>
-                <button
-                  onClick={handleDeleteVenc}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs bg-card hover:bg-destructive/10 border border-destructive/20 rounded-full text-destructive font-semibold transition-all active:scale-95"
-                >
-                  <Trash2 className="w-3 h-3" /> Excluir
-                </button>
-              </div>
-            )}
-          </div>
-
-          {vencSaved && !editingVenc ? (
-            <div className="flex flex-wrap items-center gap-4 md:gap-6">
-              <div>
-                <p className="text-3xl md:text-4xl font-extrabold text-foreground tracking-tight">{vencimentoManual}</p>
-                {diasUteisVenc !== null && (
-                  <p className="text-sm text-muted-foreground mt-1.5 font-medium">
-                    <span className="text-warning font-bold">{diasUteisVenc}</span> dias úteis restantes
-                    {diasUteisVenc > 0 && (
-                      <span className="ml-2">
-                        · CDI do período: <span className="text-primary font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc, cdiAnual))}</span>
-                        {descontarIRRendaFixa && (
-                          <span className="ml-1 text-muted-foreground">
-                            (líq: <span className="text-success font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc, cdiAnual) * (1 - IR_RENDA_FIXA / 100))}</span>)
-                          </span>
-                        )}
-                      </span>
-                    )}
-                  </p>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-wrap items-end gap-3">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Selecione a data</label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button
-                      className={cn(
-                        "flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-semibold transition-all w-[220px] justify-start active:scale-[0.97]",
-                        vencimentoManual
-                          ? "bg-card border-warning/40 text-foreground"
-                          : "bg-card border-border text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="w-4 h-4 text-warning" />
-                      {vencimentoManual || "Selecionar data"}
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={strToDate(vencimentoManual)}
-                      onSelect={(date) => {
-                        if (date) setVencimentoManual(dateToStr(date));
-                      }}
-                      initialFocus
-                      className="p-3 pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              {vencimentoManual && (
-                <>
-                  {diasUteisVenc !== null && (
-                    <div className="text-sm text-muted-foreground font-medium">
-                      <span className="text-warning font-bold">{diasUteisVenc}</span> dias úteis
-                      {diasUteisVenc > 0 && (
-                        <span className="ml-2">
-                          · CDI: <span className="text-primary font-bold">{formatPercent(calcCdiPeriodo(diasUteisVenc, cdiAnual))}</span>
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  <button
-                    onClick={handleSaveVenc}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 rounded-full text-sm font-bold text-primary-foreground transition-all shadow-md hover:shadow-lg active:scale-[0.97]"
-                  >
-                    <Save className="w-4 h-4" />
-                    Salvar Vencimento
-                  </button>
-                </>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* WINNER CARDS - Top 1 de cada ação */}
       {topPairs.length > 0 && (
         <div className={cn("grid gap-4 mb-6", topPairs.length === 1 ? "grid-cols-1" : topPairs.length === 2 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-3")}>
