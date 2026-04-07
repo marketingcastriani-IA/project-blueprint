@@ -67,6 +67,11 @@ interface CollarResult {
   riskRewardRatio: number | null;
   qualityScore: number;
   isRiskFree: boolean;
+  // CDI comparison
+  diffCdiBaixa: number | null;   // rentBaixa - cdiPeriodo (pp)
+  diffCdiAlta: number | null;    // rentAlta - cdiPeriodo (pp)
+  per: number | null;            // Protection Efficiency Ratio
+  custoLiquidoPct: number | null; // custo líquido como % do ativo
 }
 
 interface StockFamily {
