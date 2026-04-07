@@ -90,6 +90,39 @@ export default function Header() {
             )}>
               {access.planType === 'pro' ? 'PRO' : 'FREE'}
             </Badge>
+            {/* RTD Live Indicator */}
+            <div
+              className={cn(
+                "hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border transition-all",
+                rtdStatus === 'connected'
+                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-400/40 shadow-[0_0_10px_rgba(16,185,129,0.4)]"
+                  : rtdStatus === 'connecting'
+                  ? "bg-yellow-500/20 text-yellow-300 border-yellow-400/40 animate-pulse"
+                  : "bg-red-500/10 text-red-400/60 border-red-400/20"
+              )}
+              title={rtdStatus === 'connected' ? 'Bridge RTD conectado — dados ao vivo' : rtdStatus === 'connecting' ? 'Conectando ao Bridge...' : 'Bridge RTD desconectado'}
+            >
+              {rtdStatus === 'connected' ? (
+                <>
+                  <Wifi className="h-3 w-3 animate-pulse" />
+                  <span>LIVE</span>
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                  </span>
+                </>
+              ) : rtdStatus === 'connecting' ? (
+                <>
+                  <Wifi className="h-3 w-3" />
+                  <span>...</span>
+                </>
+              ) : (
+                <>
+                  <WifiOff className="h-3 w-3" />
+                  <span>OFF</span>
+                </>
+              )}
+            </div>
           </button>
           <InstallAppButton />
         </div>
