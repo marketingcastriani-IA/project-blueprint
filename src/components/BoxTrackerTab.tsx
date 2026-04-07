@@ -298,12 +298,15 @@ export default function BoxTracker() {
         const loaded: StockFamily[] = parsed.map((sf) => ({
           id: generateId(),
           name: sf.name,
-          tickers: sf.tickers.map((sym) => ({
-            id: generateId(),
-            symbol: sym.toUpperCase(),
-            type: extractTypeFromTicker(sym),
-            strike: extractStrikeFromTicker(sym),
-          })),
+          tickers: sf.tickers.map((sym) => {
+            const b3Info = getStrikeAndExpiry(sym);
+            return {
+              id: generateId(),
+              symbol: sym.toUpperCase(),
+              type: b3Info?.tipo ?? extractTypeFromTicker(sym),
+              strike: (b3Info && b3Info.strike > 0) ? b3Info.strike : extractStrikeFromTicker(sym),
+            };
+          }),
           expanded: true,
         }));
         setFamilies(loaded);
@@ -378,12 +381,15 @@ export default function BoxTracker() {
         .map((s) => s.trim().toUpperCase())
         .filter((s) => s.length >= 5 && /^[A-Z]{3,6}\d{0,2}[A-X]\d+$/.test(s));
       if (!symbols.length) return;
-      const newTickers: OptionTicker[] = symbols.map((symbol) => ({
-        id: generateId(),
-        symbol,
-        type: extractTypeFromTicker(symbol),
-        strike: extractStrikeFromTicker(symbol),
-      }));
+      const newTickers: OptionTicker[] = symbols.map((symbol) => {
+        const b3Info = getStrikeAndExpiry(symbol);
+        return {
+          id: generateId(),
+          symbol,
+          type: b3Info?.tipo ?? extractTypeFromTicker(symbol),
+          strike: (b3Info && b3Info.strike > 0) ? b3Info.strike : extractStrikeFromTicker(symbol),
+        };
+      });
       setFamilies((prev) =>
         prev.map((f) => {
           if (f.id !== familyId) return f;
