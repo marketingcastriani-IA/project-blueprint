@@ -606,21 +606,86 @@ export default function BoxTracker() {
     }
   }, [postToSW]);
 
-  // Manual test alert
+  // Manual test alert with full diagnostics
   const sendTestAlert = useCallback(async () => {
-    if (!("Notification" in window) || Notification.permission !== "granted") {
-      const perm = await Notification.requestPermission();
-      if (perm !== "granted") {
-        alert("Permissão negada. Ative nas configurações do navegador.");
-        return;
-      }
+    const diag: string[] = [];
+    
+    // Check if running in iframe (Lovable preview)
+    const isIframe = window.self !== window.top;
+    if (isIframe) {
+      diag.push("⚠️ Você está na Preview do Lovable (iframe). Push notifications NÃO funcionam aqui.");
+      diag.push("👉 Abra o app publicado ou instale o PWA para receber alertas.");
+      toast({ 
+        title: "⚠️ Preview não suporta Push", 
+        description: "Abra o site publicado (opoesxpro.lovable.app) ou instale o PWA para receber notificações push.",
+        variant: "destructive",
+      });
+      return;
     }
+
+    // Check Notification API
+    if (!("Notification" in window)) {
+      toast({ title: "❌ Navegador incompatível", description: "Este navegador não suporta notificações. Use Chrome, Edge ou instale o PWA.", variant: "destructive" });
+      return;
+    }
+
+    // Check permission
+    let perm = Notification.permission;
+    if (perm === "default") {
+      perm = await Notification.requestPermission();
+    }
+    if (perm !== "granted") {
+      toast({ 
+        title: "❌ Permissão negada", 
+        description: "Ative as notificações: clique no 🔒 ao lado da URL → Permitir Notificações", 
+        variant: "destructive" 
+      });
+      return;
+    }
+    diag.push("✅ Permissão: concedida");
+
+    // Check Service Worker
+    let swOk = false;
+    if ('serviceWorker' in navigator) {
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        if (reg.active) {
+          diag.push(`✅ Service Worker: ${reg.active.state}`);
+          swOk = true;
+        } else {
+          diag.push("⚠️ Service Worker registrado mas não ativo");
+        }
+      } catch (e) {
+        diag.push("❌ Service Worker: erro ao obter ready");
+      }
+    } else {
+      diag.push("❌ Service Worker: não suportado");
+    }
+
+    // Send notification
     await sendPushNotification(
       '🧪 Teste de Alerta Box',
-      `📊 Alerta teste disparado às ${new Date().toLocaleTimeString('pt-BR')}\n🎯 Meta Normal: ≥ ${notifThreshold}% CDI\n🚨 Meta Urgente: ≥ ${notifThresholdUrgent}% CDI`,
+      `📊 Alerta teste — ${new Date().toLocaleTimeString('pt-BR')}\n🎯 Normal: ≥ ${notifThreshold}% CDI\n🚨 Urgente: ≥ ${notifThresholdUrgent}% CDI`,
       { url: '/box-tracker', priority: 'normal', sound: soundEnabled }
     );
-    toast({ title: "✅ Alerta teste enviado!", description: "Verifique se a notificação apareceu." });
+
+    // Also try direct Notification as fallback verification
+    if (!swOk) {
+      try {
+        new Notification('🧪 Teste Direto', { body: 'Fallback sem Service Worker', icon: '/favicon.png' });
+        diag.push("✅ Notificação direta enviada (fallback)");
+      } catch (e) {
+        diag.push("❌ Notificação direta falhou");
+      }
+    }
+
+    console.log('[BOX ALERT DIAG]', diag.join(' | '));
+    toast({ 
+      title: swOk ? "✅ Alerta teste enviado!" : "⚠️ Alerta enviado (fallback)", 
+      description: swOk 
+        ? "A notificação push deve aparecer agora." 
+        : "Service Worker indisponível. Notificações podem não funcionar em background."
+    });
   }, [sendPushNotification, notifThreshold, notifThresholdUrgent, soundEnabled, toast]);
 
   useEffect(() => {
