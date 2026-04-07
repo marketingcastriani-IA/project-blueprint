@@ -426,9 +426,64 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     ({ newY: y } = addImageToPdf(doc, boxTabelaImg, y, 182, 120));
   }
 
-  // ── 12. TEMAS ──
+  // ── 12. TICKER OPÇÕES B3 ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '12. Temas e Personalização', y);
+  y = addSectionTitle(doc, '12. Ticker Opções B3 — Banco de Opções', y);
+  y = addParagraph(doc, 'O módulo Ticker Opções B3 centraliza um banco de dados com mais de 99.000 opções listadas na B3. Pesquise por ticker, filtre por família, vencimento e tipo (Call/Put), identifique pares Call+Put automaticamente e envie tickers para Tempo Real ou Box Tracker.', y);
+
+  const tickerImg = getImg('tickerOpcoes');
+  if (tickerImg) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, tickerImg, y, 182, 120));
+  }
+
+  const tickerBuscaImg = getImg('tickerOpcoesBusca');
+  if (tickerBuscaImg) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, tickerBuscaImg, y, 182, 120));
+  }
+
+  const tickerTabelaImg = getImg('tickerOpcoesTabela');
+  if (tickerTabelaImg) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, tickerTabelaImg, y, 182, 120));
+  }
+
+  y = addTable(doc, {
+    startY: y,
+    head: [['Recurso', 'Descrição']],
+    body: [
+      ['Busca Inteligente', 'Hierarquia de precisão: Exata > Inicia com > Contém'],
+      ['Pares Call+Put', 'Identificação automática com badge PAR para Box/Straddle'],
+      ['Filtros de Strike', 'Sliders de distância percentual acima/abaixo do preço base'],
+      ['Integração', 'Envie tickers selecionados para Tempo Real ou Box Tracker'],
+      ['Oportunidades de Box', 'Detecção automática de oportunidades com cálculo BID/ASK'],
+    ],
+    ...TABLE_STYLES,
+    columnStyles: { 0: { cellWidth: 45, fontStyle: 'bold' as const } },
+  });
+
+  // ── 13. RASTREADOR DE COLLAR ──
+  y = checkPageBreak(doc, y, 50);
+  y = addSectionTitle(doc, '13. Rastreador de Collar', y);
+  y = addParagraph(doc, 'O Rastreador de Collar monitora combinações de proteção de carteira (Ação + Put comprada + Call vendida) em tempo real. Calcula custo de proteção, piso (floor), teto (cap) e identifica collars de custo zero.', y);
+
+  y = addTable(doc, {
+    startY: y,
+    head: [['Métrica', 'Descrição']],
+    body: [
+      ['Floor (Piso)', 'Perda máxima limitada pelo strike da put de proteção'],
+      ['Cap (Teto)', 'Ganho máximo limitado pelo strike da call vendida'],
+      ['Custo Líquido', 'Prêmio da put - Prêmio da call (idealmente zero)'],
+      ['Rentabilidade', 'Retorno máximo comparado ao CDI do período'],
+    ],
+    ...TABLE_STYLES,
+    columnStyles: { 0: { cellWidth: 45, fontStyle: 'bold' as const } },
+  });
+
+  // ── 14. TEMAS ──
+  y = checkPageBreak(doc, y, 50);
+  y = addSectionTitle(doc, '14. Temas e Personalização', y);
   y = addParagraph(doc, 'Escolha entre tema claro e escuro, com paleta de cores profissional otimizada para diferentes condições de luminosidade. As configurações ficam salvas no seu perfil.', y);
 
   const temasImg = getImg('temasCores');
@@ -437,9 +492,9 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     ({ newY: y } = addImageToPdf(doc, temasImg, y, 182, 120));
   }
 
-  // ── 13. TABELAS DE REFERÊNCIA ──
+  // ── 15. TABELAS DE REFERÊNCIA ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '13. Tabelas de Referência', y);
+  y = addSectionTitle(doc, '15. Tabelas de Referência', y);
   y = addParagraph(doc, 'Referência rápida com tabelas detalhadas de funcionalidades, atalhos de teclado e parâmetros do sistema.', y);
 
   const manualTabelaImg = getImg('manualTabela');
@@ -460,9 +515,9 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     ({ newY: y } = addImageToPdf(doc, tomadaImg, y, 182, 120));
   }
 
-  // ── 14. PERGUNTAS FREQUENTES ──
+  // ── 16. PERGUNTAS FREQUENTES ──
   y = checkPageBreak(doc, y, 80);
-  y = addSectionTitle(doc, '14. Perguntas Frequentes', y);
+  y = addSectionTitle(doc, '16. Perguntas Frequentes', y);
 
   y = addTable(doc, {
     startY: y,
