@@ -192,9 +192,6 @@ export default function BoxTracker() {
   const [families, setFamilies] = useState<StockFamily[]>([]);
   const [newFamilyName, setNewFamilyName] = useState("");
   const [quantidade, setQuantidade] = useState<number>(100);
-  const [vencimentoManual, setVencimentoManual] = useState<string>("");
-  const [vencSaved, setVencSaved] = useState(false);
-  const [editingVenc, setEditingVenc] = useState(false);
   const [descontarIRAcoes, setDescontarIRAcoes] = useState(false);
   const [descontarIRRendaFixa, setDescontarIRRendaFixa] = useState(false);
   const [cdiAnual, setCdiAnual] = useState<number>(() => {
@@ -278,16 +275,6 @@ export default function BoxTracker() {
 
 
 
-  // Load vencimento from localStorage
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(VENC_STORAGE_KEY);
-      if (saved) {
-        setVencimentoManual(saved);
-        setVencSaved(true);
-      }
-    } catch {}
-  }, []);
 
   // Load families from localStorage
   useEffect(() => {
@@ -346,25 +333,6 @@ export default function BoxTracker() {
     });
   }, [status, families, bridgeAddTicker, familyStockTickers]);
 
-  const handleSaveVenc = () => {
-    if (vencimentoManual) {
-      localStorage.setItem(VENC_STORAGE_KEY, vencimentoManual);
-      setVencSaved(true);
-      setEditingVenc(false);
-    }
-  };
-
-  const handleEditVenc = () => {
-    setVencSaved(false);
-    setEditingVenc(true);
-  };
-
-  const handleDeleteVenc = () => {
-    setVencimentoManual("");
-    setVencSaved(false);
-    setEditingVenc(false);
-    localStorage.removeItem(VENC_STORAGE_KEY);
-  };
 
   const addFamily = useCallback(() => {
     const name = newFamilyName.trim().toUpperCase();
