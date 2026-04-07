@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils";
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 import { statusConfig, type ConStatus, type RtdRow } from "@/hooks/useRtdBridge";
 import { extractStrikeFromTicker } from "@/lib/b3-utils";
+import { useB3Options } from "@/contexts/B3OptionsContext";
 
 const fmt = (v: number | null, d = 2) =>
   v !== null && v !== undefined ? v.toFixed(d) : "—";

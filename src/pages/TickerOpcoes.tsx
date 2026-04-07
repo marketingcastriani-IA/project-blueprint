@@ -38,7 +38,13 @@ export default function TickerOpcoes() {
     }
     if (search.trim()) {
       const q = search.toUpperCase().trim();
-      result = result.filter((o) => o.ticker.includes(q) || o.family.includes(q));
+      // Check for exact ticker match first
+      const exactMatch = result.filter((o) => o.ticker === q);
+      if (exactMatch.length > 0) {
+        result = exactMatch;
+      } else {
+        result = result.filter((o) => o.ticker.includes(q) || o.family.includes(q));
+      }
     }
     if (strikeMin) {
       const min = parseFloat(strikeMin);
