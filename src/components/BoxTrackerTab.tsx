@@ -1829,13 +1829,20 @@ function FamilyCard({
                       >
                         <td className="px-3 py-2 text-muted-foreground">{family.name}</td>
                         <td className="px-2 py-2" colSpan={2}>
-                          <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${
-                            ticker.type === "CALL" ? "bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300" : "bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300"
-                          }`}>
-                            {ticker.type}: {ticker.symbol}
-                          </span>
-                          <span className="text-muted-foreground text-xs ml-2">
-                            (sem par {ticker.type === "CALL" ? "PUT" : "CALL"} no strike {formatBRL(ticker.strike)})
+                          <span className="flex items-center gap-1.5 flex-wrap">
+                            <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${
+                              ticker.type === "CALL" ? "bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300" : "bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300"
+                            }`}>
+                              {ticker.type}: {ticker.symbol}
+                            </span>
+                            {autoImported?.has(ticker.symbol) && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                                <Database className="w-2.5 h-2.5" />AUTO
+                              </span>
+                            )}
+                            <span className="text-muted-foreground text-xs">
+                              (sem par {ticker.type === "CALL" ? "PUT" : "CALL"} no strike {formatBRL(ticker.strike)})
+                            </span>
                           </span>
                         </td>
                         <td className="px-2 py-2 text-right text-muted-foreground" colSpan={3}>
