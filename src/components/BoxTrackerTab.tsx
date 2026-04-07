@@ -170,21 +170,6 @@ function extractTypeFromTicker(symbol: string): "CALL" | "PUT" {
   return "CALL";
 }
 
-function dateToStr(d: Date): string {
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  return `${dd}/${mm}/${yyyy}`;
-}
-
-function strToDate(s: string): Date | undefined {
-  if (!s) return undefined;
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
-    const [d, m, y] = s.split("/").map(Number);
-    return new Date(y, m - 1, d);
-  }
-  return undefined;
-}
 
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────
 export default function BoxTracker() {
