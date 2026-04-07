@@ -152,9 +152,9 @@ export default function Header() {
           {/* RTD Live Indicator */}
           <div
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border-2 transition-all cursor-default",
+              "flex items-center gap-2 px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-widest border-2 transition-all cursor-default",
               rtdStatus === 'connected'
-                ? "bg-emerald-500/20 text-emerald-500 dark:text-emerald-400 border-emerald-500/50 shadow-[0_0_16px_rgba(16,185,129,0.5)]"
+                ? "bg-emerald-500/25 text-emerald-600 dark:text-emerald-300 border-emerald-400/60 shadow-[0_0_20px_rgba(16,185,129,0.6),0_0_40px_rgba(16,185,129,0.2)] animate-pulse"
                 : rtdStatus === 'connecting'
                 ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/50 animate-pulse shadow-[0_0_12px_rgba(234,179,8,0.4)]"
                 : "bg-muted text-muted-foreground border-border"
@@ -163,11 +163,11 @@ export default function Header() {
           >
             {rtdStatus === 'connected' ? (
               <>
-                <Wifi className="h-4 w-4" />
-                <span>LIVE</span>
-                <span className="relative flex h-2.5 w-2.5">
+                <Wifi className="h-4 w-4 drop-shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+                <span className="drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]">CONECTADO</span>
+                <span className="relative flex h-3 w-3">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
                 </span>
               </>
             ) : rtdStatus === 'connecting' ? (
