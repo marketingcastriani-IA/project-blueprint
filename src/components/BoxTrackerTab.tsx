@@ -188,6 +188,7 @@ function strToDate(s: string): Date | undefined {
 
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────
 export default function BoxTracker() {
+  const { getStrikeAndExpiry, getByFamily } = useB3Options();
   const [families, setFamilies] = useState<StockFamily[]>([]);
   const [newFamilyName, setNewFamilyName] = useState("");
   const [quantidade, setQuantidade] = useState<number>(100);
