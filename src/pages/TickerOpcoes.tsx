@@ -33,10 +33,10 @@ const filterOptionsByTicker = (items: B3Option[], rawQuery: string) => {
 };
 
 export default function TickerOpcoes() {
-  const { options, families, loading } = useB3Options();
+  const { options, families, vencimentos, loading } = useB3Options();
   const [search, setSearch] = useState("");
   const [selectedFamily, setSelectedFamily] = useState<string>("all");
-  
+  const [selectedVencimento, setSelectedVencimento] = useState<string>("all");
   const [selectedTipo, setSelectedTipo] = useState<string>("all");
   const [precoBase, setPrecoBase] = useState("");
   const [precoBaseManual, setPrecoBaseManual] = useState(false);
