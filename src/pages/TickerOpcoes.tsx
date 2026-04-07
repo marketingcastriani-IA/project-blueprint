@@ -8,12 +8,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Copy, Check, Filter, Database, ArrowUpDown, TrendingDown, TrendingUp, DollarSign, RotateCcw, Wifi, Radio, Box, Zap, Send } from "lucide-react";
+import { Search, Copy, Check, Filter, Database, ArrowUpDown, TrendingDown, TrendingUp, DollarSign, RotateCcw, Wifi, Radio, Box, Zap, Send, Info, X as XIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const normalizeTickerSearch = (value: string) =>
   value.toUpperCase().replace(/[^A-Z0-9]/g, "").trim();
@@ -362,6 +363,18 @@ export default function TickerOpcoes() {
     return selected.some((o) => o.tipo === "CALL") && selected.some((o) => o.tipo === "PUT");
   }, [filtered, selectedRows]);
 
+  // Instructional banner dismiss
+  const [showInstructions, setShowInstructions] = useState(() => {
+    try { return localStorage.getItem("opcoes-b3-instructions-dismissed") !== "true"; } catch { return true; }
+  });
+  const dismissInstructions = () => {
+    setShowInstructions(false);
+    localStorage.setItem("opcoes-b3-instructions-dismissed", "true");
+  };
+
+  // Pair counter
+  const pairCount = pairedStrikeKeys.size;
+
   if (loading) {
     return (
       <ProfessionalLayout>
@@ -397,6 +410,9 @@ export default function TickerOpcoes() {
               </h1>
               <p className="text-xs text-muted-foreground">
                 {options.length.toLocaleString()} opções disponíveis
+                {pairCount > 0 && (
+                  <span className="ml-2 text-primary font-semibold">· {pairCount} pares Call+Put</span>
+                )}
               </p>
             </div>
           </div>
@@ -419,6 +435,45 @@ export default function TickerOpcoes() {
             )}
           </div>
         </div>
+
+        {/* Instructional Banner */}
+        {showInstructions && (
+          <div className="rounded-xl border border-primary/20 bg-primary/5 backdrop-blur-sm p-4 relative">
+            <button
+              onClick={dismissInstructions}
+              className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <XIcon className="h-4 w-4" />
+            </button>
+            <div className="flex items-center gap-2 mb-3">
+              <Info className="h-4 w-4 text-primary" />
+              <span className="text-sm font-bold text-foreground">Como usar o Opções B3</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="flex items-start gap-2.5">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</span>
+                <div>
+                  <p className="text-xs font-semibold text-foreground">Filtre por família e vencimento</p>
+                  <p className="text-[10px] text-muted-foreground">Selecione um ativo (ex: PETR) e o vencimento desejado</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</span>
+                <div>
+                  <p className="text-xs font-semibold text-foreground">Selecione os tickers</p>
+                  <p className="text-[10px] text-muted-foreground">Marque com checkbox — opções com <span className="text-primary font-bold">PAR</span> são ideais para Box</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2.5">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</span>
+                <div>
+                  <p className="text-xs font-semibold text-foreground">Envie automaticamente</p>
+                  <p className="text-[10px] text-muted-foreground">Use "Tempo Real" ou "Box Tracker" para enviar os tickers selecionados</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
@@ -595,7 +650,7 @@ export default function TickerOpcoes() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            {selectedRows.size > 0 && (
+            {selectedRows.size > 0 ? (
               <>
                 <Button
                   size="sm"
@@ -618,6 +673,8 @@ export default function TickerOpcoes() {
                   </Button>
                 )}
               </>
+            ) : (
+              <span className="text-xs text-muted-foreground italic">Selecione opções na tabela para enviar</span>
             )}
             <Button
               size="sm"
@@ -690,7 +747,7 @@ export default function TickerOpcoes() {
                     return (
                       <TableRow
                         key={`${opt.ticker}-${i}`}
-                        className={`transition-colors ${selectedRows.has(opt.ticker) ? "bg-primary/5 hover:bg-primary/10" : isPaired ? "hover:bg-muted/30" : "hover:bg-muted/30 opacity-60"}`}
+                        className={`transition-colors ${selectedRows.has(opt.ticker) ? "bg-primary/5 hover:bg-primary/10" : isPaired ? "hover:bg-muted/30 border-l-2 border-l-primary/50" : "hover:bg-muted/30 opacity-60"}`}
                       >
                         <TableCell>
                           <input
@@ -704,9 +761,18 @@ export default function TickerOpcoes() {
                           <span className="flex items-center gap-1.5">
                             {opt.ticker}
                             {isPaired && (
-                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-bold" title="Par Call+Put disponível neste strike">
-                                <Box className="h-2.5 w-2.5" /> PAR
-                              </span>
+                              <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-primary/15 text-primary text-[9px] font-bold border border-primary/20 cursor-help">
+                                      <Box className="h-2.5 w-2.5" /> PAR
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="max-w-[200px]">
+                                    <p className="text-xs">Este strike tem Call e Put disponíveis — ideal para montar Box Spread</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             )}
                           </span>
                         </TableCell>

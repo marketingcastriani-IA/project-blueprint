@@ -26,14 +26,17 @@ import {
   WifiOff,
   AlertTriangle,
   TrendingUp,
-  
   Pencil,
   Save,
   ToggleLeft,
   ToggleRight,
   Bell,
   BellOff,
+  Info,
+  Database,
+  ArrowRight,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 import { statusConfig } from "@/hooks/useRtdBridge";
 
@@ -174,6 +177,7 @@ function extractTypeFromTicker(symbol: string): "CALL" | "PUT" {
 // ─── COMPONENTE PRINCIPAL ─────────────────────────────────────
 export default function BoxTracker() {
   const { getStrikeAndExpiry, getByFamily } = useB3Options();
+  const navigate = useNavigate();
   const [families, setFamilies] = useState<StockFamily[]>([]);
   const [newFamilyName, setNewFamilyName] = useState("");
   const [quantidade, setQuantidade] = useState<number>(100);
@@ -258,7 +262,14 @@ export default function BoxTracker() {
 
   const { status, rows, connect, addTicker: bridgeAddTicker } = useSharedRtdBridge();
 
-
+  // Instructional banner
+  const [showBoxInstructions, setShowBoxInstructions] = useState(() => {
+    try { return localStorage.getItem("box-tracker-instructions-dismissed") !== "true"; } catch { return true; }
+  });
+  const dismissBoxInstructions = () => {
+    setShowBoxInstructions(false);
+    localStorage.setItem("box-tracker-instructions-dismissed", "true");
+  };
 
 
   // Load families from localStorage
@@ -658,6 +669,45 @@ export default function BoxTracker() {
           <p className="text-muted-foreground text-xs">
             Inicie o <strong>ProfitRTDBridge.exe</strong> para receber dados em tempo real do Profit Pro.
           </p>
+        </div>
+      )}
+
+      {/* Instructional Banner */}
+      {showBoxInstructions && (
+        <div className="mb-5 rounded-xl border border-primary/20 bg-primary/5 backdrop-blur-sm p-4 relative">
+          <button
+            onClick={dismissBoxInstructions}
+            className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <div className="flex items-center gap-2 mb-3">
+            <Info className="h-4 w-4 text-primary" />
+            <span className="text-sm font-bold text-foreground">Como usar o Box Tracker</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="flex items-start gap-2.5">
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</span>
+              <div>
+                <p className="text-xs font-semibold text-foreground">Adicione uma família</p>
+                <p className="text-[10px] text-muted-foreground">Digite o nome base (ex: PETR, VALE) ou envie tickers automaticamente do <strong>Opções B3</strong></p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</span>
+              <div>
+                <p className="text-xs font-semibold text-foreground">Tickers automáticos</p>
+                <p className="text-[10px] text-muted-foreground">Conecte o Bridge para preços ao vivo — os tickers vindos do Opções B3 entram automaticamente</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">3</span>
+              <div>
+                <p className="text-xs font-semibold text-foreground">Ranking & Alertas</p>
+                <p className="text-[10px] text-muted-foreground">Os melhores boxes aparecem no ranking com comparação ao CDI do período</p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1159,22 +1209,25 @@ export default function BoxTracker() {
             className="w-full sm:w-24 bg-card border border-border rounded-xl px-3 py-2.5 text-sm text-center font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
           />
         </div>
-        <div className="flex gap-2 flex-1">
-          <input
-            type="text"
-            value={newFamilyName}
-            onChange={(e) => setNewFamilyName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && addFamily()}
-            placeholder="Ticker do ativo (ex: PETR4, BBDC4...)"
-            className="flex-1 bg-card border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all placeholder-muted-foreground"
-          />
-          <button
-            onClick={addFamily}
-            className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full text-sm font-bold transition-all shadow-md hover:shadow-lg active:scale-[0.97]"
-          >
-            <Plus className="w-4 h-4" />
-            Adicionar
-          </button>
+        <div className="flex flex-col gap-1 flex-1">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newFamilyName}
+              onChange={(e) => setNewFamilyName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addFamily()}
+              placeholder="Nome do ativo (ex: PETR, VALE, BBDC)"
+              className="flex-1 bg-card border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all placeholder-muted-foreground"
+            />
+            <button
+              onClick={addFamily}
+              className="flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full text-sm font-bold transition-all shadow-md hover:shadow-lg active:scale-[0.97]"
+            >
+              <Plus className="w-4 h-4" />
+              Adicionar
+            </button>
+          </div>
+          <p className="text-[10px] text-muted-foreground ml-1">Digite apenas o nome base sem número — ex: PETR, VALE, BBDC</p>
         </div>
       </div>
 
@@ -1182,8 +1235,14 @@ export default function BoxTracker() {
       {families.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground">
           <BarChart2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">Nenhuma família criada.</p>
-          <p className="text-xs mt-1">Adicione um ativo acima para começar a rastrear.</p>
+          <p className="text-sm font-semibold">Nenhuma família criada.</p>
+          <p className="text-xs mt-1">Adicione um ativo acima ou envie tickers do Opções B3.</p>
+          <button
+            onClick={() => navigate("/ticker-opcoes")}
+            className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full text-sm font-bold transition-all shadow-md hover:shadow-lg active:scale-[0.97]"
+          >
+            <Database className="w-4 h-4" /> Ir ao Opções B3 <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
       ) : (
         <div className="space-y-4">
@@ -1452,6 +1511,12 @@ function FamilyCard({
               <p className="text-xs mt-1 text-muted-foreground/70">
                 Dica: adicione pares CALL+PUT com mesmo strike (ex: BBDCD194 + BBDCP194)
               </p>
+              <a
+                href="/ticker-opcoes"
+                className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 font-semibold transition-colors"
+              >
+                <Database className="w-3 h-3" /> Ou selecione tickers no Opções B3 →
+              </a>
             </div>
           ) : (
             <table className="w-full text-xs">
