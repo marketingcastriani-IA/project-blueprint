@@ -6,7 +6,7 @@ import {
   Radio, Plus, Trash2, Wifi, WifiOff, RefreshCw,
   TrendingUp, TrendingDown, Activity, AlertTriangle, CheckCircle2,
   Terminal, Download, ExternalLink, Info, Save, CalendarIcon, Loader2,
-  Edit, DollarSign, Percent, Briefcase, Zap
+  Edit, DollarSign, Percent, Briefcase, Zap, BookOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
