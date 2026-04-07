@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { RtdBridgeProvider } from "@/contexts/RtdBridgeContext";
+import { B3OptionsProvider } from "@/contexts/B3OptionsContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AnimatePresence } from "framer-motion";
 import PageTransition from "@/components/PageTransition";
@@ -25,6 +26,7 @@ import DadosAoVivo from "./pages/DadosAoVivo";
 import BoxTracker from "./pages/BoxTracker";
 import CollarTracker from "./pages/CollarTracker";
 import CalculadoraRendaFixa from "./pages/CalculadoraRendaFixa";
+import TickerOpcoes from "./pages/TickerOpcoes";
 
 import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/ScrollToTop";
@@ -52,6 +54,7 @@ function AnimatedRoutes() {
         <Route path="/box-tracker" element={<PageTransition><BoxTracker /></PageTransition>} />
         <Route path="/collar-tracker" element={<PageTransition><CollarTracker /></PageTransition>} />
         <Route path="/calculadora-renda-fixa" element={<PageTransition><CalculadoraRendaFixa /></PageTransition>} />
+        <Route path="/ticker-opcoes" element={<PageTransition><TickerOpcoes /></PageTransition>} />
         <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
       </Routes>
     </AnimatePresence>
@@ -63,6 +66,7 @@ const App = () => (
     <ThemeProvider>
       <AuthProvider>
         <RtdBridgeProvider>
+        <B3OptionsProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -73,6 +77,7 @@ const App = () => (
             </ErrorBoundary>
           </BrowserRouter>
         </TooltipProvider>
+        </B3OptionsProvider>
         </RtdBridgeProvider>
       </AuthProvider>
     </ThemeProvider>
