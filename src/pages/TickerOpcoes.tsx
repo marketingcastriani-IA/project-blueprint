@@ -660,7 +660,14 @@ export default function TickerOpcoes() {
                       <span>P: {opp.put.ticker}</span>
                     </div>
                     <div className="flex justify-between">
+                      <span>Ativo: {precoBaseNum.toFixed(2)}</span>
+                      <span>Call: {opp.call.precoUltimo.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Put: {opp.put.precoUltimo.toFixed(2)}</span>
                       <span>Custo: {opp.custo.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
                       <span className="text-primary font-semibold">Lucro: {opp.lucro.toFixed(2)}</span>
                     </div>
                     <div className="text-xs">{opp.vencimento}</div>
