@@ -1018,48 +1018,68 @@ export default function CollarTrackerTab() {
           </div>
 
           {/* Metrics row */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 p-4 border-b border-border/50 bg-muted/10">
-            <div>
-              <p className="text-xs font-black uppercase text-muted-foreground">Lucro Máximo</p>
-              <p className="text-sm font-black text-success">{formatPercent(selectedCollar.maxProfitPct)}</p>
-              <p className="text-[10px] font-mono text-success">{formatBRL(selectedCollar.maxProfitAbs)}</p>
-            </div>
-            <div>
-              <p className="text-xs font-black uppercase text-muted-foreground">Perda Máxima</p>
-              <p className={cn("text-sm font-black", (selectedCollar.maxLossPct ?? 0) >= 0 ? "text-success" : "text-destructive")}>
-                {formatPercent(selectedCollar.maxLossPct)}
-              </p>
-              <p className={cn("text-[10px] font-mono", (selectedCollar.maxLossAbs ?? 0) >= 0 ? "text-success" : "text-destructive")}>
-                {formatBRL(selectedCollar.maxLossAbs)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-black uppercase text-muted-foreground">Net Cost/Credit</p>
-              <p className={cn("text-sm font-black", (selectedCollar.netCostCredit ?? 0) >= 0 ? "text-success" : "text-destructive")}>
-                {formatBRL(selectedCollar.netCostCredit)}
-              </p>
-              <p className="text-[10px] font-mono text-muted-foreground">
-                {(selectedCollar.netCostCredit ?? 0) >= 0 ? "Crédito" : "Débito"}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-black uppercase text-muted-foreground">Break-even</p>
-              <p className="text-sm font-black text-foreground">{formatBRL(selectedCollar.breakeven)}</p>
-            </div>
-            <div>
-              <p className="text-xs font-black uppercase text-muted-foreground">Margem Risco Zero</p>
-              <p className="text-sm font-black text-success">{formatBRL(selectedCollar.riskFreeMargin)}</p>
-            </div>
-            <div>
-              <p className="text-xs font-black uppercase text-muted-foreground">CDI Período</p>
-              <p className="text-sm font-black text-warning">{formatPercent(selectedCollar.cdiPeriodo)}</p>
-              {selectedCollar.diffCdiProfit !== null && (
-                <p className={cn("text-[10px] font-bold font-mono", selectedCollar.diffCdiProfit >= 0 ? "text-success" : "text-destructive")}>
-                  {selectedCollar.diffCdiProfit >= 0 ? "+" : ""}{selectedCollar.diffCdiProfit.toFixed(2).replace(".", ",")} pp vs CDI
-                </p>
-              )}
-            </div>
-          </div>
+          {(() => {
+            const selFamily = families.find(f => f.name === selectedCollar.familyName);
+            const qty = selFamily?.quantidade ?? 100;
+            const S0 = selectedCollar.tipo === "Alta" ? selectedCollar.stockAsk! : selectedCollar.stockBid!;
+            const investTotal = S0 * qty;
+            const lucroTotal = (selectedCollar.maxProfitAbs ?? 0) * qty;
+            const perdaTotal = (selectedCollar.maxLossAbs ?? 0) * qty;
+            return (
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-4 p-4 border-b border-border/50 bg-muted/10">
+                <div>
+                  <p className="text-xs font-black uppercase text-muted-foreground">Investimento</p>
+                  <p className="text-sm font-black text-foreground">{formatBRL(investTotal)}</p>
+                  <p className="text-[10px] font-mono text-muted-foreground">{qty} × {formatBRL(S0)}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase text-muted-foreground">Lucro Máximo</p>
+                  <p className="text-sm font-black text-success">{formatPercent(selectedCollar.maxProfitPct)}</p>
+                  <p className="text-[10px] font-mono text-success">{formatBRL(lucroTotal)}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase text-muted-foreground">Perda Máxima</p>
+                  <p className={cn("text-sm font-black", (selectedCollar.maxLossPct ?? 0) >= 0 ? "text-success" : "text-destructive")}>
+                    {formatPercent(selectedCollar.maxLossPct)}
+                  </p>
+                  <p className={cn("text-[10px] font-mono", perdaTotal >= 0 ? "text-success" : "text-destructive")}>
+                    {formatBRL(perdaTotal)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase text-muted-foreground">Net Cost/Credit</p>
+                  <p className={cn("text-sm font-black", (selectedCollar.netCostCredit ?? 0) >= 0 ? "text-success" : "text-destructive")}>
+                    {formatBRL(selectedCollar.netCostCredit)}
+                  </p>
+                  <p className="text-[10px] font-mono text-muted-foreground">
+                    Total: {formatBRL((selectedCollar.netCostCredit ?? 0) * qty)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase text-muted-foreground">Break-even</p>
+                  <p className="text-sm font-black text-foreground">{formatBRL(selectedCollar.breakeven)}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase text-muted-foreground">Margem Risco Zero</p>
+                  <p className="text-sm font-black text-success">{formatBRL(selectedCollar.riskFreeMargin)}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase text-muted-foreground">CDI Período</p>
+                  <p className="text-sm font-black text-warning">{formatPercent(selectedCollar.cdiPeriodo)}</p>
+                  {selectedCollar.diffCdiProfit !== null && (
+                    <p className={cn("text-[10px] font-bold font-mono", selectedCollar.diffCdiProfit >= 0 ? "text-success" : "text-destructive")}>
+                      {selectedCollar.diffCdiProfit >= 0 ? "+" : ""}{selectedCollar.diffCdiProfit.toFixed(2).replace(".", ",")} pp vs CDI
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs font-black uppercase text-muted-foreground">Retorno R$</p>
+                  <p className="text-sm font-black text-success">{formatBRL(lucroTotal)}</p>
+                  <p className="text-[10px] font-mono text-muted-foreground">em {qty} ações</p>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Chart */}
           <div className="px-3 py-4">
