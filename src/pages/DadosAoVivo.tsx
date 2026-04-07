@@ -41,10 +41,13 @@ import { useB3Options } from "@/contexts/B3OptionsContext";
 const fmt = (v: number | null, d = 2) =>
   v !== null && v !== undefined ? v.toFixed(d) : "—";
 
-/** Get best strike: RTD PEX > 0 first, then ticker-parsed fallback */
-const getStrike = (row: RtdRow): number | null => {
+/** Get best strike: RTD PEX > 0 first, then B3 options DB, then ticker-parsed fallback */
+const getStrike = (row: RtdRow, getStrikeAndExpiry?: (ticker: string) => { strike: number; vencimento: string; tipo: "CALL" | "PUT" } | null): number | null => {
   if (row.strike !== null && row.strike > 0) return row.strike;
   if (row.tipo === "stock") return null;
+  // Try B3 options database
+  const b3Info = getStrikeAndExpiry?.(row.ticker);
+  if (b3Info && b3Info.strike > 0) return b3Info.strike;
   const parsed = extractStrikeFromTicker(row.ticker);
   return parsed > 0 ? parsed : null;
 };
