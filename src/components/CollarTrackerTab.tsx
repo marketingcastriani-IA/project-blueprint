@@ -1770,6 +1770,9 @@ export default function CollarTrackerTab() {
                           <th className="text-right py-2 px-2">↔ Neutra</th>
                           <th className="text-right py-2 px-2">↑ Alta</th>
                           <th className="text-right py-2 px-2">CDI Per.</th>
+                          <th className="text-right py-2 px-2" title="Baixa vs CDI (pp)">↓ vs CDI</th>
+                          <th className="text-right py-2 px-2" title="Alta vs CDI (pp)">↑ vs CDI</th>
+                          <th className="text-right py-2 px-2" title="Protection Efficiency Ratio">PER</th>
                           <th className="text-center py-2 px-1">Score</th>
                           <th className="text-center py-2 px-2">Rating</th>
                         </tr>
@@ -1809,6 +1812,17 @@ export default function CollarTrackerTab() {
                               {formatPercent(c.rentAlta)}
                             </td>
                             <td className="py-2 px-2 text-right text-warning">{formatPercent(c.cdiPeriodo)}</td>
+                            <td className={cn("py-2 px-2 text-right font-bold font-mono",
+                              (c.diffCdiBaixa ?? 0) >= 0 ? "text-success" : "text-destructive")}>
+                              {c.diffCdiBaixa !== null ? `${c.diffCdiBaixa >= 0 ? "+" : ""}${c.diffCdiBaixa.toFixed(2).replace(".", ",")} pp` : "—"}
+                            </td>
+                            <td className={cn("py-2 px-2 text-right font-bold font-mono",
+                              (c.diffCdiAlta ?? 0) >= 0 ? "text-success" : "text-destructive")}>
+                              {c.diffCdiAlta !== null ? `${c.diffCdiAlta >= 0 ? "+" : ""}${c.diffCdiAlta.toFixed(2).replace(".", ",")} pp` : "—"}
+                            </td>
+                            <td className="py-2 px-2 text-right font-mono text-muted-foreground">
+                              {c.per === null ? "—" : c.per === Infinity ? "∞" : c.per.toFixed(1)}
+                            </td>
                             <td className="py-2 px-1 text-center">
                               <span className={cn("text-xs font-black px-1.5 py-0.5 rounded-full",
                                 c.qualityScore >= 80 ? "bg-success/10 text-success" :
