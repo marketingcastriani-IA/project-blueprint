@@ -1511,6 +1511,12 @@ function FamilyCard({
               <p className="text-xs mt-1 text-muted-foreground/70">
                 Dica: adicione pares CALL+PUT com mesmo strike (ex: BBDCD194 + BBDCP194)
               </p>
+              <a
+                href="/ticker-opcoes"
+                className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 font-semibold transition-colors"
+              >
+                <Database className="w-3 h-3" /> Ou selecione tickers no Opções B3 →
+              </a>
             </div>
           ) : (
             <table className="w-full text-xs">
