@@ -267,7 +267,14 @@ export default function TickerOpcoes() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                 <div>
-                  <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Preço do Ativo (R$)</label>
+                  <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-wider mb-1.5 flex items-center gap-1.5">
+                    Preço do Ativo (R$)
+                    {livePrice && livePrice > 0 && !precoBaseManual && (
+                      <span className="flex items-center gap-0.5 text-primary">
+                        <Wifi className="h-3 w-3" /> ao vivo
+                      </span>
+                    )}
+                  </label>
                   <div className="relative">
                     <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -275,7 +282,7 @@ export default function TickerOpcoes() {
                       step="0.01"
                       placeholder="Ex: 35.50"
                       value={precoBase}
-                      onChange={(e) => setPrecoBase(e.target.value)}
+                      onChange={(e) => { setPrecoBase(e.target.value); setPrecoBaseManual(true); }}
                       className="pl-9 h-9 text-sm bg-background/50 font-mono"
                     />
                   </div>
