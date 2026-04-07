@@ -1709,7 +1709,14 @@ function FamilyCard({
                       {/* CALL */}
                       <td className="px-2 py-2 bg-blue-50/50 dark:bg-blue-950/10">
                         {pair.callSymbol ? (
-                          <span className="text-blue-600 dark:text-blue-300 font-semibold">{pair.callSymbol}</span>
+                          <span className="flex items-center gap-1">
+                            <span className="text-blue-600 dark:text-blue-300 font-semibold">{pair.callSymbol}</span>
+                            {autoImported?.has(pair.callSymbol) && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                                <Database className="w-2.5 h-2.5" />AUTO
+                              </span>
+                            )}
+                          </span>
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
@@ -1719,7 +1726,14 @@ function FamilyCard({
                       {/* PUT */}
                       <td className="px-2 py-2 bg-red-50/50 dark:bg-red-950/10">
                         {pair.putSymbol ? (
-                          <span className="text-red-600 dark:text-red-300 font-semibold">{pair.putSymbol}</span>
+                          <span className="flex items-center gap-1">
+                            <span className="text-red-600 dark:text-red-300 font-semibold">{pair.putSymbol}</span>
+                            {autoImported?.has(pair.putSymbol) && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                                <Database className="w-2.5 h-2.5" />AUTO
+                              </span>
+                            )}
+                          </span>
                         ) : (
                           <span className="text-muted-foreground">—</span>
                         )}
