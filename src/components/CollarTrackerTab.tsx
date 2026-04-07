@@ -1872,7 +1872,10 @@ export default function CollarTrackerTab() {
                           <th className="text-right py-2 px-2" title="Baixa vs CDI (pp)">↓ vs CDI</th>
                           <th className="text-right py-2 px-2" title="Alta vs CDI (pp)">↑ vs CDI</th>
                           <th className="text-right py-2 px-2" title="Protection Efficiency Ratio">PER</th>
-                          <th className="text-center py-2 px-1">Score</th>
+                          <th className="text-right py-2 px-2" title="Proteção downside (%)">Prot.%</th>
+                          <th className="text-right py-2 px-2" title="Upside permitido (%)">Ups.%</th>
+                          <th className="text-center py-2 px-1" title="Quality Score CDI ponderado">QS</th>
+                          <th className="text-center py-2 px-1" title="Score Combinado: 0.5×Prot + 0.3×Ups – 0.2×Custo">SC</th>
                           <th className="text-center py-2 px-2">Rating</th>
                         </tr>
                       </thead>
