@@ -10,6 +10,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, Copy, Check, Filter, Database, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+const normalizeTickerSearch = (value: string) =>
+  value.toUpperCase().replace(/[^A-Z0-9]/g, "").trim();
+
+const dedupeOptionsByTicker = (items: B3Option[]) =>
+  Array.from(
+    new Map(items.map((item) => [normalizeTickerSearch(item.ticker), item])).values()
+  );
+
+const filterOptionsByTicker = (items: B3Option[], rawQuery: string) => {
+  const query = normalizeTickerSearch(rawQuery);
+  if (!query) return items;
+
+  const exactMatches = items.filter((item) => normalizeTickerSearch(item.ticker) === query);
+  if (exactMatches.length > 0) return exactMatches;
+
+  if (query.length >= 6) {
+    return items.filter((item) => normalizeTickerSearch(item.ticker).startsWith(query));
+  }
+
+  const prefixMatches = items.filter((item) => normalizeTickerSearch(item.ticker).startsWith(query));
+  if (prefixMatches.length > 0) return prefixMatches;
+
+  return items.filter((item) => normalizeTickerSearch(item.ticker).includes(query));
+};
 
 export default function TickerOpcoes() {
   const { options, families, vencimentos, loading } = useB3Options();
@@ -25,7 +49,7 @@ export default function TickerOpcoes() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const filtered = useMemo(() => {
-    let result = options;
+    let result = dedupeOptionsByTicker(options);
 
     if (selectedFamily !== "all") {
       result = result.filter((o) => o.family === selectedFamily);
@@ -37,20 +61,7 @@ export default function TickerOpcoes() {
       result = result.filter((o) => o.tipo === selectedTipo);
     }
     if (search.trim()) {
-      const q = search.toUpperCase().trim();
-      // Exact ticker match first
-      const exactMatch = result.filter((o) => o.ticker === q);
-      if (exactMatch.length > 0) {
-        result = exactMatch;
-      } else {
-        // Partial: prioritize ticker starts-with, then ticker contains, then family match
-        const startsWith = result.filter((o) => o.ticker.startsWith(q));
-        if (startsWith.length > 0) {
-          result = startsWith;
-        } else {
-          result = result.filter((o) => o.ticker.includes(q));
-        }
-      }
+      result = filterOptionsByTicker(result, search);
     }
     if (strikeMin) {
       const min = parseFloat(strikeMin);
@@ -61,7 +72,6 @@ export default function TickerOpcoes() {
       if (!isNaN(max)) result = result.filter((o) => o.strike <= max);
     }
 
-    // Sort
     result = [...result].sort((a, b) => {
       let cmp = 0;
       if (sortField === "ticker") cmp = a.ticker.localeCompare(b.ticker);
