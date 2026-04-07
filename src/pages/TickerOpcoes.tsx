@@ -363,6 +363,18 @@ export default function TickerOpcoes() {
     return selected.some((o) => o.tipo === "CALL") && selected.some((o) => o.tipo === "PUT");
   }, [filtered, selectedRows]);
 
+  // Instructional banner dismiss
+  const [showInstructions, setShowInstructions] = useState(() => {
+    try { return localStorage.getItem("opcoes-b3-instructions-dismissed") !== "true"; } catch { return true; }
+  });
+  const dismissInstructions = () => {
+    setShowInstructions(false);
+    localStorage.setItem("opcoes-b3-instructions-dismissed", "true");
+  };
+
+  // Pair counter
+  const pairCount = pairedStrikeKeys.size;
+
   if (loading) {
     return (
       <ProfessionalLayout>
@@ -381,18 +393,6 @@ export default function TickerOpcoes() {
   }
 
   const hasActiveFilters = search || selectedFamily !== "all" || selectedVencimento !== "all" || selectedTipo !== "all" || precoBaseNum > 0;
-
-  // Instructional banner dismiss
-  const [showInstructions, setShowInstructions] = useState(() => {
-    try { return localStorage.getItem("opcoes-b3-instructions-dismissed") !== "true"; } catch { return true; }
-  });
-  const dismissInstructions = () => {
-    setShowInstructions(false);
-    localStorage.setItem("opcoes-b3-instructions-dismissed", "true");
-  };
-
-  // Pair counter
-  const pairCount = pairedStrikeKeys.size;
 
   return (
     <ProfessionalLayout>
