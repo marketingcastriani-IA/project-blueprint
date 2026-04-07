@@ -329,7 +329,7 @@ export default function PayoffChart({
 
           <ChartContainer config={chartConfig} className="h-[450px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={chartData} margin={{ top: 25, right: 25, left: 5, bottom: 20 }} customized={<ZoneLabels />}>
+              <ComposedChart data={chartData} margin={{ top: 25, right: 25, left: 5, bottom: 20 }}>
                 <defs>
                   <linearGradient id="gainZoneGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="hsl(142, 76%, 40%)" stopOpacity={0.55} />
