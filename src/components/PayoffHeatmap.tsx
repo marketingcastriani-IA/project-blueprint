@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { PayoffPoint, Leg } from '@/lib/types';
-import { calculatePayoffAtExpiry, calculateOptionPrice } from '@/lib/payoff';
+import { calculatePayoffAtExpiry, calculateOptionPrice, calculateCDIReturn } from '@/lib/payoff';
 import {
   ComposedChart,
   Line,
