@@ -92,6 +92,7 @@ interface SavedFamily {
   name: string;
   tickers: string[];
   autoImported?: string[];
+  quantidade?: number;
 }
 
 interface AlertEntry {
@@ -465,6 +466,7 @@ export default function CollarTrackerTab() {
         const loaded: StockFamily[] = parsed.map((sf) => ({
           id: generateId(),
           name: sf.name,
+          quantidade: sf.quantidade ?? 100,
           tickers: sf.tickers.map((sym) => {
             const b3Info = getStrikeAndExpiry(sym);
             return {
@@ -522,7 +524,7 @@ export default function CollarTrackerTab() {
     const name = newFamilyName.trim().toUpperCase();
     if (!name) return;
     if (families.find((f) => f.name === name)) return;
-    setFamilies((prev) => [...prev, { id: generateId(), name, tickers: [], expanded: true }]);
+    setFamilies((prev) => [...prev, { id: generateId(), name, tickers: [], expanded: true, quantidade: 100 }]);
     setNewFamilyName("");
     if (status === "connected") bridgeAddTicker(name);
   }, [newFamilyName, families, status, bridgeAddTicker]);
