@@ -15,6 +15,7 @@ export default function Header() {
   const { signOut, user } = useAuth();
   const { theme, setTheme } = useTheme();
   const access = useAccessControl();
+  const { status: rtdStatus } = useSharedRtdBridge();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
