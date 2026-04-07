@@ -1548,8 +1548,14 @@ export default function CollarTrackerTab() {
                               <td className="py-2 px-2 text-right font-black text-success">
                                 {formatPercent(c.maxProfitPct)}
                               </td>
+                              <td className="py-2 px-2 text-right font-black text-success font-mono">
+                                {c.maxProfitAbs !== null ? formatBRL(c.maxProfitAbs * family.quantidade) : "—"}
+                              </td>
                               <td className={cn("py-2 px-2 text-right font-bold", (c.maxLossPct ?? 0) >= 0 ? "text-success" : "text-destructive")}>
                                 {formatPercent(c.maxLossPct)}
+                              </td>
+                              <td className="py-2 px-2 text-right font-mono font-bold text-muted-foreground">
+                                {c.tipo === "Alta" && c.stockAsk ? formatBRL(c.stockAsk * family.quantidade) : c.tipo === "Baixa" && c.stockBid ? formatBRL(c.stockBid * family.quantidade) : "—"}
                               </td>
                               <td className="py-2 px-2 text-right font-mono font-bold text-foreground">
                                 {formatBRL(c.breakeven)}
