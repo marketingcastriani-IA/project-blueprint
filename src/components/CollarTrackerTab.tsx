@@ -1506,7 +1506,9 @@ export default function CollarTrackerTab() {
                           <th className="text-right py-2 px-2">P Put</th>
                           <th className="text-right py-2 px-2 font-black" title="Crédito/Débito líquido">Net</th>
                           <th className="text-right py-2 px-2 font-black" title="Lucro máximo %">Lucro Máx%</th>
+                          <th className="text-right py-2 px-2 font-black" title="Lucro máximo em R$ (qty)">Lucro R$</th>
                           <th className="text-right py-2 px-2" title="Perda máxima %">Perda Máx%</th>
+                          <th className="text-right py-2 px-2" title="Investimento total (qty × preço)">Invest. R$</th>
                           <th className="text-right py-2 px-2" title="Break-even">B.E.</th>
                           <th className="text-right py-2 px-2" title="Margem acima de risco zero">Margem</th>
                           <th className="text-center py-2 px-2">Venc.</th>
