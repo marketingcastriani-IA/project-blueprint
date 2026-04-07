@@ -3,7 +3,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import { Button } from '@/components/ui/button';
 
-import { Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, ShieldCheck, Briefcase, Settings, Zap, PieChart, HelpCircle, Sparkles, Palette, BookOpen, Radio, BarChart2, Calculator } from 'lucide-react';
+import { Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, ShieldCheck, Briefcase, Settings, Zap, PieChart, HelpCircle, Sparkles, Palette, BookOpen, Radio, BarChart2, Calculator, Database } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
@@ -33,6 +33,7 @@ export default function Header() {
     { label: 'Tempo Real', path: '/dados-ao-vivo', icon: Radio },
     { label: 'Rastrear Box', path: '/box-tracker', icon: BarChart2 },
     ...(collarEnabled ? [{ label: 'Rastrear Collar', path: '/collar-tracker', icon: ShieldCheck }] : []),
+    { label: 'Opções B3', path: '/ticker-opcoes', icon: Database },
   ];
 
   // Secondary nav items (inside "More" dropdown on md, visible on xl+)
