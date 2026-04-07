@@ -26,7 +26,7 @@ import {
   WifiOff,
   AlertTriangle,
   TrendingUp,
-  CalendarIcon,
+  
   Pencil,
   Save,
   ToggleLeft,
@@ -36,9 +36,9 @@ import {
 } from "lucide-react";
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 import { statusConfig } from "@/hooks/useRtdBridge";
-import { Calendar } from "@/components/ui/calendar";
+
 import { useB3Options } from "@/contexts/B3OptionsContext";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
 import { cn } from "@/lib/utils";
 
 // ─── TIPOS ───────────────────────────────────────────────────
