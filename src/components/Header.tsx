@@ -98,6 +98,7 @@ export default function Header() {
 
         {/* Right actions */}
         <div className="flex items-center gap-1.5 shrink-0">
+          <InstallAppButton />
           {isFree && (
             <Button 
               onClick={() => navigate('/settings')}
