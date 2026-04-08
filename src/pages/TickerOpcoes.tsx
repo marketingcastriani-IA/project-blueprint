@@ -677,22 +677,22 @@ export default function TickerOpcoes() {
         )}
 
         {/* Quick-select top stocks — compact dark cards */}
-        <div className="rounded-xl border border-border/30 bg-card/20 backdrop-blur-md overflow-hidden">
-          <div className="px-4 py-2 border-b border-border/15 flex items-center gap-2">
+        <div className="rounded-xl border border-border/40 bg-gradient-to-b from-card/80 to-card/40 backdrop-blur-md overflow-hidden shadow-lg shadow-black/10" style={{ perspective: "800px" }}>
+          <div className="px-4 py-2.5 border-b border-border/30 flex items-center gap-2">
             <Zap className="h-3.5 w-3.5 text-primary" />
             <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/80">Seleção Rápida</span>
-            <span className="text-[9px] text-muted-foreground ml-1">Top 15</span>
+            <span className="text-[9px] text-muted-foreground ml-1">Top 18</span>
             {selectedFamily !== "all" && (
               <button
                 onClick={() => setSelectedFamily("all")}
-                className="ml-auto text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                className="ml-auto text-xs font-semibold text-destructive hover:text-destructive/80 flex items-center gap-1 transition-colors bg-destructive/10 hover:bg-destructive/20 px-2.5 py-1 rounded-md border border-destructive/30"
               >
-                <XIcon className="h-3 w-3" /> Limpar
+                <XIcon className="h-3.5 w-3.5" /> Limpar
               </button>
             )}
           </div>
-          <div className="px-3 py-2.5 border-t border-border/50">
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-px bg-border/40 rounded-lg overflow-hidden">
+          <div className="px-3 py-3 border-t border-border/20">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-px bg-border/50 rounded-lg overflow-hidden shadow-inner shadow-black/5" style={{ transform: "rotateX(1deg)" }}>
               {TOP_STOCKS.map((stock, index) => {
                 const isActive = selectedFamily === stock.family;
                 const familyExists = families.includes(stock.family);
@@ -704,13 +704,13 @@ export default function TickerOpcoes() {
                     initial={{ opacity: 0, y: 12, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ duration: 0.3, delay: index * 0.04, ease: "easeOut" }}
-                    whileHover={{ scale: 1.03 }}
+                    whileHover={{ scale: 1.03, boxShadow: "0 4px 16px hsl(var(--primary) / 0.15)" }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => setSelectedFamily(isActive ? "all" : stock.family)}
-                    className={`group relative flex items-center gap-2 px-3.5 py-2.5 transition-colors duration-200 ${
+                    className={`group relative flex items-center gap-2 px-3.5 py-3 transition-colors duration-200 ${
                       isActive
-                        ? "bg-primary/15 shadow-inner shadow-primary/10"
-                        : "bg-card/80 hover:bg-muted/60"
+                        ? "bg-primary/15 shadow-[inset_0_2px_8px_hsl(var(--primary)/0.2)]"
+                        : "bg-gradient-to-b from-card to-card/70 hover:from-muted/80 hover:to-muted/40"
                     }`}
                   >
                     <span className={`text-sm font-extrabold tracking-wide ${
