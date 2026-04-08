@@ -349,7 +349,9 @@ export default function CollarTrackerTab() {
   const [editingCdi, setEditingCdi] = useState(false);
   const [cdiInput, setCdiInput] = useState(String(cdiAnual).replace(".", ","));
 
-  // ─── NOTIFICAÇÕES ──────────────────────────────────────────
+  const [descontarIR, setDescontarIR] = useState<boolean>(() => {
+    try { return localStorage.getItem(IR_ENABLED_KEY) === "true"; } catch { return false; }
+  });
   const [notifEnabled, setNotifEnabled] = useState<boolean>(() => {
     try { return localStorage.getItem(NOTIF_ENABLED_KEY) === "true"; } catch { return false; }
   });
