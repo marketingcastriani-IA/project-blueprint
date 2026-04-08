@@ -46,7 +46,7 @@ interface SavedFamily {
 const BOX_STORAGE_KEY = "box-tracker-families";
 const COLLAR_STORAGE_KEY = "collar-tracker-families";
 
-// Top 15 most liquid B3 stocks for quick selection
+// Top 18 most liquid B3 stocks for quick selection
 const TOP_STOCKS = [
   { family: "PETR", label: "PETR", name: "Petrobras", sector: "Energia" },
   { family: "VALE", label: "VALE", name: "Vale", sector: "Mineração" },
@@ -63,6 +63,9 @@ const TOP_STOCKS = [
   { family: "GGBR", label: "GGBR", name: "Gerdau", sector: "Aço" },
   { family: "CSNA", label: "CSNA", name: "CSN", sector: "Siderurgia" },
   { family: "COGN", label: "COGN", name: "Cogna", sector: "Educação" },
+  { family: "HAPV", label: "HAPV", name: "Hapvida", sector: "Saúde" },
+  { family: "CYRE", label: "CYRE", name: "Cyrela", sector: "Imóveis" },
+  { family: "RADL", label: "RADL", name: "Raia", sector: "Farmácia" },
 ];
 
 export default function TickerOpcoes() {
