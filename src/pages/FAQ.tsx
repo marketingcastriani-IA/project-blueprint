@@ -100,6 +100,7 @@ export default function FAQ() {
                 ocr: faqNovaAnalise,
                 payoff: faqPayoff,
                 cdi: faqCdi,
+                calcCdi: faqCdi,
                 historico: faqHistorico,
                 portfolio: faqPortfolio,
                 ai: faqAnaliseDetalhe,
