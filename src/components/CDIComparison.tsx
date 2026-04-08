@@ -111,7 +111,7 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
 
   // Sync external expiryDate prop
   useEffect(() => {
-    if (expiryDate && !selectedDate) {
+    if (expiryDate) {
       setSelectedDate(expiryDate);
     }
   }, [expiryDate]);

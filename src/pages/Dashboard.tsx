@@ -248,6 +248,7 @@ export default function Dashboard() {
     if (inferredExpiry && !hasManualExpiry) {
       const entry = new Date(entryDate + 'T00:00:00');
       setDaysToExpiry(countBusinessDays(entry, inferredExpiry));
+      setExpiryDate(inferredExpiry);
     }
   }, [inferredExpiry, entryDate, hasManualExpiry]);
 
