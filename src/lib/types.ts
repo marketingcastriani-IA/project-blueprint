@@ -43,7 +43,7 @@ export interface AIAnalysisResult {
     flat: string;
     down: string;
   };
-  cdi_comparison?: string;
+  cdi_comparison: string;
   strategy_name?: string;
 }
 
