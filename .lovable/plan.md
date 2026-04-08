@@ -1,50 +1,166 @@
 
 
-## Melhorias no Gráfico de Payoff 2D
+# Melhorias por Aba/Funcionalidade — Opções PRO X
 
-### Problemas Identificados na Imagem
+## 1. Dashboard (Análise) — 813 linhas, arquivo monolítico
 
-1. **Linha ZERO pouco visível** - apesar de já ter sido melhorada, o label "ZERO" fica cortado no canto direito
-2. **Faixa verde/vermelha com gradiente fraco** - a zona de ganho é muito translúcida, difícil de distinguir
-3. **Tooltip bloqueia visão do gráfico** - ocupa muito espaço na área central
-4. **Linha CDI sem contexto** - mostra valor mas não destaca se a estratégia supera o CDI
-5. **Curva T+0 (azul tracejada) na zona negativa sem explicação** - usuário pode não entender o que significa
-6. **Falta de labels diretos no gráfico** - "ZONA DE LUCRO" e "ZONA DE PERDA" escritos nas faixas coloridas facilitariam leitura instantânea
-7. **Eixo Y com poucas marcações** - dificulta leitura de valores intermediários
+**Problemas:**
+- Arquivo gigante (813 linhas) com `PortfolioSummary` embutido — dificulta manutenção
+- `PortfolioSummary` faz fetch direto no `useEffect` sem TanStack Query (sem cache, sem retry, sem dedup)
+- `aiAnalysis` tipado como `any` — viola as regras do projeto
+- Botão "Analisar IA" com `animate-pulse` permanente é distrativo
+- Barra flutuante inferior repete os mesmos botões que já existem acima — confuso
+- Nenhum feedback de progresso na análise de IA (só spinner genérico)
 
-### Plano de Melhorias
+**Melhorias:**
+- Extrair `PortfolioSummary` para componente separado com `useQuery`
+- Criar tipo `AIAnalysisResult` em `types.ts` e tipar corretamente
+- Substituir `animate-pulse` no botão IA por destaque estático (glow) — pulsar só enquanto carrega
+- Adicionar barra de progresso com etapas na análise IA ("Enviando estrutura → Processando → Gerando relatório")
+- Barra flutuante: mostrar apenas quando o usuário scrollou para baixo (longe dos botões originais)
 
-**1. Labels "ZONA DE LUCRO" e "ZONA DE PERDA" no gráfico**
-- Adicionar texto fixo semi-transparente dentro das áreas verde e vermelha usando `customized` prop ou `Label` do Recharts
-- Posicionados no centro vertical de cada zona
+---
 
-**2. Faixas verde/vermelha mais intensas**
-- Aumentar `stopOpacity` do gradiente de 0.45 para 0.55 (ganho) e 0.45 para 0.55 (perda)
-- Adicionar borda sutil nas áreas (stroke leve verde/vermelho)
+## 2. Operações (History) — 566 linhas
 
-**3. Linha Zero melhorada**
-- Mover label "ZERO" para `insideLeft` para não ser cortado
-- Aumentar contraste com cor sólida e fundo
+**Problemas:**
+- Não tem paginação — carrega todas as análises de uma vez
+- Busca é apenas por nome, não por ativo subjacente ou tipo de estratégia
+- Sem confirmação ao deletar análise (ação irreversível)
 
-**4. Indicador CDI vs Estratégia**
-- Adicionar uma anotação visual quando a curva de payoff cruza a linha CDI, indicando "Supera CDI" acima e "Abaixo CDI" abaixo
-- Label "CDI" mais legível com fundo/badge
+**Melhorias:**
+- Adicionar paginação (20 por página) ou scroll infinito
+- Expandir busca para incluir `underlying_asset` e `ai_suggestion`
+- Dialog de confirmação antes de deletar ("Tem certeza? Esta ação não pode ser desfeita")
 
-**5. Tooltip mais compacto**
-- Reduzir padding e espaçamento
-- Mover Greeks para um painel separado fixo (fora do tooltip) para não poluir
+---
 
-**6. Mini-legenda integrada no gráfico**
-- Adicionar legenda compacta no canto superior esquerdo do chart (dentro do gráfico) ao invés de depender só do tooltip
+## 3. Portfólio — 577 linhas
 
-### Arquivos Modificados
+**Problemas:**
+- Gráfico de evolução P&L usa gradiente fixo verde mesmo quando resultado é negativo
+- Sem comparação direta com benchmark (CDI acumulado no mesmo período)
 
-- `src/components/PayoffChart.tsx` - todas as melhorias visuais acima
+**Melhorias:**
+- Gradiente do gráfico muda para vermelho quando P&L acumulado é negativo
+- Adicionar linha CDI acumulada no gráfico de evolução para comparação visual
 
-### Detalhes Técnicos
+---
 
-- Labels de zona usarão `<text>` via `customized` no ComposedChart, posicionados com base no domínio Y
-- Gradientes atualizados nos `<linearGradient>` existentes
-- Legenda interna via componente `<foreignObject>` ou posicionamento absoluto sobre o chart container
-- Tooltip simplificado movendo Greeks para exibição fixa abaixo das métricas
+## 4. Rastrear Box — 1975 linhas (MUITO grande)
+
+**Problemas:**
+- Arquivo com quase 2000 linhas — extremamente difícil de manter
+- Configurações salvas em localStorage (perdem-se ao trocar de dispositivo)
+- Não há loading state ao importar tickers do banco B3
+
+**Melhorias:**
+- Refatorar em sub-componentes: `BoxFamilyManager`, `BoxResultsTable`, `BoxAlertPanel`
+- Adicionar skeleton/spinner ao importar tickers
+- Preparar migração de localStorage para Supabase (conforme roadmap)
+
+---
+
+## 5. Collar Tracker — 1788 linhas
+
+**Mesmos problemas do Box Tracker:**
+- Arquivo monolítico
+- localStorage para persistência
+
+**Melhorias adicionais:**
+- Compartilhar componentes comuns com Box (tabela de resultados, painel de alertas, ranking com troféus)
+- Criar componentes reutilizáveis: `TrackerAlertPanel`, `TrackerRanking`, `TrackerFamilyManager`
+
+---
+
+## 6. Tempo Real (DadosAoVivo) — 840 linhas
+
+**Problemas:**
+- Sem auto-save das pernas adicionadas (se recarregar a página, perde tudo)
+- Gráfico de payoff recalcula a cada render sem debounce
+
+**Melhorias:**
+- Salvar estado das pernas no sessionStorage para persistir entre reloads
+- Debounce no recalculo do payoff (300ms)
+
+---
+
+## 7. Opções B3 (TickerOpcoes) — 967 linhas
+
+**Problemas:**
+- Tabela renderiza todos os resultados filtrados sem virtualização (pode ficar lento com 5000+ opções)
+- Sem indicador de "última atualização" dos dados
+
+**Melhorias:**
+- Implementar virtualização da tabela (react-window ou limitar exibição a 100 rows com "carregar mais")
+- Mostrar timestamp da última atualização do banco de opções
+
+---
+
+## 8. Calculadora CDI x Opções — 651 linhas
+
+**Problemas:**
+- Sem validação: aceita datas de vencimento no passado sem aviso
+- Gráfico de barras não mostra valores exatos nas barras
+
+**Melhorias:**
+- Validar que data de vencimento > data de início
+- Adicionar labels com valores nas barras do gráfico
+
+---
+
+## 9. Diversificador — 1013 linhas
+
+**Problemas:**
+- Cores fixas hardcoded, sem preview visual antes de selecionar
+- Percentuais podem somar mais de 100% sem aviso claro
+
+**Melhorias:**
+- Adicionar validação visual em tempo real quando soma > 100% (borda vermelha + aviso)
+- Preview da cor selecionada no seletor
+
+---
+
+## 10. Header — 291 linhas
+
+**Problemas:**
+- Menu mobile não fecha ao navegar (precisa clicar X)
+- Indicador RTD com `animate-pulse` constante consome recursos visuais
+
+**Melhorias:**
+- Fechar menu mobile automaticamente ao clicar em qualquer link
+- RTD: pulsar apenas nos primeiros 3 segundos após conectar, depois ficar estático
+
+---
+
+## 11. Melhorias Gerais (Cross-cutting)
+
+| Area | Melhoria |
+|------|----------|
+| Performance | Dashboard.tsx deve ser refatorado em 4-5 componentes menores |
+| Segurança | Admin check via localStorage deve migrar para Supabase RLS (roadmap) |
+| UX | Adicionar skeleton loading em TODAS as páginas (algumas só mostram tela branca) |
+| Dados | Box/Collar: migrar de localStorage para Supabase para multi-dispositivo |
+| Acessibilidade | Botões sem `aria-label`, tabelas sem `caption` |
+
+---
+
+## Prioridade Sugerida
+
+1. **Refatorar Dashboard.tsx** em componentes menores (maior impacto em manutenção)
+2. **Confirmação de delete** no History (previne perda de dados)
+3. **Paginação** no History (performance)
+4. **Virtualização** da tabela Opções B3 (performance com dados grandes)
+5. **Validações** na Calculadora CDI (UX)
+6. **Barra flutuante inteligente** no Dashboard (UX)
+7. **Refatorar Box/Collar** em sub-componentes (manutenção)
+
+---
+
+## Detalhes Técnicos
+
+- Refatoração do Dashboard: extrair `PortfolioSummary`, `InputModeSelector`, `AnalysisToolbar`, `FloatingBar` como componentes em `src/components/dashboard/`
+- Paginação: usar `.range()` do Supabase com estado `page` e `pageSize`
+- Virtualização: `react-window` com `FixedSizeList` na tabela de opções
+- Tipo AI: criar `interface AIAnalysisResult { summary: string; risk_level: string; pros: string[]; cons: string[]; verdict: string; ... }` em `types.ts`
 
