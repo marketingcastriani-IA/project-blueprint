@@ -29,6 +29,21 @@ export interface PayoffPoint {
   profitToday: number;
 }
 
+export interface AIAnalysisResult {
+  summary: string;
+  risk_level: string;
+  pros: string[];
+  cons: string[];
+  verdict: string;
+  scenarios?: {
+    alta?: string;
+    lateral?: string;
+    baixa?: string;
+  };
+  cdi_comparison?: string;
+  strategy_name?: string;
+}
+
 export interface AnalysisMetrics {
   maxGain: number | 'Ilimitado';
   maxLoss: number | 'Ilimitado';
