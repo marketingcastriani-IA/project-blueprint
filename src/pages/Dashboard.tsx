@@ -154,10 +154,18 @@ export default function Dashboard() {
     }
     if (legs.length === 0) { toast.error('Adicione pernas primeiro.'); return; }
     setLoadingAI(true);
+    setAiProgress(10);
     setTimeout(() => {
       aiSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 200);
+    
+    // Progress simulation
+    const progressInterval = setInterval(() => {
+      setAiProgress(prev => Math.min(prev + 15, 85));
+    }, 800);
+    
     try {
+      setAiProgress(30);
       const { data, error } = await supabase.functions.invoke('analyze-structure', {
         body: {
           legs,
@@ -167,8 +175,10 @@ export default function Dashboard() {
       });
       if (error) throw error;
       
+      setAiProgress(90);
+      
       // Frontend validation: force AI coherence with calculated metrics
-      const validated = { ...data };
+      const validated = { ...data } as AIAnalysisResult;
       if (metrics.isRiskFree && validated.risk_level !== 'Baixo') {
         validated.risk_level = 'Baixo';
         console.warn('[AI Validation] Forçado risk_level para Baixo (isRiskFree=true)');
@@ -178,20 +188,24 @@ export default function Dashboard() {
           !c.toLowerCase().includes('prejuízo') && !c.toLowerCase().includes('perda') && !c.toLowerCase().includes('risco')
         );
       }
-      // Check if AI mentions "crédito" when it's actually a debit
-      if (metrics.montageTotal > 0 && validated.summary) {
+      if (metrics.montageTotal && metrics.montageTotal > 0 && validated.summary) {
         validated.summary = validated.summary.replace(/crédito líquido/gi, 'custo da montagem');
       }
       
       setAiAnalysis(validated);
+      setAiProgress(100);
       
       toast.success('Análise de IA concluída!');
       setTimeout(() => {
         aiSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error('Erro na IA');
-    } finally { setLoadingAI(false); }
+    } finally { 
+      clearInterval(progressInterval);
+      setLoadingAI(false); 
+      setTimeout(() => setAiProgress(0), 500);
+    }
   };
 
   const saveAnalysis = async () => {
