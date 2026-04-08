@@ -422,7 +422,11 @@ export default function CalculadoraRendaFixa() {
                 Rendimento Renda Fixa
               </h2>
 
-              {!resultado ? (
+              {dateError ? (
+                <p className="text-sm text-destructive py-8 text-center font-bold">
+                  ⚠️ {dateError}
+                </p>
+              ) : !resultado ? (
                 <p className="text-sm text-muted-foreground py-8 text-center">
                   Selecione a data de vencimento para ver os resultados.
                 </p>
