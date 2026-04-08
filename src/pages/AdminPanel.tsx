@@ -250,6 +250,16 @@ export default function AdminPanel() {
   const [emailImageDataUrl, setEmailImageDataUrl] = useState<string | null>(null);
   const [emailImagePreview, setEmailImagePreview] = useState<string | null>(null);
   const [emailAttachment, setEmailAttachment] = useState<{ name: string; content: string; type: string } | null>(null);
+  // Feature flags state
+  const FEATURE_KEYS = ['feature-collar-tracker', 'feature-box-tracker', 'feature-calc-cdi', 'feature-diversificador', 'feature-dados-ao-vivo'];
+  const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>(() => {
+    const flags: Record<string, boolean> = {};
+    FEATURE_KEYS.forEach(key => {
+      flags[key] = localStorage.getItem(key) !== 'false';
+    });
+    return flags;
+  });
+
   // Mercado Pago Config
   const [mpPublicKey, setMpPublicKey] = useState('');
   const [mpAccessToken, setMpAccessToken] = useState('');
