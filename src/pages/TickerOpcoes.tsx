@@ -688,7 +688,7 @@ export default function TickerOpcoes() {
             )}
           </div>
           <div className="px-3 py-2.5">
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {TOP_STOCKS.map((stock) => {
                 const isActive = selectedFamily === stock.family;
                 const familyExists = families.includes(stock.family);
@@ -698,27 +698,27 @@ export default function TickerOpcoes() {
                   <button
                     key={stock.family}
                     onClick={() => setSelectedFamily(isActive ? "all" : stock.family)}
-                    className={`group relative flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 transition-all duration-150 ${
+                    className={`group relative flex items-center gap-2 rounded-xl px-3.5 py-2 transition-all duration-200 ${
                       isActive
-                        ? "bg-primary/20 border border-primary/50 shadow-md shadow-primary/15"
-                        : "bg-muted/40 border border-border/30 hover:bg-muted/60 hover:border-border/50"
+                        ? "bg-primary/20 border border-primary/50 shadow-lg shadow-primary/20 scale-[1.03]"
+                        : "bg-muted/50 border border-border/30 hover:bg-muted/70 hover:border-primary/30 hover:shadow-md hover:shadow-primary/10 hover:scale-[1.02]"
                     }`}
                   >
-                    <span className={`text-xs font-extrabold tracking-wide ${
-                      isActive ? "text-primary" : "text-foreground/80 group-hover:text-foreground"
+                    <span className={`text-sm font-extrabold tracking-wide ${
+                      isActive ? "text-primary" : "text-foreground/80 group-hover:text-primary/80"
                     } transition-colors`}>
                       {stock.label}
                     </span>
-                    <span className={`text-[9px] ${
-                      isActive ? "text-primary/60" : "text-muted-foreground/60"
-                    }`}>
+                    <span className={`text-[10px] ${
+                      isActive ? "text-primary/60" : "text-muted-foreground/60 group-hover:text-muted-foreground/80"
+                    } transition-colors`}>
                       {stock.name}
                     </span>
-                    <span className={`text-[8px] font-mono px-1 py-px rounded ${
+                    <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md ${
                       isActive
                         ? "bg-primary/15 text-primary/70"
-                        : "bg-background/30 text-muted-foreground/50"
-                    }`}>
+                        : "bg-background/40 text-muted-foreground/50 group-hover:bg-primary/10 group-hover:text-primary/60"
+                    } transition-colors`}>
                       {count}
                     </span>
                   </button>
