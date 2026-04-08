@@ -106,7 +106,10 @@ interface AlertEntry {
 
 // ─── CONSTANTES ──────────────────────────────────────────────
 const STORAGE_KEY = "collar-tracker-families";
-const CDI_ANUAL_DEFAULT = 14.15;
+const CDI_ANUAL_DEFAULT = 14.65;
+const IR_CDI = 0.225; // 22,5%
+const IR_COLLAR = 0.15; // 15%
+const IR_ENABLED_KEY = "collar-tracker-ir-enabled";
 const CDI_STORAGE_KEY = "collar-tracker-cdi-anual";
 const NOTIF_ENABLED_KEY = "collar-tracker-notif-enabled";
 const NOTIF_THRESHOLD_KEY = "collar-tracker-notif-threshold";
