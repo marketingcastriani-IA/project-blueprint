@@ -1003,6 +1003,9 @@ export default function CollarTrackerTab() {
                     {tipoCfg.emoji} {tipoCfg.label}
                   </span>
                   <ShieldCheck className="w-3.5 h-3.5 text-success" />
+                  <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-foreground text-background">
+                    {c.rankLabel}
+                  </span>
                 </div>
                 <p className="text-lg font-black text-foreground">{c.familyName}</p>
 
