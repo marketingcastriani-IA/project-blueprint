@@ -250,6 +250,16 @@ export default function AdminPanel() {
   const [emailImageDataUrl, setEmailImageDataUrl] = useState<string | null>(null);
   const [emailImagePreview, setEmailImagePreview] = useState<string | null>(null);
   const [emailAttachment, setEmailAttachment] = useState<{ name: string; content: string; type: string } | null>(null);
+  // Feature flags state
+  const FEATURE_KEYS = ['feature-collar-tracker', 'feature-box-tracker', 'feature-calc-cdi', 'feature-diversificador', 'feature-dados-ao-vivo'];
+  const [featureFlags, setFeatureFlags] = useState<Record<string, boolean>>(() => {
+    const flags: Record<string, boolean> = {};
+    FEATURE_KEYS.forEach(key => {
+      flags[key] = localStorage.getItem(key) !== 'false';
+    });
+    return flags;
+  });
+
   // Mercado Pago Config
   const [mpPublicKey, setMpPublicKey] = useState('');
   const [mpAccessToken, setMpAccessToken] = useState('');
@@ -921,19 +931,21 @@ export default function AdminPanel() {
                     </div>
                     <button
                       onClick={() => {
-                        const current = localStorage.getItem(flag.key) !== 'false';
-                        localStorage.setItem(flag.key, current ? 'false' : 'true');
-                        toast.success(`${flag.label} ${current ? 'desativado' : 'ativado'}!`);
+                        const current = featureFlags[flag.key] ?? true;
+                        const newVal = !current;
+                        localStorage.setItem(flag.key, newVal ? 'true' : 'false');
+                        setFeatureFlags(prev => ({ ...prev, [flag.key]: newVal }));
+                        toast.success(`${flag.label} ${newVal ? 'ativado' : 'desativado'}!`);
                         window.dispatchEvent(new Event('storage'));
                       }}
                       className={cn(
                         "px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all",
-                        localStorage.getItem(flag.key) !== 'false'
+                        featureFlags[flag.key]
                           ? "bg-success text-success-foreground shadow-[0_0_12px_hsl(var(--success)/0.4)]"
                           : "bg-destructive text-destructive-foreground"
                       )}
                     >
-                      {localStorage.getItem(flag.key) !== 'false' ? 'ATIVO' : 'DESATIVADO'}
+                      {featureFlags[flag.key] ? 'ATIVO' : 'DESATIVADO'}
                     </button>
                   </div>
                 ))}
