@@ -1109,17 +1109,30 @@ export default function CollarTrackerTab() {
                   <p className="text-sm font-black text-success">{formatBRL(selectedCollar.riskFreeMargin)}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-black uppercase text-muted-foreground">CDI Período</p>
-                  <p className="text-sm font-black text-warning">{formatPercent(selectedCollar.cdiPeriodo)}</p>
-                  {selectedCollar.diffCdiProfit !== null && (
-                    <p className={cn("text-[10px] font-bold font-mono", selectedCollar.diffCdiProfit >= 0 ? "text-success" : "text-destructive")}>
-                      {selectedCollar.diffCdiProfit >= 0 ? "+" : ""}{selectedCollar.diffCdiProfit.toFixed(2).replace(".", ",")} pp vs CDI
-                    </p>
-                  )}
+                  <p className="text-xs font-black uppercase text-muted-foreground">
+                    CDI {descontarIR ? "Líq (22,5%)" : "Bruto"}
+                  </p>
+                  <p className="text-sm font-black text-warning">
+                    {formatPercent(descontarIR ? (selectedCollar.cdiPeriodo ?? 0) * (1 - IR_CDI) : selectedCollar.cdiPeriodo)}
+                  </p>
+                  {(() => {
+                    const collarLiq = descontarIR ? (selectedCollar.maxProfitPct ?? 0) * (1 - IR_COLLAR) : (selectedCollar.maxProfitPct ?? 0);
+                    const cdiLiq = descontarIR ? (selectedCollar.cdiPeriodo ?? 0) * (1 - IR_CDI) : (selectedCollar.cdiPeriodo ?? 0);
+                    const diff = collarLiq - cdiLiq;
+                    return (
+                      <p className={cn("text-[10px] font-bold font-mono", diff >= 0 ? "text-success" : "text-destructive")}>
+                        {diff >= 0 ? "+" : ""}{diff.toFixed(2).replace(".", ",")} pp vs CDI
+                      </p>
+                    );
+                  })()}
                 </div>
                 <div>
-                  <p className="text-xs font-black uppercase text-muted-foreground">Retorno R$</p>
-                  <p className="text-sm font-black text-success">{formatBRL(lucroTotal)}</p>
+                  <p className="text-xs font-black uppercase text-muted-foreground">
+                    Retorno {descontarIR ? "Líq (15%)" : "Bruto"}
+                  </p>
+                  <p className="text-sm font-black text-success">
+                    {formatBRL(descontarIR ? lucroTotal * (1 - IR_COLLAR) : lucroTotal)}
+                  </p>
                   <p className="text-[10px] font-mono text-muted-foreground">em {qty} ações</p>
                 </div>
               </div>
