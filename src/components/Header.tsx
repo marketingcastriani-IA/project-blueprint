@@ -116,7 +116,7 @@ export default function Header() {
         )}
       >
         <item.icon className={cn("h-3.5 w-3.5 shrink-0 lg:h-4 lg:w-4", isRealtime && "animate-pulse")} />
-        <span className="truncate">{item.label}</span>
+        <span>{item.label}</span>
       </button>
     );
   };
