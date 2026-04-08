@@ -47,8 +47,9 @@ export default function Dashboard() {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [daysToExpiry, setDaysToExpiry] = useState(0);
   const [expiryDate, setExpiryDate] = useState<Date | undefined>(undefined);
-  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysisResult | null>(null);
   const [loadingAI, setLoadingAI] = useState(false);
+  const [aiProgress, setAiProgress] = useState(0);
   const [saving, setSaving] = useState(false);
   const [inputMode, setInputMode] = useState<InputMode>(null);
   const aiSectionRef = useRef<HTMLDivElement>(null);
