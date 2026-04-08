@@ -710,11 +710,18 @@ export default function TickerOpcoes() {
                     className={`group relative flex items-center gap-2 px-3.5 py-3 transition-colors duration-200 ${
                       isActive
                         ? "bg-primary/15 shadow-[inset_0_2px_8px_hsl(var(--primary)/0.2)]"
-                        : "bg-gradient-to-b from-card to-card/70 hover:from-muted/80 hover:to-muted/40"
+                        : index < 6
+                          ? "bg-gradient-to-b from-warning/5 to-card/70 hover:from-warning/15 hover:to-warning/5"
+                          : "bg-gradient-to-b from-card to-card/70 hover:from-muted/80 hover:to-muted/40"
                     }`}
                   >
+                    {index < 6 && (
+                      <span className="flex items-center justify-center h-5 w-5 rounded-full bg-warning/15 text-warning text-[10px] font-bold border border-warning/30 shrink-0">
+                        {index + 1}
+                      </span>
+                    )}
                     <span className={`text-sm font-extrabold tracking-wide ${
-                      isActive ? "text-primary" : "text-foreground/80 group-hover:text-primary/80"
+                      isActive ? "text-primary" : index < 6 ? "text-warning group-hover:text-warning/80" : "text-foreground/80 group-hover:text-primary/80"
                     } transition-colors`}>
                       {stock.label}
                     </span>
