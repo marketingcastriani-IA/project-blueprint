@@ -78,8 +78,14 @@ export default function CalculadoraRendaFixa() {
     }
   };
 
-  const resultado = useMemo(() => {
+  const dateError = useMemo(() => {
     if (!dataVencimento) return null;
+    if (dataVencimento <= dataInicio) return 'Data de vencimento deve ser posterior à data de início';
+    return null;
+  }, [dataInicio, dataVencimento]);
+
+  const resultado = useMemo(() => {
+    if (!dataVencimento || dateError) return null;
 
     const capitalNum = capitalRaw;
     const cdiNum = parseFloat(cdiAnual) || 0;
