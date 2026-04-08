@@ -55,7 +55,9 @@ export default function History() {
   const [filterYear, setFilterYear] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'profit'>('newest');
-
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
@@ -124,7 +126,9 @@ export default function History() {
         const nameMatch = a.name.toLowerCase().includes(q);
         const assetMatch = a.underlying_asset?.toLowerCase().includes(q);
         const legsAssetMatch = (legsMap[a.id] || []).some(l => l.asset?.toLowerCase().includes(q));
-        if (!nameMatch && !assetMatch && !legsAssetMatch) return false;
+        // Search in AI suggestion too
+        const aiMatch = a.ai_suggestion?.toLowerCase().includes(q);
+        if (!nameMatch && !assetMatch && !legsAssetMatch && !aiMatch) return false;
       }
       return true;
     });
