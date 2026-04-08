@@ -688,7 +688,7 @@ export default function TickerOpcoes() {
               </button>
             )}
           </div>
-          <div className="px-3 py-2.5">
+          <div className="px-3 py-2.5 border-t border-border/50">
             <div className="flex flex-wrap gap-2">
               {TOP_STOCKS.map((stock, index) => {
                 const isActive = selectedFamily === stock.family;
