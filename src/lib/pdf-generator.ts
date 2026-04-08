@@ -320,7 +320,35 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   });
   y = addParagraph(doc, 'Dica: Estratégias com risco limitado e eficiência CDI acima de 100% são consideradas atrativas, pois superam a renda fixa com risco controlado.', y);
 
-  // ── 5. ANÁLISE DE IA ──
+  // ── 5. CALCULADORA CDI x OPÇÕES ──
+  y = checkPageBreak(doc, y, 50);
+  y = addSectionTitle(doc, '5. Calculadora CDI x Opções', y);
+  y = addParagraph(doc, 'A Calculadora CDI x Opções é uma ferramenta independente que permite comparar rapidamente o retorno de qualquer operação de opções com o CDI do mesmo período. Ideal para avaliar se vale a pena montar uma estrutura ou deixar o capital rendendo em renda fixa.', y);
+
+  const calcCdiImg = getImg('calcCdi');
+  if (calcCdiImg) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, calcCdiImg, y, 182, 120));
+  }
+
+  y = addTable(doc, {
+    startY: y,
+    head: [['Recurso', 'Descrição']],
+    body: [
+      ['Capital Investido', 'Informe o valor investido na operação (formato BRL)'],
+      ['Data de Vencimento', 'Selecione a data — o sistema calcula dias úteis automaticamente'],
+      ['Lucro da Estrutura (%)', 'Informe o percentual de lucro esperado ou realizado'],
+      ['Eficiência CDI', 'Descubra quantos % do CDI sua operação equivale (ex: 160%)'],
+      ['IR Renda Fixa', 'Tabela regressiva automática (22,5% a 15%) aplicada ao CDI'],
+      ['IR Opções', 'Alíquota fixa editável (padrão 15%) aplicada ao lucro das opções'],
+      ['Gráfico de Barras', 'Comparação visual entre rendimentos brutos e líquidos'],
+    ],
+    ...TABLE_STYLES,
+    columnStyles: { 0: { cellWidth: 45, fontStyle: 'bold' as const } },
+  });
+  y = addParagraph(doc, 'Dica: Acesse pelo menu lateral em "CDI x Opções" (destaque amarelo). Use antes de montar qualquer estrutura para saber se o retorno esperado justifica o risco. Taxa CDI padrão: 14,65% a.a.', y);
+
+  // ── 6. ANÁLISE DE IA ──
   y = checkPageBreak(doc, y, 50);
   y = addSectionTitle(doc, '5. Análise de IA e Veredito de Saída', y);
   y = addParagraph(doc, 'A IA avalia sua estrutura automaticamente, analisando risco/retorno, cenários favoráveis e desfavoráveis, e sugere ajustes. Para operações ativas, o Veredito de Saída recomenda se é hora de encerrar com base no P&L atual vs CDI e risco residual.', y);
