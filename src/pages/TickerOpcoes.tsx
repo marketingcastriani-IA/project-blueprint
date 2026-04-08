@@ -667,6 +667,35 @@ export default function TickerOpcoes() {
           </div>
         )}
 
+        {/* Quick-select top stocks */}
+        <div className="flex flex-wrap gap-2">
+          {TOP_STOCKS.map((stock) => {
+            const isActive = selectedFamily === stock.family;
+            const familyExists = families.includes(stock.family);
+            if (!familyExists) return null;
+            const count = options.filter((o) => o.family === stock.family).length;
+            return (
+              <button
+                key={stock.family}
+                onClick={() => setSelectedFamily(isActive ? "all" : stock.family)}
+                className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-semibold transition-all ${
+                  isActive
+                    ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[1.02]"
+                    : "bg-card/60 text-foreground border-border/50 hover:border-primary/40 hover:bg-primary/5"
+                }`}
+              >
+                <span className="font-bold">{stock.label}</span>
+                <span className={`text-xs ${isActive ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                  {stock.name}
+                </span>
+                <span className={`text-[10px] font-mono ${isActive ? "text-primary-foreground/60" : "text-muted-foreground/60"}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
         {/* Filters */}
         <div className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-border/30 flex items-center gap-2">
