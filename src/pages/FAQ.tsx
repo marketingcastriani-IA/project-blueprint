@@ -710,6 +710,61 @@ export default function FAQ() {
           </div>
         </FeatureSection>
 
+        {/* ─── CALCULADORA RENDA FIXA ─── */}
+        <FeatureSection icon={Calculator} title="Calculadora CDI x Opções" badge="NOVO">
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              A <strong className="text-foreground">Calculadora CDI x Opções</strong> é uma ferramenta independente que permite 
+              comparar rapidamente o retorno de qualquer operação de opções com o CDI do mesmo período. 
+              Ideal para avaliar se vale a pena montar uma estrutura ou deixar o capital rendendo em renda fixa.
+            </p>
+
+            <ScreenshotImage src={faqCdi} alt="Calculadora CDI x Opções - Opções PRO X" />
+
+            <div className="space-y-4">
+              <StepCard 
+                step={1} icon={Calculator}
+                title="Informe Capital e Período" 
+                description="Digite o valor do capital investido na operação e selecione a data de vencimento. O sistema calcula automaticamente os dias úteis e o rendimento do CDI no período."
+              />
+              <StepCard 
+                step={2} icon={TrendingUp}
+                title="Defina o Lucro da Estrutura" 
+                description="Informe o percentual de lucro esperado (ou realizado) da sua estrutura de opções. O sistema compara instantaneamente com o CDI equivalente."
+              />
+              <StepCard 
+                step={3} icon={Shield}
+                title="Ative IR se Desejar" 
+                description="Ative o cálculo de Imposto de Renda para CDI (tabela regressiva automática) e/ou para opções (15%) para uma comparação líquida e mais realista."
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { label: 'Eficiência CDI', desc: 'Descubra quantos % do CDI sua operação equivale (ex: 160% do CDI)' },
+                { label: 'IR Automático', desc: 'Tabela regressiva de IR aplicada automaticamente ao CDI' },
+                { label: 'Dias Úteis', desc: 'Cálculo preciso usando calendário B3 de dias úteis' },
+                { label: 'Comparação Visual', desc: 'Veja lado a lado o rendimento da operação vs CDI' },
+              ].map(item => (
+                <div key={item.label} className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                  <p className="text-xs font-bold">{item.label}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+              <div className="flex items-start gap-2">
+                <Eye className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  <strong className="text-foreground">Dica:</strong> Acesse pelo menu lateral em <strong className="text-foreground">CDI x Opções</strong> (destaque amarelo). 
+                  Use esta calculadora antes de montar qualquer estrutura para saber se o retorno esperado justifica o risco em relação à renda fixa.
+                </p>
+              </div>
+            </div>
+          </div>
+        </FeatureSection>
+
         {/* ─── ATALHOS DE TECLADO ─── */}
         <FeatureSection icon={Keyboard} title="Atalhos de Teclado" badge="Power User">
           <div className="space-y-4">
@@ -890,8 +945,9 @@ export default function FAQ() {
               <AccordionTrigger className="text-sm font-bold">Qual a diferença entre plano Free e PRO?</AccordionTrigger>
               <AccordionContent className="text-sm text-muted-foreground">
                 O plano Free permite acesso básico com limite de simulações. O plano PRO oferece simulações ilimitadas, 
-                análise de IA, comparação com CDI, diversificador de estratégias, Tempo Real e Rastreador de Box — 
-                acesso a todos os recursos avançados da plataforma.
+                análise de IA ilimitada, OCR de imagens, comparação com CDI, Calculadora CDI x Opções, Rastreador de Box, 
+                Rastreador de Collar, Tempo Real, Diversificador de Estratégias, Ticker Opções B3 (99.000+ opções), 
+                Notificações Push e acesso completo a todos os recursos avançados da plataforma.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="q8">
