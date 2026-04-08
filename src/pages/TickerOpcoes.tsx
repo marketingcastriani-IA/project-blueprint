@@ -12,6 +12,7 @@ import { Search, Copy, Check, Filter, Database, ArrowUpDown, TrendingDown, Trend
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -61,6 +62,13 @@ export default function TickerOpcoes() {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [sentToRtd, setSentToRtd] = useState<Set<string>>(new Set());
 
+  // NEW filter states
+  const [onlyPaired, setOnlyPaired] = useState(false);
+  const [moneyness, setMoneyness] = useState<string>("all");
+  const [precoMin, setPrecoMin] = useState("");
+  const [precoMax, setPrecoMax] = useState("");
+  const [displayLimit, setDisplayLimit] = useState(100);
+
   // RTD Bridge — auto-fill preço base from live data
   const { status, rows, addTicker } = useSharedRtdBridge();
 
@@ -73,12 +81,10 @@ export default function TickerOpcoes() {
   // Derive the stock ticker from family (e.g., VALE -> VALE3, PETR -> PETR4)
   const stockTicker = useMemo(() => {
     if (stockCandidates.length === 0) return null;
-    // Pick the first candidate that has live data
     for (const c of stockCandidates) {
       const row = rows.get(c);
       if (row?.ultimo && row.ultimo > 0) return c;
     }
-    // Default to first candidate (usually ${family}4)
     return stockCandidates[0];
   }, [stockCandidates, rows]);
 
@@ -95,7 +101,6 @@ export default function TickerOpcoes() {
     if (selectedFamily === "all") return null;
     const familyOptions = options.filter((o) => o.family === selectedFamily && o.precoUltimo > 0);
     if (familyOptions.length === 0) return null;
-    // Find the strike closest to the median strike — a rough proxy for ATM / underlying price
     const strikes = familyOptions.map((o) => o.strike).sort((a, b) => a - b);
     const medianStrike = strikes[Math.floor(strikes.length / 2)];
     return medianStrike;
@@ -104,7 +109,6 @@ export default function TickerOpcoes() {
   // Auto-fill preço base from live data OR fallback to estimated price
   useEffect(() => {
     if (precoBaseManual) return;
-    // Try live price first
     if (stockTicker && status === "connected") {
       const row = rows.get(stockTicker);
       const live = row?.ultimo;
@@ -113,7 +117,6 @@ export default function TickerOpcoes() {
         return;
       }
     }
-    // Fallback: estimate from option strikes median
     if (estimatedPriceFromOptions && estimatedPriceFromOptions > 0) {
       setPrecoBase(estimatedPriceFromOptions.toFixed(2));
     }
@@ -124,6 +127,27 @@ export default function TickerOpcoes() {
   const strikeMaxCalc = precoBaseNum > 0 ? precoBaseNum * (1 + pctAcima / 100) : Infinity;
   const livePrice = stockTicker ? rows.get(stockTicker)?.ultimo ?? null : null;
 
+  // Pre-compute paired strike keys BEFORE filtering (needed for onlyPaired filter)
+  const allPairedStrikeKeys = useMemo(() => {
+    let base = dedupeOptionsByTicker(options);
+    if (selectedFamily !== "all") base = base.filter((o) => o.family === selectedFamily);
+    if (selectedVencimento !== "all") base = base.filter((o) => o.vencimento === selectedVencimento);
+
+    const callKeys = new Set<string>();
+    const putKeys = new Set<string>();
+    base.forEach((o) => {
+      const key = `${o.strike}|${o.vencimento}`;
+      if (o.tipo === "CALL") callKeys.add(key);
+      else putKeys.add(key);
+    });
+    const paired = new Set<string>();
+    callKeys.forEach((k) => { if (putKeys.has(k)) paired.add(k); });
+    return paired;
+  }, [options, selectedFamily, selectedVencimento]);
+
+  const precoMinNum = parseFloat(precoMin) || 0;
+  const precoMaxNum = parseFloat(precoMax) || 0;
+
   const filtered = useMemo(() => {
     let result = dedupeOptionsByTicker(options);
     if (selectedFamily !== "all") result = result.filter((o) => o.family === selectedFamily);
@@ -133,6 +157,35 @@ export default function TickerOpcoes() {
     if (precoBaseNum > 0) {
       result = result.filter((o) => o.strike >= strikeMinCalc && o.strike <= strikeMaxCalc);
     }
+
+    // NEW: Only paired (Call+Put)
+    if (onlyPaired) {
+      result = result.filter((o) => allPairedStrikeKeys.has(`${o.strike}|${o.vencimento}`));
+    }
+
+    // NEW: Moneyness filter
+    if (moneyness !== "all" && precoBaseNum > 0) {
+      result = result.filter((o) => {
+        const ratio = o.strike / precoBaseNum;
+        if (moneyness === "ITM") {
+          return o.tipo === "CALL" ? ratio < 0.95 : ratio > 1.05;
+        } else if (moneyness === "ATM") {
+          return ratio >= 0.95 && ratio <= 1.05;
+        } else if (moneyness === "OTM") {
+          return o.tipo === "CALL" ? ratio > 1.05 : ratio < 0.95;
+        }
+        return true;
+      });
+    }
+
+    // NEW: Premium range filter
+    if (precoMinNum > 0) {
+      result = result.filter((o) => o.precoUltimo >= precoMinNum);
+    }
+    if (precoMaxNum > 0) {
+      result = result.filter((o) => o.precoUltimo <= precoMaxNum);
+    }
+
     result = [...result].sort((a, b) => {
       let cmp = 0;
       if (sortField === "ticker") cmp = a.ticker.localeCompare(b.ticker);
@@ -146,9 +199,9 @@ export default function TickerOpcoes() {
       return sortDir === "asc" ? cmp : -cmp;
     });
     return result;
-  }, [options, selectedFamily, selectedVencimento, selectedTipo, search, precoBaseNum, strikeMinCalc, strikeMaxCalc, sortField, sortDir]);
+  }, [options, selectedFamily, selectedVencimento, selectedTipo, search, precoBaseNum, strikeMinCalc, strikeMaxCalc, sortField, sortDir, onlyPaired, allPairedStrikeKeys, moneyness, precoMinNum, precoMaxNum]);
 
-  // Set of strike|vencimento keys that have both CALL and PUT (paired for box)
+  // Set of strike|vencimento keys that have both CALL and PUT (paired for box) — from filtered results
   const pairedStrikeKeys = useMemo(() => {
     const callKeys = new Set<string>();
     const putKeys = new Set<string>();
@@ -162,12 +215,15 @@ export default function TickerOpcoes() {
     return paired;
   }, [filtered]);
 
-  const displayed = filtered.slice(0, 200);
+  // Reset displayLimit when filters change
+  useEffect(() => {
+    setDisplayLimit(100);
+  }, [selectedFamily, selectedVencimento, selectedTipo, search, precoBaseNum, pctAbaixo, pctAcima, onlyPaired, moneyness, precoMinNum, precoMaxNum]);
+
+  const displayed = filtered.slice(0, displayLimit);
+  const remaining = filtered.length - displayLimit;
 
   // ─── BOX OPPORTUNITIES ─────────────────────────────────────
-  // Uses RTD BID/ASK when available (same logic as Box Tracker):
-  // Custo = (Stock ASK + Put ASK) - Call BID
-  // Lucro = Strike - Custo
   const boxOpportunities = useMemo(() => {
     if (selectedFamily === "all" || precoBaseNum <= 0) return [];
     const groups = new Map<string, { calls: B3Option[]; puts: B3Option[] }>();
@@ -179,7 +235,6 @@ export default function TickerOpcoes() {
       else g.puts.push(o);
     });
 
-    // Stock price: prefer ASK from RTD, fallback to precoBaseNum
     const stockRow = stockTicker ? rows.get(stockTicker) : null;
     const stockAsk = stockRow?.ofVenda ?? stockRow?.ultimo ?? precoBaseNum;
 
@@ -202,7 +257,6 @@ export default function TickerOpcoes() {
       const call = g.calls[0];
       const put = g.puts[0];
 
-      // RTD prices: Call BID (selling), Put ASK (buying)
       const callRow = rows.get(call.ticker);
       const putRow = rows.get(put.ticker);
       const callBid = callRow?.ofCompra ?? null;
@@ -284,6 +338,11 @@ export default function TickerOpcoes() {
     setPctAbaixo(20);
     setPctAcima(20);
     setSelectedRows(new Set());
+    setOnlyPaired(false);
+    setMoneyness("all");
+    setPrecoMin("");
+    setPrecoMax("");
+    setDisplayLimit(100);
   };
 
   const availableVencimentos = useMemo(() => {
@@ -333,7 +392,6 @@ export default function TickerOpcoes() {
       toast.error("Selecione uma família primeiro");
       return;
     }
-    // Get closest to ATM, limit 20
     const familyOpts = filtered.slice(0, 20);
     familyOpts.forEach((o) => addTicker(o.ticker));
     setSentToRtd((prev) => {
@@ -353,13 +411,11 @@ export default function TickerOpcoes() {
       toast.error("Selecione pelo menos 1 CALL e 1 PUT");
       return;
     }
-    // Determine family name
     const familyName = calls[0]?.family || puts[0]?.family || selectedFamily;
     if (!familyName || familyName === "all") {
       toast.error("Não foi possível determinar a família");
       return;
     }
-    // Only send matched Call+Put pairs (same strike)
     const putsByStrike = new Map(puts.map((p) => [p.strike, p]));
     const pairedTickers: string[] = [];
     for (const call of calls) {
@@ -375,20 +431,17 @@ export default function TickerOpcoes() {
     }
     const tickers = pairedTickers;
 
-    // Load existing families from localStorage
     let existingFamilies: SavedFamily[] = [];
     try {
       const saved = localStorage.getItem(BOX_STORAGE_KEY);
       if (saved) existingFamilies = JSON.parse(saved);
     } catch {}
 
-    // Check if family already exists, merge tickers
     const existingIdx = existingFamilies.findIndex((f) => f.name === familyName);
     if (existingIdx >= 0) {
       const existing = new Set(existingFamilies[existingIdx].tickers);
       tickers.forEach((t) => existing.add(t));
       existingFamilies[existingIdx].tickers = Array.from(existing);
-      // Track auto-imported tickers
       const autoSet = new Set(existingFamilies[existingIdx].autoImported || []);
       tickers.forEach((t) => autoSet.add(t));
       existingFamilies[existingIdx].autoImported = Array.from(autoSet);
@@ -480,6 +533,26 @@ export default function TickerOpcoes() {
   // Pair counter
   const pairCount = pairedStrikeKeys.size;
 
+  // ─── Active filter chips ───────────────────────────────────
+  const activeFilterChips = useMemo(() => {
+    const chips: Array<{ label: string; onRemove: () => void }> = [];
+    if (search) chips.push({ label: `Busca: ${search}`, onRemove: () => setSearch("") });
+    if (selectedFamily !== "all") chips.push({ label: selectedFamily, onRemove: () => setSelectedFamily("all") });
+    if (selectedVencimento !== "all") chips.push({ label: `Venc: ${selectedVencimento}`, onRemove: () => setSelectedVencimento("all") });
+    if (selectedTipo !== "all") chips.push({ label: selectedTipo, onRemove: () => setSelectedTipo("all") });
+    if (onlyPaired) chips.push({ label: "Apenas PAR", onRemove: () => setOnlyPaired(false) });
+    if (moneyness !== "all") chips.push({ label: moneyness, onRemove: () => setMoneyness("all") });
+    if (precoMinNum > 0) chips.push({ label: `Prêmio ≥ R$${precoMin}`, onRemove: () => setPrecoMin("") });
+    if (precoMaxNum > 0) chips.push({ label: `Prêmio ≤ R$${precoMax}`, onRemove: () => setPrecoMax("") });
+    if (precoBaseNum > 0 && (pctAbaixo !== 20 || pctAcima !== 20)) {
+      chips.push({ label: `Strike: -${pctAbaixo}% / +${pctAcima}%`, onRemove: () => { setPctAbaixo(20); setPctAcima(20); } });
+    }
+    return chips;
+  }, [search, selectedFamily, selectedVencimento, selectedTipo, onlyPaired, moneyness, precoMinNum, precoMaxNum, precoMin, precoMax, precoBaseNum, pctAbaixo, pctAcima]);
+
+  // Count active filters for badge
+  const activeFilterCount = activeFilterChips.length;
+
   if (loading) {
     return (
       <ProfessionalLayout>
@@ -497,7 +570,7 @@ export default function TickerOpcoes() {
     );
   }
 
-  const hasActiveFilters = search || selectedFamily !== "all" || selectedVencimento !== "all" || selectedTipo !== "all" || precoBaseNum > 0;
+  const hasActiveFilters = activeFilterCount > 0 || precoBaseNum > 0;
 
   return (
     <ProfessionalLayout>
@@ -585,6 +658,9 @@ export default function TickerOpcoes() {
           <div className="px-4 py-3 border-b border-border/30 flex items-center gap-2">
             <Filter className="h-4 w-4 text-primary" />
             <span className="text-sm font-semibold text-foreground">Filtros</span>
+            {activeFilterCount > 0 && (
+              <Badge variant="secondary" className="text-xs">{activeFilterCount} ativos</Badge>
+            )}
             {hasActiveFilters && (
               <Badge variant="secondary" className="text-xs ml-auto">{filtered.length} resultados</Badge>
             )}
@@ -637,7 +713,56 @@ export default function TickerOpcoes() {
               </div>
             </div>
 
-            {/* Row 2: Strike % Range */}
+            {/* Row 2: Moneyness + Apenas PAR + Faixa de Prêmio */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-end">
+              <div>
+                <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Moneyness</label>
+                <Select value={moneyness} onValueChange={setMoneyness}>
+                  <SelectTrigger className="h-9 text-sm bg-background/50"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="ITM">ITM (In The Money)</SelectItem>
+                    <SelectItem value="ATM">ATM (±5%)</SelectItem>
+                    <SelectItem value="OTM">OTM (Out The Money)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider flex items-center gap-1.5">
+                  <Box className="h-3 w-3" /> Apenas com PAR
+                </label>
+                <div className="flex items-center gap-2 h-9">
+                  <Switch checked={onlyPaired} onCheckedChange={setOnlyPaired} />
+                  <span className="text-xs text-muted-foreground">
+                    {onlyPaired ? `${allPairedStrikeKeys.size} pares` : "Desligado"}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Prêmio Mín (R$)</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={precoMin}
+                  onChange={(e) => setPrecoMin(e.target.value)}
+                  className="h-9 text-sm bg-background/50 font-mono"
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Prêmio Máx (R$)</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="∞"
+                  value={precoMax}
+                  onChange={(e) => setPrecoMax(e.target.value)}
+                  className="h-9 text-sm bg-background/50 font-mono"
+                />
+              </div>
+            </div>
+
+            {/* Row 3: Strike % Range */}
             <div className="rounded-lg border border-border/30 bg-background/30 p-3 space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider flex items-center gap-1.5">
@@ -672,9 +797,14 @@ export default function TickerOpcoes() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1.5 flex items-center gap-1">
-                    <TrendingDown className="h-3 w-3 text-destructive" /> Abaixo: {pctAbaixo}%
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider flex items-center gap-1">
+                      <TrendingDown className="h-3 w-3 text-destructive" /> Abaixo: {pctAbaixo}%
+                    </label>
+                    {precoBaseNum > 0 && (
+                      <span className="text-[10px] font-mono text-destructive/70">R$ {strikeMinCalc.toFixed(2)}</span>
+                    )}
+                  </div>
                   <Slider
                     value={[pctAbaixo]}
                     onValueChange={([v]) => setPctAbaixo(v)}
@@ -685,9 +815,14 @@ export default function TickerOpcoes() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1.5 flex items-center gap-1">
-                    <TrendingUp className="h-3 w-3 text-primary" /> Acima: {pctAcima}%
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider flex items-center gap-1">
+                      <TrendingUp className="h-3 w-3 text-primary" /> Acima: {pctAcima}%
+                    </label>
+                    {precoBaseNum > 0 && (
+                      <span className="text-[10px] font-mono text-primary/70">R$ {strikeMaxCalc.toFixed(2)}</span>
+                    )}
+                  </div>
                   <Slider
                     value={[pctAcima]}
                     onValueChange={([v]) => setPctAcima(v)}
@@ -700,6 +835,28 @@ export default function TickerOpcoes() {
               </div>
             </div>
           </div>
+
+          {/* Active filter chips */}
+          {activeFilterChips.length > 0 && (
+            <div className="px-4 pb-3 flex flex-wrap gap-1.5">
+              {activeFilterChips.map((chip, i) => (
+                <button
+                  key={i}
+                  onClick={chip.onRemove}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/20 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20 transition-colors group"
+                >
+                  {chip.label}
+                  <XIcon className="h-3 w-3 opacity-60 group-hover:opacity-100" />
+                </button>
+              ))}
+              <button
+                onClick={resetFilters}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <RotateCcw className="h-3 w-3" /> Limpar todos
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Box Opportunities */}
@@ -759,7 +916,7 @@ export default function TickerOpcoes() {
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">
               {filtered.length.toLocaleString()} resultados
-              {filtered.length > 200 && <span className="text-primary/70"> (200 visíveis)</span>}
+              {filtered.length > displayLimit && <span className="text-primary/70"> ({displayLimit} visíveis)</span>}
             </span>
             {selectedRows.size > 0 && (
               <Badge variant="default" className="text-xs">{selectedRows.size} selecionadas</Badge>
@@ -960,6 +1117,20 @@ export default function TickerOpcoes() {
               </TableBody>
             </Table>
           </div>
+
+          {/* Load more button */}
+          {remaining > 0 && (
+            <div className="px-4 py-3 border-t border-border/30 flex items-center justify-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDisplayLimit((prev) => prev + 100)}
+                className="gap-2 text-xs"
+              >
+                Carregar mais 100 <span className="text-muted-foreground">(restam {remaining.toLocaleString()})</span>
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </ProfessionalLayout>
