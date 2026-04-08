@@ -205,17 +205,26 @@ export default function Portfolio() {
     }
   };
 
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (!confirm('Deletar permanentemente esta operação?')) return;
+    setDeleteTarget(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget;
+    setDeleteTarget(null);
     setDeletingId(id);
     try {
       await supabase.from('legs').delete().eq('analysis_id', id);
       await supabase.from('analyses').delete().eq('id', id);
       setAnalyses(prev => prev.filter(a => a.id !== id));
       toast.success('Operação deletada');
-    } catch (err: any) {
-      toast.error('Erro: ' + err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro desconhecido';
+      toast.error('Erro: ' + message);
     } finally {
       setDeletingId(null);
     }
