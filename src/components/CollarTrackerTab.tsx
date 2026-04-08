@@ -805,7 +805,7 @@ export default function CollarTrackerTab() {
         default: return b.qualityScore - a.qualityScore;
       }
     });
-    return bestPerFamily.slice(0, 10);
+    return bestPerFamily.slice(0, 3);
   }, [families, calculateCollars, rankingMethod]);
 
   const topCollarsKey = topCollars.map(c => `${c.tipo}-${c.callSymbol}-${c.putSymbol}`).join(",");
