@@ -45,18 +45,23 @@ interface SavedFamily {
 const BOX_STORAGE_KEY = "box-tracker-families";
 const COLLAR_STORAGE_KEY = "collar-tracker-families";
 
-// Top 10 most liquid B3 stocks for quick selection
+// Top 15 most liquid B3 stocks for quick selection
 const TOP_STOCKS = [
-  { family: "PETR", label: "PETR", name: "Petrobras" },
-  { family: "VALE", label: "VALE", name: "Vale" },
-  { family: "ITUB", label: "ITUB", name: "Itaú" },
-  { family: "BBDC", label: "BBDC", name: "Bradesco" },
-  { family: "B3SA", label: "B3SA", name: "B3" },
-  { family: "ABEV", label: "ABEV", name: "Ambev" },
-  { family: "BBAS", label: "BBAS", name: "BB" },
-  { family: "WEGE", label: "WEGE", name: "WEG" },
-  { family: "RENT", label: "RENT", name: "Localiza" },
-  { family: "MGLU", label: "MGLU", name: "Magalu" },
+  { family: "PETR", label: "PETR", name: "Petrobras", sector: "Energia" },
+  { family: "VALE", label: "VALE", name: "Vale", sector: "Mineração" },
+  { family: "ITUB", label: "ITUB", name: "Itaú", sector: "Banco" },
+  { family: "BBDC", label: "BBDC", name: "Bradesco", sector: "Banco" },
+  { family: "B3SA", label: "B3SA", name: "B3", sector: "Bolsa" },
+  { family: "ABEV", label: "ABEV", name: "Ambev", sector: "Bebidas" },
+  { family: "BBAS", label: "BBAS", name: "BB", sector: "Banco" },
+  { family: "WEGE", label: "WEGE", name: "WEG", sector: "Indústria" },
+  { family: "RENT", label: "RENT", name: "Localiza", sector: "Locação" },
+  { family: "MGLU", label: "MGLU", name: "Magalu", sector: "Varejo" },
+  { family: "SUZB", label: "SUZB", name: "Suzano", sector: "Papel" },
+  { family: "JBSS", label: "JBSS", name: "JBS", sector: "Alimentos" },
+  { family: "GGBR", label: "GGBR", name: "Gerdau", sector: "Aço" },
+  { family: "CSNA", label: "CSNA", name: "CSN", sector: "Siderurgia" },
+  { family: "COGN", label: "COGN", name: "Cogna", sector: "Educação" },
 ];
 
 export default function TickerOpcoes() {
@@ -667,66 +672,105 @@ export default function TickerOpcoes() {
           </div>
         )}
 
-        {/* Quick-select top stocks */}
-        <div className="flex flex-wrap gap-2">
-          {TOP_STOCKS.map((stock) => {
-            const isActive = selectedFamily === stock.family;
-            const familyExists = families.includes(stock.family);
-            if (!familyExists) return null;
-            const count = options.filter((o) => o.family === stock.family).length;
-            return (
+        {/* Quick-select top stocks — premium cards */}
+        <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-md overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-border/20 flex items-center gap-2">
+            <Zap className="h-4 w-4 text-primary" />
+            <span className="text-xs font-bold uppercase tracking-widest text-foreground">Seleção Rápida</span>
+            <span className="text-[10px] text-muted-foreground ml-1">Top 15 mais líquidas</span>
+            {selectedFamily !== "all" && (
               <button
-                key={stock.family}
-                onClick={() => setSelectedFamily(isActive ? "all" : stock.family)}
-                className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-semibold transition-all ${
-                  isActive
-                    ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[1.02]"
-                    : "bg-card/60 text-foreground border-border/50 hover:border-primary/40 hover:bg-primary/5"
-                }`}
+                onClick={() => setSelectedFamily("all")}
+                className="ml-auto text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
               >
-                <span className="font-bold">{stock.label}</span>
-                <span className={`text-xs ${isActive ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
-                  {stock.name}
-                </span>
-                <span className={`text-[10px] font-mono ${isActive ? "text-primary-foreground/60" : "text-muted-foreground/60"}`}>
-                  {count}
-                </span>
+                <XIcon className="h-3 w-3" /> Limpar seleção
               </button>
-            );
-          })}
+            )}
+          </div>
+          <div className="p-3">
+            <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-8 gap-2">
+              {TOP_STOCKS.map((stock) => {
+                const isActive = selectedFamily === stock.family;
+                const familyExists = families.includes(stock.family);
+                if (!familyExists) return null;
+                const count = options.filter((o) => o.family === stock.family).length;
+                return (
+                  <button
+                    key={stock.family}
+                    onClick={() => setSelectedFamily(isActive ? "all" : stock.family)}
+                    className={`group relative flex flex-col items-center justify-center rounded-xl px-2 py-3 transition-all duration-200 overflow-hidden ${
+                      isActive
+                        ? "bg-gradient-to-b from-primary/30 to-primary/10 border-2 border-primary shadow-lg shadow-primary/25 scale-[1.03]"
+                        : "bg-background/40 border border-border/40 hover:border-primary/50 hover:bg-primary/5 hover:shadow-md hover:shadow-primary/10 hover:scale-[1.02]"
+                    }`}
+                  >
+                    {/* Glow effect when active */}
+                    {isActive && (
+                      <div className="absolute inset-0 bg-primary/5 rounded-xl" />
+                    )}
+                    <span className={`relative text-sm font-black tracking-wider ${
+                      isActive ? "text-primary" : "text-foreground group-hover:text-primary"
+                    } transition-colors`}>
+                      {stock.label}
+                    </span>
+                    <span className={`relative text-[10px] font-medium mt-0.5 ${
+                      isActive ? "text-primary/80" : "text-muted-foreground"
+                    }`}>
+                      {stock.name}
+                    </span>
+                    <div className="relative flex items-center gap-1 mt-1">
+                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full ${
+                        isActive
+                          ? "bg-primary/20 text-primary"
+                          : "bg-muted/50 text-muted-foreground"
+                      }`}>
+                        {count}
+                      </span>
+                    </div>
+                    {/* Bottom accent line */}
+                    <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 rounded-full transition-all duration-200 ${
+                      isActive ? "w-3/4 bg-primary" : "w-0 group-hover:w-1/2 bg-primary/50"
+                    }`} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
-        {/* Filters */}
-        <div className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-border/30 flex items-center gap-2">
-            <Filter className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold text-foreground">Filtros</span>
+        {/* Filters — modern glassmorphism panel */}
+        <div className="rounded-xl border border-border/40 bg-gradient-to-b from-card/60 to-card/30 backdrop-blur-lg overflow-hidden shadow-sm">
+          <div className="px-4 py-3 border-b border-border/20 flex items-center gap-2">
+            <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Filter className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <span className="text-sm font-bold text-foreground">Filtros Avançados</span>
             {activeFilterCount > 0 && (
-              <Badge variant="secondary" className="text-xs">{activeFilterCount} ativos</Badge>
+              <Badge className="text-[10px] bg-primary/15 text-primary border border-primary/20 font-bold">{activeFilterCount} ativos</Badge>
             )}
             {hasActiveFilters && (
-              <Badge variant="secondary" className="text-xs ml-auto">{filtered.length} resultados</Badge>
+              <Badge variant="secondary" className="text-[10px] ml-auto font-mono">{filtered.length.toLocaleString()} resultados</Badge>
             )}
           </div>
           <div className="p-4 space-y-4">
             {/* Row 1: Search + Family + Vencimento + Tipo */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="col-span-2 md:col-span-1">
-                <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Buscar Ticker</label>
+                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1.5 block">Buscar Ticker</label>
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="PETR, VALE..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="pl-9 h-9 text-sm uppercase bg-background/50"
+                    className="pl-9 h-9 text-sm uppercase bg-background/40 border-border/40 focus:border-primary/50 focus:bg-background/60 transition-all"
                   />
                 </div>
               </div>
               <div>
-                <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Escolher o Ativo</label>
+                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1.5 block">Escolher o Ativo</label>
                 <Select value={selectedFamily} onValueChange={setSelectedFamily}>
-                  <SelectTrigger className="h-9 text-sm bg-background/50"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-sm bg-background/40 border-border/40"><SelectValue /></SelectTrigger>
                   <SelectContent className="max-h-[300px]">
                     <SelectItem value="all">Todos ({families.length})</SelectItem>
                     {families.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
@@ -734,9 +778,9 @@ export default function TickerOpcoes() {
                 </Select>
               </div>
               <div>
-                <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Vencimento</label>
+                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1.5 block">Vencimento</label>
                 <Select value={selectedVencimento} onValueChange={setSelectedVencimento}>
-                  <SelectTrigger className="h-9 text-sm bg-background/50"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-sm bg-background/40 border-border/40"><SelectValue /></SelectTrigger>
                   <SelectContent className="max-h-[300px]">
                     <SelectItem value="all">Todos</SelectItem>
                     {availableVencimentos.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
@@ -744,9 +788,9 @@ export default function TickerOpcoes() {
                 </Select>
               </div>
               <div>
-                <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Tipo</label>
+                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1.5 block">Tipo</label>
                 <Select value={selectedTipo} onValueChange={setSelectedTipo}>
-                  <SelectTrigger className="h-9 text-sm bg-background/50"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-sm bg-background/40 border-border/40"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos</SelectItem>
                     <SelectItem value="CALL">CALL</SelectItem>
@@ -759,9 +803,9 @@ export default function TickerOpcoes() {
             {/* Row 2: Moneyness + Apenas PAR + Faixa de Prêmio */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-end">
               <div>
-                <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Moneyness</label>
+                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1.5 block">Moneyness</label>
                 <Select value={moneyness} onValueChange={setMoneyness}>
-                  <SelectTrigger className="h-9 text-sm bg-background/50"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-9 text-sm bg-background/40 border-border/40"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos</SelectItem>
                     <SelectItem value="ITM">ITM (In The Money)</SelectItem>
@@ -771,59 +815,65 @@ export default function TickerOpcoes() {
                 </Select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider flex items-center gap-1.5">
+                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest flex items-center gap-1.5">
                   <Box className="h-3 w-3" /> Apenas com PAR
                 </label>
-                <div className="flex items-center gap-2 h-9">
+                <div className="flex items-center gap-2 h-9 px-3 rounded-md bg-background/40 border border-border/40">
                   <Switch checked={onlyPaired} onCheckedChange={setOnlyPaired} />
-                  <span className="text-xs text-muted-foreground">
-                    {onlyPaired ? `${allPairedStrikeKeys.size} pares` : "Desligado"}
+                  <span className={`text-xs font-semibold ${onlyPaired ? "text-primary" : "text-muted-foreground"}`}>
+                    {onlyPaired ? `${allPairedStrikeKeys.size} pares` : "Off"}
                   </span>
                 </div>
               </div>
               <div>
-                <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Prêmio Mín (R$)</label>
+                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1.5 block">Prêmio Mín (R$)</label>
                 <Input
                   type="number"
                   step="0.01"
                   placeholder="0.00"
                   value={precoMin}
                   onChange={(e) => setPrecoMin(e.target.value)}
-                  className="h-9 text-sm bg-background/50 font-mono"
+                  className="h-9 text-sm bg-background/40 border-border/40 font-mono"
                 />
               </div>
               <div>
-                <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1.5 block">Prêmio Máx (R$)</label>
+                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1.5 block">Prêmio Máx (R$)</label>
                 <Input
                   type="number"
                   step="0.01"
                   placeholder="∞"
                   value={precoMax}
                   onChange={(e) => setPrecoMax(e.target.value)}
-                  className="h-9 text-sm bg-background/50 font-mono"
+                  className="h-9 text-sm bg-background/40 border-border/40 font-mono"
                 />
               </div>
             </div>
 
-            {/* Row 3: Strike % Range */}
-            <div className="rounded-lg border border-border/30 bg-background/30 p-3 space-y-3">
+            {/* Row 3: Strike % Range — glass card */}
+            <div className="rounded-xl border border-primary/15 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider flex items-center gap-1.5">
-                  <DollarSign className="h-3.5 w-3.5" /> Filtrar Strike por % do Preço Base
+                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest flex items-center gap-1.5">
+                  <DollarSign className="h-3.5 w-3.5 text-primary" /> Filtrar Strike por % do Preço Base
                 </label>
                 {precoBaseNum > 0 && (
-                  <span className="text-xs font-mono text-primary">
-                    R$ {strikeMinCalc.toFixed(2)} — R$ {strikeMaxCalc.toFixed(2)}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-destructive/10 text-destructive border border-destructive/20">
+                      R$ {strikeMinCalc.toFixed(2)}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">—</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20">
+                      R$ {strikeMaxCalc.toFixed(2)}
+                    </span>
+                  </div>
                 )}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div>
-                  <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider mb-1.5 flex items-center gap-1.5">
+                  <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1.5 flex items-center gap-1.5">
                     Preço do Ativo (R$)
                     {livePrice && livePrice > 0 && !precoBaseManual && (
                       <span className="flex items-center gap-0.5 text-primary">
-                        <Wifi className="h-3 w-3" /> ao vivo
+                        <Wifi className="h-3 w-3 animate-pulse" /> ao vivo
                       </span>
                     )}
                   </label>
@@ -835,18 +885,16 @@ export default function TickerOpcoes() {
                       placeholder="Ex: 35.50"
                       value={precoBase}
                       onChange={(e) => { setPrecoBase(e.target.value); setPrecoBaseManual(true); }}
-                      className="pl-9 h-9 text-sm bg-background/50 font-mono"
+                      className="pl-9 h-9 text-sm bg-background/40 border-border/40 font-mono"
                     />
                   </div>
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider flex items-center gap-1">
-                      <TrendingDown className="h-3 w-3 text-destructive" /> Abaixo: {pctAbaixo}%
+                    <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest flex items-center gap-1">
+                      <TrendingDown className="h-3 w-3 text-destructive" /> Abaixo
                     </label>
-                    {precoBaseNum > 0 && (
-                      <span className="text-[10px] font-mono text-destructive/70">R$ {strikeMinCalc.toFixed(2)}</span>
-                    )}
+                    <span className="text-xs font-bold font-mono text-destructive">{pctAbaixo}%</span>
                   </div>
                   <Slider
                     value={[pctAbaixo]}
@@ -859,12 +907,10 @@ export default function TickerOpcoes() {
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs uppercase text-muted-foreground font-bold tracking-wider flex items-center gap-1">
-                      <TrendingUp className="h-3 w-3 text-primary" /> Acima: {pctAcima}%
+                    <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest flex items-center gap-1">
+                      <TrendingUp className="h-3 w-3 text-primary" /> Acima
                     </label>
-                    {precoBaseNum > 0 && (
-                      <span className="text-[10px] font-mono text-primary/70">R$ {strikeMaxCalc.toFixed(2)}</span>
-                    )}
+                    <span className="text-xs font-bold font-mono text-primary">{pctAcima}%</span>
                   </div>
                   <Slider
                     value={[pctAcima]}
