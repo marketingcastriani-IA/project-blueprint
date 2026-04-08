@@ -106,7 +106,10 @@ interface AlertEntry {
 
 // ─── CONSTANTES ──────────────────────────────────────────────
 const STORAGE_KEY = "collar-tracker-families";
-const CDI_ANUAL_DEFAULT = 14.15;
+const CDI_ANUAL_DEFAULT = 14.65;
+const IR_CDI = 0.225; // 22,5%
+const IR_COLLAR = 0.15; // 15%
+const IR_ENABLED_KEY = "collar-tracker-ir-enabled";
 const CDI_STORAGE_KEY = "collar-tracker-cdi-anual";
 const NOTIF_ENABLED_KEY = "collar-tracker-notif-enabled";
 const NOTIF_THRESHOLD_KEY = "collar-tracker-notif-threshold";
@@ -346,7 +349,9 @@ export default function CollarTrackerTab() {
   const [editingCdi, setEditingCdi] = useState(false);
   const [cdiInput, setCdiInput] = useState(String(cdiAnual).replace(".", ","));
 
-  // ─── NOTIFICAÇÕES ──────────────────────────────────────────
+  const [descontarIR, setDescontarIR] = useState<boolean>(() => {
+    try { return localStorage.getItem(IR_ENABLED_KEY) === "true"; } catch { return false; }
+  });
   const [notifEnabled, setNotifEnabled] = useState<boolean>(() => {
     try { return localStorage.getItem(NOTIF_ENABLED_KEY) === "true"; } catch { return false; }
   });
@@ -800,7 +805,7 @@ export default function CollarTrackerTab() {
         default: return b.qualityScore - a.qualityScore;
       }
     });
-    return bestPerFamily.slice(0, 10);
+    return bestPerFamily.slice(0, 3);
   }, [families, calculateCollars, rankingMethod]);
 
   const topCollarsKey = topCollars.map(c => `${c.tipo}-${c.callSymbol}-${c.putSymbol}`).join(",");
@@ -942,11 +947,34 @@ export default function CollarTrackerTab() {
 
       {/* TOP COLLARS CARDS */}
       {topCollars.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {topCollars.map((c, i) => {
             const tipoCfg = TIPO_CONFIG[c.tipo];
             const trophyImg = i === 0 ? trophyGold : i === 1 ? trophySilver : i === 2 ? trophyBronze : null;
             const isSelected = selectedCollar?.tipo === c.tipo && selectedCollar?.callSymbol === c.callSymbol && selectedCollar?.putSymbol === c.putSymbol;
+
+            // CDI comparison calculations
+            const fam = families.find(f => f.name === c.familyName);
+            const qty = fam?.quantidade ?? 100;
+            const S0 = c.tipo === "Alta" ? c.stockAsk! : c.stockBid!;
+            const investTotal = S0 * qty;
+            const lucroCollarAbs = (c.maxProfitAbs ?? 0) * qty;
+            const collarPct = c.maxProfitPct ?? 0;
+
+            // CDI do período
+            const cdiPctBruto = c.cdiPeriodo ?? 0;
+            const cdiRendBruto = investTotal * (cdiPctBruto / 100);
+
+            // Com IR
+            const collarPctLiq = descontarIR ? collarPct * (1 - IR_COLLAR) : collarPct;
+            const collarRendLiq = descontarIR ? lucroCollarAbs * (1 - IR_COLLAR) : lucroCollarAbs;
+            const cdiPctLiq = descontarIR ? cdiPctBruto * (1 - IR_CDI) : cdiPctBruto;
+            const cdiRendLiq = descontarIR ? cdiRendBruto * (1 - IR_CDI) : cdiRendBruto;
+
+            const diffPp = collarPctLiq - cdiPctLiq;
+            const diffBrl = collarRendLiq - cdiRendLiq;
+            const collarGanha = diffPp >= 0;
+
             return (
               <div key={`${c.tipo}-${c.callSymbol}-${c.putSymbol}`}
                 onClick={() => setSelectedCollar(c)}
@@ -966,46 +994,54 @@ export default function CollarTrackerTab() {
                   <ShieldCheck className="w-3.5 h-3.5 text-success" />
                 </div>
                 <p className="text-lg font-black text-foreground">{c.familyName}</p>
-                {(() => {
-                  const fam = families.find(f => f.name === c.familyName);
-                  const qty = fam?.quantidade ?? 100;
-                  const S0 = c.tipo === "Alta" ? c.stockAsk! : c.stockBid!;
-                  return (
-                    <>
-                      <div className="mt-2 grid grid-cols-2 gap-2">
-                        <div>
-                          <p className="text-[10px] text-muted-foreground uppercase font-bold">Lucro Máx</p>
-                          <p className="text-sm font-black text-success">{formatPercent(c.maxProfitPct)}</p>
-                          <p className="text-[9px] font-mono text-success">{formatBRL((c.maxProfitAbs ?? 0) * qty)}</p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-muted-foreground uppercase font-bold">Investimento</p>
-                          <p className="text-sm font-black text-foreground">{formatBRL(S0 * qty)}</p>
-                          <p className="text-[9px] font-mono text-muted-foreground">{qty} ações</p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-muted-foreground uppercase font-bold">Net</p>
-                          <p className={cn("text-sm font-black", (c.netCostCredit ?? 0) >= 0 ? "text-success" : "text-destructive")}>
-                            {formatBRL(c.netCostCredit)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-muted-foreground uppercase font-bold">Score</p>
-                          <p className={cn("text-sm font-black",
-                            c.qualityScore >= 80 ? "text-success" :
-                            c.qualityScore >= 60 ? "text-warning" : "text-muted-foreground"
-                          )}>{c.qualityScore}</p>
-                        </div>
-                      </div>
-                      {c.vencimento && (
-                        <p className="text-[10px] text-muted-foreground mt-2">
-                          Venc: <span className="font-bold text-foreground">{c.vencimento}</span>
-                          {c.diasUteis !== null && <span> · {c.diasUteis}du</span>}
-                        </p>
-                      )}
-                    </>
-                  );
-                })()}
+
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase font-bold">
+                      Collar {descontarIR ? "(Líq 15%)" : "(Bruto)"}
+                    </p>
+                    <p className="text-sm font-black text-success">{formatPercent(collarPctLiq)}</p>
+                    <p className="text-[9px] font-mono text-success">{formatBRL(collarRendLiq)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase font-bold">
+                      CDI {descontarIR ? "(Líq 22,5%)" : "(Bruto)"}
+                    </p>
+                    <p className="text-sm font-black text-warning">{formatPercent(cdiPctLiq)}</p>
+                    <p className="text-[9px] font-mono text-warning">{formatBRL(cdiRendLiq)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Investimento</p>
+                    <p className="text-sm font-black text-foreground">{formatBRL(investTotal)}</p>
+                    <p className="text-[9px] font-mono text-muted-foreground">{qty} ações</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Collar vs CDI</p>
+                    <p className={cn("text-sm font-black", collarGanha ? "text-success" : "text-destructive")}>
+                      {collarGanha ? "+" : ""}{diffPp.toFixed(2).replace(".", ",")} pp
+                    </p>
+                    <p className={cn("text-[9px] font-mono", collarGanha ? "text-success" : "text-destructive")}>
+                      {collarGanha ? "+" : ""}{formatBRL(diffBrl)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Winner badge */}
+                <div className={cn(
+                  "mt-3 text-center py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest",
+                  collarGanha
+                    ? "bg-success/10 text-success border border-success/20"
+                    : "bg-destructive/10 text-destructive border border-destructive/20"
+                )}>
+                  {collarGanha ? "✅ COLLAR GANHA DO CDI" : "⚠️ CDI RENDE MAIS"}
+                </div>
+
+                {c.vencimento && (
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    Venc: <span className="font-bold text-foreground">{c.vencimento}</span>
+                    {c.diasUteis !== null && <span> · {c.diasUteis}du</span>}
+                  </p>
+                )}
               </div>
             );
           })}
@@ -1073,17 +1109,30 @@ export default function CollarTrackerTab() {
                   <p className="text-sm font-black text-success">{formatBRL(selectedCollar.riskFreeMargin)}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-black uppercase text-muted-foreground">CDI Período</p>
-                  <p className="text-sm font-black text-warning">{formatPercent(selectedCollar.cdiPeriodo)}</p>
-                  {selectedCollar.diffCdiProfit !== null && (
-                    <p className={cn("text-[10px] font-bold font-mono", selectedCollar.diffCdiProfit >= 0 ? "text-success" : "text-destructive")}>
-                      {selectedCollar.diffCdiProfit >= 0 ? "+" : ""}{selectedCollar.diffCdiProfit.toFixed(2).replace(".", ",")} pp vs CDI
-                    </p>
-                  )}
+                  <p className="text-xs font-black uppercase text-muted-foreground">
+                    CDI {descontarIR ? "Líq (22,5%)" : "Bruto"}
+                  </p>
+                  <p className="text-sm font-black text-warning">
+                    {formatPercent(descontarIR ? (selectedCollar.cdiPeriodo ?? 0) * (1 - IR_CDI) : selectedCollar.cdiPeriodo)}
+                  </p>
+                  {(() => {
+                    const collarLiq = descontarIR ? (selectedCollar.maxProfitPct ?? 0) * (1 - IR_COLLAR) : (selectedCollar.maxProfitPct ?? 0);
+                    const cdiLiq = descontarIR ? (selectedCollar.cdiPeriodo ?? 0) * (1 - IR_CDI) : (selectedCollar.cdiPeriodo ?? 0);
+                    const diff = collarLiq - cdiLiq;
+                    return (
+                      <p className={cn("text-[10px] font-bold font-mono", diff >= 0 ? "text-success" : "text-destructive")}>
+                        {diff >= 0 ? "+" : ""}{diff.toFixed(2).replace(".", ",")} pp vs CDI
+                      </p>
+                    );
+                  })()}
                 </div>
                 <div>
-                  <p className="text-xs font-black uppercase text-muted-foreground">Retorno R$</p>
-                  <p className="text-sm font-black text-success">{formatBRL(lucroTotal)}</p>
+                  <p className="text-xs font-black uppercase text-muted-foreground">
+                    Retorno {descontarIR ? "Líq (15%)" : "Bruto"}
+                  </p>
+                  <p className="text-sm font-black text-success">
+                    {formatBRL(descontarIR ? lucroTotal * (1 - IR_COLLAR) : lucroTotal)}
+                  </p>
                   <p className="text-[10px] font-mono text-muted-foreground">em {qty} ações</p>
                 </div>
               </div>
@@ -1241,9 +1290,29 @@ export default function CollarTrackerTab() {
               </button>
             )}
           </div>
+
+          {/* IR Toggle */}
+          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-border bg-card shadow-sm">
+            <button onClick={() => { const next = !descontarIR; setDescontarIR(next); localStorage.setItem(IR_ENABLED_KEY, String(next)); }}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-all active:scale-[0.97]",
+                descontarIR
+                  ? "bg-primary/10 border-primary/30 text-primary"
+                  : "bg-muted border-border text-muted-foreground hover:text-foreground"
+              )}>
+              {descontarIR ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+              Descontar IR
+            </button>
+            {descontarIR && (
+              <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                <span className="px-2 py-1 rounded-lg bg-warning/10 border border-warning/20 text-warning font-black">CDI: 22,5%</span>
+                <span className="px-2 py-1 rounded-lg bg-success/10 border border-success/20 text-success font-black">Collar: 15%</span>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Alert Panel */}
+
         <div className="rounded-2xl border-2 border-border bg-card p-4 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
