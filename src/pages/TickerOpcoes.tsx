@@ -45,6 +45,20 @@ interface SavedFamily {
 const BOX_STORAGE_KEY = "box-tracker-families";
 const COLLAR_STORAGE_KEY = "collar-tracker-families";
 
+// Top 10 most liquid B3 stocks for quick selection
+const TOP_STOCKS = [
+  { family: "PETR", label: "PETR", name: "Petrobras" },
+  { family: "VALE", label: "VALE", name: "Vale" },
+  { family: "ITUB", label: "ITUB", name: "Itaú" },
+  { family: "BBDC", label: "BBDC", name: "Bradesco" },
+  { family: "B3SA", label: "B3SA", name: "B3" },
+  { family: "ABEV", label: "ABEV", name: "Ambev" },
+  { family: "BBAS", label: "BBAS", name: "BB" },
+  { family: "WEGE", label: "WEGE", name: "WEG" },
+  { family: "RENT", label: "RENT", name: "Localiza" },
+  { family: "MGLU", label: "MGLU", name: "Magalu" },
+];
+
 export default function TickerOpcoes() {
   const { options, families, vencimentos, loading } = useB3Options();
   const navigate = useNavigate();
