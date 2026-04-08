@@ -211,8 +211,12 @@ export default function History() {
   if (authLoading) return null;
   if (!user) return <Navigate to="/auth" replace />;
 
-  const activeAnalyses = filteredAnalyses.filter(a => a.status === 'active');
-  const closedAnalyses = filteredAnalyses.filter(a => a.status === 'closed');
+  const totalCount = filteredAnalyses.length;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const paginatedAnalyses = filteredAnalyses.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const activeAnalyses = paginatedAnalyses.filter(a => a.status === 'active');
+  const closedAnalyses = paginatedAnalyses.filter(a => a.status === 'closed');
 
   const formatValue = (val: number | string | 'Ilimitado') => {
     if (val === 'Ilimitado') return 'Ilimitado';
@@ -570,8 +574,52 @@ export default function History() {
                 <div className="grid gap-3">{closedAnalyses.map(renderClosedCard)}</div>
               </div>
             )}
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-4 pt-6">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage(p => p - 1)}
+                className="font-bold"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+              </Button>
+              <span className="text-sm font-black text-muted-foreground">
+                Página {page} de {totalPages} ({totalCount} operações)
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages}
+                onClick={() => setPage(p => p + 1)}
+                className="font-bold"
+              >
+                Próxima <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          )}
           </div>
         )}
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Deletar Análise?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação é irreversível. A análise e todas as suas pernas serão removidas permanentemente.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Deletar Permanentemente
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );
