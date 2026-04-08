@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -205,17 +206,26 @@ export default function Portfolio() {
     }
   };
 
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (!confirm('Deletar permanentemente esta operação?')) return;
+    setDeleteTarget(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget;
+    setDeleteTarget(null);
     setDeletingId(id);
     try {
       await supabase.from('legs').delete().eq('analysis_id', id);
       await supabase.from('analyses').delete().eq('id', id);
       setAnalyses(prev => prev.filter(a => a.id !== id));
       toast.success('Operação deletada');
-    } catch (err: any) {
-      toast.error('Erro: ' + err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro desconhecido';
+      toast.error('Erro: ' + message);
     } finally {
       setDeletingId(null);
     }
@@ -411,11 +421,15 @@ export default function Portfolio() {
             <CardContent>
               <div className="h-[200px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={stats.evolutionData}>
+                <AreaChart data={stats.evolutionData}>
                     <defs>
-                      <linearGradient id="portfolioPlGradient" x1="0" y1="0" x2="0" y2="1">
+                      <linearGradient id="portfolioPlGradientPositive" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="hsl(var(--success))" stopOpacity={0.3}/>
                         <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="portfolioPlGradientNegative" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--destructive))" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="hsl(var(--destructive))" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
                     <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
@@ -425,7 +439,13 @@ export default function Portfolio() {
                       formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'P&L Acumulado']}
                     />
                     <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.5} />
-                    <Area type="monotone" dataKey="pl" stroke="hsl(var(--success))" strokeWidth={2} fill="url(#portfolioPlGradient)" />
+                    <Area 
+                      type="monotone" 
+                      dataKey="pl" 
+                      stroke={stats.totalPL < 0 ? "hsl(var(--destructive))" : "hsl(var(--success))"} 
+                      strokeWidth={2} 
+                      fill={stats.totalPL < 0 ? "url(#portfolioPlGradientNegative)" : "url(#portfolioPlGradientPositive)"} 
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -571,6 +591,24 @@ export default function Portfolio() {
             })}
           </div>
         )}
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Deletar Operação?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação é irreversível. A operação e todas as suas pernas serão removidas permanentemente do portfólio.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Deletar Permanentemente
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );

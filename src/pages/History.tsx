@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, Clock, PlusCircle, Trash2, Edit2, XCircle, RotateCcw, History as HistoryIcon, CalendarDays, Download, TrendingUp, TrendingDown, Target, ShieldCheck, AlertTriangle, BarChart3, Search, ArrowUpDown } from 'lucide-react';
+import { Loader2, Clock, PlusCircle, Trash2, Edit2, XCircle, RotateCcw, History as HistoryIcon, CalendarDays, Download, TrendingUp, TrendingDown, Target, ShieldCheck, AlertTriangle, BarChart3, Search, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
@@ -18,6 +18,7 @@ import { calculateMetrics, calculateCDIOpportunityCost } from '@/lib/payoff';
 import { Leg } from '@/lib/types';
 import type { AnalysisMetrics } from '@/lib/types';
 import ListSkeleton from '@/components/skeletons/ListSkeleton';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 interface AnalysisSummary {
   id: string;
@@ -54,7 +55,9 @@ export default function History() {
   const [filterYear, setFilterYear] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'profit'>('newest');
-
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
@@ -123,7 +126,9 @@ export default function History() {
         const nameMatch = a.name.toLowerCase().includes(q);
         const assetMatch = a.underlying_asset?.toLowerCase().includes(q);
         const legsAssetMatch = (legsMap[a.id] || []).some(l => l.asset?.toLowerCase().includes(q));
-        if (!nameMatch && !assetMatch && !legsAssetMatch) return false;
+        // Search in AI suggestion too
+        const aiMatch = a.ai_suggestion?.toLowerCase().includes(q);
+        if (!nameMatch && !assetMatch && !legsAssetMatch && !aiMatch) return false;
       }
       return true;
     });
@@ -147,7 +152,13 @@ export default function History() {
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (!confirm('Tem certeza que deseja deletar esta análise?')) return;
+    setDeleteTarget(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget;
+    setDeleteTarget(null);
     setDeleting(id);
     try {
       await supabase.from('legs').delete().eq('analysis_id', id);
@@ -155,8 +166,9 @@ export default function History() {
       if (error) throw error;
       setAnalyses(analyses.filter(a => a.id !== id));
       toast.success('Análise deletada com sucesso');
-    } catch (err: any) {
-      toast.error('Erro ao deletar', { description: err.message });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro desconhecido';
+      toast.error('Erro ao deletar', { description: message });
     } finally {
       setDeleting(null);
     }
@@ -199,8 +211,12 @@ export default function History() {
   if (authLoading) return null;
   if (!user) return <Navigate to="/auth" replace />;
 
-  const activeAnalyses = filteredAnalyses.filter(a => a.status === 'active');
-  const closedAnalyses = filteredAnalyses.filter(a => a.status === 'closed');
+  const totalCount = filteredAnalyses.length;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const paginatedAnalyses = filteredAnalyses.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const activeAnalyses = paginatedAnalyses.filter(a => a.status === 'active');
+  const closedAnalyses = paginatedAnalyses.filter(a => a.status === 'closed');
 
   const formatValue = (val: number | string | 'Ilimitado') => {
     if (val === 'Ilimitado') return 'Ilimitado';
@@ -558,8 +574,52 @@ export default function History() {
                 <div className="grid gap-3">{closedAnalyses.map(renderClosedCard)}</div>
               </div>
             )}
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-4 pt-6">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage(p => p - 1)}
+                className="font-bold"
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+              </Button>
+              <span className="text-sm font-black text-muted-foreground">
+                Página {page} de {totalPages} ({totalCount} operações)
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={page >= totalPages}
+                onClick={() => setPage(p => p + 1)}
+                className="font-bold"
+              >
+                Próxima <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          )}
           </div>
         )}
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Deletar Análise?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação é irreversível. A análise e todas as suas pernas serão removidas permanentemente.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Deletar Permanentemente
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );

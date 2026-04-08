@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import { supabase } from "@/integrations/supabase/client";
@@ -866,7 +867,12 @@ export default function Diversificador() {
         {/* ══ Tab: Alocação ════════════════════════════════════════════════ */}
         {tabAtiva === "alocacao" && (
           <>
-            <div className="rounded-2xl bg-card border border-border p-4">
+            <div className={cn("rounded-2xl bg-card border p-4", somaPercentuais > 100 ? "border-destructive border-2 shadow-[0_0_20px_-4px_hsl(var(--destructive)/0.3)]" : "border-border")}>
+              {somaPercentuais > 100 && (
+                <div className="flex items-center gap-2 mb-3 p-2 rounded-lg bg-destructive/10 text-destructive text-sm font-bold">
+                  <span>⚠️ Soma dos percentuais ({somaPercentuais}%) excede 100%!</span>
+                </div>
+              )}
               <p className="text-sm text-muted-foreground mb-3">Distribuição do patrimônio</p>
               <div className="w-full h-8 rounded-lg overflow-hidden flex">
                 {alocacoes.map((a) => (

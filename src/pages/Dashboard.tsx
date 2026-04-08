@@ -1,5 +1,4 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { AreaChart, Area, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAccessControl } from '@/hooks/useAccessControl';
@@ -12,6 +11,7 @@ import MetricsCards from '@/components/MetricsCards';
 import CDIComparison from '@/components/CDIComparison';
 import ImageUpload from '@/components/ImageUpload';
 import { Leg } from '@/lib/types';
+import type { AIAnalysisResult } from '@/lib/types';
 import { generatePayoffCurve, calculateMetrics, calculateCDIOpportunityCost } from '@/lib/payoff';
 import { getExpiryFromTicker, countBusinessDays } from '@/lib/b3-calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,178 +31,10 @@ import DashboardSkeleton from '@/components/skeletons/DashboardSkeleton';
 import AIInsights from '@/components/AIInsights';
 import { generateAnalysisPdf } from '@/lib/pdf-generator';
 import OnboardingTour from '@/components/OnboardingTour';
+import PortfolioSummary from '@/components/dashboard/PortfolioSummary';
+import FloatingAnalysisBar from '@/components/dashboard/FloatingAnalysisBar';
 
 type InputMode = null | 'manual' | 'image';
-
-function PortfolioSummary({ userId }: { userId: string }) {
-  const [stats, setStats] = useState<{ totalPL: number; roi: number; openCount: number; closedCount: number; winRate: number; evolutionData: { name: string; pl: number }[] } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      // Fetch all analyses (open + closed)
-      const { data: allAnalyses } = await supabase
-        .from('analyses')
-        .select('id, status, created_at, closed_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true });
-
-      if (!allAnalyses || allAnalyses.length === 0) {
-        setLoading(false);
-        return;
-      }
-
-      const closedAnalyses = allAnalyses.filter(a => a.status === 'closed');
-      const openAnalyses = allAnalyses.filter(a => a.status !== 'closed');
-
-      if (closedAnalyses.length === 0 && openAnalyses.length === 0) {
-        setLoading(false);
-        return;
-      }
-
-      const closedIds = closedAnalyses.map(a => a.id);
-      let totalPL = 0;
-      let totalInvested = 0;
-      let wins = 0;
-      const evolutionData: { name: string; pl: number }[] = [];
-
-      if (closedIds.length > 0) {
-        const { data: legs } = await supabase
-          .from('legs')
-          .select('analysis_id, side, price, current_price, quantity')
-          .in('analysis_id', closedIds);
-
-        if (legs) {
-          const analysisMap: Record<string, any[]> = {};
-          legs.forEach(l => {
-            if (!analysisMap[l.analysis_id]) analysisMap[l.analysis_id] = [];
-            analysisMap[l.analysis_id].push(l);
-          });
-
-          // Build evolution data per closed analysis
-          let cumulativePL = 0;
-          closedAnalyses.forEach((analysis, idx) => {
-            const strategyLegs = analysisMap[analysis.id] || [];
-            let strategyPL = 0;
-            let strategyNetCost = 0;
-            strategyLegs.forEach(l => {
-              const multiplier = l.side === 'buy' ? 1 : -1;
-              if (l.current_price != null) {
-                strategyPL += multiplier * (l.current_price - l.price) * l.quantity;
-              }
-              const costMultiplier = l.side === 'buy' ? -1 : 1;
-              strategyNetCost += costMultiplier * l.price * l.quantity;
-            });
-
-            totalPL += strategyPL;
-            cumulativePL += strategyPL;
-            if (strategyPL > 0) wins++;
-            if (strategyNetCost < 0) totalInvested += Math.abs(strategyNetCost);
-
-            const date = analysis.closed_at || analysis.created_at;
-            evolutionData.push({
-              name: new Date(date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-              pl: Math.round(cumulativePL * 100) / 100,
-            });
-          });
-        }
-      }
-
-      setStats({
-        totalPL,
-        roi: totalInvested > 0 ? (totalPL / totalInvested) * 100 : (totalPL > 0 ? 100 : 0),
-        openCount: openAnalyses.length,
-        closedCount: closedAnalyses.length,
-        winRate: closedAnalyses.length > 0 ? (wins / closedAnalyses.length) * 100 : 0,
-        evolutionData,
-      });
-      setLoading(false);
-    };
-
-    fetchStats();
-  }, [userId]);
-
-  if (loading || !stats) return null;
-  if (stats.totalPL === 0 && stats.openCount === 0 && stats.closedCount === 0) return null;
-
-  
-
-  return (
-    <div className="mb-6 space-y-4">
-      {/* Stats row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="border-border/40 bg-card/80">
-          <CardContent className="py-3 px-4">
-            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Resultado Total</p>
-            <p className={cn("text-xl font-black tracking-tighter", stats.totalPL >= 0 ? "text-success" : "text-destructive")}>
-              R$ {stats.totalPL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="border-border/40 bg-card/80">
-          <CardContent className="py-3 px-4">
-            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">ROI Consolidado</p>
-            <p className={cn("text-xl font-black tracking-tighter", stats.roi >= 0 ? "text-success" : "text-destructive")}>
-              {stats.roi >= 0 ? '+' : ''}{stats.roi.toFixed(2)}%
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="border-border/40 bg-card/80">
-          <CardContent className="py-3 px-4">
-            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Operações</p>
-            <div className="flex items-baseline gap-2">
-              <p className="text-xl font-black tracking-tighter text-foreground">{stats.openCount + stats.closedCount}</p>
-              <span className="text-xs text-muted-foreground font-bold">{stats.openCount} abertas · {stats.closedCount} fechadas</span>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border/40 bg-card/80">
-          <CardContent className="py-3 px-4">
-            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Taxa de Acerto</p>
-            <p className={cn("text-xl font-black tracking-tighter", stats.winRate >= 50 ? "text-success" : "text-warning")}>
-              {stats.winRate.toFixed(0)}%
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Evolution chart */}
-      {stats.evolutionData.length >= 2 && (
-        <Card className="border-primary/20 bg-card/80">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-black flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-primary" /> Evolução do P&L Acumulado
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[180px] sm:h-[220px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={stats.evolutionData}>
-                  <defs>
-                    <linearGradient id="plGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--success))" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" tickLine={false} axisLine={false} tickFormatter={(v: number) => `R$${v}`} />
-                  <RTooltip
-                    contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '12px' }}
-                    formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 'P&L Acumulado']}
-                  />
-                  <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" strokeOpacity={0.5} />
-                  <Area type="monotone" dataKey="pl" stroke="hsl(var(--success))" strokeWidth={2} fill="url(#plGradient)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
-}
-
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
   const access = useAccessControl();
@@ -215,8 +47,9 @@ export default function Dashboard() {
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [daysToExpiry, setDaysToExpiry] = useState(0);
   const [expiryDate, setExpiryDate] = useState<Date | undefined>(undefined);
-  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysisResult | null>(null);
   const [loadingAI, setLoadingAI] = useState(false);
+  const [aiProgress, setAiProgress] = useState(0);
   const [saving, setSaving] = useState(false);
   const [inputMode, setInputMode] = useState<InputMode>(null);
   const aiSectionRef = useRef<HTMLDivElement>(null);
@@ -321,10 +154,18 @@ export default function Dashboard() {
     }
     if (legs.length === 0) { toast.error('Adicione pernas primeiro.'); return; }
     setLoadingAI(true);
+    setAiProgress(10);
     setTimeout(() => {
       aiSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 200);
+    
+    // Progress simulation
+    const progressInterval = setInterval(() => {
+      setAiProgress(prev => Math.min(prev + 15, 85));
+    }, 800);
+    
     try {
+      setAiProgress(30);
       const { data, error } = await supabase.functions.invoke('analyze-structure', {
         body: {
           legs,
@@ -334,8 +175,10 @@ export default function Dashboard() {
       });
       if (error) throw error;
       
+      setAiProgress(90);
+      
       // Frontend validation: force AI coherence with calculated metrics
-      const validated = { ...data };
+      const validated = { ...data } as AIAnalysisResult;
       if (metrics.isRiskFree && validated.risk_level !== 'Baixo') {
         validated.risk_level = 'Baixo';
         console.warn('[AI Validation] Forçado risk_level para Baixo (isRiskFree=true)');
@@ -345,20 +188,24 @@ export default function Dashboard() {
           !c.toLowerCase().includes('prejuízo') && !c.toLowerCase().includes('perda') && !c.toLowerCase().includes('risco')
         );
       }
-      // Check if AI mentions "crédito" when it's actually a debit
-      if (metrics.montageTotal > 0 && validated.summary) {
+      if (metrics.montageTotal && metrics.montageTotal > 0 && validated.summary) {
         validated.summary = validated.summary.replace(/crédito líquido/gi, 'custo da montagem');
       }
       
       setAiAnalysis(validated);
+      setAiProgress(100);
       
       toast.success('Análise de IA concluída!');
       setTimeout(() => {
         aiSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error('Erro na IA');
-    } finally { setLoadingAI(false); }
+    } finally { 
+      clearInterval(progressInterval);
+      setLoadingAI(false); 
+      setTimeout(() => setAiProgress(0), 500);
+    }
   };
 
   const saveAnalysis = async () => {
@@ -527,7 +374,7 @@ export default function Dashboard() {
                     className={cn(
                       "transition-all duration-500",
                       legs.length > 0 && !loadingAI
-                        ? "bg-success hover:bg-success/90 text-success-foreground scale-110 animate-pulse h-14 px-8 text-lg font-black shadow-[0_0_40px_-8px_hsl(var(--success)/0.6)]"
+                        ? "bg-success hover:bg-success/90 text-success-foreground scale-110 h-14 px-8 text-lg font-black shadow-[0_0_40px_-8px_hsl(var(--success)/0.6)]"
                         : "text-base h-11 px-6 shadow-[0_0_30px_-8px_hsl(var(--primary)/0.4)]"
                     )}
                   >
@@ -589,6 +436,17 @@ export default function Dashboard() {
                 </Button>
               )}
             </div>
+
+            {/* AI Progress Bar */}
+            {loadingAI && (
+              <div className="space-y-2 animate-fade-in">
+                <div className="flex items-center justify-between text-xs font-black uppercase tracking-widest text-muted-foreground">
+                  <span>{aiProgress < 30 ? 'Enviando estrutura...' : aiProgress < 70 ? 'Processando análise...' : aiProgress < 95 ? 'Gerando relatório...' : 'Finalizando!'}</span>
+                  <span>{aiProgress}%</span>
+                </div>
+                <Progress value={aiProgress} className="h-2" />
+              </div>
+            )}
 
             <div className="grid gap-4 grid-cols-1 lg:grid-cols-3" data-tour="analysis-config">
               <div className="space-y-2">
@@ -748,42 +606,20 @@ export default function Dashboard() {
         )}
       </main>
 
-      {/* Floating sticky bar - Analisar a Estrutura por IA */}
+      {/* Smart Floating Bar - only shows when scrolled */}
       {legs.length > 0 && !isLimitReached && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-primary/30 bg-card/95 backdrop-blur-md shadow-[0_-4px_30px_-8px_hsl(var(--primary)/0.3)]">
-          <div className="container flex items-center justify-center py-3 gap-3">
-            <Button
-              onClick={getAISuggestion}
-              disabled={loadingAI}
-              className="animate-pulse bg-primary hover:bg-primary/90 text-primary-foreground font-black text-base h-12 px-8 shadow-[0_0_30px_-5px_hsl(var(--primary)/0.6)]"
-            >
-              {loadingAI ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
-              Analisar a Estrutura por IA
-            </Button>
-            <Button
-              onClick={saveAnalysis}
-              disabled={saving}
-              variant="outline"
-              className="font-black text-base h-12 px-6"
-            >
-              {saving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
-              Salvar
-            </Button>
-            <Button
-              onClick={() => generateAnalysisPdf(
-                analysisName || 'Análise',
-                legs,
-                metrics,
-                { cdiRate, daysToExpiry, aiSuggestion: aiAnalysis ? JSON.stringify(aiAnalysis) : undefined }
-              )}
-              variant="outline"
-              className="font-black text-base h-12 px-6 border-primary/30 text-primary"
-            >
-              <Download className="mr-2 h-5 w-5" />
-              PDF
-            </Button>
-          </div>
-        </div>
+        <FloatingAnalysisBar
+          onAnalyze={getAISuggestion}
+          onSave={saveAnalysis}
+          onDownloadPdf={() => generateAnalysisPdf(
+            analysisName || 'Análise',
+            legs,
+            metrics,
+            { cdiRate, daysToExpiry, aiSuggestion: aiAnalysis ? JSON.stringify(aiAnalysis) : undefined }
+          )}
+          loadingAI={loadingAI}
+          saving={saving}
+        />
       )}
 
       {/* Dialog de sucesso ao salvar */}

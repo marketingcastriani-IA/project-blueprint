@@ -21,7 +21,7 @@ function RtdIndicator({ size = 'md' }: { size?: 'sm' | 'md' }) {
         "flex items-center gap-1.5 rounded-full font-black uppercase border-2 transition-all cursor-default shrink-0",
         small ? "px-2.5 py-1 text-[9px] tracking-wider" : "px-3 py-1.5 text-[10px] tracking-widest",
         rtdStatus === 'connected'
-          ? "bg-emerald-500/25 text-emerald-600 dark:text-emerald-300 border-emerald-400/60 shadow-[0_0_20px_rgba(16,185,129,0.6),0_0_40px_rgba(16,185,129,0.2)] animate-pulse"
+          ? "bg-emerald-500/25 text-emerald-600 dark:text-emerald-300 border-emerald-400/60 shadow-[0_0_20px_rgba(16,185,129,0.6),0_0_40px_rgba(16,185,129,0.2)]"
           : rtdStatus === 'connecting'
           ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/50 animate-pulse shadow-[0_0_12px_rgba(234,179,8,0.4)]"
           : "bg-muted text-muted-foreground border-border"

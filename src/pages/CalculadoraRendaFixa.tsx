@@ -78,8 +78,14 @@ export default function CalculadoraRendaFixa() {
     }
   };
 
-  const resultado = useMemo(() => {
+  const dateError = useMemo(() => {
     if (!dataVencimento) return null;
+    if (dataVencimento <= dataInicio) return 'Data de vencimento deve ser posterior à data de início';
+    return null;
+  }, [dataInicio, dataVencimento]);
+
+  const resultado = useMemo(() => {
+    if (!dataVencimento || dateError) return null;
 
     const capitalNum = capitalRaw;
     const cdiNum = parseFloat(cdiAnual) || 0;
@@ -416,7 +422,11 @@ export default function CalculadoraRendaFixa() {
                 Rendimento Renda Fixa
               </h2>
 
-              {!resultado ? (
+              {dateError ? (
+                <p className="text-sm text-destructive py-8 text-center font-bold">
+                  ⚠️ {dateError}
+                </p>
+              ) : !resultado ? (
                 <p className="text-sm text-muted-foreground py-8 text-center">
                   Selecione a data de vencimento para ver os resultados.
                 </p>
@@ -596,7 +606,7 @@ export default function CalculadoraRendaFixa() {
                           props.payload.name
                         ]}
                       />
-                      <Bar dataKey="valor" radius={[6, 6, 0, 0]} maxBarSize={60}>
+                      <Bar dataKey="valor" radius={[6, 6, 0, 0]} maxBarSize={60} label={{ position: 'top', formatter: (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, fontSize: 11, fontWeight: 'bold', fill: 'hsl(var(--foreground))' }}>
                         {chartData.map((entry, index) => (
                           <Cell key={index} fill={entry.fill} />
                         ))}
