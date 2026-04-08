@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, Clock, PlusCircle, Trash2, Edit2, XCircle, RotateCcw, History as HistoryIcon, CalendarDays, Download, TrendingUp, TrendingDown, Target, ShieldCheck, AlertTriangle, BarChart3, Search, ArrowUpDown } from 'lucide-react';
+import { Loader2, Clock, PlusCircle, Trash2, Edit2, XCircle, RotateCcw, History as HistoryIcon, CalendarDays, Download, TrendingUp, TrendingDown, Target, ShieldCheck, AlertTriangle, BarChart3, Search, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
@@ -18,6 +18,7 @@ import { calculateMetrics, calculateCDIOpportunityCost } from '@/lib/payoff';
 import { Leg } from '@/lib/types';
 import type { AnalysisMetrics } from '@/lib/types';
 import ListSkeleton from '@/components/skeletons/ListSkeleton';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 interface AnalysisSummary {
   id: string;
