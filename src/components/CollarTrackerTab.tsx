@@ -785,28 +785,39 @@ export default function CollarTrackerTab() {
     [rows, cdiAnual, getStrikeAndExpiry, familyStockTickers, rankingMethod]
   );
 
-  // Global best per family
+  // Global best — one per ranking method
   const topCollars = useMemo(() => {
-    const bestPerFamily: (CollarResult & { familyName: string })[] = [];
+    // Collect all valid collars across families
+    const allValid: (CollarResult & { familyName: string })[] = [];
     families.forEach((f) => {
       if (f.tickers.length === 0) return;
       const collars = calculateCollars(f);
-      // Best Alta
-      const bestAlta = collars.find((c) => c.tipo === "Alta" && c.maxProfitPct !== null);
-      if (bestAlta) bestPerFamily.push({ ...bestAlta, familyName: f.name });
-      // Best Baixa
-      const bestBaixa = collars.find((c) => c.tipo === "Baixa" && c.maxProfitPct !== null);
-      if (bestBaixa) bestPerFamily.push({ ...bestBaixa, familyName: f.name });
+      collars.forEach((c) => {
+        if (c.maxProfitPct !== null) allValid.push({ ...c, familyName: f.name });
+      });
     });
-    bestPerFamily.sort((a, b) => {
-      switch (rankingMethod) {
-        case "lucro": return (b.maxProfitPct ?? -999) - (a.maxProfitPct ?? -999);
-        case "netcost": return (b.netCostCredit ?? -999) - (a.netCostCredit ?? -999);
-        default: return b.qualityScore - a.qualityScore;
+    if (allValid.length === 0) return [];
+
+    const methods: { key: RankingMethod; label: string; sort: (a: CollarResult, b: CollarResult) => number }[] = [
+      { key: "lucro", label: "Maior Lucro", sort: (a, b) => (b.maxProfitPct ?? -999) - (a.maxProfitPct ?? -999) },
+      { key: "score", label: "Quality Score", sort: (a, b) => b.qualityScore - a.qualityScore },
+      { key: "netcost", label: "Net Credit", sort: (a, b) => (b.netCostCredit ?? -999) - (a.netCostCredit ?? -999) },
+    ];
+
+    const result: (CollarResult & { familyName: string; rankLabel: string; rankKey: RankingMethod })[] = [];
+    const usedKeys = new Set<string>();
+
+    for (const m of methods) {
+      const sorted = [...allValid].sort(m.sort);
+      // Pick best that hasn't been used yet, or fallback to absolute best
+      const pick = sorted.find((c) => !usedKeys.has(`${c.tipo}-${c.callSymbol}-${c.putSymbol}`)) ?? sorted[0];
+      if (pick) {
+        usedKeys.add(`${pick.tipo}-${pick.callSymbol}-${pick.putSymbol}`);
+        result.push({ ...pick, rankLabel: m.label, rankKey: m.key });
       }
-    });
-    return bestPerFamily.slice(0, 3);
-  }, [families, calculateCollars, rankingMethod]);
+    }
+    return result;
+  }, [families, calculateCollars]);
 
   const topCollarsKey = topCollars.map(c => `${c.tipo}-${c.callSymbol}-${c.putSymbol}`).join(",");
   useEffect(() => {
