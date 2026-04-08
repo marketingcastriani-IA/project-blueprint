@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useB3Options, type B3Option } from "@/contexts/B3OptionsContext";
 import ProfessionalLayout from "@/components/ProfessionalLayout";
@@ -689,19 +690,24 @@ export default function TickerOpcoes() {
           </div>
           <div className="px-3 py-2.5">
             <div className="flex flex-wrap gap-2">
-              {TOP_STOCKS.map((stock) => {
+              {TOP_STOCKS.map((stock, index) => {
                 const isActive = selectedFamily === stock.family;
                 const familyExists = families.includes(stock.family);
                 if (!familyExists) return null;
                 const count = options.filter((o) => o.family === stock.family).length;
                 return (
-                  <button
+                  <motion.button
                     key={stock.family}
+                    initial={{ opacity: 0, y: 12, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.3, delay: index * 0.04, ease: "easeOut" }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.97 }}
                     onClick={() => setSelectedFamily(isActive ? "all" : stock.family)}
-                    className={`group relative flex items-center gap-2 rounded-xl px-3.5 py-2 transition-all duration-200 ${
+                    className={`group relative flex items-center gap-2 rounded-xl px-3.5 py-2 transition-colors duration-200 ${
                       isActive
-                        ? "bg-primary/20 border border-primary/50 shadow-lg shadow-primary/20 scale-[1.03]"
-                        : "bg-muted/50 border border-border/30 hover:bg-muted/70 hover:border-primary/30 hover:shadow-md hover:shadow-primary/10 hover:scale-[1.02]"
+                        ? "bg-primary/20 border border-primary/50 shadow-lg shadow-primary/20"
+                        : "bg-muted/50 border border-border/30 hover:bg-muted/70 hover:border-primary/30 hover:shadow-md hover:shadow-primary/10"
                     }`}
                   >
                     <span className={`text-sm font-extrabold tracking-wide ${
@@ -721,7 +727,7 @@ export default function TickerOpcoes() {
                     } transition-colors`}>
                       {count}
                     </span>
-                  </button>
+                  </motion.button>
                 );
               })}
             </div>
