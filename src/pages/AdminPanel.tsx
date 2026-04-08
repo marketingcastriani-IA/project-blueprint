@@ -931,19 +931,21 @@ export default function AdminPanel() {
                     </div>
                     <button
                       onClick={() => {
-                        const current = localStorage.getItem(flag.key) !== 'false';
-                        localStorage.setItem(flag.key, current ? 'false' : 'true');
-                        toast.success(`${flag.label} ${current ? 'desativado' : 'ativado'}!`);
+                        const current = featureFlags[flag.key] ?? true;
+                        const newVal = !current;
+                        localStorage.setItem(flag.key, newVal ? 'true' : 'false');
+                        setFeatureFlags(prev => ({ ...prev, [flag.key]: newVal }));
+                        toast.success(`${flag.label} ${newVal ? 'ativado' : 'desativado'}!`);
                         window.dispatchEvent(new Event('storage'));
                       }}
                       className={cn(
                         "px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all",
-                        localStorage.getItem(flag.key) !== 'false'
+                        featureFlags[flag.key]
                           ? "bg-success text-success-foreground shadow-[0_0_12px_hsl(var(--success)/0.4)]"
                           : "bg-destructive text-destructive-foreground"
                       )}
                     >
-                      {localStorage.getItem(flag.key) !== 'false' ? 'ATIVO' : 'DESATIVADO'}
+                      {featureFlags[flag.key] ? 'ATIVO' : 'DESATIVADO'}
                     </button>
                   </div>
                 ))}
