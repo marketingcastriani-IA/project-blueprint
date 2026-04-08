@@ -945,8 +945,9 @@ export default function FAQ() {
               <AccordionTrigger className="text-sm font-bold">Qual a diferença entre plano Free e PRO?</AccordionTrigger>
               <AccordionContent className="text-sm text-muted-foreground">
                 O plano Free permite acesso básico com limite de simulações. O plano PRO oferece simulações ilimitadas, 
-                análise de IA, comparação com CDI, diversificador de estratégias, Tempo Real e Rastreador de Box — 
-                acesso a todos os recursos avançados da plataforma.
+                análise de IA ilimitada, OCR de imagens, comparação com CDI, Calculadora CDI x Opções, Rastreador de Box, 
+                Rastreador de Collar, Tempo Real, Diversificador de Estratégias, Ticker Opções B3 (99.000+ opções), 
+                Notificações Push e acesso completo a todos os recursos avançados da plataforma.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="q8">
