@@ -873,12 +873,20 @@ export default function CollarTrackerTab() {
     const Pput = selectedCollar.tipo === "Alta" ? (selectedCollar.putAsk ?? 0) : (selectedCollar.putBid ?? 0);
     const Pcall = selectedCollar.tipo === "Alta" ? (selectedCollar.callBid ?? 0) : (selectedCollar.callAsk ?? 0);
 
-    if (selectedCollar.tipo === "Alta") {
-      return generateCollarPayoffAlta(S0, selectedCollar.putStrike, selectedCollar.callStrike, Pput, Pcall, selectedCollar.diasUteis, cdiAnual);
-    } else {
-      return generateCollarPayoffBaixa(S0, selectedCollar.putStrike, selectedCollar.callStrike, Pput, Pcall, selectedCollar.diasUteis, cdiAnual);
-    }
-  }, [selectedCollar, cdiAnual]);
+    const rawPoints = selectedCollar.tipo === "Alta"
+      ? generateCollarPayoffAlta(S0, selectedCollar.putStrike, selectedCollar.callStrike, Pput, Pcall, selectedCollar.diasUteis, cdiAnual)
+      : generateCollarPayoffBaixa(S0, selectedCollar.putStrike, selectedCollar.callStrike, Pput, Pcall, selectedCollar.diasUteis, cdiAnual);
+
+    // Add CDI reference line (flat profit from CDI for the period)
+    const cdiPct = selectedCollar.cdiPeriodo ?? 0;
+    const cdiProfitPerShare = S0 * (cdiPct / 100);
+    const cdiProfitLiq = descontarIR ? cdiProfitPerShare * (1 - IR_CDI) : cdiProfitPerShare;
+
+    return rawPoints.map((p) => ({
+      ...p,
+      cdiLine: Math.round(cdiProfitLiq * 100) / 100,
+    }));
+  }, [selectedCollar, cdiAnual, descontarIR]);
 
   const selectedBreakeven = selectedCollar?.breakeven ?? null;
   const connColor = statusConfig[status]?.color ?? "text-muted-foreground";
