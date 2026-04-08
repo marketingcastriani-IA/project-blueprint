@@ -437,6 +437,17 @@ export default function Dashboard() {
               )}
             </div>
 
+            {/* AI Progress Bar */}
+            {loadingAI && (
+              <div className="space-y-2 animate-fade-in">
+                <div className="flex items-center justify-between text-xs font-black uppercase tracking-widest text-muted-foreground">
+                  <span>{aiProgress < 30 ? 'Enviando estrutura...' : aiProgress < 70 ? 'Processando análise...' : aiProgress < 95 ? 'Gerando relatório...' : 'Finalizando!'}</span>
+                  <span>{aiProgress}%</span>
+                </div>
+                <Progress value={aiProgress} className="h-2" />
+              </div>
+            )}
+
             <div className="grid gap-4 grid-cols-1 lg:grid-cols-3" data-tour="analysis-config">
               <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-sm font-bold">
