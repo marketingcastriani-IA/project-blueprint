@@ -1017,6 +1017,34 @@ export default function CollarTrackerTab() {
                 </div>
                 <p className="text-lg font-black text-foreground">{c.familyName}</p>
 
+                {/* Ticker details */}
+                <div className="mt-1.5 space-y-0.5 text-[9px] font-mono">
+                  <div className="flex items-center gap-1.5">
+                    <span className={cn("px-1 py-px rounded font-black", c.tipo === "Alta" ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive")}>
+                      {c.tipo === "Alta" ? "C" : "V"}
+                    </span>
+                    <span className="text-muted-foreground">Ação</span>
+                    <span className="font-bold text-foreground">{familyStockTickers(c.familyName)}</span>
+                    <span className="text-muted-foreground">@ {formatBRL(c.tipo === "Alta" ? c.stockAsk : c.stockBid)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className={cn("px-1 py-px rounded font-black", c.tipo === "Alta" ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive")}>
+                      {c.tipo === "Alta" ? "C" : "V"}
+                    </span>
+                    <span className="text-muted-foreground">Put</span>
+                    <span className="font-bold text-foreground">{c.putSymbol}</span>
+                    <span className="text-muted-foreground">K {c.putStrike?.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className={cn("px-1 py-px rounded font-black", c.tipo === "Alta" ? "bg-destructive/20 text-destructive" : "bg-success/20 text-success")}>
+                      {c.tipo === "Alta" ? "V" : "C"}
+                    </span>
+                    <span className="text-muted-foreground">Call</span>
+                    <span className="font-bold text-foreground">{c.callSymbol}</span>
+                    <span className="text-muted-foreground">K {c.callStrike?.toFixed(2)}</span>
+                  </div>
+                </div>
+
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   <div>
                     <p className="text-[10px] text-muted-foreground uppercase font-bold">Ganho Máx</p>
