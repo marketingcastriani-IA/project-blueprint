@@ -35,10 +35,13 @@ export interface AIAnalysisResult {
   pros: string[];
   cons: string[];
   verdict: string;
-  scenarios?: {
-    alta?: string;
-    lateral?: string;
-    baixa?: string;
+  score: number;
+  strategy_explanation: string;
+  probability_success: string;
+  scenarios: {
+    up: string;
+    flat: string;
+    down: string;
   };
   cdi_comparison?: string;
   strategy_name?: string;
