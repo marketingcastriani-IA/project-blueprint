@@ -785,28 +785,39 @@ export default function CollarTrackerTab() {
     [rows, cdiAnual, getStrikeAndExpiry, familyStockTickers, rankingMethod]
   );
 
-  // Global best per family
+  // Global best — one per ranking method
   const topCollars = useMemo(() => {
-    const bestPerFamily: (CollarResult & { familyName: string })[] = [];
+    // Collect all valid collars across families
+    const allValid: (CollarResult & { familyName: string })[] = [];
     families.forEach((f) => {
       if (f.tickers.length === 0) return;
       const collars = calculateCollars(f);
-      // Best Alta
-      const bestAlta = collars.find((c) => c.tipo === "Alta" && c.maxProfitPct !== null);
-      if (bestAlta) bestPerFamily.push({ ...bestAlta, familyName: f.name });
-      // Best Baixa
-      const bestBaixa = collars.find((c) => c.tipo === "Baixa" && c.maxProfitPct !== null);
-      if (bestBaixa) bestPerFamily.push({ ...bestBaixa, familyName: f.name });
+      collars.forEach((c) => {
+        if (c.maxProfitPct !== null) allValid.push({ ...c, familyName: f.name });
+      });
     });
-    bestPerFamily.sort((a, b) => {
-      switch (rankingMethod) {
-        case "lucro": return (b.maxProfitPct ?? -999) - (a.maxProfitPct ?? -999);
-        case "netcost": return (b.netCostCredit ?? -999) - (a.netCostCredit ?? -999);
-        default: return b.qualityScore - a.qualityScore;
+    if (allValid.length === 0) return [];
+
+    const methods: { key: RankingMethod; label: string; sort: (a: CollarResult, b: CollarResult) => number }[] = [
+      { key: "lucro", label: "Maior Lucro", sort: (a, b) => (b.maxProfitPct ?? -999) - (a.maxProfitPct ?? -999) },
+      { key: "score", label: "Quality Score", sort: (a, b) => b.qualityScore - a.qualityScore },
+      { key: "netcost", label: "Net Credit", sort: (a, b) => (b.netCostCredit ?? -999) - (a.netCostCredit ?? -999) },
+    ];
+
+    const result: (CollarResult & { familyName: string; rankLabel: string; rankKey: RankingMethod })[] = [];
+    const usedKeys = new Set<string>();
+
+    for (const m of methods) {
+      const sorted = [...allValid].sort(m.sort);
+      // Pick best that hasn't been used yet, or fallback to absolute best
+      const pick = sorted.find((c) => !usedKeys.has(`${c.tipo}-${c.callSymbol}-${c.putSymbol}`)) ?? sorted[0];
+      if (pick) {
+        usedKeys.add(`${pick.tipo}-${pick.callSymbol}-${pick.putSymbol}`);
+        result.push({ ...pick, rankLabel: m.label, rankKey: m.key });
       }
-    });
-    return bestPerFamily.slice(0, 3);
-  }, [families, calculateCollars, rankingMethod]);
+    }
+    return result;
+  }, [families, calculateCollars]);
 
   const topCollarsKey = topCollars.map(c => `${c.tipo}-${c.callSymbol}-${c.putSymbol}`).join(",");
   useEffect(() => {
@@ -862,12 +873,20 @@ export default function CollarTrackerTab() {
     const Pput = selectedCollar.tipo === "Alta" ? (selectedCollar.putAsk ?? 0) : (selectedCollar.putBid ?? 0);
     const Pcall = selectedCollar.tipo === "Alta" ? (selectedCollar.callBid ?? 0) : (selectedCollar.callAsk ?? 0);
 
-    if (selectedCollar.tipo === "Alta") {
-      return generateCollarPayoffAlta(S0, selectedCollar.putStrike, selectedCollar.callStrike, Pput, Pcall, selectedCollar.diasUteis, cdiAnual);
-    } else {
-      return generateCollarPayoffBaixa(S0, selectedCollar.putStrike, selectedCollar.callStrike, Pput, Pcall, selectedCollar.diasUteis, cdiAnual);
-    }
-  }, [selectedCollar, cdiAnual]);
+    const rawPoints = selectedCollar.tipo === "Alta"
+      ? generateCollarPayoffAlta(S0, selectedCollar.putStrike, selectedCollar.callStrike, Pput, Pcall, selectedCollar.diasUteis, cdiAnual)
+      : generateCollarPayoffBaixa(S0, selectedCollar.putStrike, selectedCollar.callStrike, Pput, Pcall, selectedCollar.diasUteis, cdiAnual);
+
+    // Add CDI reference line (flat profit from CDI for the period)
+    const cdiPct = selectedCollar.cdiPeriodo ?? 0;
+    const cdiProfitPerShare = S0 * (cdiPct / 100);
+    const cdiProfitLiq = descontarIR ? cdiProfitPerShare * (1 - IR_CDI) : cdiProfitPerShare;
+
+    return rawPoints.map((p) => ({
+      ...p,
+      cdiLine: Math.round(cdiProfitLiq * 100) / 100,
+    }));
+  }, [selectedCollar, cdiAnual, descontarIR]);
 
   const selectedBreakeven = selectedCollar?.breakeven ?? null;
   const connColor = statusConfig[status]?.color ?? "text-muted-foreground";
@@ -992,6 +1011,9 @@ export default function CollarTrackerTab() {
                     {tipoCfg.emoji} {tipoCfg.label}
                   </span>
                   <ShieldCheck className="w-3.5 h-3.5 text-success" />
+                  <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-foreground text-background">
+                    {c.rankLabel}
+                  </span>
                 </div>
                 <p className="text-lg font-black text-foreground">{c.familyName}</p>
 
@@ -1177,6 +1199,9 @@ export default function CollarTrackerTab() {
                   <Tooltip content={<CollarChartTooltip />} />
                   <Area type="monotone" dataKey="payoffExpiry" stroke="none" fill="url(#collarLoss)"
                     isAnimationActive={false} baseValue={0} activeDot={false} />
+                  <Line name="── CDI ──" type="monotone" dataKey="cdiLine"
+                    stroke="hsl(45 95% 55%)" strokeWidth={2.5} strokeDasharray="8 4"
+                    dot={false} isAnimationActive={false} />
                   <Line name="Hoje (T+0)" type="monotone" dataKey="payoffToday"
                     stroke="hsl(142 76% 36%)" strokeWidth={2} strokeDasharray="5 5"
                     dot={false} isAnimationActive={false} />
@@ -1193,8 +1218,12 @@ export default function CollarTrackerTab() {
                 <span className="text-muted-foreground font-bold">No Vencimento</span>
               </span>
               <span className="flex items-center gap-2">
-                <span className="w-6 h-0.5 rounded" style={{ display: "inline-block", background: "hsl(142 76% 36%)", borderStyle: "dashed" }} />
+                <span className="w-6 h-0.5 rounded" style={{ display: "inline-block", background: "hsl(142 76% 36%)" }} />
                 <span className="text-muted-foreground font-bold">Hoje (T+0)</span>
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="w-6 h-0.5 rounded" style={{ display: "inline-block", background: "hsl(45 95% 55%)", borderTop: "2px dashed hsl(45 95% 55%)" }} />
+                <span className="text-muted-foreground font-bold">── CDI {descontarIR ? "Líq" : "Bruto"} ──</span>
               </span>
             </div>
 
