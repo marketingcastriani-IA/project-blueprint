@@ -374,7 +374,7 @@ export default function Dashboard() {
                     className={cn(
                       "transition-all duration-500",
                       legs.length > 0 && !loadingAI
-                        ? "bg-success hover:bg-success/90 text-success-foreground scale-110 animate-pulse h-14 px-8 text-lg font-black shadow-[0_0_40px_-8px_hsl(var(--success)/0.6)]"
+                        ? "bg-success hover:bg-success/90 text-success-foreground scale-110 h-14 px-8 text-lg font-black shadow-[0_0_40px_-8px_hsl(var(--success)/0.6)]"
                         : "text-base h-11 px-6 shadow-[0_0_30px_-8px_hsl(var(--primary)/0.4)]"
                     )}
                   >
