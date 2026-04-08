@@ -720,13 +720,6 @@ export default function TickerOpcoes() {
                     } transition-colors`}>
                       {stock.name}
                     </span>
-                    <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-md ${
-                      isActive
-                        ? "bg-primary/15 text-primary/70"
-                        : "bg-background/40 text-muted-foreground/50 group-hover:bg-primary/10 group-hover:text-primary/60"
-                    } transition-colors`}>
-                      {count}
-                    </span>
                   </motion.button>
                 );
               })}
