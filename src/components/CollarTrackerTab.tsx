@@ -1018,7 +1018,7 @@ export default function CollarTrackerTab() {
                 <p className="text-lg font-black text-foreground">{c.familyName}</p>
 
                 {/* Ticker details */}
-                <div className="mt-1.5 space-y-0.5 text-[9px] font-mono">
+                <div className="mt-1.5 space-y-1 text-xs font-mono" style={{ textRendering: 'geometricPrecision', WebkitFontSmoothing: 'antialiased' }}>
                   <div className="flex items-center gap-1.5">
                     <span className={cn("px-1 py-px rounded font-black", c.tipo === "Alta" ? "bg-success/20 text-success" : "bg-destructive/20 text-destructive")}>
                       {c.tipo === "Alta" ? "C" : "V"}
