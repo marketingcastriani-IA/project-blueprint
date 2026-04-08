@@ -606,7 +606,7 @@ export default function CalculadoraRendaFixa() {
                           props.payload.name
                         ]}
                       />
-                      <Bar dataKey="valor" radius={[6, 6, 0, 0]} maxBarSize={60}>
+                      <Bar dataKey="valor" radius={[6, 6, 0, 0]} maxBarSize={60} label={{ position: 'top', formatter: (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, fontSize: 11, fontWeight: 'bold', fill: 'hsl(var(--foreground))' }}>
                         {chartData.map((entry, index) => (
                           <Cell key={index} fill={entry.fill} />
                         ))}
