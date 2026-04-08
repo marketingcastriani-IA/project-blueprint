@@ -350,7 +350,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
 
   // ── 6. ANÁLISE DE IA ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '5. Análise de IA e Veredito de Saída', y);
+  y = addSectionTitle(doc, '6. Análise de IA e Veredito de Saída', y);
   y = addParagraph(doc, 'A IA avalia sua estrutura automaticamente, analisando risco/retorno, cenários favoráveis e desfavoráveis, e sugere ajustes. Para operações ativas, o Veredito de Saída recomenda se é hora de encerrar com base no P&L atual vs CDI e risco residual.', y);
 
   const aiImg = getImg('ai');
@@ -380,7 +380,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
 
   // ── 6. HISTÓRICO ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '6. Histórico de Operações', y);
+  y = addSectionTitle(doc, '7. Histórico de Operações', y);
   y = addParagraph(doc, 'O Histórico é o centro de controle das suas análises. Todas as operações salvas aparecem organizadas por status (Ativas e Encerradas) com filtros por mês e ano.', y);
 
   const histImg = getImg('historico');
@@ -393,7 +393,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
 
   // ── 7. FLUXO ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '7. Fluxo: Histórico > Portfólio', y);
+  y = addSectionTitle(doc, '8. Fluxo: Histórico > Portfólio', y);
 
   y = addTable(doc, {
     startY: y,
@@ -409,7 +409,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
 
   // ── 8. PORTFÓLIO ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '8. Portfólio Consolidado', y);
+  y = addSectionTitle(doc, '9. Portfólio Consolidado', y);
   y = addParagraph(doc, 'O Portfólio consolida todas as operações encerradas com métricas de desempenho: Resultado Total, Capital Alocado, Média por Operação, VS CDI, Taxa de Acerto e total de Estratégias Encerradas.', y);
 
   const portImg = getImg('portfolio');
@@ -420,7 +420,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
 
   // ── 9. DIVERSIFICADOR ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '9. Diversificador de Estratégias', y);
+  y = addSectionTitle(doc, '10. Diversificador de Estratégias', y);
   y = addParagraph(doc, 'O módulo Diversificador permite criar planos de alocação para distribuir seu patrimônio entre diferentes estratégias de opções. Defina percentuais, nível de risco e alavancagem para cada estratégia.', y);
 
   const divImg = getImg('diversificador');
@@ -431,7 +431,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
 
   // ── 10. TEMPO REAL ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '10. Dados ao Vivo (Tempo Real)', y);
+  y = addSectionTitle(doc, '11. Dados ao Vivo (Tempo Real)', y);
   y = addParagraph(doc, 'Conecte ao Profit Pro via RTD Bridge e acompanhe suas operações com preços ao vivo, P&L em tempo real e encerramento direto pelo app. Requer o módulo Bridge instalado no computador.', y);
 
   const rtImg = getImg('temporeal');
@@ -442,7 +442,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
 
   // ── 11. RASTREADOR DE BOX ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '11. Rastreador de Box', y);
+  y = addSectionTitle(doc, '12. Rastreador de Box', y);
   y = addParagraph(doc, 'Rastreie automaticamente os melhores boxes da B3 em tempo real. Ranking com classificação visual, percentual do CDI e instruções de montagem passo a passo para cada box identificado.', y);
 
   const boxImg = getImg('box');
@@ -459,7 +459,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
 
   // ── 12. TICKER OPÇÕES B3 ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '12. Ticker Opções B3 — Banco de Opções', y);
+  y = addSectionTitle(doc, '13. Ticker Opções B3 — Banco de Opções', y);
   y = addParagraph(doc, 'O módulo Ticker Opções B3 centraliza um banco de dados com mais de 99.000 opções listadas na B3. Pesquise por ticker, filtre por família, vencimento e tipo (Call/Put), identifique pares Call+Put automaticamente e envie tickers para Tempo Real ou Box Tracker.', y);
 
   const tickerImg = getImg('tickerOpcoes');
@@ -496,7 +496,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
 
   // ── 13. RASTREADOR DE COLLAR ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '13. Rastreador de Collar', y);
+  y = addSectionTitle(doc, '14. Rastreador de Collar', y);
   y = addParagraph(doc, 'O Rastreador de Collar monitora combinações de proteção de carteira (Ação + Put comprada + Call vendida) em tempo real. Calcula custo de proteção, piso (floor), teto (cap) e identifica collars de custo zero.', y);
 
   y = addTable(doc, {
@@ -514,7 +514,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
 
   // ── 14. TEMAS ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '14. Temas e Personalização', y);
+  y = addSectionTitle(doc, '15. Temas e Personalização', y);
   y = addParagraph(doc, 'Escolha entre tema claro e escuro, com paleta de cores profissional otimizada para diferentes condições de luminosidade. As configurações ficam salvas no seu perfil.', y);
 
   const temasImg = getImg('temasCores');
@@ -525,7 +525,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
 
   // ── 15. TABELAS DE REFERÊNCIA ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '15. Tabelas de Referência', y);
+  y = addSectionTitle(doc, '16. Tabelas de Referência', y);
   y = addParagraph(doc, 'Referência rápida com tabelas detalhadas de funcionalidades, atalhos de teclado e parâmetros do sistema.', y);
 
   const manualTabelaImg = getImg('manualTabela');
@@ -548,7 +548,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
 
   // ── 16. PERGUNTAS FREQUENTES ──
   y = checkPageBreak(doc, y, 80);
-  y = addSectionTitle(doc, '16. Perguntas Frequentes', y);
+  y = addSectionTitle(doc, '17. Perguntas Frequentes', y);
 
   y = addTable(doc, {
     startY: y,
