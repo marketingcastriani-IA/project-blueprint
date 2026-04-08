@@ -45,6 +45,20 @@ interface SavedFamily {
 const BOX_STORAGE_KEY = "box-tracker-families";
 const COLLAR_STORAGE_KEY = "collar-tracker-families";
 
+// Top 10 most liquid B3 stocks for quick selection
+const TOP_STOCKS = [
+  { family: "PETR", label: "PETR", name: "Petrobras" },
+  { family: "VALE", label: "VALE", name: "Vale" },
+  { family: "ITUB", label: "ITUB", name: "Itaú" },
+  { family: "BBDC", label: "BBDC", name: "Bradesco" },
+  { family: "B3SA", label: "B3SA", name: "B3" },
+  { family: "ABEV", label: "ABEV", name: "Ambev" },
+  { family: "BBAS", label: "BBAS", name: "BB" },
+  { family: "WEGE", label: "WEGE", name: "WEG" },
+  { family: "RENT", label: "RENT", name: "Localiza" },
+  { family: "MGLU", label: "MGLU", name: "Magalu" },
+];
+
 export default function TickerOpcoes() {
   const { options, families, vencimentos, loading } = useB3Options();
   const navigate = useNavigate();
@@ -652,6 +666,35 @@ export default function TickerOpcoes() {
             </div>
           </div>
         )}
+
+        {/* Quick-select top stocks */}
+        <div className="flex flex-wrap gap-2">
+          {TOP_STOCKS.map((stock) => {
+            const isActive = selectedFamily === stock.family;
+            const familyExists = families.includes(stock.family);
+            if (!familyExists) return null;
+            const count = options.filter((o) => o.family === stock.family).length;
+            return (
+              <button
+                key={stock.family}
+                onClick={() => setSelectedFamily(isActive ? "all" : stock.family)}
+                className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-semibold transition-all ${
+                  isActive
+                    ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 scale-[1.02]"
+                    : "bg-card/60 text-foreground border-border/50 hover:border-primary/40 hover:bg-primary/5"
+                }`}
+              >
+                <span className="font-bold">{stock.label}</span>
+                <span className={`text-xs ${isActive ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                  {stock.name}
+                </span>
+                <span className={`text-[10px] font-mono ${isActive ? "text-primary-foreground/60" : "text-muted-foreground/60"}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
         {/* Filters */}
         <div className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden">
