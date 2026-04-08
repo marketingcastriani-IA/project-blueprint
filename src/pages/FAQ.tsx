@@ -1026,6 +1026,15 @@ export default function FAQ() {
                 Também identifica oportunidades de Box Spread comparando pares de mesmo strike.
               </AccordionContent>
             </AccordionItem>
+            <AccordionItem value="q17">
+              <AccordionTrigger className="text-sm font-bold">O que é a Calculadora CDI x Opções?</AccordionTrigger>
+              <AccordionContent className="text-sm text-muted-foreground">
+                É uma ferramenta independente que compara o retorno de operações de opções com o CDI do mesmo período. 
+                Informe o capital, a data de vencimento e o lucro esperado da sua estrutura para descobrir quantos % do CDI 
+                ela equivale. Inclui cálculo automático de IR (tabela regressiva para CDI e 15% para opções) e gráfico de barras comparativo. 
+                Acesse pelo menu em "CDI x Opções".
+              </AccordionContent>
+            </AccordionItem>
           </Accordion>
         </FeatureSection>
 
