@@ -68,10 +68,10 @@ export default function Header() {
   }, []);
 
   const primaryNav = [
-    { label: 'Nova Análise', path: '/dashboard', icon: PlusCircle },
+    { label: 'Análise', path: '/dashboard', icon: PlusCircle },
     { label: 'Operações', path: '/history', icon: History },
     { label: 'Portfólio', path: '/portfolio', icon: Briefcase },
-    { label: 'Diversificador', path: '/diversificador', icon: PieChart },
+    { label: 'Diversificar', path: '/diversificador', icon: PieChart },
     { label: 'Tempo Real', path: '/dados-ao-vivo', icon: Radio },
     { label: 'Rastrear Box', path: '/box-tracker', icon: BarChart2 },
     ...(collarEnabled ? [{ label: 'Collar', path: '/collar-tracker', icon: ShieldCheck }] : []),
