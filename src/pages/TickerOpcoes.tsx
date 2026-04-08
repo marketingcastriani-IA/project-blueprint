@@ -672,23 +672,23 @@ export default function TickerOpcoes() {
           </div>
         )}
 
-        {/* Quick-select top stocks — premium cards */}
-        <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-md overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-border/20 flex items-center gap-2">
-            <Zap className="h-4 w-4 text-primary" />
-            <span className="text-xs font-bold uppercase tracking-widest text-foreground">Seleção Rápida</span>
-            <span className="text-[10px] text-muted-foreground ml-1">Top 15 mais líquidas</span>
+        {/* Quick-select top stocks — compact dark cards */}
+        <div className="rounded-xl border border-border/30 bg-card/20 backdrop-blur-md overflow-hidden">
+          <div className="px-4 py-2 border-b border-border/15 flex items-center gap-2">
+            <Zap className="h-3.5 w-3.5 text-primary" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/80">Seleção Rápida</span>
+            <span className="text-[9px] text-muted-foreground ml-1">Top 15</span>
             {selectedFamily !== "all" && (
               <button
                 onClick={() => setSelectedFamily("all")}
-                className="ml-auto text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                className="ml-auto text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
               >
-                <XIcon className="h-3 w-3" /> Limpar seleção
+                <XIcon className="h-3 w-3" /> Limpar
               </button>
             )}
           </div>
-          <div className="p-3">
-            <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-5 lg:grid-cols-8 xl:grid-cols-8 gap-2">
+          <div className="px-3 py-2.5">
+            <div className="flex flex-wrap gap-1.5">
               {TOP_STOCKS.map((stock) => {
                 const isActive = selectedFamily === stock.family;
                 const familyExists = families.includes(stock.family);
@@ -698,39 +698,29 @@ export default function TickerOpcoes() {
                   <button
                     key={stock.family}
                     onClick={() => setSelectedFamily(isActive ? "all" : stock.family)}
-                    className={`group relative flex flex-col items-center justify-center rounded-xl px-2 py-3 transition-all duration-200 overflow-hidden ${
+                    className={`group relative flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 transition-all duration-150 ${
                       isActive
-                        ? "bg-gradient-to-b from-primary/30 to-primary/10 border-2 border-primary shadow-lg shadow-primary/25 scale-[1.03]"
-                        : "bg-background/40 border border-border/40 hover:border-primary/50 hover:bg-primary/5 hover:shadow-md hover:shadow-primary/10 hover:scale-[1.02]"
+                        ? "bg-primary/20 border border-primary/50 shadow-md shadow-primary/15"
+                        : "bg-muted/40 border border-border/30 hover:bg-muted/60 hover:border-border/50"
                     }`}
                   >
-                    {/* Glow effect when active */}
-                    {isActive && (
-                      <div className="absolute inset-0 bg-primary/5 rounded-xl" />
-                    )}
-                    <span className={`relative text-sm font-black tracking-wider ${
-                      isActive ? "text-primary" : "text-foreground group-hover:text-primary"
+                    <span className={`text-xs font-extrabold tracking-wide ${
+                      isActive ? "text-primary" : "text-foreground/80 group-hover:text-foreground"
                     } transition-colors`}>
                       {stock.label}
                     </span>
-                    <span className={`relative text-[10px] font-medium mt-0.5 ${
-                      isActive ? "text-primary/80" : "text-muted-foreground"
+                    <span className={`text-[9px] ${
+                      isActive ? "text-primary/60" : "text-muted-foreground/60"
                     }`}>
                       {stock.name}
                     </span>
-                    <div className="relative flex items-center gap-1 mt-1">
-                      <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full ${
-                        isActive
-                          ? "bg-primary/20 text-primary"
-                          : "bg-muted/50 text-muted-foreground"
-                      }`}>
-                        {count}
-                      </span>
-                    </div>
-                    {/* Bottom accent line */}
-                    <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 rounded-full transition-all duration-200 ${
-                      isActive ? "w-3/4 bg-primary" : "w-0 group-hover:w-1/2 bg-primary/50"
-                    }`} />
+                    <span className={`text-[8px] font-mono px-1 py-px rounded ${
+                      isActive
+                        ? "bg-primary/15 text-primary/70"
+                        : "bg-background/30 text-muted-foreground/50"
+                    }`}>
+                      {count}
+                    </span>
                   </button>
                 );
               })}
