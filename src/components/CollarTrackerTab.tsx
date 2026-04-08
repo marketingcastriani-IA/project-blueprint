@@ -1019,6 +1019,20 @@ export default function CollarTrackerTab() {
 
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   <div>
+                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Ganho Máx</p>
+                    <p className="text-sm font-black text-success">{formatPercent(c.maxProfitPct)}</p>
+                    <p className="text-[9px] font-mono text-success">{formatBRL((c.maxProfitAbs ?? 0) * qty)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase font-bold">Ganho Mín</p>
+                    <p className={cn("text-sm font-black", (c.maxLossPct ?? 0) >= 0 ? "text-success" : "text-destructive")}>
+                      {formatPercent(c.maxLossPct)}
+                    </p>
+                    <p className={cn("text-[9px] font-mono", (c.maxLossAbs ?? 0) >= 0 ? "text-success" : "text-destructive")}>
+                      {formatBRL((c.maxLossAbs ?? 0) * qty)}
+                    </p>
+                  </div>
+                  <div>
                     <p className="text-[10px] text-muted-foreground uppercase font-bold">
                       Collar {descontarIR ? "(Líq 15%)" : "(Bruto)"}
                     </p>
