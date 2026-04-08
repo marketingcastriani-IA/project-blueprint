@@ -1199,6 +1199,9 @@ export default function CollarTrackerTab() {
                   <Tooltip content={<CollarChartTooltip />} />
                   <Area type="monotone" dataKey="payoffExpiry" stroke="none" fill="url(#collarLoss)"
                     isAnimationActive={false} baseValue={0} activeDot={false} />
+                  <Line name="── CDI ──" type="monotone" dataKey="cdiLine"
+                    stroke="hsl(45 95% 55%)" strokeWidth={2.5} strokeDasharray="8 4"
+                    dot={false} isAnimationActive={false} />
                   <Line name="Hoje (T+0)" type="monotone" dataKey="payoffToday"
                     stroke="hsl(142 76% 36%)" strokeWidth={2} strokeDasharray="5 5"
                     dot={false} isAnimationActive={false} />
@@ -1215,8 +1218,12 @@ export default function CollarTrackerTab() {
                 <span className="text-muted-foreground font-bold">No Vencimento</span>
               </span>
               <span className="flex items-center gap-2">
-                <span className="w-6 h-0.5 rounded" style={{ display: "inline-block", background: "hsl(142 76% 36%)", borderStyle: "dashed" }} />
+                <span className="w-6 h-0.5 rounded" style={{ display: "inline-block", background: "hsl(142 76% 36%)" }} />
                 <span className="text-muted-foreground font-bold">Hoje (T+0)</span>
+              </span>
+              <span className="flex items-center gap-2">
+                <span className="w-6 h-0.5 rounded" style={{ display: "inline-block", background: "hsl(45 95% 55%)", borderTop: "2px dashed hsl(45 95% 55%)" }} />
+                <span className="text-muted-foreground font-bold">── CDI {descontarIR ? "Líq" : "Bruto"} ──</span>
               </span>
             </div>
 
