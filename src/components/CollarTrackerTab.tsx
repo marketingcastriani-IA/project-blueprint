@@ -1277,9 +1277,29 @@ export default function CollarTrackerTab() {
               </button>
             )}
           </div>
+
+          {/* IR Toggle */}
+          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-border bg-card shadow-sm">
+            <button onClick={() => { const next = !descontarIR; setDescontarIR(next); localStorage.setItem(IR_ENABLED_KEY, String(next)); }}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-all active:scale-[0.97]",
+                descontarIR
+                  ? "bg-primary/10 border-primary/30 text-primary"
+                  : "bg-muted border-border text-muted-foreground hover:text-foreground"
+              )}>
+              {descontarIR ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+              Descontar IR
+            </button>
+            {descontarIR && (
+              <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                <span className="px-2 py-1 rounded-lg bg-warning/10 border border-warning/20 text-warning font-black">CDI: 22,5%</span>
+                <span className="px-2 py-1 rounded-lg bg-success/10 border border-success/20 text-success font-black">Collar: 15%</span>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Alert Panel */}
+
         <div className="rounded-2xl border-2 border-border bg-card p-4 shadow-sm space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
