@@ -689,7 +689,7 @@ export default function TickerOpcoes() {
             )}
           </div>
           <div className="px-3 py-2.5 border-t border-border/50">
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-px bg-border/40 rounded-lg overflow-hidden">
               {TOP_STOCKS.map((stock, index) => {
                 const isActive = selectedFamily === stock.family;
                 const familyExists = families.includes(stock.family);
@@ -701,13 +701,13 @@ export default function TickerOpcoes() {
                     initial={{ opacity: 0, y: 12, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     transition={{ duration: 0.3, delay: index * 0.04, ease: "easeOut" }}
-                    whileHover={{ scale: 1.05 }}
+                    whileHover={{ scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => setSelectedFamily(isActive ? "all" : stock.family)}
-                    className={`group relative flex items-center gap-2 rounded-xl px-3.5 py-2 transition-colors duration-200 ${
+                    className={`group relative flex items-center gap-2 px-3.5 py-2.5 transition-colors duration-200 ${
                       isActive
-                        ? "bg-primary/20 border border-primary/50 shadow-lg shadow-primary/20"
-                        : "bg-muted/50 border border-border/30 hover:bg-muted/70 hover:border-primary/30 hover:shadow-md hover:shadow-primary/10"
+                        ? "bg-primary/15 shadow-inner shadow-primary/10"
+                        : "bg-card/80 hover:bg-muted/60"
                     }`}
                   >
                     <span className={`text-sm font-extrabold tracking-wide ${
