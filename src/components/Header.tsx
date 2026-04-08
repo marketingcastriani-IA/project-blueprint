@@ -122,7 +122,7 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-primary/30 bg-primary shadow-lg overflow-hidden">
+    <header className="sticky top-0 z-50 border-b border-primary/30 bg-primary shadow-lg">
       {/* Row 1: Logo + Primary Nav + Actions */}
       <div className="container flex h-14 items-center justify-between gap-2">
         {/* Logo + Install */}
