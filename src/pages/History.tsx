@@ -152,7 +152,13 @@ export default function History() {
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (!confirm('Tem certeza que deseja deletar esta análise?')) return;
+    setDeleteTarget(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    const id = deleteTarget;
+    setDeleteTarget(null);
     setDeleting(id);
     try {
       await supabase.from('legs').delete().eq('analysis_id', id);
@@ -160,8 +166,9 @@ export default function History() {
       if (error) throw error;
       setAnalyses(analyses.filter(a => a.id !== id));
       toast.success('Análise deletada com sucesso');
-    } catch (err: any) {
-      toast.error('Erro ao deletar', { description: err.message });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro desconhecido';
+      toast.error('Erro ao deletar', { description: message });
     } finally {
       setDeleting(null);
     }
