@@ -4,9 +4,10 @@ import { useAccessControl } from '@/hooks/useAccessControl';
 import { useSharedRtdBridge } from '@/contexts/RtdBridgeContext';
 import { Button } from '@/components/ui/button';
 
-import { Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, ShieldCheck, Briefcase, Settings, Zap, PieChart, HelpCircle, Sparkles, Palette, BookOpen, Radio, BarChart2, Calculator, Database, Waves, TreePine, Wifi, WifiOff } from 'lucide-react';
+import { Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, ShieldCheck, Briefcase, Settings, Zap, PieChart, HelpCircle, Sparkles, Palette, BookOpen, Radio, BarChart2, Calculator, Database, Waves, TreePine, Wifi, WifiOff, ChevronDown, Crosshair } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -73,13 +74,16 @@ export default function Header() {
     { label: 'Portfólio', path: '/portfolio', icon: Briefcase },
     { label: 'Diversificar', path: '/diversificador', icon: PieChart },
     { label: 'Tempo Real', path: '/dados-ao-vivo', icon: Radio },
-    { label: 'Rastrear Box', path: '/box-tracker', icon: BarChart2 },
-    ...(collarEnabled ? [{ label: 'Collar', path: '/collar-tracker', icon: ShieldCheck }] : []),
     { label: 'Opções B3', path: '/ticker-opcoes', icon: Database },
   ];
 
-  const secondaryNav = [
+  const trackerNav = [
     { label: 'Rastreador PRO', path: '/strategy-tracker', icon: Zap },
+    { label: 'Rastrear Box', path: '/box-tracker', icon: BarChart2 },
+    ...(collarEnabled ? [{ label: 'Rastrear Collar', path: '/collar-tracker', icon: ShieldCheck }] : []),
+  ];
+
+  const secondaryNav = [
     { label: 'CDI x Opções', path: '/calculadora-renda-fixa', icon: Calculator },
     { label: 'Manual', path: '/manual', icon: BookOpen },
     { label: 'FAQ', path: '/faq', icon: HelpCircle },
@@ -87,7 +91,7 @@ export default function Header() {
     ...(access.isAdmin ? [{ label: 'Admin', path: '/admin', icon: Shield }] : []),
   ];
 
-  const allNavItems = [...primaryNav, ...secondaryNav];
+  const allNavItems = [...primaryNav, ...trackerNav, ...secondaryNav];
   const isFree = access.planType === 'free';
 
   const themes = [
@@ -146,6 +150,43 @@ export default function Header() {
           {primaryNav.map(item => (
             <NavButton key={item.path} item={item} />
           ))}
+
+          {/* Dropdown: Rastreadores PRO X */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={cn(
+                  'flex items-center gap-1 rounded-lg font-black uppercase tracking-wide transition-all whitespace-nowrap',
+                  'px-2 py-1.5 text-[10px] lg:px-3 lg:py-2 lg:text-xs xl:tracking-widest',
+                  trackerNav.some(t => location.pathname === t.path)
+                    ? 'bg-primary-foreground/20 text-primary-foreground'
+                    : 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
+                )}
+              >
+                <Crosshair className="h-3.5 w-3.5 shrink-0 lg:h-4 lg:w-4" />
+                <span>Rastreadores</span>
+                <ChevronDown className="h-3 w-3 shrink-0" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-[200px]">
+              {trackerNav.map(item => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <DropdownMenuItem
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className={cn(
+                      'flex items-center gap-2 font-bold uppercase tracking-wide text-xs cursor-pointer',
+                      isActive && 'bg-primary/10 text-primary'
+                    )}
+                  >
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    {item.label}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </nav>
 
         {/* Right actions */}
