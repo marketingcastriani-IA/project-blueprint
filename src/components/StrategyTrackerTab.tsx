@@ -1336,6 +1336,11 @@ export default function StrategyTrackerTab() {
                 const cdiPct = cdi ? parseFloat(cdi.cdiPct) : 0;
                 const diffPp = cdi ? parseFloat(cdi.diff) : 0;
                 const beats = cdi?.beats ?? false;
+                // Custo da Montagem: sum of (side=buy costs - side=sell credits) per unit * qty
+                const custoMontagem = result.legs.reduce((acc, leg) => {
+                  const sign = leg.side === "buy" ? -1 : 1;
+                  return acc + sign * leg.price * leg.qty;
+                }, 0);
 
                 return (
                   <div
