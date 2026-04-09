@@ -957,6 +957,15 @@ export default function StrategyTrackerTab() {
     return filtered.sort(sorter).slice(0, 50);
   }, [selectedFamily, selectedStrategy, selectedVencimento, moneynessFilter, minPremium, minTrades, minReturnPct, maxLossFilter, quantity, stockPrice, options, rows, status, getPrice, addTicker, stockTicker, sortBy, hasMinTrades]);
 
+  // Auto-select winner (first result) whenever results change
+  useEffect(() => {
+    if (results.length > 0) {
+      setSelectedResult(results[0]);
+    } else {
+      setSelectedResult(null);
+    }
+  }, [results.length > 0 ? results[0]?.id : null]);
+
   const top3 = results.slice(0, 3);
   const rest = results.slice(3);
   const currentView = STRATEGIES.find((s) => s.id === selectedStrategy)?.view ?? "alta";
@@ -1218,15 +1227,27 @@ export default function StrategyTrackerTab() {
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-black text-muted-foreground uppercase tracking-wide">Moneyness</label>
-              <Select value={moneynessFilter} onValueChange={setMoneynessFilter}>
-                <SelectTrigger className="h-10 text-sm font-bold"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="itm">ITM</SelectItem>
-                  <SelectItem value="atm">ATM ±5%</SelectItem>
-                  <SelectItem value="otm">OTM</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex gap-1">
+                {([
+                  { value: "all", label: "Todas" },
+                  { value: "itm", label: "ITM" },
+                  { value: "atm", label: "ATM" },
+                  { value: "otm", label: "OTM" },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setMoneynessFilter(opt.value)}
+                    className={cn(
+                      "flex-1 px-2 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all border-2",
+                      moneynessFilter === opt.value
+                        ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-105"
+                        : "bg-card text-muted-foreground border-border/40 hover:border-primary/30 hover:bg-muted/50"
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-black text-muted-foreground uppercase tracking-wide">Prêmio Mín</label>
@@ -1259,14 +1280,26 @@ export default function StrategyTrackerTab() {
             </div>
             <div className="space-y-1.5 col-span-2 sm:col-span-1">
               <label className="text-xs font-black text-muted-foreground uppercase tracking-wide">Ordenar por</label>
-              <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-                <SelectTrigger className="h-10 text-sm font-bold"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="return">Maior Retorno %</SelectItem>
-                  <SelectItem value="quality">Melhor Quality</SelectItem>
-                  <SelectItem value="profit">Maior Lucro R$</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex gap-1">
+                {([
+                  { value: "return", label: "Retorno %" },
+                  { value: "quality", label: "Quality" },
+                  { value: "profit", label: "Lucro R$" },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setSortBy(opt.value)}
+                    className={cn(
+                      "flex-1 px-2 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all border-2",
+                      sortBy === opt.value
+                        ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-105"
+                        : "bg-card text-muted-foreground border-border/40 hover:border-primary/30 hover:bg-muted/50"
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </CardContent>
