@@ -519,7 +519,43 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     columnStyles: { 0: { cellWidth: 45, fontStyle: 'bold' as const } },
   });
 
-  // ── 15. ALERTAS NA TELA ──
+  // ── 15. RASTREADOR PRO X ──
+  y = checkPageBreak(doc, y, 50);
+  y = addSectionTitle(doc, '15. Rastreador PRO X — Estratégias em Tempo Real', y);
+  y = addParagraph(doc, 'O Rastreador PRO X analisa em tempo real 10+ estratégias divididas por cenários (Alta, Baixa, Lateral e Volatilidade), ranqueando as melhores combinações em pódio Top 3. Inclui Venda Coberta, Trava de Alta/Baixa, Iron Condor, Borboleta, Straddle (Comprado/Vendido) e Strangle (Comprado/Vendido). Suporta comparação CDI, gráficos de payoff avançados e importação direta de tickers da página Opções B3.', y);
+
+  const strategyImg = getImg('strategyTracker');
+  if (strategyImg) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, strategyImg, y, 182, 120));
+  }
+
+  const strategyVolImg = getImg('strategyVolatility');
+  if (strategyVolImg) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, strategyVolImg, y, 182, 120));
+  }
+
+  y = addTable(doc, {
+    startY: y,
+    head: [['Estratégia', 'Cenário', 'Descrição']],
+    body: [
+      ['Venda Coberta', 'Alta', 'Ação + Venda Call — renda com proteção parcial'],
+      ['Trava de Alta', 'Alta', 'Compra Call K1 + Venda Call K2 — risco definido'],
+      ['Venda de Put', 'Baixa', 'Venda Put — renda com compromisso de compra'],
+      ['Trava de Baixa', 'Baixa', 'Compra Put K1 + Venda Put K2 — risco definido'],
+      ['Iron Condor', 'Lateral', 'Trava Put + Trava Call — lucro na lateralização'],
+      ['Borboleta', 'Lateral', 'C1 + 2xC2 + C3 — lucro máximo no strike central'],
+      ['Straddle Comprado', 'Volatilidade', 'Compra Call+Put mesmo strike — lucra com alta volatilidade'],
+      ['Straddle Vendido', 'Volatilidade', 'Vende Call+Put mesmo strike — lucra com baixa volatilidade'],
+      ['Strangle Comprado', 'Volatilidade', 'Compra Call+Put OTM — mais barato que Straddle'],
+      ['Strangle Vendido', 'Volatilidade', 'Vende Call+Put OTM — lucra na faixa de estabilidade'],
+    ],
+    ...TABLE_STYLES,
+    columnStyles: { 0: { cellWidth: 40, fontStyle: 'bold' as const }, 1: { cellWidth: 25 } },
+  });
+
+  // ── 16. ALERTAS NA TELA ──
   y = checkPageBreak(doc, y, 50);
   y = addSectionTitle(doc, '15. Alertas na Tela (Box Tracker)', y);
   y = addParagraph(doc, 'O Rastreador de Box exibe alertas visuais na tela (toasts) quando um Box atinge o threshold do CDI configurado. Alertas normais (verde) aparecem por 10s com dados do box. Alertas urgentes (vermelho, >=150% CDI) duram 15s. Complementam as notificações push do navegador.', y);
