@@ -272,7 +272,48 @@ export default function Index() {
           </div>
         </div>
 
-        {/* NEW: Box Tracker + Calculadora CDI row */}
+        {/* NEW: Ticker Opções B3 + Collar Tracker row */}
+        <div className="grid md:grid-cols-2 gap-10 mt-10">
+          {/* Ticker Opções B3 */}
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><Database className="h-5 w-5 text-primary" /></div>
+                <h3 className="text-2xl font-black tracking-tight">Ticker Opções B3</h3>
+                <Badge className="bg-primary/20 text-primary border-0 text-xs font-black">NOVO</Badge>
+              </div>
+              <p className="text-muted-foreground">Banco com 99.000+ opções da B3. Seleção rápida Top 18, filtros avançados por moneyness e prêmio, pares Call+Put e exportação direta para Box e Collar.</p>
+            </div>
+            <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)]">
+              <img src="/assets/screenshot-ticker-opcoes.png" alt="Ticker Opções B3 — 99k+ Opções" className="w-full h-auto" loading="lazy" />
+            </div>
+          </div>
+
+          {/* Rastreador Collar */}
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><ShieldCheck className="h-5 w-5 text-primary" /></div>
+                <h3 className="text-2xl font-black tracking-tight">Rastreador Collar</h3>
+                <Badge className="bg-red-500/20 text-red-500 border-0 text-xs font-black animate-pulse">🔴 AO VIVO</Badge>
+                <Badge className="bg-primary/20 text-primary border-0 text-xs font-black">PRO</Badge>
+              </div>
+              <p className="text-muted-foreground">Encontre collars ideais em tempo real. Proteção com upside — rastreie automaticamente as melhores combinações de call coberta + put protetiva da B3.</p>
+            </div>
+            <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)] bg-card p-6 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                {['Call Coberta', 'Put Protetiva', 'Custo Zero', 'Ranking CDI'].map(s => (
+                  <div key={s} className="rounded-lg bg-primary/10 border border-primary/20 p-4 text-center">
+                    <p className="text-sm font-black text-primary">{s}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground text-center font-bold">Proteção + Renda automática com dados ao vivo do Profit RTD</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Box Tracker + Calculadora CDI row */}
         <div className="grid md:grid-cols-2 gap-10 mt-10">
           {/* Rastreador de Box */}
           <div className="space-y-6">
@@ -283,7 +324,7 @@ export default function Index() {
                 <Badge className="bg-red-500/20 text-red-500 border-0 text-xs font-black animate-pulse">🔴 AO VIVO</Badge>
                 <Badge className="bg-primary/20 text-primary border-0 text-xs font-black">PRO</Badge>
               </div>
-              <p className="text-muted-foreground">Rastreie automaticamente os melhores boxes da B3 em tempo real. Ranking com troféus 3D, % do CDI e instruções de montagem passo a passo.</p>
+              <p className="text-muted-foreground">Rastreie automaticamente os melhores boxes da B3 em tempo real. Ranking com troféus 3D, % do CDI, alertas na tela e instruções de montagem passo a passo.</p>
             </div>
             <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)]">
               <img src="/assets/box-tracker-winner.png" alt="Rastreador de Box x CDI — Ranking ao Vivo" className="w-full h-auto" loading="lazy" />
