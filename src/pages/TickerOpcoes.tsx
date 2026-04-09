@@ -1214,7 +1214,18 @@ export default function TickerOpcoes() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right font-mono tabular-nums">
-                          {opt.precoUltimo > 0 ? `R$ ${opt.precoUltimo.toFixed(2)}` : "—"}
+                          {(() => {
+                            const rtdRow = rows.get(opt.ticker);
+                            const rtdUltimo = rtdRow?.ultimo;
+                            const displayPrice = (rtdUltimo && rtdUltimo > 0) ? rtdUltimo : opt.precoUltimo;
+                            const isLive = rtdUltimo && rtdUltimo > 0;
+                            return displayPrice > 0 ? (
+                              <span className={isLive ? "text-primary font-semibold" : ""}>
+                                R$ {displayPrice.toFixed(2)}
+                                {isLive && <Wifi className="inline h-3 w-3 ml-1 opacity-60" />}
+                              </span>
+                            ) : "—";
+                          })()}
                         </TableCell>
                         {precoBaseNum > 0 && (
                           <TableCell className={`text-right font-mono text-xs tabular-nums ${
