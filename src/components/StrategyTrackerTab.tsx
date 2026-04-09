@@ -9,6 +9,10 @@ import { toast } from "sonner";
 import trophyGold from "@/assets/trophy-gold.png";
 import trophySilver from "@/assets/trophy-silver.png";
 import trophyBronze from "@/assets/trophy-bronze.png";
+import iconAlta from "@/assets/icon-alta.png";
+import iconBaixa from "@/assets/icon-baixa.png";
+import iconLateral from "@/assets/icon-lateral.png";
+import iconVolatilidade from "@/assets/icon-volatilidade.png";
 import {
   TrendingUp, TrendingDown, Activity, Target, Layers,
   ChevronDown, ChevronUp, Trophy, Wifi, WifiOff, Info,
