@@ -349,13 +349,13 @@ export default function Header() {
                     onClick={() => { navigate(item.path); setMobileOpen(false); }}
                     className={cn(
                       'flex items-center gap-1.5 w-full px-2.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all',
-                      isRealtime && 'text-red-100 bg-red-600 animate-pulse',
-                      isRealtime && isActive && 'ring-2 ring-red-300',
-                      !isRealtime && isActive && 'bg-primary-foreground/20 text-primary-foreground',
-                      !isRealtime && !isActive && 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
+                      item.path === '/strategy-tracker' && !isActive && 'bg-amber-400/90 text-black shadow-[0_0_10px_rgba(251,191,36,0.4)] animate-pulse',
+                      item.path === '/strategy-tracker' && isActive && 'bg-amber-400 text-black ring-2 ring-amber-300',
+                      item.path !== '/strategy-tracker' && isActive && 'bg-primary-foreground/20 text-primary-foreground',
+                      item.path !== '/strategy-tracker' && !isActive && 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
                     )}
                   >
-                    <item.icon className={cn("h-3.5 w-3.5 shrink-0", isRealtime && "animate-pulse")} />
+                    <item.icon className="h-3.5 w-3.5 shrink-0" />
                     <span className="truncate">{item.label}</span>
                   </button>
                 );
