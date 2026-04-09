@@ -572,6 +572,7 @@ export default function StrategyTrackerTab() {
   }, [selectedFamily, availableVencimentos.length]);
 
 
+  const getPrice = useCallback((ticker: string, field: "ofCompra" | "ofVenda" | "ultimo"): { price: number; isLive: boolean } => {
     const row = rows.get(ticker);
     if (row) {
       const val = row[field];
