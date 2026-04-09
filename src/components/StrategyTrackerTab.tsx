@@ -883,6 +883,14 @@ export default function StrategyTrackerTab() {
               <Save className="h-3.5 w-3.5 text-primary" />
               Ativos Rastreados ({savedAssets.length})
               <span className="text-[10px] font-normal normal-case text-muted-foreground ml-1">— clique para analisar, X para remover</span>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={clearAllAssets}
+                className="ml-auto h-6 px-2.5 text-[10px] font-black uppercase"
+              >
+                <Trash2 className="h-3 w-3 mr-1" /> Limpar Tudo
+              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-2 pb-3">
