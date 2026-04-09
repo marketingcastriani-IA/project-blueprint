@@ -37,7 +37,97 @@ interface UserRow {
   simulations_count: number;
 }
 
-// Metrics Panel Component
+// Sugestões Panel Component
+function SugestoesPanel() {
+  const [sugestoes, setSugestoes] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSugestoes = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('sugestoes' as any)
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && data) {
+        // Fetch user emails for each suggestion
+        const userIds = [...new Set((data as any[]).map((s: any) => s.user_id))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, email, display_name')
+          .in('user_id', userIds);
+        const profileMap: Record<string, any> = {};
+        (profiles || []).forEach((p: any) => { profileMap[p.user_id] = p; });
+        setSugestoes((data as any[]).map((s: any) => ({ ...s, profile: profileMap[s.user_id] })));
+      }
+      setLoading(false);
+    };
+    fetchSugestoes();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+          <Mail className="h-4 w-4 text-primary" /> Sugestões dos Clientes
+        </h3>
+        <Badge variant="outline" className="font-bold">{sugestoes.length} sugestões</Badge>
+      </div>
+
+      {sugestoes.length === 0 ? (
+        <Card className="border-border/40">
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <Mail className="h-10 w-10 text-muted-foreground mb-3" />
+            <p className="text-sm font-bold text-muted-foreground">Nenhuma sugestão recebida ainda</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {sugestoes.map((s: any) => (
+            <Card key={s.id} className="border-border/40 hover:border-primary/30 transition-all">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge className="text-[10px] font-black bg-primary/10 text-primary border-0">
+                        <User className="h-3 w-3 mr-1" />
+                        {s.profile?.display_name || s.profile?.email || 'Usuário'}
+                      </Badge>
+                      {s.profile?.email && (
+                        <span className="text-[10px] text-muted-foreground">{s.profile.email}</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-foreground leading-relaxed bg-muted/30 rounded-lg p-3 border border-border/30">
+                      {s.mensagem}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[10px] text-muted-foreground font-bold">
+                      {new Date(s.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {new Date(s.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 function MetricsPanel({ users, proPrice }: { users: UserRow[]; proPrice: number }) {
   const [analysisCountMap, setAnalysisCountMap] = useState<Record<string, number>>({});
   const [weeklySignups, setWeeklySignups] = useState<{ week: string; count: number }[]>([]);
@@ -668,10 +758,11 @@ export default function AdminPanel() {
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 max-w-lg">
+          <TabsList className="grid w-full grid-cols-5 max-w-2xl">
             <TabsTrigger value="users" className="font-bold">Usuários</TabsTrigger>
             <TabsTrigger value="metrics" className="font-bold">Métricas</TabsTrigger>
             <TabsTrigger value="features" className="font-bold">Features</TabsTrigger>
+            <TabsTrigger value="sugestoes" className="font-bold">Sugestões</TabsTrigger>
             <TabsTrigger value="api" className="font-bold">Config. API</TabsTrigger>
           </TabsList>
 
@@ -1061,6 +1152,10 @@ export default function AdminPanel() {
                 <Save className="mr-2 h-5 w-5" /> SALVAR TODAS AS CONFIGURAÇÕES
               </Button>
             </div>
+          </TabsContent>
+
+          <TabsContent value="sugestoes" className="space-y-6">
+            <SugestoesPanel />
           </TabsContent>
         </Tabs>
       </main>
