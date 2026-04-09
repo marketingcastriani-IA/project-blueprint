@@ -611,7 +611,13 @@ export default function AdminPanel() {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      toast.success(`Email enviado com sucesso para ${emailRecipients.length} destinatário(s)!`);
+      const sentCount = data?.sent || emailRecipients.length;
+      const failedCount = data?.failed || 0;
+      if (failedCount > 0) {
+        toast.warning(`${sentCount} enviado(s), ${failedCount} falharam.`);
+      } else {
+        toast.success(`Email enviado com sucesso para ${sentCount} destinatário(s)!`);
+      }
       setEmailRecipients([]);
       setEmailContextLabel('');
       setEmailSubject('');
