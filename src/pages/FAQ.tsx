@@ -264,6 +264,7 @@ export default function FAQ() {
             </p>
 
             <ScreenshotImage src={faqAnaliseDetalhe} alt="Detalhes da análise ativa - Opções PRO X" />
+            <ScreenshotImage src={faqAnaliseDetalhe2} alt="Veredito de Saída da IA - Opções PRO X" />
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
