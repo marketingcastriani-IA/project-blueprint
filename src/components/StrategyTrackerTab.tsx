@@ -588,7 +588,8 @@ export default function StrategyTrackerTab() {
     if (!selectedFamily || stockPrice <= 0) return [];
 
     let opts = options.filter((o) => o.family === selectedFamily);
-    if (selectedVencimento !== "all") opts = opts.filter((o) => o.vencimento === selectedVencimento);
+    const activeVenc = selectedVencimento || nextMonthlyExpiry;
+    if (activeVenc !== "all") opts = opts.filter((o) => o.vencimento === activeVenc);
 
     if (moneynessFilter !== "all" && stockPrice > 0) {
       const margin = stockPrice * 0.05;
