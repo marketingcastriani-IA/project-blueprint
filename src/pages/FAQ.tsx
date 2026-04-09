@@ -125,7 +125,6 @@ export default function FAQ() {
                 strategyTracker: faqStrategyTracker,
                 strategyVolatility: faqStrategyVolatility,
               };
-              };
               await generateFAQPdf(faqImages);
               toast.success('PDF do manual baixado!');
             }} 
