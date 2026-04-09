@@ -300,6 +300,14 @@ export default function Index() {
               <img src={landingProxResults} alt="Rastreador PRO X — Resultados Top 3" className="w-full h-auto" loading="lazy" />
             </div>
           </div>
+
+          {/* Ticker Opções B3 */}
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><Database className="h-5 w-5 text-primary" /></div>
+                <h3 className="text-2xl font-black tracking-tight">Ticker Opções B3</h3>
+                <Badge className="bg-primary/20 text-primary border-0 text-xs font-black">NOVO</Badge>
               </div>
               <p className="text-muted-foreground">Banco com 99.000+ opções da B3. Seleção rápida Top 18, filtros avançados por moneyness e prêmio, pares Call+Put e exportação direta para Box e Collar.</p>
             </div>
