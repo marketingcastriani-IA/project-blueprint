@@ -30,7 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Area, CartesianGrid, ReferenceLine, XAxis, YAxis, ComposedChart, Line, ResponsiveContainer, Tooltip } from "recharts";
 import { calculatePayoffAtExpiry } from "@/lib/payoff";
 
@@ -84,6 +84,7 @@ interface StrategyDef {
   icon: typeof TrendingUp;
   description: string;
   composition: string;
+  details: string;
 }
 
 interface StrategyResult {
@@ -110,19 +111,19 @@ interface SavedAsset {
 
 const STRATEGIES: StrategyDef[] = [
   // ALTA
-  { id: "covered_call", label: "Venda Coberta", view: "alta", icon: TrendingUp, description: "Gera renda vendendo Call do ativo em carteira", composition: "Ação + Venda Call" },
-  { id: "bull_call_spread", label: "Trava de Alta (Call)", view: "alta", icon: Rocket, description: "Aposta na alta com risco limitado", composition: "Compra Call K1 + Venda Call K2" },
-  { id: "bull_put_spread", label: "Trava de Alta (Put)", view: "alta", icon: TrendingUp, description: "Recebe crédito apostando que não cai", composition: "Venda Put K1 + Compra Put K2" },
+  { id: "covered_call", label: "Venda Coberta", view: "alta", icon: TrendingUp, description: "Gera renda vendendo Call do ativo em carteira", composition: "Ação + Venda Call", details: "A Venda Coberta (Covered Call) é uma das estratégias mais populares do mercado de opções. Consiste em possuir o ativo-objeto (ações) e vender uma opção de compra (Call) sobre ele. O investidor recebe um prêmio pela venda da Call, que funciona como uma renda extra. O risco é limitado à queda do ativo menos o prêmio recebido. O lucro máximo ocorre quando o ativo sobe até o strike da Call vendida. É ideal para cenários de alta moderada ou lateral." },
+  { id: "bull_call_spread", label: "Trava de Alta (Call)", view: "alta", icon: Rocket, description: "Aposta na alta com risco limitado", composition: "Compra Call K1 + Venda Call K2", details: "A Trava de Alta com Call (Bull Call Spread) é uma estratégia de débito que lucra com a alta do ativo. Consiste em comprar uma Call com strike menor (K1) e vender outra Call com strike maior (K2), ambas no mesmo vencimento. O custo líquido é o débito pago. O lucro máximo é a diferença entre os strikes menos o débito. O risco máximo é o débito pago. Ideal quando você espera uma alta moderada e quer limitar o risco." },
+  { id: "bull_put_spread", label: "Trava de Alta (Put)", view: "alta", icon: TrendingUp, description: "Recebe crédito apostando que não cai", composition: "Venda Put K1 + Compra Put K2", details: "A Trava de Alta com Put (Bull Put Spread) é uma estratégia de crédito. Consiste em vender uma Put com strike maior e comprar uma Put com strike menor. Você recebe um crédito líquido na montagem. O lucro máximo é o crédito recebido (se o ativo ficar acima do strike vendido). A perda máxima é a diferença entre os strikes menos o crédito. Ideal para cenários de alta ou estabilidade." },
   // BAIXA
-  { id: "cash_secured_put", label: "Venda de Put", view: "baixa", icon: Anchor, description: "Recebe prêmio aceitando comprar o ativo", composition: "Venda Put" },
-  { id: "bear_put_spread", label: "Trava de Baixa (Put)", view: "baixa", icon: TrendingDown, description: "Aposta na queda com risco limitado", composition: "Compra Put K1 + Venda Put K2" },
-  { id: "bear_call_spread", label: "Trava de Baixa (Call)", view: "baixa", icon: TrendingDown, description: "Recebe crédito apostando que não sobe", composition: "Venda Call K1 + Compra Call K2" },
+  { id: "cash_secured_put", label: "Venda de Put", view: "baixa", icon: Anchor, description: "Recebe prêmio aceitando comprar o ativo", composition: "Venda Put", details: "A Venda de Put (Cash-Secured Put) consiste em vender uma opção de venda (Put) tendo o capital reservado para comprar o ativo caso seja exercido. Você recebe um prêmio pela venda. Se o ativo ficar acima do strike, você fica com o prêmio integralmente. Se cair abaixo, você é obrigado a comprar pelo strike, mas seu custo efetivo é menor graças ao prêmio recebido. Estratégia popular para quem deseja comprar ações com desconto." },
+  { id: "bear_put_spread", label: "Trava de Baixa (Put)", view: "baixa", icon: TrendingDown, description: "Aposta na queda com risco limitado", composition: "Compra Put K1 + Venda Put K2", details: "A Trava de Baixa com Put (Bear Put Spread) é uma estratégia de débito que lucra com a queda do ativo. Compra-se uma Put com strike maior e vende-se outra com strike menor. O custo é o débito líquido. O lucro máximo ocorre se o ativo cair abaixo do strike menor. O risco máximo é limitado ao débito pago. Ideal para quem espera uma queda moderada com risco controlado." },
+  { id: "bear_call_spread", label: "Trava de Baixa (Call)", view: "baixa", icon: TrendingDown, description: "Recebe crédito apostando que não sobe", composition: "Venda Call K1 + Compra Call K2", details: "A Trava de Baixa com Call (Bear Call Spread) é uma estratégia de crédito que lucra com a queda ou estabilidade do ativo. Vende-se uma Call com strike menor e compra-se outra com strike maior. O crédito recebido é o lucro máximo. A perda máxima é a diferença entre os strikes menos o crédito. Ideal para cenários de baixa ou quando você acredita que o ativo não vai subir além de um determinado ponto." },
   // LATERAL
-  { id: "iron_condor", label: "Iron Condor", view: "lateral", icon: ArrowLeftRight, description: "Lucra se o ativo ficar dentro do range", composition: "Trava Put + Trava Call" },
-  { id: "butterfly", label: "Borboleta", view: "lateral", icon: Layers, description: "Lucro máximo se o ativo fechar no strike central", composition: "C1 + 2×V C2 + C3" },
+  { id: "iron_condor", label: "Iron Condor", view: "lateral", icon: ArrowLeftRight, description: "Lucra se o ativo ficar dentro do range", composition: "Trava Put + Trava Call", details: "O Iron Condor combina uma Trava de Alta com Put e uma Trava de Baixa com Call. São 4 pernas: vende Put K1, compra Put K2 (abaixo), vende Call K3, compra Call K4 (acima). Você recebe crédito na montagem. O lucro máximo ocorre se o ativo ficar entre K1 e K3 no vencimento. A perda máxima é limitada à largura de uma das travas menos o crédito total. Ideal para mercados laterais com baixa volatilidade." },
+  { id: "butterfly", label: "Borboleta", view: "lateral", icon: Layers, description: "Lucro máximo se o ativo fechar no strike central", composition: "C1 + 2×V C2 + C3", details: "A Borboleta (Butterfly Spread) consiste em comprar 1 Call no strike baixo (K1), vender 2 Calls no strike central (K2) e comprar 1 Call no strike alto (K3). O lucro máximo ocorre se o ativo fechar exatamente no strike central no vencimento. O custo é baixo (débito pequeno) e o risco é limitado ao débito pago. Ideal para quem acredita que o ativo vai ficar estável em torno de um preço específico." },
   // VOLATILIDADE
-  { id: "straddle", label: "Straddle", view: "volatilidade", icon: GitBranch, description: "Lucra com movimentos grandes em qualquer direção", composition: "Compra Call + Compra Put (mesmo K)" },
-  { id: "strangle", label: "Strangle", view: "volatilidade", icon: Crosshair, description: "Lucra com movimento forte, custo menor que Straddle", composition: "Compra Call K2 + Compra Put K1" },
+  { id: "straddle", label: "Straddle", view: "volatilidade", icon: GitBranch, description: "Lucra com movimentos grandes em qualquer direção", composition: "Compra Call + Compra Put (mesmo K)", details: "O Straddle consiste em comprar simultaneamente uma Call e uma Put com o mesmo strike e vencimento. O custo é alto (soma dos dois prêmios), mas o lucro é potencialmente ilimitado se o ativo se mover fortemente para qualquer direção. O prejuízo máximo ocorre se o ativo fechar exatamente no strike (perde os dois prêmios). Ideal antes de eventos que podem causar grande volatilidade (balanços, decisões de juros)." },
+  { id: "strangle", label: "Strangle", view: "volatilidade", icon: Crosshair, description: "Lucra com movimento forte, custo menor que Straddle", composition: "Compra Call K2 + Compra Put K1", details: "O Strangle é semelhante ao Straddle, mas usa strikes diferentes: compra Put OTM (strike abaixo do preço) e Call OTM (strike acima). O custo é menor que o Straddle, pois ambas as opções estão fora do dinheiro. Porém, o ativo precisa se mover mais para gerar lucro. O prejuízo máximo é a soma dos prêmios pagos. Ideal para quem espera um grande movimento, mas quer gastar menos na montagem." },
 ];
 
 const TOP_STOCKS = [
@@ -1174,31 +1175,66 @@ export default function StrategyTrackerTab() {
           {STRATEGIES.filter((s) => s.view === currentView).map((strat) => {
             const active = selectedStrategy === strat.id;
             return (
-              <button
-                key={strat.id}
-                onClick={() => setSelectedStrategy(strat.id)}
-                className={cn(
-                  "relative p-4 rounded-2xl text-left transition-all duration-200 border-2 group",
-                  "hover:shadow-lg hover:scale-[1.03]",
-                  active
-                    ? `bg-gradient-to-br ${VIEW_CONFIG[strat.view].bg} ${VIEW_CONFIG[strat.view].border} shadow-xl ${VIEW_CONFIG[strat.view].glow} scale-[1.02]`
-                    : "bg-card border-border/40 hover:border-primary/20"
-                )}
-                style={{ perspective: "800px", transform: active ? "perspective(800px) rotateX(1.5deg)" : undefined }}
-              >
-                {active && <div className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />}
-                <div className="flex items-center gap-2.5 mb-2">
-                  <div className={cn(
-                    "h-9 w-9 rounded-xl flex items-center justify-center transition-colors",
-                    active ? "bg-primary/20 shadow-inner" : "bg-muted"
-                  )}>
-                    <strat.icon className={cn("h-4.5 w-4.5", active ? "text-primary" : "text-muted-foreground")} />
+              <div key={strat.id} className="relative group">
+                <button
+                  onClick={() => setSelectedStrategy(strat.id)}
+                  className={cn(
+                    "relative w-full p-4 rounded-2xl text-left transition-all duration-200 border-2 group",
+                    "hover:shadow-lg hover:scale-[1.03]",
+                    active
+                      ? `bg-gradient-to-br ${VIEW_CONFIG[strat.view].bg} ${VIEW_CONFIG[strat.view].border} shadow-xl ${VIEW_CONFIG[strat.view].glow} scale-[1.02]`
+                      : "bg-card border-border/40 hover:border-primary/20"
+                  )}
+                  style={{ perspective: "800px", transform: active ? "perspective(800px) rotateX(1.5deg)" : undefined }}
+                >
+                  {active && <div className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />}
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <div className={cn(
+                      "h-9 w-9 rounded-xl flex items-center justify-center transition-colors",
+                      active ? "bg-primary/20 shadow-inner" : "bg-muted"
+                    )}>
+                      <strat.icon className={cn("h-4.5 w-4.5", active ? "text-primary" : "text-muted-foreground")} />
+                    </div>
+                    <span className="text-sm font-black uppercase tracking-wide text-foreground">{strat.label}</span>
                   </div>
-                  <span className="text-sm font-black uppercase tracking-wide text-foreground">{strat.label}</span>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">{strat.description}</p>
-                <p className="text-xs text-muted-foreground/60 mt-1.5 font-bold">{strat.composition}</p>
-              </button>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{strat.description}</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1.5 font-bold">{strat.composition}</p>
+                </button>
+                {/* Info popup */}
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button
+                      className="absolute top-2 right-8 h-6 w-6 rounded-full bg-muted/80 hover:bg-primary/20 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 hover:!opacity-100 border border-border/40"
+                      style={{ opacity: active ? 1 : undefined }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-lg">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                          <strat.icon className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-lg font-black uppercase tracking-wide">{strat.label}</p>
+                          <p className="text-xs font-bold text-muted-foreground">{strat.composition}</p>
+                        </div>
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-2">
+                      <p className="text-sm text-foreground leading-relaxed">{strat.details}</p>
+                      <div className="flex items-center gap-2 pt-2">
+                        <Badge className={cn("text-xs font-black border-0", VIEW_CONFIG[strat.view].color, "bg-current/10")}>
+                          {VIEW_CONFIG[strat.view].label}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs font-bold">{strat.composition}</Badge>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
             );
           })}
         </div>
