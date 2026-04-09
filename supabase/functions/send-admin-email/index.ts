@@ -76,7 +76,6 @@ Deno.serve(async (req) => {
           const ext = mimeType.split('/')[1] || 'png';
           const fileName = `promo-${Date.now()}.${ext}`;
 
-          // Convert base64 to Uint8Array
           const binaryStr = atob(base64Data);
           const bytes = new Uint8Array(binaryStr.length);
           for (let i = 0; i < binaryStr.length; i++) {
@@ -205,37 +204,80 @@ Deno.serve(async (req) => {
       });
     }
 
-    const emailPayload: Record<string, unknown> = {
-      from: fromEmail,
-      to: recipients,
-      subject,
-      html: htmlBody,
+    // Send emails individually to avoid Resend's recipient limit
+    // and ensure each recipient gets their own email (BCC-like behavior)
+    const BATCH_SIZE = 10;
+    const results: { sent: string[]; failed: { email: string; error: string }[] } = {
+      sent: [],
+      failed: [],
     };
-    if (attachments.length > 0) {
-      emailPayload.attachments = attachments;
+
+    for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
+      const batch = recipients.slice(i, i + BATCH_SIZE);
+      
+      // Send each email in the batch concurrently
+      const promises = batch.map(async (recipient: string) => {
+        try {
+          const emailPayload: Record<string, unknown> = {
+            from: fromEmail,
+            to: [recipient],
+            subject,
+            html: htmlBody,
+          };
+          if (attachments.length > 0) {
+            emailPayload.attachments = attachments;
+          }
+
+          const res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${RESEND_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(emailPayload),
+          });
+
+          const resData = await res.json();
+
+          if (!res.ok) {
+            console.error(`Resend error for ${recipient}:`, resData);
+            results.failed.push({ email: recipient, error: resData?.message || 'Send failed' });
+          } else {
+            results.sent.push(recipient);
+          }
+        } catch (err: any) {
+          console.error(`Error sending to ${recipient}:`, err);
+          results.failed.push({ email: recipient, error: err.message });
+        }
+      });
+
+      await Promise.all(promises);
+
+      // Small delay between batches to respect rate limits
+      if (i + BATCH_SIZE < recipients.length) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
 
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(emailPayload),
-    });
+    console.log(`Admin email: ${results.sent.length} sent, ${results.failed.length} failed. Subject: ${subject}`);
 
-    const resData = await res.json();
-
-    if (!res.ok) {
-      console.error('Resend error:', resData);
-      return new Response(JSON.stringify({ error: 'Failed to send email', details: resData }), {
+    if (results.failed.length > 0 && results.sent.length === 0) {
+      return new Response(JSON.stringify({ 
+        error: 'All emails failed to send', 
+        details: results.failed 
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log(`Admin email sent to ${recipients.length} recipient(s): ${subject}`);
-    return new Response(JSON.stringify({ success: true, id: resData.id, recipients: recipients.length }), {
+    return new Response(JSON.stringify({ 
+      success: true, 
+      sent: results.sent.length, 
+      failed: results.failed.length,
+      recipients: recipients.length,
+      failedDetails: results.failed.length > 0 ? results.failed : undefined,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
