@@ -391,7 +391,25 @@ export default function StrategyTrackerTab() {
 
   const [selectedFamily, setSelectedFamily] = useState<string>("");
   const [selectedStrategy, setSelectedStrategy] = useState<StrategyType>("covered_call");
-  const [selectedVencimento, setSelectedVencimento] = useState<string>("all");
+  // Auto-select next monthly expiry
+  const nextMonthlyExpiry = useMemo(() => {
+    if (vencimentos.length === 0) return "all";
+    const now = new Date();
+    // Parse vencimentos like "15/05/2026" and find next one
+    for (const v of vencimentos) {
+      const parts = v.split("/");
+      if (parts.length === 3) {
+        const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+        if (d >= now) return v;
+      } else if (parts.length === 2) {
+        const d = new Date(parseInt(parts[1]), parseInt(parts[0]) - 1, 15);
+        if (d >= now) return v;
+      }
+    }
+    return vencimentos[0] || "all";
+  }, [vencimentos]);
+
+  const [selectedVencimento, setSelectedVencimento] = useState<string>("");
   const [moneynessFilter, setMoneynessFilter] = useState<string>("all");
   const [minPremium, setMinPremium] = useState("");
   const [minTrades, setMinTrades] = useState("");
