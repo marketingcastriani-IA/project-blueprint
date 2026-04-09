@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Mail, MessageSquarePlus, Send, CheckCircle, Headphones } from 'lucide-react';
 import { toast } from 'sonner';
-import ProfessionalLayout from '@/components/ProfessionalLayout';
+import ProfessionalLayout, { ProfessionalHeader } from '@/components/ProfessionalLayout';
 
 export default function Suporte() {
   const { user } = useAuth();
