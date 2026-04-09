@@ -68,14 +68,19 @@ export default function Header() {
     return () => window.removeEventListener('storage', handler);
   }, []);
 
-  const primaryNav = [
+  const primaryNavLeft = [
     { label: 'Análise', path: '/dashboard', icon: PlusCircle },
     { label: 'Operações', path: '/history', icon: History },
     { label: 'Portfólio', path: '/portfolio', icon: Briefcase },
+  ];
+
+  const primaryNavRight = [
     { label: 'Diversificar', path: '/diversificador', icon: PieChart },
     { label: 'Tempo Real', path: '/dados-ao-vivo', icon: Radio },
     { label: 'Opções B3', path: '/ticker-opcoes', icon: Database },
   ];
+
+  const primaryNav = [...primaryNavLeft, ...primaryNavRight];
 
   const trackerNav = [
     { label: 'Rastreador PRO', path: '/strategy-tracker', icon: Zap },
@@ -104,24 +109,37 @@ export default function Header() {
 
   const NavButton = ({ item }: { item: typeof primaryNav[0] }) => {
     const isActive = location.pathname === item.path;
-    const isRealtime = item.path === '/dados-ao-vivo';
-    const isHighlight = 'highlight' in item && item.highlight;
     return (
       <button
         onClick={() => navigate(item.path)}
         className={cn(
           'flex items-center gap-1 rounded-lg font-black uppercase tracking-wide transition-all whitespace-nowrap',
           'px-2 py-1.5 text-[10px] lg:px-3 lg:py-2 lg:text-xs xl:tracking-widest',
-          isHighlight && !isActive && 'bg-yellow-400/90 text-black hover:bg-yellow-300 shadow-[0_0_16px_rgba(250,204,21,0.5)] animate-pulse border border-yellow-300/50',
-          isHighlight && isActive && 'bg-yellow-400 text-black shadow-[0_0_20px_rgba(250,204,21,0.6)] ring-2 ring-yellow-300',
-          isRealtime && !isHighlight && 'text-red-100 bg-red-600 hover:bg-red-500 animate-pulse shadow-[0_0_16px_rgba(239,68,68,0.5)] border border-red-400/50',
-          isRealtime && isActive && !isHighlight && 'ring-2 ring-red-300',
-          !isRealtime && !isHighlight && isActive && 'bg-primary-foreground/20 text-primary-foreground',
-          !isRealtime && !isHighlight && !isActive && 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
+          isActive && 'bg-primary-foreground/20 text-primary-foreground',
+          !isActive && 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
         )}
       >
-        <item.icon className={cn("h-3.5 w-3.5 shrink-0 lg:h-4 lg:w-4", isRealtime && "animate-pulse")} />
+        <item.icon className="h-3.5 w-3.5 shrink-0 lg:h-4 lg:w-4" />
         <span>{item.label}</span>
+      </button>
+    );
+  };
+
+  const ProXButton = () => {
+    const isActive = location.pathname === '/strategy-tracker';
+    return (
+      <button
+        onClick={() => navigate('/strategy-tracker')}
+        className={cn(
+          'flex items-center gap-1.5 rounded-xl font-black uppercase tracking-widest transition-all whitespace-nowrap',
+          'px-3 py-1.5 text-[10px] lg:px-4 lg:py-2 lg:text-xs',
+          isActive
+            ? 'bg-amber-400 text-black shadow-[0_0_20px_rgba(251,191,36,0.6)] ring-2 ring-amber-300'
+            : 'bg-amber-400/90 text-black hover:bg-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.4)] animate-pulse'
+        )}
+      >
+        <Zap className="h-3.5 w-3.5 lg:h-4 lg:w-4 fill-current" />
+        <span>PRO X</span>
       </button>
     );
   };
@@ -147,7 +165,14 @@ export default function Header() {
 
         {/* Desktop Primary Nav — scrollable */}
         <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 flex-1 overflow-x-auto scrollbar-none mx-2 pr-2" data-tour="nav-menu">
-          {primaryNav.map(item => (
+          {primaryNavLeft.map(item => (
+            <NavButton key={item.path} item={item} />
+          ))}
+
+          {/* PRO X center button */}
+          <ProXButton />
+
+          {primaryNavRight.map(item => (
             <NavButton key={item.path} item={item} />
           ))}
 
@@ -317,20 +342,20 @@ export default function Header() {
             <div className="grid grid-cols-2 gap-1">
               {allNavItems.map(item => {
                 const isActive = location.pathname === item.path;
-                const isRealtime = item.path === '/dados-ao-vivo';
+                
                 return (
                   <button
                     key={item.path}
                     onClick={() => { navigate(item.path); setMobileOpen(false); }}
                     className={cn(
                       'flex items-center gap-1.5 w-full px-2.5 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all',
-                      isRealtime && 'text-red-100 bg-red-600 animate-pulse',
-                      isRealtime && isActive && 'ring-2 ring-red-300',
-                      !isRealtime && isActive && 'bg-primary-foreground/20 text-primary-foreground',
-                      !isRealtime && !isActive && 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
+                      item.path === '/strategy-tracker' && !isActive && 'bg-amber-400/90 text-black shadow-[0_0_10px_rgba(251,191,36,0.4)] animate-pulse',
+                      item.path === '/strategy-tracker' && isActive && 'bg-amber-400 text-black ring-2 ring-amber-300',
+                      item.path !== '/strategy-tracker' && isActive && 'bg-primary-foreground/20 text-primary-foreground',
+                      item.path !== '/strategy-tracker' && !isActive && 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
                     )}
                   >
-                    <item.icon className={cn("h-3.5 w-3.5 shrink-0", isRealtime && "animate-pulse")} />
+                    <item.icon className="h-3.5 w-3.5 shrink-0" />
                     <span className="truncate">{item.label}</span>
                   </button>
                 );
