@@ -131,8 +131,8 @@ export default function Header() {
       <button
         onClick={() => navigate('/strategy-tracker')}
         className={cn(
-          'flex items-center gap-1.5 rounded-xl font-black uppercase tracking-widest transition-all whitespace-nowrap',
-          'px-3 py-1.5 text-[10px] lg:px-4 lg:py-2 lg:text-xs',
+          'flex items-center gap-1 rounded-xl font-black uppercase tracking-wider transition-all whitespace-nowrap',
+          'px-2.5 py-1.5 text-[9px] lg:px-3 lg:py-2 lg:text-[11px]',
           isActive
             ? 'bg-amber-400 text-black shadow-[0_0_20px_rgba(251,191,36,0.6)] ring-2 ring-amber-300'
             : 'bg-amber-400/90 text-black hover:bg-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.4)] animate-pulse'
