@@ -1,6 +1,7 @@
 // ============================================================
 // RASTREADOR DE ESTRATÉGIAS PRO X — Tempo Real via Profit RTD Bridge
 // 10 Estratégias: Alta, Baixa, Lateral, Volatilidade
+// Multi-Asset Save/Track + Volume Filter
 // ============================================================
 
 import { useState, useMemo, useCallback, useEffect } from "react";
@@ -14,6 +15,7 @@ import {
   Database, Filter, Zap, BarChart2, ArrowUpDown,
   DollarSign, Percent, Star, AlertTriangle, Crosshair,
   ArrowLeftRight, GitBranch, Anchor, Rocket,
+  Plus, Trash2, Save, X, Check,
 } from "lucide-react";
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 import { useB3Options, type B3Option } from "@/contexts/B3OptionsContext";
@@ -23,6 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 
 // ─── TIPOS ───────────────────────────────────────────────────
 type MarketView = "alta" | "baixa" | "lateral" | "volatilidade";
@@ -60,6 +63,12 @@ interface StrategyResult {
   netCredit: number;
   vencimento: string;
   isLive: boolean;
+}
+
+interface SavedAsset {
+  family: string;
+  label: string;
+  addedAt: string;
 }
 
 const STRATEGIES: StrategyDef[] = [
@@ -100,8 +109,8 @@ const TOP_STOCKS = [
   { family: "RADL", label: "RADL", name: "Raia" },
 ];
 
+const SAVED_ASSETS_KEY = "strategy-tracker-saved-assets";
 const STRATEGY_STORAGE_KEY = "strategy-tracker-families";
-interface SavedFamily { name: string; tickers: string[]; autoImported?: string[] }
 
 const trophyImages = [trophyGold, trophySilver, trophyBronze];
 const trophyLabels = ["🥇 MELHOR", "🥈 2º LUGAR", "🥉 3º LUGAR"];
@@ -135,16 +144,79 @@ export default function StrategyTrackerTab() {
   const { options, vencimentos } = useB3Options();
   const { status, rows, addTicker } = useSharedRtdBridge();
 
+  // ─── SAVED ASSETS (multi-asset tracking) ──────────────────
+  const [savedAssets, setSavedAssets] = useState<SavedAsset[]>(() => {
+    try {
+      const saved = localStorage.getItem(SAVED_ASSETS_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  const [customAssetInput, setCustomAssetInput] = useState("");
+
   const [selectedFamily, setSelectedFamily] = useState<string>("");
   const [selectedStrategy, setSelectedStrategy] = useState<StrategyType>("covered_call");
   const [selectedVencimento, setSelectedVencimento] = useState<string>("all");
   const [moneynessFilter, setMoneynessFilter] = useState<string>("all");
   const [minPremium, setMinPremium] = useState("");
+  const [minTrades, setMinTrades] = useState("");
   const [quantity, setQuantity] = useState("100");
   const [cdiRate, setCdiRate] = useState("14.65");
   const [showCdi, setShowCdi] = useState(true);
   const [expandedResult, setExpandedResult] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"return" | "quality" | "profit">("return");
+
+  // Persist saved assets
+  useEffect(() => {
+    localStorage.setItem(SAVED_ASSETS_KEY, JSON.stringify(savedAssets));
+  }, [savedAssets]);
+
+  // Load initial selected family from saved assets
+  useEffect(() => {
+    if (!selectedFamily && savedAssets.length > 0) {
+      setSelectedFamily(savedAssets[0].family);
+    }
+  }, []);
+
+  const addSavedAsset = useCallback((family: string, label?: string) => {
+    setSavedAssets((prev) => {
+      if (prev.find((a) => a.family === family)) {
+        toast.info(`${family} já está na lista de rastreamento`);
+        return prev;
+      }
+      toast.success(`${family} adicionado ao rastreamento!`);
+      return [...prev, { family, label: label || family, addedAt: new Date().toISOString() }];
+    });
+  }, []);
+
+  const removeSavedAsset = useCallback((family: string) => {
+    setSavedAssets((prev) => prev.filter((a) => a.family !== family));
+    if (selectedFamily === family) {
+      setSelectedFamily("");
+    }
+    toast.info(`${family} removido do rastreamento`);
+  }, [selectedFamily]);
+
+  const handleAddCustomAsset = useCallback(() => {
+    const input = customAssetInput.trim().toUpperCase();
+    if (!input || input.length < 3) {
+      toast.error("Digite pelo menos 3 letras do ativo");
+      return;
+    }
+    // Extract family (first 4 letters)
+    const family = input.replace(/\d+$/, "").substring(0, 4);
+    if (family.length < 3) {
+      toast.error("Ativo inválido");
+      return;
+    }
+    addSavedAsset(family, family);
+    setCustomAssetInput("");
+    setSelectedFamily(family);
+  }, [customAssetInput, addSavedAsset]);
+
+  const selectAndSaveAsset = useCallback((family: string, label: string) => {
+    setSelectedFamily(family);
+    addSavedAsset(family, label);
+  }, [addSavedAsset]);
 
   // Derive stock ticker
   const stockCandidates = useMemo(() => {
@@ -185,16 +257,6 @@ export default function StrategyTrackerTab() {
     return vencimentos.filter((v) => vSet.has(v));
   }, [selectedFamily, options, vencimentos]);
 
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STRATEGY_STORAGE_KEY);
-      if (saved) {
-        const families: SavedFamily[] = JSON.parse(saved);
-        if (families.length > 0 && !selectedFamily) setSelectedFamily(families[0].name);
-      }
-    } catch {}
-  }, []);
-
   const getPrice = useCallback((ticker: string, field: "ofCompra" | "ofVenda" | "ultimo"): { price: number; isLive: boolean } => {
     const row = rows.get(ticker);
     if (row) {
@@ -205,6 +267,20 @@ export default function StrategyTrackerTab() {
     const opt = options.find((o) => o.ticker === ticker);
     return { price: opt?.precoUltimo ?? 0, isLive: false };
   }, [rows, options]);
+
+  // Helper: check if option has enough trades (volume)
+  const hasMinTrades = useCallback((ticker: string): boolean => {
+    const minT = parseInt(minTrades) || 0;
+    if (minT <= 0) return true;
+    const row = rows.get(ticker);
+    if (row?.negocios && row.negocios >= minT) return true;
+    // Also check from B3 options data
+    const opt = options.find((o) => o.ticker === ticker);
+    if (opt && (opt as any).negocios >= minT) return true;
+    // If no trade data available and filter is set, check volume
+    if (row?.volume && row.volume >= minT) return true;
+    return minT <= 0;
+  }, [minTrades, rows, options]);
 
   // ─── SCAN ENGINE ──────────────────────────────────────────
   const results = useMemo((): StrategyResult[] => {
@@ -233,6 +309,7 @@ export default function StrategyTrackerTab() {
     // ── VENDA COBERTA ──────────────────────────────────────
     if (selectedStrategy === "covered_call") {
       for (const call of calls) {
+        if (!hasMinTrades(call.ticker)) continue;
         const { price: callPrice, isLive } = getPrice(call.ticker, "ofCompra");
         if (callPrice <= 0 || callPrice < minPrem) continue;
         const returnPct = (callPrice / stockPrice) * 100;
@@ -255,6 +332,7 @@ export default function StrategyTrackerTab() {
     // ── VENDA DE PUT ───────────────────────────────────────
     if (selectedStrategy === "cash_secured_put") {
       for (const put of puts) {
+        if (!hasMinTrades(put.ticker)) continue;
         const { price: putPrice, isLive } = getPrice(put.ticker, "ofCompra");
         if (putPrice <= 0 || putPrice < minPrem) continue;
         const returnPct = (putPrice / put.strike) * 100;
@@ -276,6 +354,7 @@ export default function StrategyTrackerTab() {
         for (let j = i + 1; j < calls.length && j < i + 8; j++) {
           const lc = calls[i], sc = calls[j];
           if (lc.vencimento !== sc.vencimento) continue;
+          if (!hasMinTrades(lc.ticker) || !hasMinTrades(sc.ticker)) continue;
           const { price: lp, isLive: l1 } = getPrice(lc.ticker, "ofVenda");
           const { price: sp, isLive: l2 } = getPrice(sc.ticker, "ofCompra");
           if (lp <= 0 || sp <= 0) continue;
@@ -307,6 +386,7 @@ export default function StrategyTrackerTab() {
           const buyPut = puts[i]; // lower strike
           const sellPut = puts[j]; // higher strike
           if (buyPut.vencimento !== sellPut.vencimento) continue;
+          if (!hasMinTrades(buyPut.ticker) || !hasMinTrades(sellPut.ticker)) continue;
           const { price: bp, isLive: l1 } = getPrice(buyPut.ticker, "ofVenda");
           const { price: sp, isLive: l2 } = getPrice(sellPut.ticker, "ofCompra");
           if (bp <= 0 || sp <= 0) continue;
@@ -336,6 +416,7 @@ export default function StrategyTrackerTab() {
         for (let j = i + 1; j < puts.length && j < i + 8; j++) {
           const shortPut = puts[i]; const longPut = puts[j];
           if (shortPut.vencimento !== longPut.vencimento) continue;
+          if (!hasMinTrades(shortPut.ticker) || !hasMinTrades(longPut.ticker)) continue;
           const { price: lp, isLive: l1 } = getPrice(longPut.ticker, "ofVenda");
           const { price: sp, isLive: l2 } = getPrice(shortPut.ticker, "ofCompra");
           if (lp <= 0 || sp <= 0) continue;
@@ -365,6 +446,7 @@ export default function StrategyTrackerTab() {
         for (let j = i + 1; j < calls.length && j < i + 8; j++) {
           const sellCall = calls[i]; const buyCall = calls[j];
           if (sellCall.vencimento !== buyCall.vencimento) continue;
+          if (!hasMinTrades(sellCall.ticker) || !hasMinTrades(buyCall.ticker)) continue;
           const { price: sp, isLive: l1 } = getPrice(sellCall.ticker, "ofCompra");
           const { price: bp, isLive: l2 } = getPrice(buyCall.ticker, "ofVenda");
           if (sp <= 0 || bp <= 0) continue;
@@ -407,6 +489,7 @@ export default function StrategyTrackerTab() {
             const sellCall = otmCalls[ci];
             const buyCall = otmCalls.length > ci + 1 ? otmCalls[ci + 1] : null;
             if (!buyPut || !buyCall) continue;
+            if (!hasMinTrades(sellPut.ticker) || !hasMinTrades(buyPut.ticker) || !hasMinTrades(sellCall.ticker) || !hasMinTrades(buyCall.ticker)) continue;
 
             const { price: spP, isLive: l1 } = getPrice(sellPut.ticker, "ofCompra");
             const { price: bpP, isLive: l2 } = getPrice(buyPut.ticker, "ofVenda");
@@ -449,6 +532,7 @@ export default function StrategyTrackerTab() {
             for (let k = j + 1; k < sorted.length; k++) {
               const c1 = sorted[i], c2 = sorted[j], c3 = sorted[k];
               if (Math.abs((c2.strike - c1.strike) - (c3.strike - c2.strike)) > 0.1) continue;
+              if (!hasMinTrades(c1.ticker) || !hasMinTrades(c2.ticker) || !hasMinTrades(c3.ticker)) continue;
               const { price: p1, isLive: l1 } = getPrice(c1.ticker, "ofVenda");
               const { price: p2, isLive: l2 } = getPrice(c2.ticker, "ofCompra");
               const { price: p3, isLive: l3 } = getPrice(c3.ticker, "ofVenda");
@@ -484,6 +568,7 @@ export default function StrategyTrackerTab() {
       puts.forEach((p) => { const k = `${p.strike}|${p.vencimento}`; const e = byStrikeVenc.get(k); if (e) e.put = p; else byStrikeVenc.set(k, { call: null as any, put: p }); });
       byStrikeVenc.forEach((pair) => {
         if (!pair.call || !pair.put) return;
+        if (!hasMinTrades(pair.call.ticker) || !hasMinTrades(pair.put.ticker)) return;
         const { price: cp, isLive: l1 } = getPrice(pair.call.ticker, "ofVenda");
         const { price: pp, isLive: l2 } = getPrice(pair.put.ticker, "ofVenda");
         if (cp <= 0 || pp <= 0) return;
@@ -491,7 +576,6 @@ export default function StrategyTrackerTab() {
         const maxLoss = totalCost;
         const beUp = pair.call.strike + cp + pp;
         const beDown = pair.put.strike - cp - pp;
-        // Estimate max profit at ±20% move
         const bigMove = stockPrice * 0.2;
         const maxProfit = (bigMove - cp - pp) * qty;
         const returnPct = maxLoss > 0 && maxProfit > 0 ? (maxProfit / maxLoss) * 100 : 0;
@@ -511,10 +595,12 @@ export default function StrategyTrackerTab() {
     // ── STRANGLE ──────────────────────────────────────────
     if (selectedStrategy === "strangle") {
       for (const put of puts) {
-        if (put.strike >= stockPrice) continue; // OTM puts only
+        if (put.strike >= stockPrice) continue;
+        if (!hasMinTrades(put.ticker)) continue;
         for (const call of calls) {
-          if (call.strike <= stockPrice) continue; // OTM calls only
+          if (call.strike <= stockPrice) continue;
           if (put.vencimento !== call.vencimento) continue;
+          if (!hasMinTrades(call.ticker)) continue;
           const { price: pp, isLive: l1 } = getPrice(put.ticker, "ofVenda");
           const { price: cp, isLive: l2 } = getPrice(call.ticker, "ofVenda");
           if (pp <= 0 || cp <= 0) continue;
@@ -543,7 +629,7 @@ export default function StrategyTrackerTab() {
       : sortBy === "quality" ? (a: StrategyResult, b: StrategyResult) => b.qualityScore - a.qualityScore
       : (a: StrategyResult, b: StrategyResult) => b.maxProfit - a.maxProfit;
     return allResults.sort(sorter).slice(0, 50);
-  }, [selectedFamily, selectedStrategy, selectedVencimento, moneynessFilter, minPremium, quantity, stockPrice, options, rows, status, getPrice, addTicker, stockTicker, sortBy]);
+  }, [selectedFamily, selectedStrategy, selectedVencimento, moneynessFilter, minPremium, minTrades, quantity, stockPrice, options, rows, status, getPrice, addTicker, stockTicker, sortBy, hasMinTrades]);
 
   const top3 = results.slice(0, 3);
   const rest = results.slice(3);
@@ -590,11 +676,14 @@ export default function StrategyTrackerTab() {
               Escaneie <strong className="text-foreground">10 estratégias</strong> em tempo real e encontre as melhores combinações para cada cenário de mercado
             </p>
           </div>
-          {/* Stats */}
           <div className="flex gap-4">
             <div className="text-center">
               <p className="text-2xl font-black text-primary">{results.length}</p>
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Resultados</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-black text-foreground">{savedAssets.length}</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Rastreando</p>
             </div>
             <div className="text-center">
               <p className="text-2xl font-black text-foreground">10</p>
@@ -604,6 +693,47 @@ export default function StrategyTrackerTab() {
         </div>
       </div>
 
+      {/* ═══ SAVED ASSETS BAR ═══ */}
+      {savedAssets.length > 0 && (
+        <Card className="border-primary/20 overflow-hidden">
+          <CardHeader className="pb-2 bg-gradient-to-r from-primary/5 to-transparent">
+            <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+              <Save className="h-3.5 w-3.5 text-primary" />
+              Ativos Rastreados ({savedAssets.length})
+              <span className="text-[10px] font-normal normal-case text-muted-foreground ml-1">— clique para analisar, X para remover</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-2 pb-3">
+            <div className="flex flex-wrap gap-2">
+              {savedAssets.map((asset) => (
+                <div
+                  key={asset.family}
+                  className={cn(
+                    "group flex items-center gap-1.5 pl-3 pr-1.5 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all cursor-pointer border-2",
+                    selectedFamily === asset.family
+                      ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/30 scale-105"
+                      : "bg-card text-foreground border-border/40 hover:border-primary/30 hover:bg-muted/50"
+                  )}
+                >
+                  <span onClick={() => setSelectedFamily(asset.family)}>{asset.label}</span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); removeSavedAsset(asset.family); }}
+                    className={cn(
+                      "h-5 w-5 rounded flex items-center justify-center transition-colors",
+                      selectedFamily === asset.family
+                        ? "hover:bg-primary-foreground/20 text-primary-foreground"
+                        : "hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
+                    )}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* ═══ ASSET SELECTOR ═══ */}
       <Card className="border-primary/20 overflow-hidden">
         <CardHeader className="pb-3 bg-gradient-to-r from-primary/5 to-transparent">
@@ -612,28 +742,49 @@ export default function StrategyTrackerTab() {
             Escolher o Ativo
             {stockPrice > 0 && (
               <Badge variant="outline" className="ml-auto text-xs font-black">
-                R$ {stockPrice.toFixed(2)}
+                {selectedFamily} — R$ {stockPrice.toFixed(2)}
                 {status === "connected" && <Wifi className="h-2.5 w-2.5 ml-1 text-emerald-500" />}
               </Badge>
             )}
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-3">
+        <CardContent className="pt-3 space-y-3">
+          {/* Add custom asset */}
+          <div className="flex gap-2">
+            <Input
+              value={customAssetInput}
+              onChange={(e) => setCustomAssetInput(e.target.value.toUpperCase())}
+              onKeyDown={(e) => e.key === "Enter" && handleAddCustomAsset()}
+              placeholder="Adicionar ativo (ex: PETR, VALE, BOVA...)"
+              className="h-9 text-xs font-bold uppercase flex-1"
+            />
+            <Button size="sm" onClick={handleAddCustomAsset} className="h-9 px-4 text-xs font-black">
+              <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar
+            </Button>
+          </div>
+
+          {/* Quick select buttons */}
           <div className="flex flex-wrap gap-1.5">
-            {TOP_STOCKS.map((s) => (
-              <button
-                key={s.family}
-                onClick={() => setSelectedFamily(s.family)}
-                className={cn(
-                  "px-3 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all",
-                  selectedFamily === s.family
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-105"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground hover:scale-105"
-                )}
-              >
-                {s.label}
-              </button>
-            ))}
+            {TOP_STOCKS.map((s) => {
+              const isSaved = savedAssets.some((a) => a.family === s.family);
+              return (
+                <button
+                  key={s.family}
+                  onClick={() => selectAndSaveAsset(s.family, s.label)}
+                  className={cn(
+                    "px-3 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all relative",
+                    selectedFamily === s.family
+                      ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-105"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground hover:scale-105"
+                  )}
+                >
+                  {s.label}
+                  {isSaved && selectedFamily !== s.family && (
+                    <div className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 border-2 border-background" />
+                  )}
+                </button>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -644,7 +795,6 @@ export default function StrategyTrackerTab() {
           <BarChart2 className="h-4 w-4 text-primary" /> Cenário de Mercado
         </h2>
 
-        {/* Market view tabs */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {(["alta", "baixa", "lateral", "volatilidade"] as MarketView[]).map((view) => {
             const cfg = VIEW_CONFIG[view];
@@ -672,7 +822,6 @@ export default function StrategyTrackerTab() {
           })}
         </div>
 
-        {/* Strategies for current view */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {STRATEGIES.filter((s) => s.view === currentView).map((strat) => {
             const active = selectedStrategy === strat.id;
@@ -714,7 +863,7 @@ export default function StrategyTrackerTab() {
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-3">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
             <div className="space-y-1">
               <label className="text-xs font-bold text-muted-foreground uppercase">Vencimento</label>
               <Select value={selectedVencimento} onValueChange={setSelectedVencimento}>
@@ -742,6 +891,10 @@ export default function StrategyTrackerTab() {
               <Input type="number" value={minPremium} onChange={(e) => setMinPremium(e.target.value)} placeholder="R$ 0.00" className="h-9 text-xs" />
             </div>
             <div className="space-y-1">
+              <label className="text-xs font-bold text-muted-foreground uppercase">Negócios ≥</label>
+              <Input type="number" value={minTrades} onChange={(e) => setMinTrades(e.target.value)} placeholder="0" className="h-9 text-xs" />
+            </div>
+            <div className="space-y-1">
               <label className="text-xs font-bold text-muted-foreground uppercase">Quantidade</label>
               <Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="100" className="h-9 text-xs" />
             </div>
@@ -751,7 +904,7 @@ export default function StrategyTrackerTab() {
               </label>
               <Input type="number" value={cdiRate} onChange={(e) => setCdiRate(e.target.value)} placeholder="14.65" className="h-9 text-xs" disabled={!showCdi} />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 col-span-2 sm:col-span-1">
               <label className="text-xs font-bold text-muted-foreground uppercase">Ordenar por</label>
               <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
                 <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
@@ -773,7 +926,7 @@ export default function StrategyTrackerTab() {
             <Target className="h-10 w-10 text-primary" />
           </div>
           <p className="text-xl font-black text-foreground">Selecione um ativo para rastrear</p>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">Escolha um dos 18 ativos mais líquidos acima para iniciar a varredura automática de estratégias</p>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">Escolha um ativo acima ou adicione um personalizado para iniciar a varredura automática de estratégias</p>
         </div>
       )}
 
@@ -784,6 +937,7 @@ export default function StrategyTrackerTab() {
             <h2 className="text-sm font-black uppercase tracking-widest text-foreground flex items-center gap-2">
               <Trophy className="h-4 w-4 text-primary" />
               Top Resultados — {STRATEGIES.find((s) => s.id === selectedStrategy)?.label}
+              <Badge variant="outline" className="text-xs font-bold ml-1">{selectedFamily}</Badge>
             </h2>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-xs font-bold">{results.length} encontrados</Badge>
@@ -798,7 +952,9 @@ export default function StrategyTrackerTab() {
               <CardContent className="flex flex-col items-center justify-center py-12 space-y-3">
                 <AlertTriangle className="h-12 w-12 text-amber-500" />
                 <p className="text-sm font-black text-foreground">Nenhuma combinação encontrada</p>
-                <p className="text-xs text-muted-foreground">Ajuste os filtros, selecione outro vencimento ou tente uma estratégia diferente</p>
+                <p className="text-xs text-muted-foreground text-center">
+                  Ajuste os filtros (reduza "Negócios ≥"), selecione outro vencimento ou tente uma estratégia diferente
+                </p>
               </CardContent>
             </Card>
           )}
@@ -824,7 +980,6 @@ export default function StrategyTrackerTab() {
                     style={{ perspective: "800px", transform: "perspective(800px) rotateX(1deg)" }}
                     onClick={() => setExpandedResult(expanded ? null : result.id)}
                   >
-                    {/* Top accent bar */}
                     <div className={cn(
                       "h-1 w-full",
                       idx === 0 ? "bg-gradient-to-r from-yellow-400 to-yellow-500" :
@@ -833,7 +988,6 @@ export default function StrategyTrackerTab() {
                     )} />
 
                     <CardContent className="p-5 space-y-4">
-                      {/* Trophy header */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <img src={trophyImages[idx]} alt={trophyLabels[idx]} className="h-10 w-10 object-contain drop-shadow-lg" />
@@ -850,7 +1004,6 @@ export default function StrategyTrackerTab() {
                         )}
                       </div>
 
-                      {/* Big Return */}
                       <div className="text-center py-2">
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Retorno</p>
                         <p className={cn(
@@ -861,7 +1014,6 @@ export default function StrategyTrackerTab() {
                         </p>
                       </div>
 
-                      {/* Metrics grid */}
                       <div className="grid grid-cols-2 gap-2">
                         <div className="bg-emerald-500/10 rounded-lg p-2.5 text-center">
                           <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase">Lucro Máx</p>
@@ -890,13 +1042,11 @@ export default function StrategyTrackerTab() {
                         )}
                       </div>
 
-                      {/* Breakeven line */}
                       <div className="bg-muted/30 rounded-lg px-3 py-2 flex items-center justify-between">
                         <span className="text-[10px] font-bold uppercase text-muted-foreground">Breakeven</span>
                         <span className="text-xs font-black text-foreground">{result.breakeven.map((b) => `R$ ${b.toFixed(2)}`).join(" | ")}</span>
                       </div>
 
-                      {/* Expanded legs */}
                       {expanded && (
                         <div className="pt-3 border-t border-border/40 space-y-2 animate-in slide-in-from-top-2 duration-200">
                           <p className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
