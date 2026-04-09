@@ -668,10 +668,11 @@ export default function AdminPanel() {
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 max-w-lg">
+          <TabsList className="grid w-full grid-cols-5 max-w-2xl">
             <TabsTrigger value="users" className="font-bold">Usuários</TabsTrigger>
             <TabsTrigger value="metrics" className="font-bold">Métricas</TabsTrigger>
             <TabsTrigger value="features" className="font-bold">Features</TabsTrigger>
+            <TabsTrigger value="sugestoes" className="font-bold">Sugestões</TabsTrigger>
             <TabsTrigger value="api" className="font-bold">Config. API</TabsTrigger>
           </TabsList>
 
@@ -1061,6 +1062,10 @@ export default function AdminPanel() {
                 <Save className="mr-2 h-5 w-5" /> SALVAR TODAS AS CONFIGURAÇÕES
               </Button>
             </div>
+          </TabsContent>
+
+          <TabsContent value="sugestoes" className="space-y-6">
+            <SugestoesPanel />
           </TabsContent>
         </Tabs>
       </main>
