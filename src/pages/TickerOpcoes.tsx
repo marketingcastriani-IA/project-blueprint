@@ -45,6 +45,7 @@ interface SavedFamily {
 }
 const BOX_STORAGE_KEY = "box-tracker-families";
 const COLLAR_STORAGE_KEY = "collar-tracker-families";
+const STRATEGY_STORAGE_KEY = "strategy-tracker-families";
 
 // Top 18 most liquid B3 stocks for quick selection
 const TOP_STOCKS = [
@@ -510,7 +511,39 @@ export default function TickerOpcoes() {
     navigate("/collar-tracker");
   }, [filtered, selectedRows, selectedFamily, navigate]);
 
-  // ─── INTEGRATION: Send box opportunity to Box Tracker ──────
+  // ─── INTEGRATION: Send selected to Strategy Tracker PRO ────
+  const sendSelectedToStrategy = useCallback(() => {
+    const selected = filtered.filter((o) => selectedRows.has(o.ticker));
+    const familyName = selected[0]?.family || selectedFamily;
+    if (!familyName || familyName === "all") {
+      toast.error("Não foi possível determinar a família");
+      return;
+    }
+    const tickers = selected.map((o) => o.ticker);
+
+    let existingFamilies: SavedFamily[] = [];
+    try {
+      const saved = localStorage.getItem(STRATEGY_STORAGE_KEY);
+      if (saved) existingFamilies = JSON.parse(saved);
+    } catch {}
+
+    const existingIdx = existingFamilies.findIndex((f) => f.name === familyName);
+    if (existingIdx >= 0) {
+      const existing = new Set(existingFamilies[existingIdx].tickers);
+      tickers.forEach((t) => existing.add(t));
+      existingFamilies[existingIdx].tickers = Array.from(existing);
+      const autoSet = new Set(existingFamilies[existingIdx].autoImported || []);
+      tickers.forEach((t) => autoSet.add(t));
+      existingFamilies[existingIdx].autoImported = Array.from(autoSet);
+    } else {
+      existingFamilies.push({ name: familyName, tickers, autoImported: [...tickers] });
+    }
+
+    localStorage.setItem(STRATEGY_STORAGE_KEY, JSON.stringify(existingFamilies));
+    toast.success(`${tickers.length} tickers enviados ao Rastreador de Estratégias (${familyName})`);
+    navigate("/strategy-tracker");
+  }, [filtered, selectedRows, selectedFamily, navigate]);
+
   const sendOpportunityToBox = useCallback((call: B3Option, put: B3Option) => {
     const familyName = call.family;
     const tickers = [call.ticker, put.ticker];
@@ -1041,6 +1074,15 @@ export default function TickerOpcoes() {
                   title="Enviar selecionados ao Rastrear Collar"
                 >
                   <Shield className="h-3.5 w-3.5" /> Rastrear Collar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={sendSelectedToStrategy}
+                  className="gap-1.5 text-xs border-amber-500/40 text-amber-600 hover:bg-amber-500/10"
+                  title="Enviar selecionados ao Rastreador de Estratégias PRO"
+                >
+                  <Zap className="h-3.5 w-3.5" /> Estratégias PRO
                 </Button>
               </>
             ) : (

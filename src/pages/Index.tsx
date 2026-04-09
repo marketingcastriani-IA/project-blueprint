@@ -561,6 +561,7 @@ export default function Index() {
               <PricingItem included pro label="Ticker Opções B3 — 99k+ opções" highlight />
               <PricingItem included pro label="Calculadora CDI × Opções" highlight />
               <PricingItem included pro label="Alertas na Tela (Box Tracker)" highlight />
+              <PricingItem included pro label="Rastreador de Estratégias PRO" highlight />
               <PricingItem included pro label="Push Notifications de Box" highlight />
             </ul>
             <Button className="w-full h-14 text-lg font-black shadow-lg shadow-primary/30" onClick={() => navigate('/auth')}>
