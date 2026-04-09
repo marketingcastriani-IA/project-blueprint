@@ -1643,10 +1643,42 @@ export default function StrategyTrackerTab() {
                       )}
                     </div>
 
-                    {/* Breakeven */}
-                    <div className="mt-2 bg-muted/30 rounded-lg px-3 py-1.5 flex items-center justify-between">
-                      <span className="text-[10px] font-bold uppercase text-muted-foreground">Breakeven</span>
-                      <span className="text-xs font-black text-foreground">{result.breakeven.map((b) => `R$ ${b.toFixed(2)}`).join(" | ")}</span>
+                    {/* Breakeven + Proteção */}
+                    <div className="mt-2 bg-muted/30 rounded-lg px-3 py-1.5 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase text-muted-foreground">Breakeven</span>
+                        <span className="text-xs font-black text-foreground">{result.breakeven.map((b) => `R$ ${b.toFixed(2)}`).join(" | ")}</span>
+                      </div>
+                      {stockPrice > 0 && result.breakeven.length > 0 && (() => {
+                        // Calculate protection % = distance from stock price to nearest breakeven
+                        const distances = result.breakeven.filter(b => b > 0).map(b => ((b - stockPrice) / stockPrice) * 100);
+                        const downside = distances.filter(d => d < 0);
+                        const upside = distances.filter(d => d > 0);
+                        const nearestDown = downside.length > 0 ? Math.max(...downside) : null;
+                        const nearestUp = upside.length > 0 ? Math.min(...upside) : null;
+                        return (
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase text-muted-foreground">Proteção</span>
+                            <div className="flex items-center gap-2">
+                              {nearestDown !== null && (
+                                <span className={cn("text-xs font-black", Math.abs(nearestDown) >= 3 ? "text-emerald-500" : Math.abs(nearestDown) >= 1 ? "text-amber-500" : "text-red-500")}>
+                                  ↓ {nearestDown.toFixed(2)}%
+                                </span>
+                              )}
+                              {nearestUp !== null && (
+                                <span className="text-xs font-black text-blue-500">
+                                  ↑ +{nearestUp.toFixed(2)}%
+                                </span>
+                              )}
+                              {distances.length === 1 && (
+                                <span className={cn("text-xs font-black", Math.abs(distances[0]) >= 3 ? "text-emerald-500" : Math.abs(distances[0]) >= 1 ? "text-amber-500" : "text-red-500")}>
+                                  {distances[0] >= 0 ? "↑ +" : "↓ "}{distances[0].toFixed(2)}%
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     {/* Winner badge */}
