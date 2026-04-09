@@ -1142,7 +1142,7 @@ export default function StrategyTrackerTab() {
           <BarChart2 className="h-4 w-4 text-primary" /> Cenário de Mercado
         </h2>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {(["alta", "baixa", "lateral", "volatilidade"] as MarketView[]).map((view) => {
             const cfg = VIEW_CONFIG[view];
             const active = currentView === view;
@@ -1155,15 +1155,16 @@ export default function StrategyTrackerTab() {
                   if (first) setSelectedStrategy(first.id);
                 }}
                 className={cn(
-                  "relative flex flex-col items-center gap-1 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                  "relative flex flex-col items-center gap-1.5 px-4 py-4 rounded-2xl font-black uppercase tracking-widest transition-all duration-200",
                   active
-                    ? `bg-gradient-to-b ${cfg.bg} border-2 ${cfg.border} ${cfg.color} ${cfg.glow}`
-                    : "bg-card text-muted-foreground hover:bg-muted/50 border-2 border-border/40 hover:border-primary/20"
+                    ? `bg-gradient-to-b ${cfg.bg} border-2 ${cfg.border} ${cfg.color} ${cfg.glow} scale-[1.03]`
+                    : "bg-card text-muted-foreground hover:bg-muted/50 border-2 border-border/40 hover:border-primary/20 hover:scale-[1.02]"
                 )}
+                style={{ perspective: "600px", transform: active ? "perspective(600px) rotateX(2deg)" : undefined }}
               >
-                <span className="text-lg">{cfg.emoji}</span>
-                <span>{cfg.label}</span>
-                <span className={cn("text-[10px] font-bold", active ? "opacity-80" : "opacity-50")}>{count} estratégias</span>
+                <img src={cfg.icon} alt={cfg.label} className="w-10 h-10 object-contain drop-shadow-lg" loading="lazy" width={40} height={40} />
+                <span className="text-sm tracking-[0.15em]">{cfg.label}</span>
+                <span className={cn("text-xs font-bold", active ? "opacity-80" : "opacity-50")}>{count} estratégias</span>
               </button>
             );
           })}
