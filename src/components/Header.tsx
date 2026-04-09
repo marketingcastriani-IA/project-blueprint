@@ -145,9 +145,9 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-primary/30 bg-primary shadow-lg">
+    <header className="sticky top-0 z-50 border-b border-primary/30 bg-primary shadow-lg overflow-hidden">
       {/* Row 1: Logo + Primary Nav + Actions */}
-      <div className="container flex h-14 items-center justify-between gap-2">
+      <div className="max-w-full px-3 lg:px-4 flex h-14 items-center justify-between gap-1">
         {/* Logo + Install */}
         <div className="flex flex-col items-start shrink-0">
           <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 font-black text-lg">
