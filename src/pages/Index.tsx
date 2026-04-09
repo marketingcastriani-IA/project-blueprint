@@ -330,15 +330,11 @@ export default function Index() {
               </div>
               <p className="text-muted-foreground">Encontre collars ideais em tempo real. Proteção com upside — rastreie automaticamente as melhores combinações de call coberta + put protetiva da B3.</p>
             </div>
-            <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)] bg-card p-6 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                {['Call Coberta', 'Put Protetiva', 'Custo Zero', 'Ranking CDI'].map(s => (
-                  <div key={s} className="rounded-lg bg-primary/10 border border-primary/20 p-4 text-center">
-                    <p className="text-sm font-black text-primary">{s}</p>
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground text-center font-bold">Proteção + Renda automática com dados ao vivo do Profit RTD</p>
+            <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)]">
+              <img src={landingCollarFeatures} alt="Rastreador Collar — Features" className="w-full h-auto" loading="lazy" />
+            </div>
+            <div className="rounded-2xl overflow-hidden border-2 border-border/30 shadow-lg">
+              <img src={landingCollarDashboard} alt="Rastreador Collar — Dashboard com Resultados" className="w-full h-auto" loading="lazy" />
             </div>
           </div>
 
