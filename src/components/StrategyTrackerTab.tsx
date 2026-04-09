@@ -1393,16 +1393,28 @@ export default function StrategyTrackerTab() {
                     <div className="mt-2 grid grid-cols-2 gap-2">
                       <div>
                         <p className="text-[10px] text-muted-foreground uppercase font-bold">Ganho Máx</p>
-                        <p className="text-sm font-black text-emerald-500">{result.returnPct.toFixed(2)}%</p>
-                        <p className="text-[9px] font-mono text-emerald-500">R$ {result.maxProfit.toFixed(0)}</p>
+                        {viewMode === "value" ? (
+                          <>
+                            <p className="text-lg font-black text-emerald-500">R$ {result.maxProfit.toFixed(0)}</p>
+                            <p className="text-[9px] font-mono text-emerald-500/70">{result.returnPct.toFixed(2)}%</p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-lg font-black text-emerald-500">{result.returnPct.toFixed(2)}%</p>
+                            <p className="text-[9px] font-mono text-emerald-500/70">R$ {result.maxProfit.toFixed(0)}</p>
+                          </>
+                        )}
                       </div>
                       <div>
                         <p className="text-[10px] text-muted-foreground uppercase font-bold">Risco Máx</p>
                         <p className="text-sm font-black text-red-500">R$ {result.maxLoss.toFixed(0)}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-muted-foreground uppercase font-bold">Quality Score</p>
-                        <p className="text-sm font-black text-primary">{result.qualityScore.toFixed(2)}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold">Custo Montagem</p>
+                        <p className={cn("text-sm font-black", custoMontagem >= 0 ? "text-emerald-500" : "text-red-500")}>
+                          R$ {Math.abs(custoMontagem).toFixed(0)}
+                          <span className="text-[9px] ml-1 font-bold">{custoMontagem >= 0 ? "Crédito" : "Débito"}</span>
+                        </p>
                       </div>
                       {cdi && (
                         <div>
@@ -1411,10 +1423,8 @@ export default function StrategyTrackerTab() {
                         </div>
                       )}
                       <div>
-                        <p className="text-[10px] text-muted-foreground uppercase font-bold">Net Credit</p>
-                        <p className={cn("text-sm font-black", result.netCredit >= 0 ? "text-emerald-500" : "text-red-500")}>
-                          R$ {result.netCredit.toFixed(0)}
-                        </p>
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold">Quality Score</p>
+                        <p className="text-sm font-black text-primary">{result.qualityScore.toFixed(2)}</p>
                       </div>
                       {cdi && (
                         <div>
