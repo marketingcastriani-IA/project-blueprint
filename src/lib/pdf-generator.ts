@@ -237,7 +237,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
       ['Diversificador', 'Planejamento de alocação entre diferentes estratégias'],
       ['Dados ao Vivo', 'Preços em tempo real via integração com Profit Pro'],
       ['Rastreador de Box', 'Ranking dos melhores boxes da B3 em tempo real'],
-      ['Ticker Opções B3', 'Banco com 99.000+ opções, busca inteligente e pares Call+Put'],
+      ['Ticker Opções B3', 'Banco com 99.000+ opções, Seleção Rápida Top 18 com ranking e pares Call+Put'],
       ['Rastreador de Collar', 'Monitoramento de proteção de carteira com collars em tempo real'],
     ],
     ...TABLE_STYLES,
