@@ -9,6 +9,10 @@ import { toast } from "sonner";
 import trophyGold from "@/assets/trophy-gold.png";
 import trophySilver from "@/assets/trophy-silver.png";
 import trophyBronze from "@/assets/trophy-bronze.png";
+import iconAlta from "@/assets/icon-alta.png";
+import iconBaixa from "@/assets/icon-baixa.png";
+import iconLateral from "@/assets/icon-lateral.png";
+import iconVolatilidade from "@/assets/icon-volatilidade.png";
 import {
   TrendingUp, TrendingDown, Activity, Target, Layers,
   ChevronDown, ChevronUp, Trophy, Wifi, WifiOff, Info,
@@ -148,11 +152,11 @@ const STRATEGY_STORAGE_KEY = "strategy-tracker-families";
 const trophyImages = [trophyGold, trophySilver, trophyBronze];
 const trophyLabels = ["🥇 MELHOR", "🥈 2º LUGAR", "🥉 3º LUGAR"];
 
-const VIEW_CONFIG: Record<MarketView, { label: string; emoji: string; color: string; border: string; bg: string; glow: string }> = {
-  alta: { label: "ALTA", emoji: "📈", color: "text-emerald-500", border: "border-emerald-500/40", bg: "from-emerald-500/15 to-emerald-500/5", glow: "shadow-[0_0_20px_rgba(16,185,129,0.15)]" },
-  baixa: { label: "BAIXA", emoji: "📉", color: "text-red-500", border: "border-red-500/40", bg: "from-red-500/15 to-red-500/5", glow: "shadow-[0_0_20px_rgba(239,68,68,0.15)]" },
-  lateral: { label: "LATERAL", emoji: "➡️", color: "text-amber-500", border: "border-amber-500/40", bg: "from-amber-500/15 to-amber-500/5", glow: "shadow-[0_0_20px_rgba(245,158,11,0.15)]" },
-  volatilidade: { label: "VOLATILIDADE", emoji: "⚡", color: "text-violet-500", border: "border-violet-500/40", bg: "from-violet-500/15 to-violet-500/5", glow: "shadow-[0_0_20px_rgba(139,92,246,0.15)]" },
+const VIEW_CONFIG: Record<MarketView, { label: string; icon: string; color: string; border: string; bg: string; glow: string }> = {
+  alta: { label: "ALTA", icon: iconAlta, color: "text-emerald-500", border: "border-emerald-500/40", bg: "from-emerald-500/15 to-emerald-500/5", glow: "shadow-[0_0_20px_rgba(16,185,129,0.15)]" },
+  baixa: { label: "BAIXA", icon: iconBaixa, color: "text-red-500", border: "border-red-500/40", bg: "from-red-500/15 to-red-500/5", glow: "shadow-[0_0_20px_rgba(239,68,68,0.15)]" },
+  lateral: { label: "LATERAL", icon: iconLateral, color: "text-amber-500", border: "border-amber-500/40", bg: "from-amber-500/15 to-amber-500/5", glow: "shadow-[0_0_20px_rgba(245,158,11,0.15)]" },
+  volatilidade: { label: "VOLATILIDADE", icon: iconVolatilidade, color: "text-violet-500", border: "border-violet-500/40", bg: "from-violet-500/15 to-violet-500/5", glow: "shadow-[0_0_20px_rgba(139,92,246,0.15)]" },
 };
 
 function parseVencimento(v: string): Date | null {
@@ -1138,7 +1142,7 @@ export default function StrategyTrackerTab() {
           <BarChart2 className="h-4 w-4 text-primary" /> Cenário de Mercado
         </h2>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {(["alta", "baixa", "lateral", "volatilidade"] as MarketView[]).map((view) => {
             const cfg = VIEW_CONFIG[view];
             const active = currentView === view;
@@ -1151,15 +1155,16 @@ export default function StrategyTrackerTab() {
                   if (first) setSelectedStrategy(first.id);
                 }}
                 className={cn(
-                  "relative flex flex-col items-center gap-1 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
+                  "relative flex flex-col items-center gap-1.5 px-4 py-4 rounded-2xl font-black uppercase tracking-widest transition-all duration-200",
                   active
-                    ? `bg-gradient-to-b ${cfg.bg} border-2 ${cfg.border} ${cfg.color} ${cfg.glow}`
-                    : "bg-card text-muted-foreground hover:bg-muted/50 border-2 border-border/40 hover:border-primary/20"
+                    ? `bg-gradient-to-b ${cfg.bg} border-2 ${cfg.border} ${cfg.color} ${cfg.glow} scale-[1.03]`
+                    : "bg-card text-muted-foreground hover:bg-muted/50 border-2 border-border/40 hover:border-primary/20 hover:scale-[1.02]"
                 )}
+                style={{ perspective: "600px", transform: active ? "perspective(600px) rotateX(2deg)" : undefined }}
               >
-                <span className="text-lg">{cfg.emoji}</span>
-                <span>{cfg.label}</span>
-                <span className={cn("text-[10px] font-bold", active ? "opacity-80" : "opacity-50")}>{count} estratégias</span>
+                <img src={cfg.icon} alt={cfg.label} className="w-10 h-10 object-contain drop-shadow-lg" loading="lazy" width={40} height={40} />
+                <span className="text-sm tracking-[0.15em]">{cfg.label}</span>
+                <span className={cn("text-xs font-bold", active ? "opacity-80" : "opacity-50")}>{count} estratégias</span>
               </button>
             );
           })}
@@ -1173,25 +1178,26 @@ export default function StrategyTrackerTab() {
                 key={strat.id}
                 onClick={() => setSelectedStrategy(strat.id)}
                 className={cn(
-                  "relative p-4 rounded-xl text-left transition-all border-2 group",
-                  "hover:shadow-md hover:scale-[1.02]",
+                  "relative p-4 rounded-2xl text-left transition-all duration-200 border-2 group",
+                  "hover:shadow-lg hover:scale-[1.03]",
                   active
-                    ? `bg-gradient-to-br ${VIEW_CONFIG[strat.view].bg} ${VIEW_CONFIG[strat.view].border} shadow-lg`
+                    ? `bg-gradient-to-br ${VIEW_CONFIG[strat.view].bg} ${VIEW_CONFIG[strat.view].border} shadow-xl ${VIEW_CONFIG[strat.view].glow} scale-[1.02]`
                     : "bg-card border-border/40 hover:border-primary/20"
                 )}
-                style={{ perspective: "800px", transform: active ? "perspective(800px) rotateX(1deg)" : undefined }}
+                style={{ perspective: "800px", transform: active ? "perspective(800px) rotateX(1.5deg)" : undefined }}
               >
+                {active && <div className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />}
                 <div className="flex items-center gap-2.5 mb-2">
                   <div className={cn(
-                    "h-8 w-8 rounded-lg flex items-center justify-center",
-                    active ? "bg-primary/20" : "bg-muted"
+                    "h-9 w-9 rounded-xl flex items-center justify-center transition-colors",
+                    active ? "bg-primary/20 shadow-inner" : "bg-muted"
                   )}>
-                    <strat.icon className={cn("h-4 w-4", active ? "text-primary" : "text-muted-foreground")} />
+                    <strat.icon className={cn("h-4.5 w-4.5", active ? "text-primary" : "text-muted-foreground")} />
                   </div>
-                  <span className="text-xs font-black uppercase tracking-wide text-foreground">{strat.label}</span>
+                  <span className="text-sm font-black uppercase tracking-wide text-foreground">{strat.label}</span>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">{strat.description}</p>
-                <p className="text-[10px] text-muted-foreground/60 mt-1.5 font-bold">{strat.composition}</p>
+                <p className="text-xs text-muted-foreground/60 mt-1.5 font-bold">{strat.composition}</p>
               </button>
             );
           })}
@@ -1342,7 +1348,7 @@ export default function StrategyTrackerTab() {
               </div>
               <Badge variant="outline" className="text-xs font-bold">{results.length} encontrados</Badge>
               <Badge className={cn("text-xs font-black border-0", viewCfg.color, `bg-current/10`)}>
-                {viewCfg.emoji} {viewCfg.label}
+                {viewCfg.label} {viewCfg.label}
               </Badge>
             </div>
           </div>
@@ -1394,7 +1400,7 @@ export default function StrategyTrackerTab() {
 
                     <div className="flex items-center gap-2 mb-2">
                       <Badge className={cn("text-[9px] font-black px-2 py-0.5 border-0", viewCfg.color, `bg-current/10`)}>
-                        {viewCfg.emoji} {result.strategyLabel}
+                        {viewCfg.label} {result.strategyLabel}
                       </Badge>
                       <Badge variant="outline" className="text-[9px] font-black">
                         {trophyLabels[idx]}
@@ -1518,7 +1524,7 @@ export default function StrategyTrackerTab() {
               <div className="px-4 py-3 bg-muted/30 border-b border-border/50">
                 <div className="flex items-center gap-3">
                   <Badge className={cn("text-xs font-black px-2.5 py-1 border-0", viewCfg.color, `bg-current/10`)}>
-                    {viewCfg.emoji} {selectedResult.strategyLabel}
+                    {viewCfg.label} {selectedResult.strategyLabel}
                   </Badge>
                   {selectedResult.isLive && (
                     <>
