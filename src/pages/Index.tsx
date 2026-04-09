@@ -290,38 +290,16 @@ export default function Index() {
               </div>
               <p className="text-muted-foreground">Rastreie 12 estratégias em tempo real com ranking Top 3, gráfico de payoff avançado e comparação CDI automática.</p>
             </div>
-            <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)] bg-card p-6 space-y-3">
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { s: 'Venda Coberta', c: 'Alta' },
-                  { s: 'Trava de Alta (Call)', c: 'Alta' },
-                  { s: 'Trava de Alta (Put)', c: 'Alta' },
-                  { s: 'Venda de Put', c: 'Baixa' },
-                  { s: 'Trava de Baixa (Put)', c: 'Baixa' },
-                  { s: 'Trava de Baixa (Call)', c: 'Baixa' },
-                  { s: 'Iron Condor', c: 'Lateral' },
-                  { s: 'Borboleta', c: 'Lateral' },
-                  { s: 'Straddle Comprado', c: 'Volatilidade' },
-                  { s: 'Straddle Vendido', c: 'Volatilidade' },
-                  { s: 'Strangle Comprado', c: 'Volatilidade' },
-                  { s: 'Strangle Vendido', c: 'Volatilidade' },
-                ].map(({ s, c }) => (
-                  <div key={s} className="rounded-lg bg-primary/10 border border-primary/20 p-3 text-center">
-                    <p className="text-xs font-black text-primary">{s}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{c}</p>
-                  </div>
-                ))}
-              </div>
+            <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)]">
+              <img src={landingProxStrategies} alt="Rastreador PRO X — 12 Estratégias" className="w-full h-auto" loading="lazy" />
+            </div>
+            <div className="rounded-2xl overflow-hidden border-2 border-border/30 shadow-lg">
+              <img src={landingProxDashboard} alt="Rastreador PRO X — Dashboard com Ativos" className="w-full h-auto" loading="lazy" />
+            </div>
+            <div className="rounded-2xl overflow-hidden border-2 border-border/30 shadow-lg">
+              <img src={landingProxResults} alt="Rastreador PRO X — Resultados Top 3" className="w-full h-auto" loading="lazy" />
             </div>
           </div>
-
-          {/* Ticker Opções B3 */}
-          <div className="space-y-6">
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><Database className="h-5 w-5 text-primary" /></div>
-                <h3 className="text-2xl font-black tracking-tight">Ticker Opções B3</h3>
-                <Badge className="bg-primary/20 text-primary border-0 text-xs font-black">NOVO</Badge>
               </div>
               <p className="text-muted-foreground">Banco com 99.000+ opções da B3. Seleção rápida Top 18, filtros avançados por moneyness e prêmio, pares Call+Put e exportação direta para Box e Collar.</p>
             </div>
