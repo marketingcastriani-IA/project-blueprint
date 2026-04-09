@@ -208,14 +208,27 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
   const diasUteisCalc = useMemo(() => {
     if (!result.vencimento) return 0;
     const parts = result.vencimento.split("/");
-    if (parts.length !== 2) return 0;
-    const expMonth = parseInt(parts[0]) - 1;
-    const expYear = parseInt(parts[1]);
-    const expDate = new Date(expYear, expMonth, 15);
+    let expDate: Date;
+    if (parts.length === 3) {
+      // DD/MM/YYYY
+      expDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+    } else if (parts.length === 2) {
+      // MM/YYYY
+      expDate = new Date(parseInt(parts[1]), parseInt(parts[0]) - 1, 15);
+    } else {
+      return 0;
+    }
     const now = new Date();
-    const diffMs = expDate.getTime() - now.getTime();
-    const diffDays = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
-    return Math.round(diffDays * 252 / 365);
+    if (expDate <= now) return 0;
+    // Count business days
+    let count = 0;
+    const curr = new Date(now);
+    while (curr < expDate) {
+      curr.setDate(curr.getDate() + 1);
+      const dow = curr.getDay();
+      if (dow !== 0 && dow !== 6) count++;
+    }
+    return count;
   }, [result.vencimento]);
 
   const payoffData = useMemo(() => {
