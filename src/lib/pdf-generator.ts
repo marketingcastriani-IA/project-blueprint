@@ -531,9 +531,9 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     columnStyles: { 0: { cellWidth: 45, fontStyle: 'bold' as const } },
   });
 
-  // ── 14. TEMAS ──
+  // ── 16. TEMAS ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '15. Temas e Personalização', y);
+  y = addSectionTitle(doc, '16. Temas e Personalização', y);
   y = addParagraph(doc, 'Escolha entre tema claro e escuro, com paleta de cores profissional otimizada para diferentes condições de luminosidade. As configurações ficam salvas no seu perfil.', y);
 
   const temasImg = getImg('temasCores');
@@ -542,9 +542,9 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     ({ newY: y } = addImageToPdf(doc, temasImg, y, 182, 120));
   }
 
-  // ── 15. TABELAS DE REFERÊNCIA ──
+  // ── 17. TABELAS DE REFERÊNCIA ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '16. Tabelas de Referência', y);
+  y = addSectionTitle(doc, '17. Tabelas de Referência', y);
   y = addParagraph(doc, 'Referência rápida com tabelas detalhadas de funcionalidades, atalhos de teclado e parâmetros do sistema.', y);
 
   const manualTabelaImg = getImg('manualTabela');
@@ -565,9 +565,9 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     ({ newY: y } = addImageToPdf(doc, tomadaImg, y, 182, 120));
   }
 
-  // ── 16. PERGUNTAS FREQUENTES ──
+  // ── 18. PERGUNTAS FREQUENTES ──
   y = checkPageBreak(doc, y, 80);
-  y = addSectionTitle(doc, '17. Perguntas Frequentes', y);
+  y = addSectionTitle(doc, '18. Perguntas Frequentes', y);
 
   y = addTable(doc, {
     startY: y,
