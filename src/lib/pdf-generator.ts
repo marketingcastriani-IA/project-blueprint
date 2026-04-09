@@ -541,9 +541,11 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     head: [['Estratégia', 'Cenário', 'Descrição']],
     body: [
       ['Venda Coberta', 'Alta', 'Ação + Venda Call — renda com proteção parcial'],
-      ['Trava de Alta', 'Alta', 'Compra Call K1 + Venda Call K2 — risco definido'],
+      ['Trava de Alta (Call)', 'Alta', 'Compra Call K1 + Venda Call K2 — risco definido'],
+      ['Trava de Alta (Put)', 'Alta', 'Venda Put K1 + Compra Put K2 — crédito apostando que não cai'],
       ['Venda de Put', 'Baixa', 'Venda Put — renda com compromisso de compra'],
-      ['Trava de Baixa', 'Baixa', 'Compra Put K1 + Venda Put K2 — risco definido'],
+      ['Trava de Baixa (Put)', 'Baixa', 'Compra Put K1 + Venda Put K2 — risco definido'],
+      ['Trava de Baixa (Call)', 'Baixa', 'Venda Call K1 + Compra Call K2 — crédito apostando que não sobe'],
       ['Iron Condor', 'Lateral', 'Trava Put + Trava Call — lucro na lateralização'],
       ['Borboleta', 'Lateral', 'C1 + 2xC2 + C3 — lucro máximo no strike central'],
       ['Straddle Comprado', 'Volatilidade', 'Compra Call+Put mesmo strike — lucra com alta volatilidade'],
