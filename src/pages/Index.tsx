@@ -241,8 +241,8 @@ export default function Index() {
         </div>
 
         {/* Manual + Tempo Real row */}
-        <div className="grid md:grid-cols-2 gap-10 mt-10">
-          <div className="space-y-6">
+        <div className="grid md:grid-cols-2 gap-6 mt-8">
+          <div className="space-y-4">
             <div className="rounded-2xl overflow-hidden border border-primary/20 shadow-xl">
               <img src={landingManualStrategies} alt="Manual de Estratégias — 12+ Estratégias" className="w-full h-auto" loading="lazy" />
             </div>
@@ -252,14 +252,14 @@ export default function Index() {
           </div>
 
           {/* Tempo Real com Profit */}
-          <div className="space-y-6">
-            <div className="space-y-3">
+          <div className="space-y-4">
+            <div className="space-y-2">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-red-500/20 flex items-center justify-center"><Radio className="h-5 w-5 text-red-500" /></div>
                 <h3 className="text-2xl font-black tracking-tight">Estrutura em Tempo Real</h3>
-                <Badge className="bg-red-500/20 text-red-500 border-0 text-xs font-black animate-pulse">🔴 AO VIVO</Badge>
+                <Badge className="bg-red-500/20 text-red-500 border-0 text-xs font-black animate-pulse">AO VIVO</Badge>
               </div>
-              <p className="text-muted-foreground">Conecte ao Profit Pro via RTD Bridge e acompanhe suas operações com preços ao vivo, P&L em tempo real e encerramento direto pelo app.</p>
+              <p className="text-muted-foreground text-sm">Conecte ao Profit Pro via RTD Bridge e acompanhe suas operações com preços ao vivo, P&L em tempo real e encerramento direto pelo app.</p>
             </div>
             <div className="rounded-2xl overflow-hidden border-2 border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
               <img src="/assets/screenshot-realtime.png" alt="Tempo Real — Operações ao Vivo" className="w-full h-auto" loading="lazy" />
@@ -267,13 +267,12 @@ export default function Index() {
           </div>
         </div>
 
-        {/* NEW: Rastreador PRO X + Ticker Opções B3 row */}
-        <div className="grid md:grid-cols-2 gap-10 mt-10">
-          {/* Rastreador PRO X */}
-          <div className="space-y-6">
-            <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)]">
-              <img src={landingProxStrategies} alt="Rastreador PRO X — 12 Estratégias" className="w-full h-auto" loading="lazy" />
-            </div>
+        {/* Rastreador PRO X — full width showcase */}
+        <div className="mt-8 space-y-4">
+          <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)]">
+            <img src={landingProxStrategies} alt="Rastreador PRO X — 12 Estratégias" className="w-full h-auto" loading="lazy" />
+          </div>
+          <div className="grid md:grid-cols-2 gap-4">
             <div className="rounded-2xl overflow-hidden border-2 border-border/30 shadow-lg">
               <img src={landingProxDashboard} alt="Rastreador PRO X — Dashboard com Ativos" className="w-full h-auto" loading="lazy" />
             </div>
@@ -281,60 +280,59 @@ export default function Index() {
               <img src={landingProxResults} alt="Rastreador PRO X — Resultados Top 3" className="w-full h-auto" loading="lazy" />
             </div>
           </div>
+        </div>
 
+        {/* Ticker + Box + Calculadora row */}
+        <div className="grid md:grid-cols-2 gap-6 mt-8">
           {/* Ticker Opções B3 */}
-          <div className="space-y-6">
-            <div className="space-y-3">
+          <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><Database className="h-5 w-5 text-primary" /></div>
                 <h3 className="text-2xl font-black tracking-tight">Ticker Opções B3</h3>
                 <Badge className="bg-primary/20 text-primary border-0 text-xs font-black">NOVO</Badge>
               </div>
-              <p className="text-muted-foreground">Banco com 99.000+ opções da B3. Seleção rápida Top 18, filtros avançados por moneyness e prêmio, pares Call+Put e exportação direta para Box e Collar.</p>
+              <p className="text-muted-foreground text-sm">Banco com 99.000+ opções da B3. Seleção rápida Top 18, filtros avançados por moneyness e prêmio, pares Call+Put e exportação direta para Box e Collar.</p>
             </div>
             <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)]">
               <img src="/assets/screenshot-ticker-opcoes.png" alt="Ticker Opções B3 — 99k+ Opções" className="w-full h-auto" loading="lazy" />
             </div>
           </div>
-        </div>
-
-        {/* Collar Tracker + Box Tracker row */}
-        <div className="grid md:grid-cols-2 gap-10 mt-10">
-          {/* Rastreador Collar */}
-          <div className="space-y-6">
-            <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)]">
-              <img src={landingCollarFeatures} alt="Rastreador Collar — Features" className="w-full h-auto" loading="lazy" />
-            </div>
-            <div className="rounded-2xl overflow-hidden border-2 border-border/30 shadow-lg">
-              <img src={landingCollarDashboard} alt="Rastreador Collar — Dashboard com Resultados" className="w-full h-auto" loading="lazy" />
-            </div>
-          </div>
 
           {/* Rastreador de Box */}
-          <div className="space-y-6">
-            <div className="space-y-3">
+          <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><Shield className="h-5 w-5 text-primary" /></div>
                 <h3 className="text-2xl font-black tracking-tight">Rastreador de Box</h3>
-                <Badge className="bg-red-500/20 text-red-500 border-0 text-xs font-black animate-pulse">🔴 AO VIVO</Badge>
+                <Badge className="bg-red-500/20 text-red-500 border-0 text-xs font-black animate-pulse">AO VIVO</Badge>
                 <Badge className="bg-primary/20 text-primary border-0 text-xs font-black">PRO</Badge>
               </div>
-              <p className="text-muted-foreground">Rastreie automaticamente os melhores boxes da B3 em tempo real. Ranking com troféus 3D, % do CDI, alertas na tela e instruções de montagem passo a passo.</p>
+              <p className="text-muted-foreground text-sm">Rastreie automaticamente os melhores boxes da B3 em tempo real. Ranking com troféus, % do CDI, alertas na tela e montagem passo a passo.</p>
             </div>
             <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)]">
               <img src="/assets/box-tracker-winner.png" alt="Rastreador de Box x CDI — Ranking ao Vivo" className="w-full h-auto" loading="lazy" />
             </div>
           </div>
+        </div>
 
-          {/* Calculadora CDI x Opções */}
-          <div className="space-y-6">
-            <div className="space-y-3">
+        {/* Collar — full width showcase */}
+        <div className="mt-8 space-y-4">
+          <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)]">
+            <img src={landingCollarDashboard} alt="Rastreador Collar — Dashboard com Resultados" className="w-full h-auto" loading="lazy" />
+          </div>
+        </div>
+
+        {/* Calculadora CDI */}
+        <div className="grid md:grid-cols-2 gap-6 mt-8">
+          <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><Calculator className="h-5 w-5 text-primary" /></div>
                 <h3 className="text-2xl font-black tracking-tight">Calculadora CDI × Opções</h3>
                 <Badge className="bg-primary/20 text-primary border-0 text-xs font-black">NOVO</Badge>
               </div>
-              <p className="text-muted-foreground">Compare o rendimento de qualquer estratégia com a renda fixa. Simule capital, prazo e taxa para saber se o risco vale a pena.</p>
+              <p className="text-muted-foreground text-sm">Compare o rendimento de qualquer estratégia com a renda fixa. Simule capital, prazo e taxa para saber se o risco vale a pena.</p>
             </div>
             <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)]">
               <img src="/assets/calculadora-cdi.png" alt="Calculadora CDI x Opções" className="w-full h-auto" loading="lazy" />
