@@ -421,23 +421,7 @@ export default function StrategyTrackerTab() {
   const [selectedResult, setSelectedResult] = useState<StrategyResult | null>(null);
   const [sortBy, setSortBy] = useState<"return" | "quality" | "profit">("return");
 
-  // Auto-select next monthly expiry when available or family changes
-  useEffect(() => {
-    if (availableVencimentos.length > 0) {
-      const now = new Date();
-      let best = "all";
-      for (const v of availableVencimentos) {
-        const parts = v.split("/");
-        let d: Date;
-        if (parts.length === 3) d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-        else if (parts.length === 2) d = new Date(parseInt(parts[1]), parseInt(parts[0]) - 1, 15);
-        else continue;
-        if (d >= now) { best = v; break; }
-      }
-      if (best !== "all") setSelectedVencimento(best);
-      else if (availableVencimentos.length > 0) setSelectedVencimento(availableVencimentos[0]);
-    }
-  }, [selectedFamily, availableVencimentos.length]);
+  // (auto-select vencimento moved after availableVencimentos declaration)
 
   // Persist saved assets
   useEffect(() => {
