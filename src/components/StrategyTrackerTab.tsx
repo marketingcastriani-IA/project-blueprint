@@ -314,12 +314,44 @@ export default function StrategyTrackerTab() {
     localStorage.setItem(SAVED_ASSETS_KEY, JSON.stringify(savedAssets));
   }, [savedAssets]);
 
-  // Load initial selected family from saved assets
+  // ─── Load from strategy-tracker-families (sent from Opções B3) ──
+  useEffect(() => {
+    try {
+      const familiesRaw = localStorage.getItem(STRATEGY_STORAGE_KEY);
+      if (familiesRaw) {
+        const families: { name: string; tickers: string[]; vencimento?: string }[] = JSON.parse(familiesRaw);
+        if (families.length > 0) {
+          // Merge into saved assets
+          setSavedAssets((prev) => {
+            const newAssets = [...prev];
+            for (const fam of families) {
+              if (!newAssets.find((a) => a.family === fam.name)) {
+                newAssets.push({ family: fam.name, label: fam.name, addedAt: new Date().toISOString() });
+              }
+            }
+            return newAssets;
+          });
+          // Auto-select the first family
+          const first = families[0];
+          setSelectedFamily(first.name);
+          // Auto-set vencimento if provided
+          if (first.vencimento) {
+            setSelectedVencimento(first.vencimento);
+          }
+          // Clear the families key after consuming
+          localStorage.removeItem(STRATEGY_STORAGE_KEY);
+          toast.success(`Ativo ${first.name} carregado do Opções B3!`);
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Load initial selected family from saved assets (only if no family from import)
   useEffect(() => {
     if (!selectedFamily && savedAssets.length > 0) {
       setSelectedFamily(savedAssets[0].family);
     }
-  }, []);
+  }, [savedAssets.length]);
 
   const addSavedAsset = useCallback((family: string, label?: string) => {
     setSavedAssets((prev) => {
