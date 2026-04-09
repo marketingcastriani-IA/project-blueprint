@@ -391,7 +391,25 @@ export default function StrategyTrackerTab() {
 
   const [selectedFamily, setSelectedFamily] = useState<string>("");
   const [selectedStrategy, setSelectedStrategy] = useState<StrategyType>("covered_call");
-  const [selectedVencimento, setSelectedVencimento] = useState<string>("all");
+  // Auto-select next monthly expiry
+  const nextMonthlyExpiry = useMemo(() => {
+    if (vencimentos.length === 0) return "all";
+    const now = new Date();
+    // Parse vencimentos like "15/05/2026" and find next one
+    for (const v of vencimentos) {
+      const parts = v.split("/");
+      if (parts.length === 3) {
+        const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+        if (d >= now) return v;
+      } else if (parts.length === 2) {
+        const d = new Date(parseInt(parts[1]), parseInt(parts[0]) - 1, 15);
+        if (d >= now) return v;
+      }
+    }
+    return vencimentos[0] || "all";
+  }, [vencimentos]);
+
+  const [selectedVencimento, setSelectedVencimento] = useState<string>("");
   const [moneynessFilter, setMoneynessFilter] = useState<string>("all");
   const [minPremium, setMinPremium] = useState("");
   const [minTrades, setMinTrades] = useState("");
@@ -402,6 +420,13 @@ export default function StrategyTrackerTab() {
   const [showCdi, setShowCdi] = useState(true);
   const [selectedResult, setSelectedResult] = useState<StrategyResult | null>(null);
   const [sortBy, setSortBy] = useState<"return" | "quality" | "profit">("return");
+
+  // Auto-select next monthly expiry when available
+  useEffect(() => {
+    if (!selectedVencimento && nextMonthlyExpiry !== "all") {
+      setSelectedVencimento(nextMonthlyExpiry);
+    }
+  }, [nextMonthlyExpiry]);
 
   // Persist saved assets
   useEffect(() => {
@@ -563,7 +588,8 @@ export default function StrategyTrackerTab() {
     if (!selectedFamily || stockPrice <= 0) return [];
 
     let opts = options.filter((o) => o.family === selectedFamily);
-    if (selectedVencimento !== "all") opts = opts.filter((o) => o.vencimento === selectedVencimento);
+    const activeVenc = selectedVencimento || nextMonthlyExpiry;
+    if (activeVenc !== "all") opts = opts.filter((o) => o.vencimento === activeVenc);
 
     if (moneynessFilter !== "all" && stockPrice > 0) {
       const margin = stockPrice * 0.05;
@@ -1147,28 +1173,36 @@ export default function StrategyTrackerTab() {
       </div>
 
       {/* ═══ FILTERS ═══ */}
-      <Card className="border-border/40 overflow-hidden">
-        <CardHeader className="pb-2 bg-muted/30">
-          <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
-            <Filter className="h-3.5 w-3.5 text-primary" /> Filtros e Ordenação
+      <Card className="border-2 border-primary/20 overflow-hidden shadow-md">
+        <CardHeader className="pb-3 bg-gradient-to-r from-primary/10 to-transparent">
+          <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+            <Filter className="h-4 w-4 text-primary" /> Filtros e Ordenação
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-3">
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-muted-foreground uppercase">Vencimento</label>
-              <Select value={selectedVencimento} onValueChange={setSelectedVencimento}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+        <CardContent className="pt-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4">
+            {/* VENCIMENTO — highlighted */}
+            <div className="space-y-1.5 relative rounded-xl border-2 border-amber-400/60 bg-amber-400/5 p-3 -m-1 shadow-sm">
+              <div className="flex items-center gap-1.5">
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute h-full w-full rounded-full bg-amber-400 opacity-75" />
+                  <span className="relative h-2 w-2 rounded-full bg-amber-500" />
+                </span>
+                <label className="text-xs font-black text-amber-700 dark:text-amber-400 uppercase tracking-wide">Vencimento</label>
+              </div>
+              <Select value={selectedVencimento || nextMonthlyExpiry} onValueChange={setSelectedVencimento}>
+                <SelectTrigger className="h-10 text-sm font-bold border-amber-400/40 bg-background"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
                   {availableVencimentos.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
                 </SelectContent>
               </Select>
+              <p className="text-[10px] text-amber-600 dark:text-amber-400/70 font-semibold">Próximo vencimento pré-selecionado</p>
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-muted-foreground uppercase">Moneyness</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-black text-muted-foreground uppercase tracking-wide">Moneyness</label>
               <Select value={moneynessFilter} onValueChange={setMoneynessFilter}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-10 text-sm font-bold"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas</SelectItem>
                   <SelectItem value="itm">ITM</SelectItem>
@@ -1177,36 +1211,36 @@ export default function StrategyTrackerTab() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-muted-foreground uppercase">Prêmio Mín</label>
-              <Input type="number" value={minPremium} onChange={(e) => setMinPremium(e.target.value)} placeholder="R$ 0.00" className="h-9 text-xs" />
+            <div className="space-y-1.5">
+              <label className="text-xs font-black text-muted-foreground uppercase tracking-wide">Prêmio Mín</label>
+              <Input type="number" value={minPremium} onChange={(e) => setMinPremium(e.target.value)} placeholder="R$ 0.00" className="h-10 text-sm font-bold" />
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-muted-foreground uppercase">Negócios ≥</label>
-              <Input type="number" value={minTrades} onChange={(e) => setMinTrades(e.target.value)} placeholder="0" className="h-9 text-xs" />
+            <div className="space-y-1.5">
+              <label className="text-xs font-black text-muted-foreground uppercase tracking-wide">Negócios ≥</label>
+              <Input type="number" value={minTrades} onChange={(e) => setMinTrades(e.target.value)} placeholder="0" className="h-10 text-sm font-bold" />
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-muted-foreground uppercase">Retorno Mín %</label>
-              <Input type="number" value={minReturnPct} onChange={(e) => setMinReturnPct(e.target.value)} placeholder="0%" className="h-9 text-xs" />
+            <div className="space-y-1.5">
+              <label className="text-xs font-black text-muted-foreground uppercase tracking-wide">Retorno Mín %</label>
+              <Input type="number" value={minReturnPct} onChange={(e) => setMinReturnPct(e.target.value)} placeholder="0%" className="h-10 text-sm font-bold" />
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-muted-foreground uppercase">Risco Máx R$</label>
-              <Input type="number" value={maxLossFilter} onChange={(e) => setMaxLossFilter(e.target.value)} placeholder="Sem limite" className="h-9 text-xs" />
+            <div className="space-y-1.5">
+              <label className="text-xs font-black text-muted-foreground uppercase tracking-wide">Risco Máx R$</label>
+              <Input type="number" value={maxLossFilter} onChange={(e) => setMaxLossFilter(e.target.value)} placeholder="Sem limite" className="h-10 text-sm font-bold" />
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-muted-foreground uppercase">Quantidade</label>
-              <Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="100" className="h-9 text-xs" />
+            <div className="space-y-1.5">
+              <label className="text-xs font-black text-muted-foreground uppercase tracking-wide">Quantidade</label>
+              <Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="100" className="h-10 text-sm font-bold" />
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-1">
+            <div className="space-y-1.5">
+              <label className="text-xs font-black text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
                 CDI % <Switch checked={showCdi} onCheckedChange={setShowCdi} className="scale-75" />
               </label>
-              <Input type="number" value={cdiRate} onChange={(e) => setCdiRate(e.target.value)} placeholder="14.65" className="h-9 text-xs" disabled={!showCdi} />
+              <Input type="number" value={cdiRate} onChange={(e) => setCdiRate(e.target.value)} placeholder="14.65" className="h-10 text-sm font-bold" disabled={!showCdi} />
             </div>
-            <div className="space-y-1 col-span-2 sm:col-span-1">
-              <label className="text-xs font-bold text-muted-foreground uppercase">Ordenar por</label>
+            <div className="space-y-1.5 col-span-2 sm:col-span-1">
+              <label className="text-xs font-black text-muted-foreground uppercase tracking-wide">Ordenar por</label>
               <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-10 text-sm font-bold"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="return">Maior Retorno %</SelectItem>
                   <SelectItem value="quality">Melhor Quality</SelectItem>
@@ -1377,6 +1411,16 @@ export default function StrategyTrackerTab() {
                         {cdi?.days && <span> · {cdi.days}du</span>}
                       </p>
                     )}
+
+                    {/* Click hint */}
+                    <div className={cn(
+                      "mt-3 text-center py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
+                      isSelected
+                        ? "bg-primary/10 text-primary border border-primary/20"
+                        : "bg-muted/40 text-muted-foreground border border-border/30 animate-pulse"
+                    )}>
+                      {isSelected ? "📊 Gráfico Payoff aberto ↓" : "👆 Clique para ver o Gráfico Payoff"}
+                    </div>
                   </div>
                 );
               })}
