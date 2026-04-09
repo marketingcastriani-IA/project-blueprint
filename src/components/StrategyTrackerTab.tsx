@@ -26,6 +26,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { Area, CartesianGrid, ReferenceLine, XAxis, YAxis, ComposedChart, Line, ResponsiveContainer } from "recharts";
+import { calculatePayoffAtExpiry } from "@/lib/payoff";
 
 // ─── TIPOS ───────────────────────────────────────────────────
 type MarketView = "alta" | "baixa" | "lateral" | "volatilidade";
