@@ -187,6 +187,41 @@ export default function Header() {
               })}
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Dropdown: Suporte */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={cn(
+                  'flex items-center gap-1 rounded-lg font-black uppercase tracking-wide transition-all whitespace-nowrap',
+                  'px-2 py-1.5 text-[10px] lg:px-3 lg:py-2 lg:text-xs xl:tracking-widest',
+                  location.pathname === '/suporte'
+                    ? 'bg-primary-foreground/20 text-primary-foreground'
+                    : 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
+                )}
+              >
+                <Headphones className="h-3.5 w-3.5 shrink-0 lg:h-4 lg:w-4" />
+                <span>Suporte</span>
+                <ChevronDown className="h-3 w-3 shrink-0" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-[200px]">
+              <DropdownMenuItem
+                onClick={() => navigate('/suporte')}
+                className="flex items-center gap-2 font-bold text-xs cursor-pointer"
+              >
+                <MessageSquarePlus className="h-4 w-4 shrink-0" />
+                Deixe sua Sugestão
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => window.open('mailto:contato@opcoesprox.com.br')}
+                className="flex items-center gap-2 font-bold text-xs cursor-pointer"
+              >
+                <Mail className="h-4 w-4 shrink-0" />
+                Falar por E-mail
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </nav>
 
         {/* Right actions */}

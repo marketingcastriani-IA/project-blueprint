@@ -75,6 +75,7 @@ function AnimatedRoutes() {
           <Route path="/calculadora-renda-fixa" element={<PageTransition><CalculadoraRendaFixa /></PageTransition>} />
           <Route path="/ticker-opcoes" element={<PageTransition><TickerOpcoes /></PageTransition>} />
           <Route path="/strategy-tracker" element={<PageTransition><StrategyTracker /></PageTransition>} />
+          <Route path="/suporte" element={<PageTransition><Suporte /></PageTransition>} />
           <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
         </Routes>
       </Suspense>
