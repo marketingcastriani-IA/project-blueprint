@@ -26,6 +26,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { Area, CartesianGrid, ReferenceLine, XAxis, YAxis, ComposedChart, Line, ResponsiveContainer } from "recharts";
+import { calculatePayoffAtExpiry } from "@/lib/payoff";
 
 // ─── TIPOS ───────────────────────────────────────────────────
 type MarketView = "alta" | "baixa" | "lateral" | "volatilidade";
@@ -139,7 +142,148 @@ function diasUteis(from: Date, to: Date): number {
   return count;
 }
 
-// ─── COMPONENTE PRINCIPAL ────────────────────────────────────
+// ─── MINI PAYOFF CHART ──────────────────────────────────────
+function MiniPayoffChart({ result, spotPrice }: { result: StrategyResult; spotPrice: number }) {
+  const [pctAbaixo, setPctAbaixo] = useState(5);
+  const [pctAcima, setPctAcima] = useState(5);
+
+  const priceMin = spotPrice * (1 - pctAbaixo / 100);
+  const priceMax = spotPrice * (1 + pctAcima / 100);
+
+  const payoffData = useMemo(() => {
+    const legs = result.legs.map((l) => ({
+      side: l.side as "buy" | "sell",
+      option_type: l.type === "STOCK" ? "stock" as const : l.type === "CALL" ? "call" as const : "put" as const,
+      asset: l.ticker,
+      strike: l.strike,
+      price: l.price,
+      quantity: l.qty,
+    }));
+
+    const points: { price: number; payoff: number }[] = [];
+    const steps = 80;
+    const step = (priceMax - priceMin) / steps;
+    for (let i = 0; i <= steps; i++) {
+      const price = priceMin + i * step;
+      const payoff = calculatePayoffAtExpiry(legs, price);
+      points.push({ price: Math.round(price * 100) / 100, payoff: Math.round(payoff * 100) / 100 });
+    }
+    return points;
+  }, [result.legs, priceMin, priceMax]);
+
+  const gainData = payoffData.map((p) => ({ ...p, gain: p.payoff >= 0 ? p.payoff : 0 }));
+  const lossData = payoffData.map((p) => ({ ...p, loss: p.payoff < 0 ? p.payoff : 0 }));
+
+  return (
+    <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
+      {/* Range sliders */}
+      <div className="bg-muted/20 rounded-xl p-4 border border-border/30">
+        <div className="flex items-center justify-end mb-3">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-xs font-black border-red-400/40 text-red-500">
+              R$ {priceMin.toFixed(2)}
+            </Badge>
+            <span className="text-muted-foreground text-xs">—</span>
+            <Badge variant="outline" className="text-xs font-black border-emerald-400/40 text-emerald-500">
+              R$ {priceMax.toFixed(2)}
+            </Badge>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-widest text-red-500 flex items-center gap-1">
+                <TrendingDown className="h-3 w-3" /> ABAIXO
+              </span>
+              <span className="text-sm font-black text-red-500">{pctAbaixo}%</span>
+            </div>
+            <Slider
+              value={[pctAbaixo]}
+              onValueChange={(v) => setPctAbaixo(v[0])}
+              min={1}
+              max={30}
+              step={1}
+              className="[&_[role=slider]]:border-sky-400 [&_[role=slider]]:bg-background [&_[role=slider]]:shadow-md"
+            />
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" /> ACIMA
+              </span>
+              <span className="text-sm font-black text-emerald-500">{pctAcima}%</span>
+            </div>
+            <Slider
+              value={[pctAcima]}
+              onValueChange={(v) => setPctAcima(v[0])}
+              min={1}
+              max={30}
+              step={1}
+              className="[&_[role=slider]]:border-sky-400 [&_[role=slider]]:bg-background [&_[role=slider]]:shadow-md"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Chart */}
+      <div className="h-48 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={payoffData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+            <defs>
+              <linearGradient id="miniGain" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.4} />
+                <stop offset="100%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.05} />
+              </linearGradient>
+              <linearGradient id="miniLoss" x1="0" y1="1" x2="0" y2="0">
+                <stop offset="0%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.4} />
+                <stop offset="100%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.05} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+            <XAxis
+              dataKey="price"
+              tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+              tickFormatter={(v) => `${v.toFixed(0)}`}
+              tickCount={5}
+            />
+            <YAxis
+              tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+              tickFormatter={(v) => `${v >= 0 ? "+" : ""}${v.toFixed(0)}`}
+              width={50}
+            />
+            <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeWidth={2} strokeOpacity={0.5} />
+            <ReferenceLine
+              x={spotPrice}
+              stroke="hsl(var(--primary))"
+              strokeDasharray="4 4"
+              strokeWidth={1.5}
+              label={{ value: "Spot", position: "top", fontSize: 9, fill: "hsl(var(--primary))" }}
+            />
+            <Area
+              type="monotone"
+              dataKey="payoff"
+              stroke="none"
+              fill="url(#miniGain)"
+              fillOpacity={1}
+              baseValue={0}
+              isAnimationActive={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="payoff"
+              stroke="hsl(var(--primary))"
+              strokeWidth={2}
+              dot={false}
+              isAnimationActive={false}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+
 export default function StrategyTrackerTab() {
   const { options, vencimentos } = useB3Options();
   const { status, rows, addTicker } = useSharedRtdBridge();
@@ -1073,6 +1217,14 @@ export default function StrategyTrackerTab() {
                               </div>
                             </div>
                           ))}
+
+                          {/* Mini Payoff Chart */}
+                          <div className="pt-3 border-t border-border/30">
+                            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 mb-3">
+                              <BarChart2 className="h-3.5 w-3.5" /> Gráfico de Payoff
+                            </p>
+                            <MiniPayoffChart result={result} spotPrice={stockPrice} />
+                          </div>
                         </div>
                       )}
 
@@ -1115,42 +1267,58 @@ export default function StrategyTrackerTab() {
                         const cdi = showCdi ? cdiComparison(r) : null;
                         const isExpanded = expandedResult === r.id;
                         return (
-                          <tr
-                            key={r.id}
-                            className="border-b border-border/20 hover:bg-muted/20 transition-colors cursor-pointer"
-                            onClick={() => setExpandedResult(isExpanded ? null : r.id)}
-                          >
-                            <td className="p-3 text-muted-foreground font-black">{i + 4}</td>
-                            <td className="p-3">
-                              <div className="flex flex-wrap gap-1.5">
-                                {r.legs.map((l, li) => (
-                                  <Badge key={li} variant="outline" className={cn(
-                                    "text-[10px] font-black",
-                                    l.side === "buy" ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400" : "border-red-500/40 text-red-600 dark:text-red-400"
-                                  )}>
-                                    {l.side === "buy" ? "C" : "V"} {l.ticker}
-                                  </Badge>
-                                ))}
-                              </div>
-                              {isExpanded && (
-                                <div className="mt-2 space-y-1">
-                                  {r.legs.map((leg, li) => (
-                                    <div key={li} className="text-xs text-muted-foreground">
-                                      {leg.side === "buy" ? "Compra" : "Venda"} {leg.ticker} {leg.type} K:{leg.strike.toFixed(2)} R${leg.price.toFixed(2)}×{leg.qty}
-                                    </div>
+                          <>
+                            <tr
+                              key={r.id}
+                              className="border-b border-border/20 hover:bg-muted/20 transition-colors cursor-pointer"
+                              onClick={() => setExpandedResult(isExpanded ? null : r.id)}
+                            >
+                              <td className="p-3 text-muted-foreground font-black">{i + 4}</td>
+                              <td className="p-3">
+                                <div className="flex flex-wrap gap-1.5">
+                                  {r.legs.map((l, li) => (
+                                    <Badge key={li} variant="outline" className={cn(
+                                      "text-[10px] font-black",
+                                      l.side === "buy" ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400" : "border-red-500/40 text-red-600 dark:text-red-400"
+                                    )}>
+                                      {l.side === "buy" ? "C" : "V"} {l.ticker}
+                                    </Badge>
                                   ))}
-                                  <p className="text-xs text-muted-foreground">Breakeven: {r.breakeven.map((b) => `R$ ${b.toFixed(2)}`).join(" | ")}</p>
                                 </div>
-                              )}
-                            </td>
-                            <td className={cn("p-3 text-right font-black text-sm", r.returnPct > 0 ? "text-emerald-500" : "text-red-500")}>{r.returnPct.toFixed(1)}%</td>
-                            <td className="p-3 text-right font-bold text-emerald-500">R$ {r.maxProfit.toFixed(0)}</td>
-                            <td className="p-3 text-right font-bold text-red-500">R$ {r.maxLoss.toFixed(0)}</td>
-                            <td className="p-3 text-right font-black text-primary">{r.qualityScore.toFixed(2)}</td>
-                            <td className="p-3 text-right text-muted-foreground font-bold">{r.vencimento}</td>
-                            {showCdi && cdi && <td className={cn("p-3 text-right font-black", cdi.beats ? "text-emerald-500" : "text-red-500")}>{cdi.beats ? "+" : ""}{cdi.diff}%</td>}
-                            {showCdi && !cdi && <td className="p-3" />}
-                          </tr>
+                              </td>
+                              <td className={cn("p-3 text-right font-black text-sm", r.returnPct > 0 ? "text-emerald-500" : "text-red-500")}>{r.returnPct.toFixed(1)}%</td>
+                              <td className="p-3 text-right font-bold text-emerald-500">R$ {r.maxProfit.toFixed(0)}</td>
+                              <td className="p-3 text-right font-bold text-red-500">R$ {r.maxLoss.toFixed(0)}</td>
+                              <td className="p-3 text-right font-black text-primary">{r.qualityScore.toFixed(2)}</td>
+                              <td className="p-3 text-right text-muted-foreground font-bold">{r.vencimento}</td>
+                              {showCdi && cdi && <td className={cn("p-3 text-right font-black", cdi.beats ? "text-emerald-500" : "text-red-500")}>{cdi.beats ? "+" : ""}{cdi.diff}%</td>}
+                              {showCdi && !cdi && <td className="p-3" />}
+                            </tr>
+                            {isExpanded && (
+                              <tr key={`${r.id}_expanded`} className="border-b border-border/20 bg-muted/10">
+                                <td colSpan={showCdi ? 8 : 7} className="p-4">
+                                  <div className="space-y-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      {r.legs.map((leg, li) => (
+                                        <div key={li} className="flex items-center justify-between bg-card border border-border/40 rounded-lg px-3 py-2 text-xs">
+                                          <div className="flex items-center gap-2">
+                                            <span className={cn("font-black", leg.side === "buy" ? "text-emerald-500" : "text-red-500")}>
+                                              {leg.side === "buy" ? "C" : "V"}
+                                            </span>
+                                            <span className="font-bold text-foreground">{leg.ticker}</span>
+                                            <span className="text-muted-foreground">{leg.type} K:{leg.strike.toFixed(2)}</span>
+                                          </div>
+                                          <span className="font-black text-foreground">R$ {leg.price.toFixed(2)} × {leg.qty}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Breakeven: {r.breakeven.map((b) => `R$ ${b.toFixed(2)}`).join(" | ")}</p>
+                                    <MiniPayoffChart result={r} spotPrice={stockPrice} />
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </>
                         );
                       })}
                     </tbody>
