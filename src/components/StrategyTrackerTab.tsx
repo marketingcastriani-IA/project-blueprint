@@ -152,11 +152,11 @@ const STRATEGY_STORAGE_KEY = "strategy-tracker-families";
 const trophyImages = [trophyGold, trophySilver, trophyBronze];
 const trophyLabels = ["🥇 MELHOR", "🥈 2º LUGAR", "🥉 3º LUGAR"];
 
-const VIEW_CONFIG: Record<MarketView, { label: string; emoji: string; color: string; border: string; bg: string; glow: string }> = {
-  alta: { label: "ALTA", emoji: "📈", color: "text-emerald-500", border: "border-emerald-500/40", bg: "from-emerald-500/15 to-emerald-500/5", glow: "shadow-[0_0_20px_rgba(16,185,129,0.15)]" },
-  baixa: { label: "BAIXA", emoji: "📉", color: "text-red-500", border: "border-red-500/40", bg: "from-red-500/15 to-red-500/5", glow: "shadow-[0_0_20px_rgba(239,68,68,0.15)]" },
-  lateral: { label: "LATERAL", emoji: "➡️", color: "text-amber-500", border: "border-amber-500/40", bg: "from-amber-500/15 to-amber-500/5", glow: "shadow-[0_0_20px_rgba(245,158,11,0.15)]" },
-  volatilidade: { label: "VOLATILIDADE", emoji: "⚡", color: "text-violet-500", border: "border-violet-500/40", bg: "from-violet-500/15 to-violet-500/5", glow: "shadow-[0_0_20px_rgba(139,92,246,0.15)]" },
+const VIEW_CONFIG: Record<MarketView, { label: string; icon: string; color: string; border: string; bg: string; glow: string }> = {
+  alta: { label: "ALTA", icon: iconAlta, color: "text-emerald-500", border: "border-emerald-500/40", bg: "from-emerald-500/15 to-emerald-500/5", glow: "shadow-[0_0_20px_rgba(16,185,129,0.15)]" },
+  baixa: { label: "BAIXA", icon: iconBaixa, color: "text-red-500", border: "border-red-500/40", bg: "from-red-500/15 to-red-500/5", glow: "shadow-[0_0_20px_rgba(239,68,68,0.15)]" },
+  lateral: { label: "LATERAL", icon: iconLateral, color: "text-amber-500", border: "border-amber-500/40", bg: "from-amber-500/15 to-amber-500/5", glow: "shadow-[0_0_20px_rgba(245,158,11,0.15)]" },
+  volatilidade: { label: "VOLATILIDADE", icon: iconVolatilidade, color: "text-violet-500", border: "border-violet-500/40", bg: "from-violet-500/15 to-violet-500/5", glow: "shadow-[0_0_20px_rgba(139,92,246,0.15)]" },
 };
 
 function parseVencimento(v: string): Date | null {
