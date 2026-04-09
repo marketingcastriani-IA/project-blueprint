@@ -421,6 +421,7 @@ export default function StrategyTrackerTab() {
   const [showCdi, setShowCdi] = useState(true);
   const [selectedResult, setSelectedResult] = useState<StrategyResult | null>(null);
   const [sortBy, setSortBy] = useState<"return" | "quality" | "profit">("return");
+  const [viewMode, setViewMode] = useState<"pct" | "value">("value");
 
   // (auto-select vencimento moved after availableVencimentos declaration)
 
