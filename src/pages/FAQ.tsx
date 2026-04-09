@@ -610,29 +610,48 @@ export default function FAQ() {
         </FeatureSection>
 
         {/* ─── RASTREADOR DE COLLAR ─── */}
-        <FeatureSection icon={Layers} title="Rastreador de Collar" badge="PRO">
+        <FeatureSection icon={Layers} title="Rastreador de Collar — Risco Zero" badge="PRO">
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground leading-relaxed">
-              O <strong className="text-foreground">Rastreador de Collar</strong> monitora automaticamente combinações de Collar 
-              (Ação + Put de proteção + Call vendida) em tempo real, calculando custo de proteção, lucro máximo, 
-              piso (floor) e teto (cap) da operação. Ideal para investidores que querem proteger carteira sem custo.
+              O <strong className="text-foreground">Rastreador de Collar</strong> foca exclusivamente em modelos de <strong className="text-foreground">Risco Zero</strong>, 
+              monitorando automaticamente combinações de proteção de carteira em tempo real. Ele trabalha com dois modelos distintos 
+              para proteger suas posições sem risco de perda.
             </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { label: 'Collar de Alta', desc: 'Condição: Kp + Net >= S0. Proteção com viés de alta — lucro quando o ativo sobe acima do custo.' },
+                { label: 'Collar de Baixa', desc: 'Condição: S0 + Net >= Kc. Proteção com viés de baixa — lucro quando o ativo cai abaixo do teto.' },
+                { label: 'Quality Score', desc: 'Ranking automático dos melhores collars por qualidade geral (lucro, risco, custo).' },
+                { label: 'Net Credit', desc: 'Collars com crédito líquido — você recebe prêmio ao montar a proteção.' },
+              ].map(item => (
+                <div key={item.label} className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                  <p className="text-xs font-bold">{item.label}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
+                </div>
+              ))}
+            </div>
 
             <div className="space-y-4">
               <StepCard 
                 step={1} icon={Target}
-                title="Adicione Ativos" 
-                description="Selecione a ação que deseja proteger e adicione os tickers de PUT (proteção) e CALL (financiamento). O sistema calcula automaticamente o custo líquido da proteção."
+                title="Selecione o Ativo e Tickers" 
+                description="Escolha a ação que deseja proteger e adicione os tickers de PUT (proteção) e CALL (financiamento). O sistema resolve automaticamente o vencimento pelo código do ticker."
               />
               <StepCard 
-                step={2} icon={Shield}
-                title="Analise Piso e Teto" 
-                description="O sistema exibe o Floor (perda máxima limitada pelo strike da put) e o Cap (ganho máximo limitado pelo strike da call). Collars de custo zero são destacados automaticamente."
+                step={2} icon={Calculator}
+                title="Configure Quantidade e CDI" 
+                description="Defina a quantidade de contratos para cálculo em R$. A taxa CDI é 14,65% (editável). O sistema calcula automaticamente o lucro/investimento em reais."
               />
               <StepCard 
-                step={3} icon={BarChart3}
-                title="Compare com CDI" 
-                description="Avalie se o custo de oportunidade (limitar o upside) compensa a proteção obtida. O sistema mostra a rentabilidade máxima comparada ao CDI do período."
+                step={3} icon={Trophy}
+                title="Veja os Top 3 por Categoria" 
+                description="O painel apresenta automaticamente os 3 melhores resultados nas categorias: Maior Lucro, Quality Score e Net Credit. Cada resultado mostra lucro em R$, % e comparação com CDI."
+              />
+              <StepCard 
+                step={4} icon={BarChart3}
+                title="Gráfico de Payoff com CDI" 
+                description="Visualize o payoff do collar com a linha de benchmark do CDI para comparação visual imediata. Ative o toggle de IR para ver 22,5% no CDI e 15% no Collar."
               />
             </div>
 
@@ -640,8 +659,8 @@ export default function FAQ() {
               <div className="flex items-start gap-2">
                 <Eye className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                 <p className="text-xs text-muted-foreground">
-                  <strong className="text-foreground">Dica:</strong> Monte collars de custo zero escolhendo puts e calls com prêmios similares. 
-                  Assim você protege a posição sem desembolsar nenhum valor adicional — apenas limitando o ganho acima do strike da call.
+                  <strong className="text-foreground">Dica:</strong> Monte collars de Risco Zero escolhendo combinações onde o crédito líquido (Net) cobre o custo da proteção. 
+                  Use o filtro de Quality Score para encontrar os melhores equilíbrios entre proteção e custo.
                 </p>
               </div>
             </div>
@@ -761,6 +780,38 @@ export default function FAQ() {
                 <p className="text-xs text-muted-foreground">
                   <strong className="text-foreground">Dica:</strong> Acesse pelo menu lateral em <strong className="text-foreground">CDI x Opções</strong> (destaque amarelo). 
                   Use esta calculadora antes de montar qualquer estrutura para saber se o retorno esperado justifica o risco em relação à renda fixa.
+                </p>
+              </div>
+            </div>
+          </div>
+        </FeatureSection>
+
+        {/* ─── ALERTAS NA TELA ─── */}
+        <FeatureSection icon={Bell} title="Alertas na Tela (Box Tracker)" badge="PRO">
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              O Rastreador de Box agora exibe <strong className="text-foreground">alertas visuais na tela</strong> (toasts) 
+              quando um Box atinge o threshold do CDI configurado. Existem dois tipos de alertas:
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { label: 'Alerta Normal (Verde)', desc: 'Box acima do CDI target. Toast verde com ticker, % CDI, strike, lucro em R$ e %. Dura 10 segundos.' },
+                { label: 'Alerta Urgente (Vermelho)', desc: 'Box em threshold crítico (>=150% CDI). Toast vermelho com dados completos. Dura 15 segundos.' },
+              ].map(item => (
+                <div key={item.label} className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                  <p className="text-xs font-bold">{item.label}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+              <div className="flex items-start gap-2">
+                <Eye className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  <strong className="text-foreground">Dica:</strong> Os alertas na tela são complementares às notificações push do navegador. 
+                  Mesmo com o app em primeiro plano, você será avisado visualmente quando uma oportunidade surgir.
                 </p>
               </div>
             </div>

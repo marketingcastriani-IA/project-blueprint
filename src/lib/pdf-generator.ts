@@ -198,10 +198,11 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     '11. Dados ao Vivo (Tempo Real)',
     '12. Rastreador de Box',
     '13. Ticker Opções B3',
-    '14. Rastreador de Collar',
-    '15. Temas e Personalização',
-    '16. Tabelas de Referência',
-    '17. Perguntas Frequentes',
+    '14. Rastreador de Collar (Risco Zero)',
+    '15. Alertas na Tela (Box Tracker)',
+    '16. Temas e Personalização',
+    '17. Tabelas de Referência',
+    '18. Perguntas Frequentes',
   ];
   doc.setFontSize(10);
   doc.setTextColor(...COLORS.gray);
@@ -238,7 +239,9 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
       ['Dados ao Vivo', 'Preços em tempo real via integração com Profit Pro'],
       ['Rastreador de Box', 'Ranking dos melhores boxes da B3 em tempo real'],
       ['Ticker Opções B3', 'Banco com 99.000+ opções, Seleção Rápida Top 18 com ranking e pares Call+Put'],
-      ['Rastreador de Collar', 'Monitoramento de proteção de carteira com collars em tempo real'],
+      ['Rastreador de Collar', 'Proteção Risco Zero com modelos Collar de Alta e Baixa em tempo real'],
+      ['Alertas na Tela', 'Toasts visuais quando Box atinge threshold do CDI (normal e urgente)'],
+      ['Calculadora CDI', 'Compare retorno de opções vs renda fixa com IR automático'],
     ],
     ...TABLE_STYLES,
   });
@@ -494,27 +497,45 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     columnStyles: { 0: { cellWidth: 45, fontStyle: 'bold' as const } },
   });
 
-  // ── 13. RASTREADOR DE COLLAR ──
+  // ── 14. RASTREADOR DE COLLAR (RISCO ZERO) ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '14. Rastreador de Collar', y);
-  y = addParagraph(doc, 'O Rastreador de Collar monitora combinações de proteção de carteira (Ação + Put comprada + Call vendida) em tempo real. Calcula custo de proteção, piso (floor), teto (cap) e identifica collars de custo zero.', y);
+  y = addSectionTitle(doc, '14. Rastreador de Collar — Risco Zero', y);
+  y = addParagraph(doc, 'O Rastreador de Collar foca exclusivamente em modelos de Risco Zero, monitorando combinações de proteção de carteira em tempo real. Trabalha com dois modelos: Collar de Alta (Kp + Net >= S0) e Collar de Baixa (S0 + Net >= Kc). O painel apresenta os 3 melhores resultados por categorias: Maior Lucro, Quality Score e Net Credit. Inclui comparação com CDI (14,65% editável) e toggle de IR (22,5% CDI / 15% Collar).', y);
 
   y = addTable(doc, {
     startY: y,
-    head: [['Métrica', 'Descrição']],
+    head: [['Recurso', 'Descrição']],
     body: [
-      ['Floor (Piso)', 'Perda máxima limitada pelo strike da put de proteção'],
-      ['Cap (Teto)', 'Ganho máximo limitado pelo strike da call vendida'],
-      ['Custo Líquido', 'Prêmio da put - Prêmio da call (idealmente zero)'],
-      ['Rentabilidade', 'Retorno máximo comparado ao CDI do período'],
+      ['Collar de Alta', 'Proteção com viés de alta — lucro quando o ativo sobe acima do custo (Kp + Net >= S0)'],
+      ['Collar de Baixa', 'Proteção com viés de baixa — lucro quando o ativo cai abaixo do teto (S0 + Net >= Kc)'],
+      ['Quality Score', 'Ranking automático dos melhores collars por qualidade geral'],
+      ['Net Credit', 'Collars com crédito líquido — você recebe prêmio ao montar a proteção'],
+      ['Gráfico + CDI', 'Payoff com linha de benchmark CDI para comparação visual imediata'],
+      ['Toggle de IR', 'Ative IR: 22,5% no CDI e 15% no Collar para comparação líquida'],
     ],
     ...TABLE_STYLES,
     columnStyles: { 0: { cellWidth: 45, fontStyle: 'bold' as const } },
   });
 
-  // ── 14. TEMAS ──
+  // ── 15. ALERTAS NA TELA ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '15. Temas e Personalização', y);
+  y = addSectionTitle(doc, '15. Alertas na Tela (Box Tracker)', y);
+  y = addParagraph(doc, 'O Rastreador de Box exibe alertas visuais na tela (toasts) quando um Box atinge o threshold do CDI configurado. Alertas normais (verde) aparecem por 10s com dados do box. Alertas urgentes (vermelho, >=150% CDI) duram 15s. Complementam as notificações push do navegador.', y);
+
+  y = addTable(doc, {
+    startY: y,
+    head: [['Tipo', 'Descrição']],
+    body: [
+      ['Normal (Verde)', 'Box acima do CDI target. Mostra ticker, % CDI, strike, lucro R$ e %. Duração: 10s.'],
+      ['Urgente (Vermelho)', 'Box em threshold crítico (>=150% CDI). Dados completos. Duração: 15s.'],
+    ],
+    ...TABLE_STYLES,
+    columnStyles: { 0: { cellWidth: 45, fontStyle: 'bold' as const } },
+  });
+
+  // ── 16. TEMAS ──
+  y = checkPageBreak(doc, y, 50);
+  y = addSectionTitle(doc, '16. Temas e Personalização', y);
   y = addParagraph(doc, 'Escolha entre tema claro e escuro, com paleta de cores profissional otimizada para diferentes condições de luminosidade. As configurações ficam salvas no seu perfil.', y);
 
   const temasImg = getImg('temasCores');
@@ -523,9 +544,9 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     ({ newY: y } = addImageToPdf(doc, temasImg, y, 182, 120));
   }
 
-  // ── 15. TABELAS DE REFERÊNCIA ──
+  // ── 17. TABELAS DE REFERÊNCIA ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '16. Tabelas de Referência', y);
+  y = addSectionTitle(doc, '17. Tabelas de Referência', y);
   y = addParagraph(doc, 'Referência rápida com tabelas detalhadas de funcionalidades, atalhos de teclado e parâmetros do sistema.', y);
 
   const manualTabelaImg = getImg('manualTabela');
@@ -546,9 +567,9 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     ({ newY: y } = addImageToPdf(doc, tomadaImg, y, 182, 120));
   }
 
-  // ── 16. PERGUNTAS FREQUENTES ──
+  // ── 18. PERGUNTAS FREQUENTES ──
   y = checkPageBreak(doc, y, 80);
-  y = addSectionTitle(doc, '17. Perguntas Frequentes', y);
+  y = addSectionTitle(doc, '18. Perguntas Frequentes', y);
 
   y = addTable(doc, {
     startY: y,
