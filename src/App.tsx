@@ -36,6 +36,7 @@ const CollarTracker = lazy(() => import("./pages/CollarTracker"));
 const CalculadoraRendaFixa = lazy(() => import("./pages/CalculadoraRendaFixa"));
 const TickerOpcoes = lazy(() => import("./pages/TickerOpcoes"));
 const StrategyTracker = lazy(() => import("./pages/StrategyTracker"));
+const Suporte = lazy(() => import("./pages/Suporte"));
 
 const queryClient = new QueryClient();
 
@@ -74,6 +75,7 @@ function AnimatedRoutes() {
           <Route path="/calculadora-renda-fixa" element={<PageTransition><CalculadoraRendaFixa /></PageTransition>} />
           <Route path="/ticker-opcoes" element={<PageTransition><TickerOpcoes /></PageTransition>} />
           <Route path="/strategy-tracker" element={<PageTransition><StrategyTracker /></PageTransition>} />
+          <Route path="/suporte" element={<PageTransition><Suporte /></PageTransition>} />
           <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
         </Routes>
       </Suspense>

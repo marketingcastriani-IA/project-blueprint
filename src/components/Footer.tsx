@@ -1,5 +1,6 @@
 import { Mail } from 'lucide-react';
 import InstallAppButton from '@/components/InstallAppButton';
+import SuggestionWidget from '@/components/SuggestionWidget';
 
 export default function Footer() {
   return (
@@ -22,6 +23,11 @@ export default function Footer() {
           <Mail className="h-3.5 w-3.5" />
           contato@opcoesprox.com.br
         </a>
+
+        {/* Suggestion Widget */}
+        <div className="flex justify-center">
+          <SuggestionWidget />
+        </div>
 
         <p className="text-xs text-muted-foreground max-w-3xl mx-auto leading-relaxed">
           AVISO LEGAL: Este aplicativo é uma ferramenta de simulação algorítmica baseada nas regras da B3.

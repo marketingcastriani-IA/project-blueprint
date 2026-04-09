@@ -4,7 +4,7 @@ import { useAccessControl } from '@/hooks/useAccessControl';
 import { useSharedRtdBridge } from '@/contexts/RtdBridgeContext';
 import { Button } from '@/components/ui/button';
 
-import { Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, ShieldCheck, Briefcase, Settings, Zap, PieChart, HelpCircle, Sparkles, Palette, BookOpen, Radio, BarChart2, Calculator, Database, Waves, TreePine, Wifi, WifiOff, ChevronDown, Crosshair } from 'lucide-react';
+import { Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, ShieldCheck, Briefcase, Settings, Zap, PieChart, HelpCircle, Sparkles, Palette, BookOpen, Radio, BarChart2, Calculator, Database, Waves, TreePine, Wifi, WifiOff, ChevronDown, Crosshair, Headphones, Mail, MessageSquarePlus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
@@ -91,7 +91,7 @@ export default function Header() {
     ...(access.isAdmin ? [{ label: 'Admin', path: '/admin', icon: Shield }] : []),
   ];
 
-  const allNavItems = [...primaryNav, ...trackerNav, ...secondaryNav];
+  const allNavItems = [...primaryNav, ...trackerNav, ...secondaryNav, { label: 'Suporte', path: '/suporte', icon: Headphones }];
   const isFree = access.planType === 'free';
 
   const themes = [
@@ -185,6 +185,41 @@ export default function Header() {
                   </DropdownMenuItem>
                 );
               })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Dropdown: Suporte */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={cn(
+                  'flex items-center gap-1 rounded-lg font-black uppercase tracking-wide transition-all whitespace-nowrap',
+                  'px-2 py-1.5 text-[10px] lg:px-3 lg:py-2 lg:text-xs xl:tracking-widest',
+                  location.pathname === '/suporte'
+                    ? 'bg-primary-foreground/20 text-primary-foreground'
+                    : 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
+                )}
+              >
+                <Headphones className="h-3.5 w-3.5 shrink-0 lg:h-4 lg:w-4" />
+                <span>Suporte</span>
+                <ChevronDown className="h-3 w-3 shrink-0" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-[200px]">
+              <DropdownMenuItem
+                onClick={() => navigate('/suporte')}
+                className="flex items-center gap-2 font-bold text-xs cursor-pointer"
+              >
+                <MessageSquarePlus className="h-4 w-4 shrink-0" />
+                Deixe sua Sugestão
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => window.open('mailto:contato@opcoesprox.com.br')}
+                className="flex items-center gap-2 font-bold text-xs cursor-pointer"
+              >
+                <Mail className="h-4 w-4 shrink-0" />
+                Falar por E-mail
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </nav>
