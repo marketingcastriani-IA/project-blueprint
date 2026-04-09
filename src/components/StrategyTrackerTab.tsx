@@ -1010,6 +1010,70 @@ export default function StrategyTrackerTab() {
       }
     }
 
+    // ── SHORT STRADDLE (Vendido) ──────────────────────────────
+    if (selectedStrategy === "short_straddle") {
+      const byStrikeVenc = new Map<string, { call: B3Option; put: B3Option }>();
+      calls.forEach((c) => { const k = `${c.strike}|${c.vencimento}`; const e = byStrikeVenc.get(k); if (e) e.call = c; else byStrikeVenc.set(k, { call: c, put: null as any }); });
+      puts.forEach((p) => { const k = `${p.strike}|${p.vencimento}`; const e = byStrikeVenc.get(k); if (e) e.put = p; else byStrikeVenc.set(k, { call: null as any, put: p }); });
+      byStrikeVenc.forEach((pair) => {
+        if (!pair.call || !pair.put) return;
+        if (!hasMinTrades(pair.call.ticker) || !hasMinTrades(pair.put.ticker)) return;
+        const { price: cp, isLive: l1 } = getPrice(pair.call.ticker, "ofCompra");
+        const { price: pp, isLive: l2 } = getPrice(pair.put.ticker, "ofCompra");
+        if (cp <= 0 || pp <= 0) return;
+        const totalCredit = (cp + pp) * qty;
+        const maxProfit = totalCredit;
+        const beUp = pair.call.strike + cp + pp;
+        const beDown = pair.put.strike - cp - pp;
+        const bigMove = stockPrice * 0.2;
+        const maxLoss = (bigMove) * qty; // theoretical unlimited, estimate 20% move
+        const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
+        allResults.push({
+          id: `sstr_${pair.call.ticker}_${pair.put.ticker}`, strategy: "short_straddle", strategyLabel: stratLabel,
+          legs: [
+            { ticker: pair.call.ticker, side: "sell", type: "CALL", strike: pair.call.strike, price: cp, qty },
+            { ticker: pair.put.ticker, side: "sell", type: "PUT", strike: pair.put.strike, price: pp, qty },
+          ],
+          maxProfit, maxLoss, breakeven: [Math.max(beDown, 0), beUp], returnPct,
+          qualityScore: maxProfit > 0 && maxLoss > 0 ? maxProfit / maxLoss : 0,
+          netCredit: totalCredit, vencimento: pair.call.vencimento, isLive: l1 && l2,
+        });
+      });
+    }
+
+    // ── SHORT STRANGLE (Vendido) ─────────────────────────────
+    if (selectedStrategy === "short_strangle") {
+      for (const put of puts) {
+        if (put.strike >= stockPrice) continue;
+        if (!hasMinTrades(put.ticker)) continue;
+        for (const call of calls) {
+          if (call.strike <= stockPrice) continue;
+          if (put.vencimento !== call.vencimento) continue;
+          if (!hasMinTrades(call.ticker)) continue;
+          const { price: pp, isLive: l1 } = getPrice(put.ticker, "ofCompra");
+          const { price: cp, isLive: l2 } = getPrice(call.ticker, "ofCompra");
+          if (pp <= 0 || cp <= 0) continue;
+          const totalCredit = (pp + cp) * qty;
+          const maxProfit = totalCredit;
+          const beUp = call.strike + pp + cp;
+          const beDown = put.strike - pp - cp;
+          const bigMove = stockPrice * 0.2;
+          const maxLoss = (bigMove) * qty;
+          const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
+          allResults.push({
+            id: `sstg_${put.ticker}_${call.ticker}`, strategy: "short_strangle", strategyLabel: stratLabel,
+            legs: [
+              { ticker: put.ticker, side: "sell", type: "PUT", strike: put.strike, price: pp, qty },
+              { ticker: call.ticker, side: "sell", type: "CALL", strike: call.strike, price: cp, qty },
+            ],
+            maxProfit, maxLoss, breakeven: [Math.max(beDown, 0), beUp], returnPct,
+            qualityScore: maxProfit > 0 && maxLoss > 0 ? maxProfit / maxLoss : 0,
+            netCredit: totalCredit, vencimento: put.vencimento, isLive: l1 && l2,
+          });
+        }
+      }
+    }
+
     // Post-scan filters
     let filtered = allResults;
     const minRet = parseFloat(minReturnPct) || 0;
