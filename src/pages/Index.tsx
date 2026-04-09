@@ -283,17 +283,30 @@ export default function Index() {
                 <Badge className="bg-red-500/20 text-red-500 border-0 text-xs font-black animate-pulse">AO VIVO</Badge>
                 <Badge className="bg-primary/20 text-primary border-0 text-xs font-black">PRO</Badge>
               </div>
-              <p className="text-muted-foreground">Rastreie 10+ estratégias em tempo real: Venda Coberta, Trava de Alta/Baixa, Iron Condor, Borboleta, Straddle e Strangle. Ranking Top 3 com comparação CDI.</p>
+              <p className="text-muted-foreground">Rastreie 12 estratégias em tempo real com ranking Top 3, gráfico de payoff avançado e comparação CDI automática.</p>
             </div>
             <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)] bg-card p-6 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                {['Venda Coberta', 'Trava de Alta', 'Iron Condor', 'Straddle'].map(s => (
-                  <div key={s} className="rounded-lg bg-primary/10 border border-primary/20 p-4 text-center">
-                    <p className="text-sm font-black text-primary">{s}</p>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { s: 'Venda Coberta', c: 'Alta' },
+                  { s: 'Trava de Alta (Call)', c: 'Alta' },
+                  { s: 'Trava de Alta (Put)', c: 'Alta' },
+                  { s: 'Venda de Put', c: 'Baixa' },
+                  { s: 'Trava de Baixa (Put)', c: 'Baixa' },
+                  { s: 'Trava de Baixa (Call)', c: 'Baixa' },
+                  { s: 'Iron Condor', c: 'Lateral' },
+                  { s: 'Borboleta', c: 'Lateral' },
+                  { s: 'Straddle Comprado', c: 'Volatilidade' },
+                  { s: 'Straddle Vendido', c: 'Volatilidade' },
+                  { s: 'Strangle Comprado', c: 'Volatilidade' },
+                  { s: 'Strangle Vendido', c: 'Volatilidade' },
+                ].map(({ s, c }) => (
+                  <div key={s} className="rounded-lg bg-primary/10 border border-primary/20 p-3 text-center">
+                    <p className="text-xs font-black text-primary">{s}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{c}</p>
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-muted-foreground text-center font-bold">+ Borboleta, Strangle, Venda de Put, Trava de Baixa e mais</p>
             </div>
           </div>
 
@@ -584,7 +597,7 @@ export default function Index() {
               <PricingItem included pro label="Ticker Opções B3 — 99k+ opções" highlight />
               <PricingItem included pro label="Calculadora CDI × Opções" highlight />
               <PricingItem included pro label="Alertas na Tela (Box Tracker)" highlight />
-              <PricingItem included pro label="Rastreador de Estratégias PRO" highlight />
+              <PricingItem included pro label="Rastreador PRO X — 12 Estratégias" highlight />
               <PricingItem included pro label="Push Notifications de Box" highlight />
             </ul>
             <Button className="w-full h-14 text-lg font-black shadow-lg shadow-primary/30" onClick={() => navigate('/auth')}>
