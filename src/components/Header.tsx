@@ -138,7 +138,7 @@ export default function Header() {
               {access.planType === 'pro' ? 'PRO' : 'FREE'}
             </Badge>
           </button>
-          <InstallAppButton />
+          
         </div>
 
         {/* Desktop Primary Nav — scrollable */}
