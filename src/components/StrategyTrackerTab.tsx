@@ -690,7 +690,7 @@ export default function StrategyTrackerTab() {
     if (status === "connected") opts.slice(0, 80).forEach((o) => addTicker(o.ticker));
 
     const allResults: StrategyResult[] = [];
-    const stratLabel = STRATEGIES.find((s) => s.id === selectedStrategy)?.label ?? "";
+    const getStratLabel = (id: StrategyType) => STRATEGIES.find((s) => s.id === id)?.label ?? "";
 
     // ── VENDA COBERTA ──────────────────────────────────────
     if (selectedStrategies.includes("covered_call") {
