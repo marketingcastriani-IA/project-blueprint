@@ -372,6 +372,13 @@ export default function StrategyTrackerTab() {
     toast.info(`${family} removido do rastreamento`);
   }, [selectedFamily]);
 
+  const clearAllAssets = useCallback(() => {
+    setSavedAssets([]);
+    setSelectedFamily("");
+    localStorage.removeItem(STRATEGY_STORAGE_KEY);
+    toast.info("Lista de rastreamento limpa");
+  }, []);
+
   const handleAddCustomAsset = useCallback(() => {
     const input = customAssetInput.trim().toUpperCase();
     if (!input || input.length < 3) {
