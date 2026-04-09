@@ -1217,6 +1217,14 @@ export default function StrategyTrackerTab() {
                               </div>
                             </div>
                           ))}
+
+                          {/* Mini Payoff Chart */}
+                          <div className="pt-3 border-t border-border/30">
+                            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 mb-3">
+                              <BarChart2 className="h-3.5 w-3.5" /> Gráfico de Payoff
+                            </p>
+                            <MiniPayoffChart result={result} spotPrice={stockPrice} />
+                          </div>
                         </div>
                       )}
 
