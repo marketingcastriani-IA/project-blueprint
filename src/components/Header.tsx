@@ -171,7 +171,7 @@ export default function Header() {
       </div>
 
       {/* Row 2: Secondary Nav + RTD + Theme (desktop) — scrollable */}
-      <div className="hidden md:flex border-t border-primary-foreground/10 bg-primary">
+      <div className="hidden md:flex border-t border-border/40 bg-background">
         <div className="container flex items-center gap-3 py-1.5 overflow-x-auto scrollbar-none">
           <nav className="flex items-center gap-1 shrink-0">
             {secondaryNav.map(item => {
@@ -182,8 +182,8 @@ export default function Header() {
                   onClick={() => navigate(item.path)}
                   className={cn(
                     'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] lg:text-xs font-black uppercase tracking-wide lg:tracking-widest transition-all whitespace-nowrap',
-                    isActive && 'bg-primary-foreground/20 text-primary-foreground',
-                    !isActive && 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
+                    isActive && 'bg-primary text-primary-foreground shadow-md',
+                    !isActive && 'text-foreground/80 hover:text-foreground hover:bg-muted'
                   )}
                 >
                   <item.icon className="h-3.5 w-3.5 shrink-0" />
@@ -201,7 +201,7 @@ export default function Header() {
 
           {/* Theme selector */}
           <div className="flex items-center gap-1 shrink-0">
-            <Palette className="h-3 w-3 text-primary-foreground/60" />
+            <Palette className="h-3 w-3 text-muted-foreground" />
             {themes.map(item => (
               <button
                 key={item.key}
@@ -209,8 +209,8 @@ export default function Header() {
                 className={cn(
                   'flex items-center gap-1 px-2 py-1 rounded-full text-[10px] lg:text-xs font-semibold transition-all whitespace-nowrap',
                   theme === item.key
-                    ? 'bg-primary-foreground/20 text-primary-foreground ring-1 ring-primary-foreground/30'
-                    : 'text-primary-foreground/60 hover:bg-primary-foreground/10 hover:text-primary-foreground'
+                    ? 'bg-primary text-primary-foreground ring-1 ring-primary/30'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 )}
               >
                 <item.icon className="h-3 w-3" />
