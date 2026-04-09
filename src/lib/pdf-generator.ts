@@ -557,7 +557,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
 
   // ── 16. ALERTAS NA TELA ──
   y = checkPageBreak(doc, y, 50);
-  y = addSectionTitle(doc, '15. Alertas na Tela (Box Tracker)', y);
+  y = addSectionTitle(doc, '16. Alertas na Tela (Box Tracker)', y);
   y = addParagraph(doc, 'O Rastreador de Box exibe alertas visuais na tela (toasts) quando um Box atinge o threshold do CDI configurado. Alertas normais (verde) aparecem por 10s com dados do box. Alertas urgentes (vermelho, >=150% CDI) duram 15s. Complementam as notificações push do navegador.', y);
 
   y = addTable(doc, {

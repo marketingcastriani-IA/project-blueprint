@@ -1103,7 +1103,8 @@ export default function FAQ() {
               <AccordionContent className="text-sm text-muted-foreground">
                 O plano Free permite acesso básico com limite de simulações. O plano PRO oferece simulações ilimitadas, 
                 análise de IA ilimitada, OCR de imagens, comparação com CDI, Calculadora CDI x Opções, Rastreador de Box, 
-                Rastreador de Collar, Tempo Real, Diversificador de Estratégias, Ticker Opções B3 (99.000+ opções), 
+                Rastreador de Collar, Rastreador PRO X (12 estratégias: Venda Coberta, Trava de Alta/Baixa, Iron Condor, Borboleta, 
+                Straddle, Strangle — comprado e vendido), Tempo Real, Diversificador de Estratégias, Ticker Opções B3 (99.000+ opções), 
                 Notificações Push e acesso completo a todos os recursos avançados da plataforma.
               </AccordionContent>
             </AccordionItem>
