@@ -41,11 +41,8 @@ export default function Suporte() {
   };
 
   return (
-    <ProfessionalLayout
-      title="Suporte"
-      subtitle="Entre em contato ou deixe sua sugestão para melhorias"
-      icon={<Headphones className="h-7 w-7" />}
-    >
+    <ProfessionalLayout>
+      <ProfessionalHeader title="Suporte" subtitle="Entre em contato ou deixe sua sugestão para melhorias" />
       <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
         {/* Card: Falar por E-mail */}
         <Card className="border-2 border-primary/20 hover:border-primary/40 transition-all">
