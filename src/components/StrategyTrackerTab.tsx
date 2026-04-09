@@ -1183,7 +1183,7 @@ export default function StrategyTrackerTab() {
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-3">
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
             <div className="space-y-1">
               <label className="text-xs font-bold text-muted-foreground uppercase">Vencimento</label>
               <Select value={selectedVencimento} onValueChange={setSelectedVencimento}>
@@ -1213,6 +1213,14 @@ export default function StrategyTrackerTab() {
             <div className="space-y-1">
               <label className="text-xs font-bold text-muted-foreground uppercase">Negócios ≥</label>
               <Input type="number" value={minTrades} onChange={(e) => setMinTrades(e.target.value)} placeholder="0" className="h-9 text-xs" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-muted-foreground uppercase">Retorno Mín %</label>
+              <Input type="number" value={minReturnPct} onChange={(e) => setMinReturnPct(e.target.value)} placeholder="0%" className="h-9 text-xs" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-muted-foreground uppercase">Risco Máx R$</label>
+              <Input type="number" value={maxLossFilter} onChange={(e) => setMaxLossFilter(e.target.value)} placeholder="Sem limite" className="h-9 text-xs" />
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-muted-foreground uppercase">Quantidade</label>
