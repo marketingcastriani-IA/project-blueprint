@@ -15,6 +15,11 @@ import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useProPrice } from '@/hooks/useProPrice';
 import { useState, useEffect } from 'react';
+import landingProxStrategies from '@/assets/landing-prox-strategies.png';
+import landingProxDashboard from '@/assets/landing-prox-dashboard.png';
+import landingProxResults from '@/assets/landing-prox-results.png';
+import landingCollarFeatures from '@/assets/landing-collar-features.png';
+import landingCollarDashboard from '@/assets/landing-collar-dashboard.png';
 
 type PlanPeriod = 'monthly' | 'yearly';
 
