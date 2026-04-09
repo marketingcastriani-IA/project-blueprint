@@ -1,51 +1,93 @@
 
 
-# Melhorar Filtros — Opções B3
+# Plano: Rastreador de Estratégias PRO
 
-## Problemas Atuais
-1. **Sem filtro por faixa de strike absoluto** — só filtra por % do preço base, mas usuário pode querer definir strike mínimo/máximo direto
-2. **Sem filtro por preço da opção** — não filtra por faixa de prêmio (ex: opções entre R$0.50 e R$5.00)
-3. **Sem filtro "Apenas com PAR"** — não tem toggle para mostrar só opções que possuem Call+Put no mesmo strike
-4. **Sem filtro por moneyness** — ITM/ATM/OTM não é selecionável
-5. **Filtro de strike por % não mostra os valores do slider claramente** — sliders sem indicação visual do range selecionado
-6. **Sem "chips" de filtros ativos** — difícil ver quais filtros estão aplicados e removê-los individualmente
-7. **Limite fixo de 200 rows** sem botão "Carregar mais"
-8. **Sem contador de filtros ativos** no badge
+## Visão Geral
 
-## Melhorias Planejadas
+Criar uma nova página **/strategy-tracker** com um rastreador em tempo real que, dado um ativo e uma estratégia selecionada, varre automaticamente todas as opções disponíveis (via B3OptionsContext + RTD Bridge) e apresenta as melhores combinações ranqueadas por lucro, risco e eficiência.
 
-### A. Novo filtro: "Apenas com PAR (Call+Put)"
-- Toggle/switch no painel de filtros que, quando ativo, mostra apenas opções que têm par Call+Put no mesmo strike/vencimento
-- Útil para quem quer montar Box Spread rapidamente
+## Estratégias Suportadas
 
-### B. Novo filtro: Moneyness (ITM / ATM / OTM)
-- Dropdown com opções: Todos, ITM, ATM (±5%), OTM
-- Usa o `precoBaseNum` para calcular: strike < preço = ITM para CALL, OTM para PUT, e vice-versa
+| Cenário | Estratégia | Composição |
+|---------|-----------|------------|
+| **Alta** | Venda Coberta (Covered Call) | Ação + Venda Call |
+| **Alta** | Trava de Alta com Call | Compra Call K1 + Venda Call K2 |
+| **Baixa** | Venda de Put (Cash-Secured Put) | Venda Put |
+| **Baixa** | Trava de Baixa com Put | Compra Put K1 + Venda Put K2 |
+| **Lateral** | Iron Condor | Trava de Alta Put + Trava de Baixa Call |
+| **Lateral** | Borboleta (Butterfly) | Compra C1 + 2x Venda C2 + Compra C3 |
+| **Proteção** | Collar (link para rastreador existente) | — |
 
-### C. Novo filtro: Faixa de Prêmio (preço da opção)
-- Dois inputs (min/max) para filtrar por preço último da opção
-- Ex: mostrar apenas opções com prêmio entre R$0.10 e R$3.00
+## Arquitetura
 
-### D. Chips de filtros ativos
-- Abaixo dos filtros, mostrar badges/chips com cada filtro ativo (ex: "VALE", "CALL", "Venc: 16/05/2025")
-- Cada chip tem um X para remover aquele filtro individualmente
-- Mais intuitivo que o botão "Limpar" genérico
+Segue o mesmo padrão do BoxTrackerTab e CollarTrackerTab:
 
-### E. Botão "Carregar mais" na tabela
-- Em vez do limite fixo de 200, começar com 100 e mostrar botão "Carregar mais 100" no final
-- Mostra quantos faltam: "Carregar mais 100 (restam 1.578)"
+```text
+src/pages/StrategyTracker.tsx        ← Página com guard PRO
+src/components/StrategyTrackerTab.tsx ← Componente principal (~1500 linhas)
+```
 
-### F. Melhorar visual dos sliders de %
-- Adicionar labels dinâmicos nos extremos dos sliders mostrando o valor em R$ calculado
-- Ex: slider "Abaixo: 20%" mostra "R$ 68,35" à esquerda
+### Fluxo do Usuário
 
-## Arquivos Modificados
-- `src/pages/TickerOpcoes.tsx` — adicionar novos estados de filtro, lógica de filtragem, chips ativos, botão carregar mais, filtro moneyness/par/prêmio
+1. Seleciona ativo (Top 18 quick-select ou digitação)
+2. Escolhe a estratégia (tabs ou dropdown por cenário)
+3. Ajusta filtros: vencimento, moneyness (ITM/ATM/OTM), faixa de prêmio, quantidade
+4. O sistema varre todas as combinações possíveis e rankeia por:
+   - **Maior Lucro %** (retorno máximo percentual)
+   - **Melhor Risco/Retorno** (quality score)
+   - **Maior Prêmio Recebido** (para vendas)
+5. Exibe Top 3 resultados com troféus (ouro/prata/bronze) — igual Box e Collar
+6. Cards expandíveis com detalhes: breakeven, lucro máx/mín, payoff simplificado
 
-## Implementação Técnica
-- Novos estados: `onlyPaired`, `moneyness`, `precoMin`, `precoMax`, `displayLimit`
-- Filtro `onlyPaired`: reutiliza o `pairedStrikeKeys` já existente
-- Filtro `moneyness`: calcula com base no `precoBaseNum` e tipo da opção
-- Chips: array derivado dos filtros ativos, cada um com handler de reset individual
-- "Carregar mais": incrementa `displayLimit` em 100
+### Integração com Ticker Opções B3
+
+- Novo botão "Enviar ao Rastreador PRO" na página /ticker-opcoes
+- Salva tickers no localStorage (`strategy-tracker-families`) no mesmo padrão SavedFamily
+- Ao abrir o Strategy Tracker, carrega automaticamente os tickers importados
+
+### Dados em Tempo Real
+
+- Usa `useSharedRtdBridge()` para preços Bid/Ask/Último
+- Subscreve automaticamente todos os tickers da família selecionada
+- Recalcula rankings a cada atualização de preço
+
+## Arquivos a Criar/Modificar
+
+1. **`src/components/StrategyTrackerTab.tsx`** — Componente principal com:
+   - Seletor de estratégia (tabs por cenário: Alta / Baixa / Lateral)
+   - Motor de varredura que combina opções e calcula métricas
+   - Tabela de resultados com ranking Top 3
+   - Filtros (vencimento, moneyness, prêmio mínimo)
+   - Painel de alertas (mesmo padrão Sonner do Box Tracker)
+
+2. **`src/pages/StrategyTracker.tsx`** — Página com guard PRO (mesmo padrão BoxTracker.tsx)
+
+3. **`src/App.tsx`** — Nova rota `/strategy-tracker` com lazy loading
+
+4. **`src/pages/TickerOpcoes.tsx`** — Novo botão "Enviar ao Rastreador PRO" + função `sendSelectedToStrategy`
+
+5. **`src/components/Header.tsx`** — Link de navegação para o novo rastreador
+
+6. **`src/pages/Index.tsx`** — Adicionar feature na landing page e no plano PRO
+
+## Lógica de Cálculo por Estratégia
+
+- **Venda Coberta**: Para cada Call disponível, calcula prêmio recebido / preço do ativo = taxa de retorno. Rankeia por taxa.
+- **Venda de Put**: Para cada Put, calcula prêmio / strike = taxa. Filtra por moneyness desejado.
+- **Trava de Alta Call**: Combina pares (K1 < K2), calcula custo líquido, lucro máximo = K2-K1-custo, breakeven = K1+custo.
+- **Trava de Baixa Put**: Combina pares (K1 > K2), calcula custo líquido, lucro máximo = K1-K2-custo.
+- **Iron Condor**: Combina trava de Put (abaixo) + trava de Call (acima). Lucro = prêmios recebidos, risco = largura - prêmio.
+- **Borboleta**: 3 strikes equidistantes, calcula custo e lucro máximo no strike central.
+
+## Filtros Disponíveis
+
+- Vencimento (dropdown com datas disponíveis do B3OptionsContext)
+- Moneyness: ITM / ATM ±5% / OTM
+- Prêmio mínimo (R$)
+- Quantidade (lotes)
+- Comparação CDI (%) — toggle com taxa editável
+
+## Escopo PRO
+
+Acesso exclusivo para `planType === "pro" || isAdmin`, com tela de bloqueio idêntica ao Box Tracker.
 
