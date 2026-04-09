@@ -10,7 +10,6 @@ import { useNavigate } from 'react-router-dom';
 export default function SuggestionWidget() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
   const [mensagem, setMensagem] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -35,46 +34,49 @@ export default function SuggestionWidget() {
       setSent(true);
       setMensagem('');
       toast.success('Sugestão enviada! Obrigado!');
-      setTimeout(() => { setSent(false); setOpen(false); }, 2500);
+      setTimeout(() => setSent(false), 3000);
     }
   };
 
-  if (!open) {
-    return (
-      <button
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
-      >
-        <MessageSquarePlus className="h-3.5 w-3.5" />
-        Deixe sua sugestão
-      </button>
-    );
-  }
-
   return (
-    <div className="w-full max-w-md mx-auto space-y-2 animate-fade-in">
-      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-        <MessageSquarePlus className="h-4 w-4 text-primary" />
-        Deixe sua sugestão
+    <div className="w-full max-w-lg mx-auto rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+          <MessageSquarePlus className="h-4 w-4 text-primary" />
+        </div>
+        <div>
+          <p className="text-sm font-bold text-foreground">Deixe sua sugestão</p>
+          <p className="text-[10px] text-muted-foreground">Ajude-nos a melhorar o sistema</p>
+        </div>
       </div>
       <Textarea
-        placeholder="Sua ideia ou melhoria..."
+        placeholder="Sua ideia, melhoria ou feedback..."
         value={mensagem}
         onChange={(e) => setMensagem(e.target.value)}
         rows={2}
         maxLength={500}
-        className="resize-none text-sm"
+        className="resize-none text-sm bg-background/50"
       />
       <div className="flex items-center justify-between">
         <span className="text-[10px] text-muted-foreground">{mensagem.length}/500</span>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setOpen(false)} className="text-xs">
-            Cancelar
-          </Button>
-          <Button size="sm" onClick={handleSubmit} disabled={sending || !mensagem.trim()} className="gap-1 text-xs">
-            {sent ? <><CheckCircle className="h-3 w-3" /> Enviado!</> : <><Send className="h-3 w-3" /> {sending ? '...' : 'Enviar'}</>}
-          </Button>
-        </div>
+        <Button
+          size="sm"
+          onClick={handleSubmit}
+          disabled={sending || !mensagem.trim()}
+          className="gap-1.5 text-xs font-bold"
+        >
+          {sent ? (
+            <>
+              <CheckCircle className="h-3.5 w-3.5" />
+              Enviado!
+            </>
+          ) : (
+            <>
+              <Send className="h-3.5 w-3.5" />
+              {sending ? 'Enviando...' : 'Enviar'}
+            </>
+          )}
+        </Button>
       </div>
     </div>
   );
