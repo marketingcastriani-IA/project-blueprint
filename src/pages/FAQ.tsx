@@ -19,13 +19,18 @@ import faqCdi from '@/assets/pdf-calculadora-cdi.jpg';
 import faqHistorico from '@/assets/pdf-historico.jpg';
 import faqPortfolio from '@/assets/pdf-portfolio.jpg';
 import faqAnaliseDetalhe from '@/assets/pdf-analise-detalhe.jpg';
+import faqAnaliseDetalhe2 from '@/assets/pdf-analise-detalhe2.jpg';
 import faqDiversificador from '@/assets/pdf-diversificador.jpg';
 import faqTempoReal from '@/assets/pdf-tempo-real.jpg';
 import faqRastreadorBox from '@/assets/pdf-box-ranking.jpg';
+import faqBoxTabela from '@/assets/pdf-box-tabela.jpg';
 import faqBridgeSetup from '@/assets/pdf-tempo-real.jpg';
 import faqTickerOpcoes from '@/assets/pdf-ticker-opcoes.jpg';
 import faqTickerOpcoesBusca from '@/assets/pdf-ticker-opcoes-busca.jpg';
 import faqTickerOpcoesTabela from '@/assets/pdf-ticker-opcoes-tabela.jpg';
+import faqTemasCores from '@/assets/pdf-temas-cores.jpg';
+import faqManualTabela from '@/assets/pdf-manual-tabela.jpg';
+import faqManualGrafico from '@/assets/pdf-manual-grafico.jpg';
 
 const StepCard = ({ step, title, description, icon: Icon }: { step: number; title: string; description: string; icon: React.ComponentType<{ className?: string }> }) => (
   <div className="flex gap-4 items-start">
