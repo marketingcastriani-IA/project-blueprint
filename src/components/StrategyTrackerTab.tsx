@@ -278,8 +278,7 @@ export default function StrategyTrackerTab() {
     const opt = options.find((o) => o.ticker === ticker);
     if (opt && (opt as any).negocios >= minT) return true;
     // If no trade data available and filter is set, check volume
-    if (row?.volume && row.volume >= minT) return true;
-    return minT <= 0;
+    return false;
   }, [minTrades, rows, options]);
 
   // ─── SCAN ENGINE ──────────────────────────────────────────
