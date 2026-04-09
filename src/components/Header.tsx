@@ -189,7 +189,7 @@ export default function Header() {
                 )}
               >
                 <Crosshair className="h-3.5 w-3.5 shrink-0 lg:h-4 lg:w-4" />
-                <span>Rastreadores</span>
+                <span>Rastr.</span>
                 <ChevronDown className="h-3 w-3 shrink-0" />
               </button>
             </DropdownMenuTrigger>
