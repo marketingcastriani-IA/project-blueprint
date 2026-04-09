@@ -342,7 +342,7 @@ export default function Header() {
             <div className="grid grid-cols-2 gap-1">
               {allNavItems.map(item => {
                 const isActive = location.pathname === item.path;
-                const isRealtime = item.path === '/dados-ao-vivo';
+                
                 return (
                   <button
                     key={item.path}
