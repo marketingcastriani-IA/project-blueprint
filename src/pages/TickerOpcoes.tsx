@@ -45,6 +45,7 @@ interface SavedFamily {
 }
 const BOX_STORAGE_KEY = "box-tracker-families";
 const COLLAR_STORAGE_KEY = "collar-tracker-families";
+const STRATEGY_STORAGE_KEY = "strategy-tracker-families";
 
 // Top 18 most liquid B3 stocks for quick selection
 const TOP_STOCKS = [
@@ -1041,6 +1042,15 @@ export default function TickerOpcoes() {
                   title="Enviar selecionados ao Rastrear Collar"
                 >
                   <Shield className="h-3.5 w-3.5" /> Rastrear Collar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={sendSelectedToStrategy}
+                  className="gap-1.5 text-xs border-amber-500/40 text-amber-600 hover:bg-amber-500/10"
+                  title="Enviar selecionados ao Rastreador de Estratégias PRO"
+                >
+                  <Zap className="h-3.5 w-3.5" /> Estratégias PRO
                 </Button>
               </>
             ) : (
