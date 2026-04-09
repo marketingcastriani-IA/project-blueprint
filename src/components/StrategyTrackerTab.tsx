@@ -1344,7 +1344,10 @@ export default function StrategyTrackerTab() {
                           <span className="font-bold text-foreground">{leg.ticker}</span>
                           {leg.type === "STOCK"
                             ? <span className="text-muted-foreground">@ R$ {leg.price.toFixed(2)}</span>
-                            : leg.strike > 0 && <span className="text-muted-foreground">K {leg.strike.toFixed(2)}</span>
+                            : <>
+                                {leg.strike > 0 && <span className="text-muted-foreground">K {leg.strike.toFixed(2)}</span>}
+                                <span className="text-primary font-bold">R$ {leg.price.toFixed(2)}</span>
+                              </>
                           }
                         </div>
                       ))}
