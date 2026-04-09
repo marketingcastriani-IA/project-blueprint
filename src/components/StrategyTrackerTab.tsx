@@ -76,7 +76,9 @@ type StrategyType =
   | "iron_condor"
   | "butterfly"
   | "straddle"
-  | "strangle";
+  | "short_straddle"
+  | "strangle"
+  | "short_strangle";
 
 interface StrategyDef {
   id: StrategyType;
@@ -123,8 +125,10 @@ const STRATEGIES: StrategyDef[] = [
   { id: "iron_condor", label: "Iron Condor", view: "lateral", icon: ArrowLeftRight, description: "Lucra se o ativo ficar dentro do range", composition: "Trava Put + Trava Call", details: "O Iron Condor combina uma Trava de Alta com Put e uma Trava de Baixa com Call. São 4 pernas: vende Put K1, compra Put K2 (abaixo), vende Call K3, compra Call K4 (acima). Você recebe crédito na montagem. O lucro máximo ocorre se o ativo ficar entre K1 e K3 no vencimento. A perda máxima é limitada à largura de uma das travas menos o crédito total. Ideal para mercados laterais com baixa volatilidade." },
   { id: "butterfly", label: "Borboleta", view: "lateral", icon: Layers, description: "Lucro máximo se o ativo fechar no strike central", composition: "C1 + 2×V C2 + C3", details: "A Borboleta (Butterfly Spread) consiste em comprar 1 Call no strike baixo (K1), vender 2 Calls no strike central (K2) e comprar 1 Call no strike alto (K3). O lucro máximo ocorre se o ativo fechar exatamente no strike central no vencimento. O custo é baixo (débito pequeno) e o risco é limitado ao débito pago. Ideal para quem acredita que o ativo vai ficar estável em torno de um preço específico." },
   // VOLATILIDADE
-  { id: "straddle", label: "Straddle", view: "volatilidade", icon: GitBranch, description: "Lucra com movimentos grandes em qualquer direção", composition: "Compra Call + Compra Put (mesmo K)", details: "O Straddle consiste em comprar simultaneamente uma Call e uma Put com o mesmo strike e vencimento. O custo é alto (soma dos dois prêmios), mas o lucro é potencialmente ilimitado se o ativo se mover fortemente para qualquer direção. O prejuízo máximo ocorre se o ativo fechar exatamente no strike (perde os dois prêmios). Ideal antes de eventos que podem causar grande volatilidade (balanços, decisões de juros)." },
-  { id: "strangle", label: "Strangle", view: "volatilidade", icon: Crosshair, description: "Lucra com movimento forte, custo menor que Straddle", composition: "Compra Call K2 + Compra Put K1", details: "O Strangle é semelhante ao Straddle, mas usa strikes diferentes: compra Put OTM (strike abaixo do preço) e Call OTM (strike acima). O custo é menor que o Straddle, pois ambas as opções estão fora do dinheiro. Porém, o ativo precisa se mover mais para gerar lucro. O prejuízo máximo é a soma dos prêmios pagos. Ideal para quem espera um grande movimento, mas quer gastar menos na montagem." },
+  { id: "straddle", label: "Straddle Comprado", view: "volatilidade", icon: GitBranch, description: "Lucra com movimentos grandes em qualquer direção", composition: "Compra Call + Compra Put (mesmo K)", details: "O Straddle Comprado (Long Straddle) consiste em comprar simultaneamente uma Call e uma Put com o mesmo strike e vencimento. O custo é alto (soma dos dois prêmios), mas o lucro é potencialmente ilimitado se o ativo se mover fortemente para qualquer direção. O prejuízo máximo ocorre se o ativo fechar exatamente no strike (perde os dois prêmios). Ideal antes de eventos que podem causar grande volatilidade (balanços, decisões de juros)." },
+  { id: "short_straddle", label: "Straddle Vendido", view: "volatilidade", icon: GitBranch, description: "Lucra com estabilidade coletando prêmios", composition: "Venda Call + Venda Put (mesmo K)", details: "O Straddle Vendido (Short Straddle) consiste em vender simultaneamente uma Call e uma Put com o mesmo strike e vencimento. O investidor recebe o prêmio total (crédito), que é o lucro máximo, esperando que o ativo fique estável próximo ao strike. O risco é ilimitado caso o ativo se mova fortemente em qualquer direção. Ideal para cenários de baixa volatilidade, mercados laterais e quando se espera que o ativo permaneça 'parado'." },
+  { id: "strangle", label: "Strangle Comprado", view: "volatilidade", icon: Crosshair, description: "Lucra com movimento forte, custo menor que Straddle", composition: "Compra Call K2 + Compra Put K1", details: "O Strangle Comprado (Long Strangle) é semelhante ao Straddle, mas usa strikes diferentes: compra Put OTM (strike abaixo do preço) e Call OTM (strike acima). O custo é menor que o Straddle, pois ambas as opções estão fora do dinheiro. Porém, o ativo precisa se mover mais para gerar lucro. O prejuízo máximo é a soma dos prêmios pagos. Ideal para quem espera um grande movimento, mas quer gastar menos na montagem." },
+  { id: "short_strangle", label: "Strangle Vendido", view: "volatilidade", icon: Crosshair, description: "Lucra com estabilidade dentro de uma faixa", composition: "Venda Call K2 + Venda Put K1", details: "O Strangle Vendido (Short Strangle) consiste em vender uma Call OTM (strike acima do preço) e uma Put OTM (strike abaixo). O investidor recebe crédito na montagem, que é o lucro máximo. O lucro ocorre se o ativo permanecer entre os dois strikes até o vencimento. O risco é ilimitado se o ativo se mover fortemente para fora da faixa. Ideal para mercados laterais com baixa volatilidade e quando se espera que o ativo fique dentro de uma zona de preço." },
 ];
 
 const TOP_STOCKS = [
@@ -597,23 +601,45 @@ export default function StrategyTrackerTab() {
     return vencimentos.filter((v) => vSet.has(v));
   }, [selectedFamily, options, vencimentos]);
 
-  // Auto-select nearest expiry when family changes or vencimentos load
+  // Auto-select nearest MONTHLY expiry (3rd Friday B3 rule) when family changes
   useEffect(() => {
     if (availableVencimentos.length > 0) {
       const now = new Date();
+
+      // Helper: 3rd Friday of a given month
+      const getThirdFriday = (year: number, month: number): number => {
+        const first = new Date(year, month, 1);
+        const firstFriday = ((5 - first.getDay()) + 7) % 7 + 1;
+        return firstFriday + 14;
+      };
+
+      // First pass: find next monthly (within ±2 days of 3rd Friday)
       let best = "";
       for (const v of availableVencimentos) {
         const parts = v.split("/");
-        let d: Date;
-        if (parts.length === 3) d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-        else if (parts.length === 2) d = new Date(parseInt(parts[1]), parseInt(parts[0]) - 1, 15);
-        else continue;
-        if (d >= now) { best = v; break; }
+        if (parts.length !== 3) continue;
+        const day = parseInt(parts[0]);
+        const month = parseInt(parts[1]) - 1;
+        const year = parseInt(parts[2]);
+        const d = new Date(year, month, day);
+        if (d < now) continue;
+        const thirdFri = getThirdFriday(year, month);
+        if (Math.abs(day - thirdFri) <= 2) { best = v; break; }
       }
+
+      // Fallback: first future date
+      if (!best) {
+        for (const v of availableVencimentos) {
+          const parts = v.split("/");
+          if (parts.length !== 3) continue;
+          const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+          if (d >= now) { best = v; break; }
+        }
+      }
+
       setSelectedVencimento(best || availableVencimentos[0]);
     }
   }, [selectedFamily, availableVencimentos.length]);
-
 
   const getPrice = useCallback((ticker: string, _field?: "ofCompra" | "ofVenda" | "ultimo"): { price: number; isLive: boolean } => {
     const row = rows.get(ticker);
@@ -979,6 +1005,70 @@ export default function StrategyTrackerTab() {
             maxProfit, maxLoss: totalCost, breakeven: [Math.max(beDown, 0), beUp], returnPct,
             qualityScore: totalCost > 0 ? maxProfit / totalCost : 0,
             netCredit: -totalCost, vencimento: put.vencimento, isLive: l1 && l2,
+          });
+        }
+      }
+    }
+
+    // ── SHORT STRADDLE (Vendido) ──────────────────────────────
+    if (selectedStrategy === "short_straddle") {
+      const byStrikeVenc = new Map<string, { call: B3Option; put: B3Option }>();
+      calls.forEach((c) => { const k = `${c.strike}|${c.vencimento}`; const e = byStrikeVenc.get(k); if (e) e.call = c; else byStrikeVenc.set(k, { call: c, put: null as any }); });
+      puts.forEach((p) => { const k = `${p.strike}|${p.vencimento}`; const e = byStrikeVenc.get(k); if (e) e.put = p; else byStrikeVenc.set(k, { call: null as any, put: p }); });
+      byStrikeVenc.forEach((pair) => {
+        if (!pair.call || !pair.put) return;
+        if (!hasMinTrades(pair.call.ticker) || !hasMinTrades(pair.put.ticker)) return;
+        const { price: cp, isLive: l1 } = getPrice(pair.call.ticker, "ofCompra");
+        const { price: pp, isLive: l2 } = getPrice(pair.put.ticker, "ofCompra");
+        if (cp <= 0 || pp <= 0) return;
+        const totalCredit = (cp + pp) * qty;
+        const maxProfit = totalCredit;
+        const beUp = pair.call.strike + cp + pp;
+        const beDown = pair.put.strike - cp - pp;
+        const bigMove = stockPrice * 0.2;
+        const maxLoss = (bigMove) * qty; // theoretical unlimited, estimate 20% move
+        const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
+        allResults.push({
+          id: `sstr_${pair.call.ticker}_${pair.put.ticker}`, strategy: "short_straddle", strategyLabel: stratLabel,
+          legs: [
+            { ticker: pair.call.ticker, side: "sell", type: "CALL", strike: pair.call.strike, price: cp, qty },
+            { ticker: pair.put.ticker, side: "sell", type: "PUT", strike: pair.put.strike, price: pp, qty },
+          ],
+          maxProfit, maxLoss, breakeven: [Math.max(beDown, 0), beUp], returnPct,
+          qualityScore: maxProfit > 0 && maxLoss > 0 ? maxProfit / maxLoss : 0,
+          netCredit: totalCredit, vencimento: pair.call.vencimento, isLive: l1 && l2,
+        });
+      });
+    }
+
+    // ── SHORT STRANGLE (Vendido) ─────────────────────────────
+    if (selectedStrategy === "short_strangle") {
+      for (const put of puts) {
+        if (put.strike >= stockPrice) continue;
+        if (!hasMinTrades(put.ticker)) continue;
+        for (const call of calls) {
+          if (call.strike <= stockPrice) continue;
+          if (put.vencimento !== call.vencimento) continue;
+          if (!hasMinTrades(call.ticker)) continue;
+          const { price: pp, isLive: l1 } = getPrice(put.ticker, "ofCompra");
+          const { price: cp, isLive: l2 } = getPrice(call.ticker, "ofCompra");
+          if (pp <= 0 || cp <= 0) continue;
+          const totalCredit = (pp + cp) * qty;
+          const maxProfit = totalCredit;
+          const beUp = call.strike + pp + cp;
+          const beDown = put.strike - pp - cp;
+          const bigMove = stockPrice * 0.2;
+          const maxLoss = (bigMove) * qty;
+          const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
+          allResults.push({
+            id: `sstg_${put.ticker}_${call.ticker}`, strategy: "short_strangle", strategyLabel: stratLabel,
+            legs: [
+              { ticker: put.ticker, side: "sell", type: "PUT", strike: put.strike, price: pp, qty },
+              { ticker: call.ticker, side: "sell", type: "CALL", strike: call.strike, price: cp, qty },
+            ],
+            maxProfit, maxLoss, breakeven: [Math.max(beDown, 0), beUp], returnPct,
+            qualityScore: maxProfit > 0 && maxLoss > 0 ? maxProfit / maxLoss : 0,
+            netCredit: totalCredit, vencimento: put.vencimento, isLive: l1 && l2,
           });
         }
       }
