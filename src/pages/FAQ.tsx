@@ -19,13 +19,18 @@ import faqCdi from '@/assets/pdf-calculadora-cdi.jpg';
 import faqHistorico from '@/assets/pdf-historico.jpg';
 import faqPortfolio from '@/assets/pdf-portfolio.jpg';
 import faqAnaliseDetalhe from '@/assets/pdf-analise-detalhe.jpg';
+import faqAnaliseDetalhe2 from '@/assets/pdf-analise-detalhe2.jpg';
 import faqDiversificador from '@/assets/pdf-diversificador.jpg';
 import faqTempoReal from '@/assets/pdf-tempo-real.jpg';
 import faqRastreadorBox from '@/assets/pdf-box-ranking.jpg';
+import faqBoxTabela from '@/assets/pdf-box-tabela.jpg';
 import faqBridgeSetup from '@/assets/pdf-tempo-real.jpg';
 import faqTickerOpcoes from '@/assets/pdf-ticker-opcoes.jpg';
 import faqTickerOpcoesBusca from '@/assets/pdf-ticker-opcoes-busca.jpg';
 import faqTickerOpcoesTabela from '@/assets/pdf-ticker-opcoes-tabela.jpg';
+import faqTemasCores from '@/assets/pdf-temas-cores.jpg';
+import faqManualTabela from '@/assets/pdf-manual-tabela.jpg';
+import faqManualGrafico from '@/assets/pdf-manual-grafico.jpg';
 
 const StepCard = ({ step, title, description, icon: Icon }: { step: number; title: string; description: string; icon: React.ComponentType<{ className?: string }> }) => (
   <div className="flex gap-4 items-start">
@@ -104,12 +109,17 @@ export default function FAQ() {
                 historico: faqHistorico,
                 portfolio: faqPortfolio,
                 ai: faqAnaliseDetalhe,
+                ai2: faqAnaliseDetalhe2,
                 diversificador: faqDiversificador,
                 temporeal: faqTempoReal,
                 box: faqRastreadorBox,
+                boxTabela: faqBoxTabela,
                 tickerOpcoes: faqTickerOpcoes,
                 tickerOpcoesBusca: faqTickerOpcoesBusca,
                 tickerOpcoesTabela: faqTickerOpcoesTabela,
+                temasCores: faqTemasCores,
+                manualTabela: faqManualTabela,
+                manualGrafico: faqManualGrafico,
               };
               await generateFAQPdf(faqImages);
               toast.success('PDF do manual baixado!');
@@ -259,6 +269,7 @@ export default function FAQ() {
             </p>
 
             <ScreenshotImage src={faqAnaliseDetalhe} alt="Detalhes da análise ativa - Opções PRO X" />
+            <ScreenshotImage src={faqAnaliseDetalhe2} alt="Veredito de Saída da IA - Opções PRO X" />
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {[
@@ -534,6 +545,7 @@ export default function FAQ() {
             </p>
 
             <ScreenshotImage src={faqRastreadorBox} alt="Rastreador de Box Spread" />
+            <ScreenshotImage src={faqBoxTabela} alt="Tabela de Box por Strike - Opções PRO X" />
 
             <div className="space-y-4">
               <StepCard 
@@ -872,6 +884,8 @@ export default function FAQ() {
             <p className="text-sm text-muted-foreground leading-relaxed">
               A página de <strong className="text-foreground">Configurações</strong> (/settings) permite personalizar sua experiência no Opções PRO X.
             </p>
+
+            <ScreenshotImage src={faqTemasCores} alt="Temas e Personalização - Opções PRO X" />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[
