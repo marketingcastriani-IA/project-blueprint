@@ -703,7 +703,7 @@ export default function StrategyTrackerTab() {
         const breakeven = stockPrice - callPrice;
         const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
         allResults.push({
-          id: `cc_${call.ticker}`, strategy: "covered_call", strategyLabel: getStratLabel(r.strategy || "covered_call"),
+          id: `cc_${call.ticker}`, strategy: "covered_call", strategyLabel: getStratLabel("covered_call"),
           legs: [
             { ticker: stockTicker || `${selectedFamily}4`, side: "buy", type: "STOCK", strike: 0, price: stockPrice, qty },
             { ticker: call.ticker, side: "sell", type: "CALL", strike: call.strike, price: callPrice, qty },
@@ -725,7 +725,7 @@ export default function StrategyTrackerTab() {
         const maxLoss = (put.strike - putPrice) * qty;
         const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
         allResults.push({
-          id: `csp_${put.ticker}`, strategy: "cash_secured_put", strategyLabel: getStratLabel(r.strategy || "covered_call"),
+          id: `csp_${put.ticker}`, strategy: "cash_secured_put", strategyLabel: getStratLabel("cash_secured_put"),
           legs: [{ ticker: put.ticker, side: "sell", type: "PUT", strike: put.strike, price: putPrice, qty }],
           maxProfit, maxLoss, breakeven: [put.strike - putPrice], returnPct,
           qualityScore: maxLoss > 0 ? maxProfit / maxLoss : 0,
@@ -752,7 +752,7 @@ export default function StrategyTrackerTab() {
           const maxLoss = netCost * qty;
           const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
           allResults.push({
-            id: `bcs_${lc.ticker}_${sc.ticker}`, strategy: "bull_call_spread", strategyLabel: getStratLabel(r.strategy || "covered_call"),
+            id: `bcs_${lc.ticker}_${sc.ticker}`, strategy: "bull_call_spread", strategyLabel: getStratLabel("bull_call_spread"),
             legs: [
               { ticker: lc.ticker, side: "buy", type: "CALL", strike: lc.strike, price: lp, qty },
               { ticker: sc.ticker, side: "sell", type: "CALL", strike: sc.strike, price: sp, qty },
@@ -783,7 +783,7 @@ export default function StrategyTrackerTab() {
           const maxLoss = (width - netCredit) * qty;
           const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
           allResults.push({
-            id: `bups_${buyPut.ticker}_${sellPut.ticker}`, strategy: "bull_put_spread", strategyLabel: getStratLabel(r.strategy || "covered_call"),
+            id: `bups_${buyPut.ticker}_${sellPut.ticker}`, strategy: "bull_put_spread", strategyLabel: getStratLabel("bull_put_spread"),
             legs: [
               { ticker: sellPut.ticker, side: "sell", type: "PUT", strike: sellPut.strike, price: sp, qty },
               { ticker: buyPut.ticker, side: "buy", type: "PUT", strike: buyPut.strike, price: bp, qty },
@@ -813,7 +813,7 @@ export default function StrategyTrackerTab() {
           const maxLoss = netCost * qty;
           const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
           allResults.push({
-            id: `bps_${longPut.ticker}_${shortPut.ticker}`, strategy: "bear_put_spread", strategyLabel: getStratLabel(r.strategy || "covered_call"),
+            id: `bps_${longPut.ticker}_${shortPut.ticker}`, strategy: "bear_put_spread", strategyLabel: getStratLabel("bear_put_spread"),
             legs: [
               { ticker: longPut.ticker, side: "buy", type: "PUT", strike: longPut.strike, price: lp, qty },
               { ticker: shortPut.ticker, side: "sell", type: "PUT", strike: shortPut.strike, price: sp, qty },
@@ -843,7 +843,7 @@ export default function StrategyTrackerTab() {
           const maxLoss = (width - netCredit) * qty;
           const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
           allResults.push({
-            id: `becs_${sellCall.ticker}_${buyCall.ticker}`, strategy: "bear_call_spread", strategyLabel: getStratLabel(r.strategy || "covered_call"),
+            id: `becs_${sellCall.ticker}_${buyCall.ticker}`, strategy: "bear_call_spread", strategyLabel: getStratLabel("bear_call_spread"),
             legs: [
               { ticker: sellCall.ticker, side: "sell", type: "CALL", strike: sellCall.strike, price: sp, qty },
               { ticker: buyCall.ticker, side: "buy", type: "CALL", strike: buyCall.strike, price: bp, qty },
@@ -891,7 +891,7 @@ export default function StrategyTrackerTab() {
             const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
             allResults.push({
               id: `ic_${buyPut.ticker}_${sellPut.ticker}_${sellCall.ticker}_${buyCall.ticker}`,
-              strategy: "iron_condor", strategyLabel: getStratLabel(r.strategy || "covered_call"),
+              strategy: "iron_condor", strategyLabel: getStratLabel("iron_condor"),
               legs: [
                 { ticker: buyPut.ticker, side: "buy", type: "PUT", strike: buyPut.strike, price: bpP, qty },
                 { ticker: sellPut.ticker, side: "sell", type: "PUT", strike: sellPut.strike, price: spP, qty },
@@ -931,7 +931,7 @@ export default function StrategyTrackerTab() {
               const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
               allResults.push({
                 id: `bf_${c1.ticker}_${c2.ticker}_${c3.ticker}`,
-                strategy: "butterfly", strategyLabel: getStratLabel(r.strategy || "covered_call"),
+                strategy: "butterfly", strategyLabel: getStratLabel("butterfly"),
                 legs: [
                   { ticker: c1.ticker, side: "buy", type: "CALL", strike: c1.strike, price: p1, qty },
                   { ticker: c2.ticker, side: "sell", type: "CALL", strike: c2.strike, price: p2, qty: qty * 2 },
@@ -966,7 +966,7 @@ export default function StrategyTrackerTab() {
         const maxProfit = (bigMove - cp - pp) * qty;
         const returnPct = maxLoss > 0 && maxProfit > 0 ? (maxProfit / maxLoss) * 100 : 0;
         allResults.push({
-          id: `str_${pair.call.ticker}_${pair.put.ticker}`, strategy: "straddle", strategyLabel: getStratLabel(r.strategy || "covered_call"),
+          id: `str_${pair.call.ticker}_${pair.put.ticker}`, strategy: "straddle", strategyLabel: getStratLabel("straddle"),
           legs: [
             { ticker: pair.call.ticker, side: "buy", type: "CALL", strike: pair.call.strike, price: cp, qty },
             { ticker: pair.put.ticker, side: "buy", type: "PUT", strike: pair.put.strike, price: pp, qty },
@@ -997,7 +997,7 @@ export default function StrategyTrackerTab() {
           const maxProfit = Math.max((bigMove - pp - cp) * qty, 0);
           const returnPct = totalCost > 0 && maxProfit > 0 ? (maxProfit / totalCost) * 100 : 0;
           allResults.push({
-            id: `stg_${put.ticker}_${call.ticker}`, strategy: "strangle", strategyLabel: getStratLabel(r.strategy || "covered_call"),
+            id: `stg_${put.ticker}_${call.ticker}`, strategy: "strangle", strategyLabel: getStratLabel("strangle"),
             legs: [
               { ticker: put.ticker, side: "buy", type: "PUT", strike: put.strike, price: pp, qty },
               { ticker: call.ticker, side: "buy", type: "CALL", strike: call.strike, price: cp, qty },
@@ -1029,7 +1029,7 @@ export default function StrategyTrackerTab() {
         const maxLoss = (bigMove) * qty; // theoretical unlimited, estimate 20% move
         const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
         allResults.push({
-          id: `sstr_${pair.call.ticker}_${pair.put.ticker}`, strategy: "short_straddle", strategyLabel: getStratLabel(r.strategy || "covered_call"),
+          id: `sstr_${pair.call.ticker}_${pair.put.ticker}`, strategy: "short_straddle", strategyLabel: getStratLabel("short_straddle"),
           legs: [
             { ticker: pair.call.ticker, side: "sell", type: "CALL", strike: pair.call.strike, price: cp, qty },
             { ticker: pair.put.ticker, side: "sell", type: "PUT", strike: pair.put.strike, price: pp, qty },
@@ -1061,7 +1061,7 @@ export default function StrategyTrackerTab() {
           const maxLoss = (bigMove) * qty;
           const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
           allResults.push({
-            id: `sstg_${put.ticker}_${call.ticker}`, strategy: "short_strangle", strategyLabel: getStratLabel(r.strategy || "covered_call"),
+            id: `sstg_${put.ticker}_${call.ticker}`, strategy: "short_strangle", strategyLabel: getStratLabel("short_strangle"),
             legs: [
               { ticker: put.ticker, side: "sell", type: "PUT", strike: put.strike, price: pp, qty },
               { ticker: call.ticker, side: "sell", type: "CALL", strike: call.strike, price: cp, qty },
