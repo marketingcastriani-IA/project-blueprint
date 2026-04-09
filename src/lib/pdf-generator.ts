@@ -460,7 +460,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
   // ── 12. TICKER OPÇÕES B3 ──
   y = checkPageBreak(doc, y, 50);
   y = addSectionTitle(doc, '13. Ticker Opções B3 — Banco de Opções', y);
-  y = addParagraph(doc, 'O módulo Ticker Opções B3 centraliza um banco de dados com mais de 99.000 opções listadas na B3. Pesquise por ticker, filtre por família, vencimento e tipo (Call/Put), identifique pares Call+Put automaticamente e envie tickers para Tempo Real ou Box Tracker.', y);
+  y = addParagraph(doc, 'O módulo Ticker Opções B3 centraliza um banco de dados com mais de 99.000 opções listadas na B3. Inclui Seleção Rápida Top 18 com as ações mais líquidas (as 6 primeiras com ranking numerado), filtros avançados por família, vencimento, tipo, moneyness e faixa de prêmio, identificação automática de pares Call+Put e envio direto para Tempo Real, Box Tracker ou Collar Tracker.', y);
 
   const tickerImg = getImg('tickerOpcoes');
   if (tickerImg) {
@@ -484,10 +484,10 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     startY: y,
     head: [['Recurso', 'Descrição']],
     body: [
-      ['Busca Inteligente', 'Hierarquia de precisão: Exata > Inicia com > Contém'],
+      ['Seleção Rápida Top 18', 'Cards interativos das 18 ações mais líquidas com ranking 1-6'],
       ['Pares Call+Put', 'Identificação automática com badge PAR para Box/Straddle'],
-      ['Filtros de Strike', 'Sliders de distância percentual acima/abaixo do preço base'],
-      ['Integração', 'Envie tickers selecionados para Tempo Real ou Box Tracker'],
+      ['Filtros Avançados', 'Moneyness, prêmio, % do strike, família, vencimento e tipo'],
+      ['Integração Direta', 'Envie tickers para Tempo Real, Box Tracker ou Collar Tracker'],
       ['Oportunidades de Box', 'Detecção automática de oportunidades com cálculo BID/ASK'],
     ],
     ...TABLE_STYLES,
@@ -1009,7 +1009,7 @@ const LANDING_FEATURES: { key: string; title: string; desc: string; extraKeys?: 
   { key: 'portfolio', title: 'Portfolio P&L', desc: 'Acompanhe P&L consolidado, ROI total e taxa de acerto das suas operações.' },
   { key: 'diversificador', title: 'Diversificador', desc: 'Gerencie a alocação do seu patrimônio entre estratégias com balanceamento automático.' },
   { key: 'box', title: 'Rastreador de Box - AO VIVO', desc: 'Rastreie os melhores boxes da B3 em tempo real. Ranking com troféus e % do CDI.', extraKeys: ['boxTabela'] },
-  { key: 'tickerOpcoes', title: 'Ticker Opções B3 — 99.000+ Opções', desc: 'Banco de dados completo da B3 com busca inteligente, pares Call+Put, filtros de strike e integração direta com Tempo Real e Box Tracker.', extraKeys: ['tickerOpcoesBusca', 'tickerOpcoesTabela'] },
+  { key: 'tickerOpcoes', title: 'Ticker Opções B3 — Seleção Rápida Top 18', desc: 'Banco com 99.000+ opções da B3. Seleção rápida das 18 ações mais líquidas com ranking, filtros avançados, pares Call+Put e integração direta com Tempo Real, Box e Collar Tracker.', extraKeys: ['tickerOpcoesBusca', 'tickerOpcoesTabela'] },
   { key: 'calcCdi', title: 'Calculadora CDI × Opções', desc: 'Compare o rendimento de qualquer estratégia com a renda fixa.' },
   { key: 'temasCores', title: 'Temas e Personalização', desc: 'Escolha entre tema claro e escuro, com paleta profissional para qualquer condição.' },
   { key: 'tomadaDecisao', title: 'Tomada de Decisão com IA', desc: 'Use o veredito da IA para decidir quando manter ou encerrar uma operação.' },
