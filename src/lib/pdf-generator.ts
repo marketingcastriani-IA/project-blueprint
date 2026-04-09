@@ -199,10 +199,11 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     '12. Rastreador de Box',
     '13. Ticker Opções B3',
     '14. Rastreador de Collar (Risco Zero)',
-    '15. Alertas na Tela (Box Tracker)',
-    '16. Temas e Personalização',
-    '17. Tabelas de Referência',
-    '18. Perguntas Frequentes',
+    '15. Rastreador PRO X (Estratégias)',
+    '16. Alertas na Tela (Box Tracker)',
+    '17. Temas e Personalização',
+    '18. Tabelas de Referência',
+    '19. Perguntas Frequentes',
   ];
   doc.setFontSize(10);
   doc.setTextColor(...COLORS.gray);
@@ -240,6 +241,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
       ['Rastreador de Box', 'Ranking dos melhores boxes da B3 em tempo real'],
       ['Ticker Opções B3', 'Banco com 99.000+ opções, Seleção Rápida Top 18 com ranking e pares Call+Put'],
       ['Rastreador de Collar', 'Proteção Risco Zero com modelos Collar de Alta e Baixa em tempo real'],
+      ['Rastreador PRO X', '10+ estratégias (Venda Coberta, Trava, Iron Condor, Straddle, Strangle) com ranking Top 3'],
       ['Alertas na Tela', 'Toasts visuais quando Box atinge threshold do CDI (normal e urgente)'],
       ['Calculadora CDI', 'Compare retorno de opções vs renda fixa com IR automático'],
     ],
