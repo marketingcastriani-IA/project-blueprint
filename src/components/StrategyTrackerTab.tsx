@@ -554,7 +554,24 @@ export default function StrategyTrackerTab() {
     return vencimentos.filter((v) => vSet.has(v));
   }, [selectedFamily, options, vencimentos]);
 
-  const getPrice = useCallback((ticker: string, field: "ofCompra" | "ofVenda" | "ultimo"): { price: number; isLive: boolean } => {
+  // Auto-select nearest expiry when family changes or vencimentos load
+  useEffect(() => {
+    if (availableVencimentos.length > 0) {
+      const now = new Date();
+      let best = "";
+      for (const v of availableVencimentos) {
+        const parts = v.split("/");
+        let d: Date;
+        if (parts.length === 3) d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+        else if (parts.length === 2) d = new Date(parseInt(parts[1]), parseInt(parts[0]) - 1, 15);
+        else continue;
+        if (d >= now) { best = v; break; }
+      }
+      setSelectedVencimento(best || availableVencimentos[0]);
+    }
+  }, [selectedFamily, availableVencimentos.length]);
+
+
     const row = rows.get(ticker);
     if (row) {
       const val = row[field];
