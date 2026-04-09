@@ -243,14 +243,6 @@ export default function Index() {
         {/* Manual + Tempo Real row */}
         <div className="grid md:grid-cols-2 gap-10 mt-10">
           <div className="space-y-6">
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><Brain className="h-5 w-5 text-primary" /></div>
-                <h3 className="text-2xl font-black tracking-tight">Manual de Estratégias</h3>
-                <Badge className="bg-muted text-muted-foreground border-0 text-xs font-black">FREE</Badge>
-              </div>
-              <p className="text-muted-foreground">Aprenda 9+ estratégias de opções com exemplos reais, gráficos de payoff, gregas e tabela comparativa completa.</p>
-            </div>
             <div className="rounded-2xl overflow-hidden border border-primary/20 shadow-xl">
               <img src={landingManualStrategies} alt="Manual de Estratégias — 12+ Estratégias" className="w-full h-auto" loading="lazy" />
             </div>
@@ -319,15 +311,6 @@ export default function Index() {
         <div className="grid md:grid-cols-2 gap-10 mt-10">
           {/* Rastreador Collar */}
           <div className="space-y-6">
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><ShieldCheck className="h-5 w-5 text-primary" /></div>
-                <h3 className="text-2xl font-black tracking-tight">Rastreador Collar</h3>
-                <Badge className="bg-red-500/20 text-red-500 border-0 text-xs font-black animate-pulse">AO VIVO</Badge>
-                <Badge className="bg-primary/20 text-primary border-0 text-xs font-black">PRO</Badge>
-              </div>
-              <p className="text-muted-foreground">Encontre collars ideais em tempo real. Proteção com upside — rastreie automaticamente as melhores combinações de call coberta + put protetiva da B3.</p>
-            </div>
             <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)]">
               <img src={landingCollarFeatures} alt="Rastreador Collar — Features" className="w-full h-auto" loading="lazy" />
             </div>
