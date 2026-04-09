@@ -1244,9 +1244,12 @@ export default function StrategyTrackerTab() {
               <label className="text-xs font-black text-muted-foreground uppercase tracking-wide">Risco Máx R$</label>
               <Input type="number" value={maxLossFilter} onChange={(e) => setMaxLossFilter(e.target.value)} placeholder="Sem limite" className="h-10 text-sm font-bold" />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-black text-muted-foreground uppercase tracking-wide">Quantidade</label>
-              <Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="100" className="h-10 text-sm font-bold" />
+            <div className="space-y-1.5 relative rounded-xl border-2 border-primary/40 bg-primary/5 p-3 -m-1 shadow-sm">
+              <label className="text-xs font-black text-primary uppercase tracking-wide flex items-center gap-1.5">
+                📦 Quantidade
+              </label>
+              <Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="100" className="h-10 text-sm font-bold border-primary/30" />
+              <p className="text-[10px] text-primary/70 font-semibold">Nº de ações/contratos</p>
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-black text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
