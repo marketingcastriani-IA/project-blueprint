@@ -171,27 +171,23 @@ export default function Header() {
       </div>
 
       {/* Row 2: Secondary Nav + RTD + Theme (desktop) — scrollable */}
-      <div className="hidden md:flex border-t border-primary-foreground/10 bg-background dark:bg-[hsl(222,47%,6%)]">
+      <div className="hidden md:flex border-t border-primary-foreground/10 bg-primary">
         <div className="container flex items-center gap-3 py-1.5 overflow-x-auto scrollbar-none">
           <nav className="flex items-center gap-1 shrink-0">
             {secondaryNav.map(item => {
               const isActive = location.pathname === item.path;
-              const isHighlight = 'highlight' in item && item.highlight;
               return (
                 <button
                   key={item.path}
                   onClick={() => navigate(item.path)}
                   className={cn(
                     'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] lg:text-xs font-black uppercase tracking-wide lg:tracking-widest transition-all whitespace-nowrap',
-                    isHighlight && !isActive && 'bg-yellow-400/90 text-black hover:bg-yellow-300 shadow-[0_0_16px_rgba(250,204,21,0.5)] animate-pulse',
-                    isHighlight && isActive && 'bg-yellow-400 text-black shadow-[0_0_20px_rgba(250,204,21,0.6)] ring-2 ring-yellow-300',
-                    !isHighlight && isActive && 'bg-primary text-primary-foreground shadow-md',
-                    !isHighlight && !isActive && 'text-foreground/80 hover:text-foreground hover:bg-muted'
+                    isActive && 'bg-primary-foreground/20 text-primary-foreground',
+                    !isActive && 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
                   )}
                 >
                   <item.icon className="h-3.5 w-3.5 shrink-0" />
                   {item.label}
-                  {isHighlight && <span className="text-[8px] bg-black/20 px-1.5 py-0.5 rounded-full">NOVO</span>}
                 </button>
               );
             })}
