@@ -84,6 +84,7 @@ interface StrategyDef {
   icon: typeof TrendingUp;
   description: string;
   composition: string;
+  details: string;
 }
 
 interface StrategyResult {
