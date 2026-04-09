@@ -271,15 +271,6 @@ export default function Index() {
         <div className="grid md:grid-cols-2 gap-10 mt-10">
           {/* Rastreador PRO X */}
           <div className="space-y-6">
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><Zap className="h-5 w-5 text-primary" /></div>
-                <h3 className="text-2xl font-black tracking-tight">Rastreador PRO X</h3>
-                <Badge className="bg-red-500/20 text-red-500 border-0 text-xs font-black animate-pulse">AO VIVO</Badge>
-                <Badge className="bg-primary/20 text-primary border-0 text-xs font-black">PRO</Badge>
-              </div>
-              <p className="text-muted-foreground">Rastreie 12 estratégias em tempo real com ranking Top 3, gráfico de payoff avançado e comparação CDI automática.</p>
-            </div>
             <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)]">
               <img src={landingProxStrategies} alt="Rastreador PRO X — 12 Estratégias" className="w-full h-auto" loading="lazy" />
             </div>
