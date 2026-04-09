@@ -421,6 +421,13 @@ export default function StrategyTrackerTab() {
   const [selectedResult, setSelectedResult] = useState<StrategyResult | null>(null);
   const [sortBy, setSortBy] = useState<"return" | "quality" | "profit">("return");
 
+  // Auto-select next monthly expiry when available
+  useEffect(() => {
+    if (!selectedVencimento && nextMonthlyExpiry !== "all") {
+      setSelectedVencimento(nextMonthlyExpiry);
+    }
+  }, [nextMonthlyExpiry]);
+
   // Persist saved assets
   useEffect(() => {
     localStorage.setItem(SAVED_ASSETS_KEY, JSON.stringify(savedAssets));
