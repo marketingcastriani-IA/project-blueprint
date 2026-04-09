@@ -4,7 +4,7 @@ import { useAccessControl } from '@/hooks/useAccessControl';
 import { useSharedRtdBridge } from '@/contexts/RtdBridgeContext';
 import { Button } from '@/components/ui/button';
 
-import { Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, ShieldCheck, Briefcase, Settings, Zap, PieChart, HelpCircle, Sparkles, Palette, BookOpen, Radio, BarChart2, Calculator, Database, Waves, TreePine, Wifi, WifiOff, ChevronDown, Crosshair } from 'lucide-react';
+import { Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, ShieldCheck, Briefcase, Settings, Zap, PieChart, HelpCircle, Sparkles, Palette, BookOpen, Radio, BarChart2, Calculator, Database, Waves, TreePine, Wifi, WifiOff, ChevronDown, Crosshair, Headphones, Mail, MessageSquarePlus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';

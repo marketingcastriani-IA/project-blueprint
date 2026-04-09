@@ -36,6 +36,7 @@ const CollarTracker = lazy(() => import("./pages/CollarTracker"));
 const CalculadoraRendaFixa = lazy(() => import("./pages/CalculadoraRendaFixa"));
 const TickerOpcoes = lazy(() => import("./pages/TickerOpcoes"));
 const StrategyTracker = lazy(() => import("./pages/StrategyTracker"));
+const Suporte = lazy(() => import("./pages/Suporte"));
 
 const queryClient = new QueryClient();
 
