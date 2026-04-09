@@ -41,7 +41,7 @@ const StrategyChartTooltip = ({ active, payload, label }: any) => {
       </div>
       <div className="space-y-1.5">
         {payload.map((p: any, i: number) => {
-          if (p.dataKey === "belowZero" || p.dataKey === "aboveZero") return null;
+          if (p.dataKey === "belowZero" || p.dataKey === "aboveZero" || p.dataKey === "gainZone" || p.dataKey === "lossZone") return null;
           return (
             <div key={i} className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
