@@ -1,6 +1,6 @@
 // ============================================================
-// RASTREADOR DE ESTRATÉGIAS PRO — Tempo Real via Profit RTD Bridge
-// Suporta: Venda Coberta, Venda Put, Travas, Iron Condor, Borboleta
+// RASTREADOR DE ESTRATÉGIAS PRO X — Tempo Real via Profit RTD Bridge
+// 10 Estratégias: Alta, Baixa, Lateral, Volatilidade
 // ============================================================
 
 import { useState, useMemo, useCallback, useEffect } from "react";
@@ -8,34 +8,35 @@ import { toast } from "sonner";
 import trophyGold from "@/assets/trophy-gold.png";
 import trophySilver from "@/assets/trophy-silver.png";
 import trophyBronze from "@/assets/trophy-bronze.png";
-import { format } from "date-fns";
 import {
-  TrendingUp, TrendingDown, Activity, Shield, Target, Layers,
+  TrendingUp, TrendingDown, Activity, Target, Layers,
   ChevronDown, ChevronUp, Trophy, Wifi, WifiOff, Info,
-  Database, RefreshCw, Filter, Zap, ArrowRight, BarChart2,
-  DollarSign, Percent, Star, AlertTriangle,
+  Database, Filter, Zap, BarChart2, ArrowUpDown,
+  DollarSign, Percent, Star, AlertTriangle, Crosshair,
+  ArrowLeftRight, GitBranch, Anchor, Rocket,
 } from "lucide-react";
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 import { useB3Options, type B3Option } from "@/contexts/B3OptionsContext";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // ─── TIPOS ───────────────────────────────────────────────────
-type MarketView = "alta" | "baixa" | "lateral";
+type MarketView = "alta" | "baixa" | "lateral" | "volatilidade";
 type StrategyType =
   | "covered_call"
   | "bull_call_spread"
+  | "bull_put_spread"
   | "cash_secured_put"
   | "bear_put_spread"
+  | "bear_call_spread"
   | "iron_condor"
-  | "butterfly";
+  | "butterfly"
+  | "straddle"
+  | "strangle";
 
 interface StrategyDef {
   id: StrategyType;
@@ -43,11 +44,13 @@ interface StrategyDef {
   view: MarketView;
   icon: typeof TrendingUp;
   description: string;
+  composition: string;
 }
 
 interface StrategyResult {
   id: string;
   strategy: StrategyType;
+  strategyLabel: string;
   legs: { ticker: string; side: "buy" | "sell"; type: "CALL" | "PUT" | "STOCK"; strike: number; price: number; qty: number }[];
   maxProfit: number;
   maxLoss: number;
@@ -60,12 +63,20 @@ interface StrategyResult {
 }
 
 const STRATEGIES: StrategyDef[] = [
-  { id: "covered_call", label: "Venda Coberta", view: "alta", icon: TrendingUp, description: "Ação + Venda Call — gera renda com ativo em carteira" },
-  { id: "bull_call_spread", label: "Trava de Alta (Call)", view: "alta", icon: TrendingUp, description: "Compra Call K1 + Venda Call K2 — apostando na alta" },
-  { id: "cash_secured_put", label: "Venda de Put", view: "baixa", icon: TrendingDown, description: "Venda Put — recebe prêmio aceitando comprar o ativo" },
-  { id: "bear_put_spread", label: "Trava de Baixa (Put)", view: "baixa", icon: TrendingDown, description: "Compra Put K1 + Venda Put K2 — apostando na queda" },
-  { id: "iron_condor", label: "Iron Condor", view: "lateral", icon: Activity, description: "Trava Put + Trava Call — lucra se ativo ficar no range" },
-  { id: "butterfly", label: "Borboleta", view: "lateral", icon: Layers, description: "Compra C1 + 2x Venda C2 + Compra C3 — lucro máx no centro" },
+  // ALTA
+  { id: "covered_call", label: "Venda Coberta", view: "alta", icon: TrendingUp, description: "Gera renda vendendo Call do ativo em carteira", composition: "Ação + Venda Call" },
+  { id: "bull_call_spread", label: "Trava de Alta (Call)", view: "alta", icon: Rocket, description: "Aposta na alta com risco limitado", composition: "Compra Call K1 + Venda Call K2" },
+  { id: "bull_put_spread", label: "Trava de Alta (Put)", view: "alta", icon: TrendingUp, description: "Recebe crédito apostando que não cai", composition: "Venda Put K1 + Compra Put K2" },
+  // BAIXA
+  { id: "cash_secured_put", label: "Venda de Put", view: "baixa", icon: Anchor, description: "Recebe prêmio aceitando comprar o ativo", composition: "Venda Put" },
+  { id: "bear_put_spread", label: "Trava de Baixa (Put)", view: "baixa", icon: TrendingDown, description: "Aposta na queda com risco limitado", composition: "Compra Put K1 + Venda Put K2" },
+  { id: "bear_call_spread", label: "Trava de Baixa (Call)", view: "baixa", icon: TrendingDown, description: "Recebe crédito apostando que não sobe", composition: "Venda Call K1 + Compra Call K2" },
+  // LATERAL
+  { id: "iron_condor", label: "Iron Condor", view: "lateral", icon: ArrowLeftRight, description: "Lucra se o ativo ficar dentro do range", composition: "Trava Put + Trava Call" },
+  { id: "butterfly", label: "Borboleta", view: "lateral", icon: Layers, description: "Lucro máximo se o ativo fechar no strike central", composition: "C1 + 2×V C2 + C3" },
+  // VOLATILIDADE
+  { id: "straddle", label: "Straddle", view: "volatilidade", icon: GitBranch, description: "Lucra com movimentos grandes em qualquer direção", composition: "Compra Call + Compra Put (mesmo K)" },
+  { id: "strangle", label: "Strangle", view: "volatilidade", icon: Crosshair, description: "Lucra com movimento forte, custo menor que Straddle", composition: "Compra Call K2 + Compra Put K1" },
 ];
 
 const TOP_STOCKS = [
@@ -95,7 +106,13 @@ interface SavedFamily { name: string; tickers: string[]; autoImported?: string[]
 const trophyImages = [trophyGold, trophySilver, trophyBronze];
 const trophyLabels = ["🥇 MELHOR", "🥈 2º LUGAR", "🥉 3º LUGAR"];
 
-// ─── HELPER: parse dd/MM/yyyy → Date ────────────────────────
+const VIEW_CONFIG: Record<MarketView, { label: string; emoji: string; color: string; border: string; bg: string; glow: string }> = {
+  alta: { label: "ALTA", emoji: "📈", color: "text-emerald-500", border: "border-emerald-500/40", bg: "from-emerald-500/15 to-emerald-500/5", glow: "shadow-[0_0_20px_rgba(16,185,129,0.15)]" },
+  baixa: { label: "BAIXA", emoji: "📉", color: "text-red-500", border: "border-red-500/40", bg: "from-red-500/15 to-red-500/5", glow: "shadow-[0_0_20px_rgba(239,68,68,0.15)]" },
+  lateral: { label: "LATERAL", emoji: "➡️", color: "text-amber-500", border: "border-amber-500/40", bg: "from-amber-500/15 to-amber-500/5", glow: "shadow-[0_0_20px_rgba(245,158,11,0.15)]" },
+  volatilidade: { label: "VOLATILIDADE", emoji: "⚡", color: "text-violet-500", border: "border-violet-500/40", bg: "from-violet-500/15 to-violet-500/5", glow: "shadow-[0_0_20px_rgba(139,92,246,0.15)]" },
+};
+
 function parseVencimento(v: string): Date | null {
   const [d, m, y] = v.split("/").map(Number);
   if (!d || !m || !y) return null;
@@ -115,10 +132,9 @@ function diasUteis(from: Date, to: Date): number {
 
 // ─── COMPONENTE PRINCIPAL ────────────────────────────────────
 export default function StrategyTrackerTab() {
-  const { options, families, vencimentos, getByFamily } = useB3Options();
+  const { options, vencimentos } = useB3Options();
   const { status, rows, addTicker } = useSharedRtdBridge();
 
-  // State
   const [selectedFamily, setSelectedFamily] = useState<string>("");
   const [selectedStrategy, setSelectedStrategy] = useState<StrategyType>("covered_call");
   const [selectedVencimento, setSelectedVencimento] = useState<string>("all");
@@ -128,7 +144,7 @@ export default function StrategyTrackerTab() {
   const [cdiRate, setCdiRate] = useState("14.65");
   const [showCdi, setShowCdi] = useState(true);
   const [expandedResult, setExpandedResult] = useState<string | null>(null);
-  const [scanning, setScanning] = useState(false);
+  const [sortBy, setSortBy] = useState<"return" | "quality" | "profit">("return");
 
   // Derive stock ticker
   const stockCandidates = useMemo(() => {
@@ -145,19 +161,16 @@ export default function StrategyTrackerTab() {
     return stockCandidates[0];
   }, [stockCandidates, rows]);
 
-  // Subscribe stock to RTD
   useEffect(() => {
     if (stockCandidates.length === 0 || status !== "connected") return;
     for (const c of stockCandidates) addTicker(c);
   }, [stockCandidates, status, addTicker]);
 
-  // Underlying price
   const stockPrice = useMemo(() => {
     if (stockTicker) {
       const row = rows.get(stockTicker);
       if (row?.ultimo && row.ultimo > 0) return row.ultimo;
     }
-    // Fallback: estimate from options
     if (!selectedFamily) return 0;
     const familyOpts = options.filter((o) => o.family === selectedFamily && o.precoUltimo > 0);
     if (familyOpts.length === 0) return 0;
@@ -165,7 +178,6 @@ export default function StrategyTrackerTab() {
     return strikes[Math.floor(strikes.length / 2)];
   }, [stockTicker, rows, selectedFamily, options]);
 
-  // Available vencimentos for this family
   const availableVencimentos = useMemo(() => {
     if (!selectedFamily) return vencimentos;
     const fOpts = options.filter((o) => o.family === selectedFamily);
@@ -173,20 +185,16 @@ export default function StrategyTrackerTab() {
     return vencimentos.filter((v) => vSet.has(v));
   }, [selectedFamily, options, vencimentos]);
 
-  // Load imported families from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STRATEGY_STORAGE_KEY);
       if (saved) {
         const families: SavedFamily[] = JSON.parse(saved);
-        if (families.length > 0 && !selectedFamily) {
-          setSelectedFamily(families[0].name);
-        }
+        if (families.length > 0 && !selectedFamily) setSelectedFamily(families[0].name);
       }
     } catch {}
   }, []);
 
-  // Get option price (RTD live or static)
   const getPrice = useCallback((ticker: string, field: "ofCompra" | "ofVenda" | "ultimo"): { price: number; isLive: boolean } => {
     const row = rows.get(ticker);
     if (row) {
@@ -202,41 +210,25 @@ export default function StrategyTrackerTab() {
   const results = useMemo((): StrategyResult[] => {
     if (!selectedFamily || stockPrice <= 0) return [];
 
-    const familyOpts = options.filter((o) => o.family === selectedFamily);
-    let opts = familyOpts;
+    let opts = options.filter((o) => o.family === selectedFamily);
+    if (selectedVencimento !== "all") opts = opts.filter((o) => o.vencimento === selectedVencimento);
 
-    // Filter by vencimento
-    if (selectedVencimento !== "all") {
-      opts = opts.filter((o) => o.vencimento === selectedVencimento);
-    }
-
-    // Filter by moneyness
     if (moneynessFilter !== "all" && stockPrice > 0) {
       const margin = stockPrice * 0.05;
-      if (moneynessFilter === "itm") {
-        opts = opts.filter((o) =>
-          o.tipo === "CALL" ? o.strike < stockPrice : o.strike > stockPrice
-        );
-      } else if (moneynessFilter === "atm") {
-        opts = opts.filter((o) => Math.abs(o.strike - stockPrice) <= margin);
-      } else if (moneynessFilter === "otm") {
-        opts = opts.filter((o) =>
-          o.tipo === "CALL" ? o.strike > stockPrice : o.strike < stockPrice
-        );
-      }
+      if (moneynessFilter === "itm") opts = opts.filter((o) => o.tipo === "CALL" ? o.strike < stockPrice : o.strike > stockPrice);
+      else if (moneynessFilter === "atm") opts = opts.filter((o) => Math.abs(o.strike - stockPrice) <= margin);
+      else if (moneynessFilter === "otm") opts = opts.filter((o) => o.tipo === "CALL" ? o.strike > stockPrice : o.strike < stockPrice);
     }
 
-    const calls = opts.filter((o) => o.tipo === "CALL");
-    const puts = opts.filter((o) => o.tipo === "PUT");
+    const calls = opts.filter((o) => o.tipo === "CALL").sort((a, b) => a.strike - b.strike);
+    const puts = opts.filter((o) => o.tipo === "PUT").sort((a, b) => a.strike - b.strike);
     const minPrem = parseFloat(minPremium) || 0;
     const qty = parseInt(quantity) || 100;
 
-    // Subscribe all tickers to RTD
-    if (status === "connected") {
-      opts.slice(0, 60).forEach((o) => addTicker(o.ticker));
-    }
+    if (status === "connected") opts.slice(0, 80).forEach((o) => addTicker(o.ticker));
 
     const allResults: StrategyResult[] = [];
+    const stratLabel = STRATEGIES.find((s) => s.id === selectedStrategy)?.label ?? "";
 
     // ── VENDA COBERTA ──────────────────────────────────────
     if (selectedStrategy === "covered_call") {
@@ -245,23 +237,17 @@ export default function StrategyTrackerTab() {
         if (callPrice <= 0 || callPrice < minPrem) continue;
         const returnPct = (callPrice / stockPrice) * 100;
         const maxProfit = (call.strike - stockPrice + callPrice) * qty;
-        const maxLoss = (stockPrice - callPrice) * qty; // stock goes to 0
+        const maxLoss = (stockPrice - callPrice) * qty;
         const breakeven = stockPrice - callPrice;
         allResults.push({
-          id: `cc_${call.ticker}`,
-          strategy: "covered_call",
+          id: `cc_${call.ticker}`, strategy: "covered_call", strategyLabel: stratLabel,
           legs: [
             { ticker: stockTicker || `${selectedFamily}4`, side: "buy", type: "STOCK", strike: 0, price: stockPrice, qty },
             { ticker: call.ticker, side: "sell", type: "CALL", strike: call.strike, price: callPrice, qty },
           ],
-          maxProfit,
-          maxLoss,
-          breakeven: [breakeven],
-          returnPct,
+          maxProfit, maxLoss, breakeven: [breakeven], returnPct,
           qualityScore: maxProfit > 0 && maxLoss > 0 ? maxProfit / maxLoss : 0,
-          netCredit: callPrice * qty,
-          vencimento: call.vencimento,
-          isLive,
+          netCredit: callPrice * qty, vencimento: call.vencimento, isLive,
         });
       }
     }
@@ -274,106 +260,129 @@ export default function StrategyTrackerTab() {
         const returnPct = (putPrice / put.strike) * 100;
         const maxProfit = putPrice * qty;
         const maxLoss = (put.strike - putPrice) * qty;
-        const breakeven = put.strike - putPrice;
         allResults.push({
-          id: `csp_${put.ticker}`,
-          strategy: "cash_secured_put",
-          legs: [
-            { ticker: put.ticker, side: "sell", type: "PUT", strike: put.strike, price: putPrice, qty },
-          ],
-          maxProfit,
-          maxLoss,
-          breakeven: [breakeven],
-          returnPct,
+          id: `csp_${put.ticker}`, strategy: "cash_secured_put", strategyLabel: stratLabel,
+          legs: [{ ticker: put.ticker, side: "sell", type: "PUT", strike: put.strike, price: putPrice, qty }],
+          maxProfit, maxLoss, breakeven: [put.strike - putPrice], returnPct,
           qualityScore: maxLoss > 0 ? maxProfit / maxLoss : 0,
-          netCredit: putPrice * qty,
-          vencimento: put.vencimento,
-          isLive,
+          netCredit: putPrice * qty, vencimento: put.vencimento, isLive,
         });
       }
     }
 
-    // ── TRAVA DE ALTA COM CALL ─────────────────────────────
+    // ── TRAVA DE ALTA COM CALL (debit) ─────────────────────
     if (selectedStrategy === "bull_call_spread") {
       for (let i = 0; i < calls.length; i++) {
         for (let j = i + 1; j < calls.length && j < i + 8; j++) {
-          const longCall = calls[i]; // lower strike
-          const shortCall = calls[j]; // higher strike
-          if (longCall.strike >= shortCall.strike) continue;
-          if (longCall.vencimento !== shortCall.vencimento) continue;
-
-          const { price: longPrice, isLive: l1 } = getPrice(longCall.ticker, "ofVenda");
-          const { price: shortPrice, isLive: l2 } = getPrice(shortCall.ticker, "ofCompra");
-          if (longPrice <= 0 || shortPrice <= 0) continue;
-
-          const netCost = longPrice - shortPrice;
-          if (netCost <= 0) continue; // debit spread
+          const lc = calls[i], sc = calls[j];
+          if (lc.vencimento !== sc.vencimento) continue;
+          const { price: lp, isLive: l1 } = getPrice(lc.ticker, "ofVenda");
+          const { price: sp, isLive: l2 } = getPrice(sc.ticker, "ofCompra");
+          if (lp <= 0 || sp <= 0) continue;
+          const netCost = lp - sp;
+          if (netCost <= 0) continue;
           if (minPrem > 0 && netCost < minPrem) continue;
-
-          const width = shortCall.strike - longCall.strike;
+          const width = sc.strike - lc.strike;
           const maxProfit = (width - netCost) * qty;
           const maxLoss = netCost * qty;
-          const breakeven = longCall.strike + netCost;
           const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
-
           allResults.push({
-            id: `bcs_${longCall.ticker}_${shortCall.ticker}`,
-            strategy: "bull_call_spread",
+            id: `bcs_${lc.ticker}_${sc.ticker}`, strategy: "bull_call_spread", strategyLabel: stratLabel,
             legs: [
-              { ticker: longCall.ticker, side: "buy", type: "CALL", strike: longCall.strike, price: longPrice, qty },
-              { ticker: shortCall.ticker, side: "sell", type: "CALL", strike: shortCall.strike, price: shortPrice, qty },
+              { ticker: lc.ticker, side: "buy", type: "CALL", strike: lc.strike, price: lp, qty },
+              { ticker: sc.ticker, side: "sell", type: "CALL", strike: sc.strike, price: sp, qty },
             ],
-            maxProfit,
-            maxLoss,
-            breakeven: [breakeven],
-            returnPct,
+            maxProfit, maxLoss, breakeven: [lc.strike + netCost], returnPct,
             qualityScore: maxLoss > 0 ? maxProfit / maxLoss : 0,
-            netCredit: -netCost * qty,
-            vencimento: longCall.vencimento,
-            isLive: l1 && l2,
+            netCredit: -netCost * qty, vencimento: lc.vencimento, isLive: l1 && l2,
           });
         }
       }
     }
 
-    // ── TRAVA DE BAIXA COM PUT ─────────────────────────────
+    // ── TRAVA DE ALTA COM PUT (credit) ─────────────────────
+    if (selectedStrategy === "bull_put_spread") {
+      for (let i = 0; i < puts.length; i++) {
+        for (let j = i + 1; j < puts.length && j < i + 8; j++) {
+          const buyPut = puts[i]; // lower strike
+          const sellPut = puts[j]; // higher strike
+          if (buyPut.vencimento !== sellPut.vencimento) continue;
+          const { price: bp, isLive: l1 } = getPrice(buyPut.ticker, "ofVenda");
+          const { price: sp, isLive: l2 } = getPrice(sellPut.ticker, "ofCompra");
+          if (bp <= 0 || sp <= 0) continue;
+          const netCredit = sp - bp;
+          if (netCredit <= 0) continue;
+          const width = sellPut.strike - buyPut.strike;
+          const maxProfit = netCredit * qty;
+          const maxLoss = (width - netCredit) * qty;
+          const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
+          allResults.push({
+            id: `bups_${buyPut.ticker}_${sellPut.ticker}`, strategy: "bull_put_spread", strategyLabel: stratLabel,
+            legs: [
+              { ticker: sellPut.ticker, side: "sell", type: "PUT", strike: sellPut.strike, price: sp, qty },
+              { ticker: buyPut.ticker, side: "buy", type: "PUT", strike: buyPut.strike, price: bp, qty },
+            ],
+            maxProfit, maxLoss, breakeven: [sellPut.strike - netCredit], returnPct,
+            qualityScore: maxLoss > 0 ? maxProfit / maxLoss : 0,
+            netCredit: maxProfit, vencimento: buyPut.vencimento, isLive: l1 && l2,
+          });
+        }
+      }
+    }
+
+    // ── TRAVA DE BAIXA COM PUT (debit) ─────────────────────
     if (selectedStrategy === "bear_put_spread") {
-      const sortedPuts = [...puts].sort((a, b) => a.strike - b.strike);
-      for (let i = 0; i < sortedPuts.length; i++) {
-        for (let j = i + 1; j < sortedPuts.length && j < i + 8; j++) {
-          const shortPut = sortedPuts[i]; // lower strike (sell)
-          const longPut = sortedPuts[j];  // higher strike (buy)
+      for (let i = 0; i < puts.length; i++) {
+        for (let j = i + 1; j < puts.length && j < i + 8; j++) {
+          const shortPut = puts[i]; const longPut = puts[j];
           if (shortPut.vencimento !== longPut.vencimento) continue;
-
-          const { price: longPrice, isLive: l1 } = getPrice(longPut.ticker, "ofVenda");
-          const { price: shortPrice, isLive: l2 } = getPrice(shortPut.ticker, "ofCompra");
-          if (longPrice <= 0 || shortPrice <= 0) continue;
-
-          const netCost = longPrice - shortPrice;
+          const { price: lp, isLive: l1 } = getPrice(longPut.ticker, "ofVenda");
+          const { price: sp, isLive: l2 } = getPrice(shortPut.ticker, "ofCompra");
+          if (lp <= 0 || sp <= 0) continue;
+          const netCost = lp - sp;
           if (netCost <= 0) continue;
-          if (minPrem > 0 && netCost < minPrem) continue;
-
           const width = longPut.strike - shortPut.strike;
           const maxProfit = (width - netCost) * qty;
           const maxLoss = netCost * qty;
-          const breakeven = longPut.strike - netCost;
           const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
-
           allResults.push({
-            id: `bps_${longPut.ticker}_${shortPut.ticker}`,
-            strategy: "bear_put_spread",
+            id: `bps_${longPut.ticker}_${shortPut.ticker}`, strategy: "bear_put_spread", strategyLabel: stratLabel,
             legs: [
-              { ticker: longPut.ticker, side: "buy", type: "PUT", strike: longPut.strike, price: longPrice, qty },
-              { ticker: shortPut.ticker, side: "sell", type: "PUT", strike: shortPut.strike, price: shortPrice, qty },
+              { ticker: longPut.ticker, side: "buy", type: "PUT", strike: longPut.strike, price: lp, qty },
+              { ticker: shortPut.ticker, side: "sell", type: "PUT", strike: shortPut.strike, price: sp, qty },
             ],
-            maxProfit,
-            maxLoss,
-            breakeven: [breakeven],
-            returnPct,
+            maxProfit, maxLoss, breakeven: [longPut.strike - netCost], returnPct,
             qualityScore: maxLoss > 0 ? maxProfit / maxLoss : 0,
-            netCredit: -netCost * qty,
-            vencimento: longPut.vencimento,
-            isLive: l1 && l2,
+            netCredit: -netCost * qty, vencimento: longPut.vencimento, isLive: l1 && l2,
+          });
+        }
+      }
+    }
+
+    // ── TRAVA DE BAIXA COM CALL (credit) ───────────────────
+    if (selectedStrategy === "bear_call_spread") {
+      for (let i = 0; i < calls.length; i++) {
+        for (let j = i + 1; j < calls.length && j < i + 8; j++) {
+          const sellCall = calls[i]; const buyCall = calls[j];
+          if (sellCall.vencimento !== buyCall.vencimento) continue;
+          const { price: sp, isLive: l1 } = getPrice(sellCall.ticker, "ofCompra");
+          const { price: bp, isLive: l2 } = getPrice(buyCall.ticker, "ofVenda");
+          if (sp <= 0 || bp <= 0) continue;
+          const netCredit = sp - bp;
+          if (netCredit <= 0) continue;
+          const width = buyCall.strike - sellCall.strike;
+          const maxProfit = netCredit * qty;
+          const maxLoss = (width - netCredit) * qty;
+          const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
+          allResults.push({
+            id: `becs_${sellCall.ticker}_${buyCall.ticker}`, strategy: "bear_call_spread", strategyLabel: stratLabel,
+            legs: [
+              { ticker: sellCall.ticker, side: "sell", type: "CALL", strike: sellCall.strike, price: sp, qty },
+              { ticker: buyCall.ticker, side: "buy", type: "CALL", strike: buyCall.strike, price: bp, qty },
+            ],
+            maxProfit, maxLoss, breakeven: [sellCall.strike + netCredit], returnPct,
+            qualityScore: maxLoss > 0 ? maxProfit / maxLoss : 0,
+            netCredit: maxProfit, vencimento: sellCall.vencimento, isLive: l1 && l2,
           });
         }
       }
@@ -381,29 +390,21 @@ export default function StrategyTrackerTab() {
 
     // ── IRON CONDOR ────────────────────────────────────────
     if (selectedStrategy === "iron_condor") {
-      // Group by vencimento
       const byVenc = new Map<string, { calls: B3Option[]; puts: B3Option[] }>();
-      calls.forEach((c) => {
-        if (!byVenc.has(c.vencimento)) byVenc.set(c.vencimento, { calls: [], puts: [] });
-        byVenc.get(c.vencimento)!.calls.push(c);
-      });
-      puts.forEach((p) => {
-        if (!byVenc.has(p.vencimento)) byVenc.set(p.vencimento, { calls: [], puts: [] });
-        byVenc.get(p.vencimento)!.puts.push(p);
-      });
+      calls.forEach((c) => { if (!byVenc.has(c.vencimento)) byVenc.set(c.vencimento, { calls: [], puts: [] }); byVenc.get(c.vencimento)!.calls.push(c); });
+      puts.forEach((p) => { if (!byVenc.has(p.vencimento)) byVenc.set(p.vencimento, { calls: [], puts: [] }); byVenc.get(p.vencimento)!.puts.push(p); });
 
       byVenc.forEach(({ calls: vc, puts: vp }, venc) => {
         const sc = [...vc].sort((a, b) => a.strike - b.strike);
         const sp = [...vp].sort((a, b) => a.strike - b.strike);
-        // Pick put spread below ATM, call spread above ATM
         const atmPuts = sp.filter((p) => p.strike <= stockPrice);
         const otmCalls = sc.filter((c) => c.strike >= stockPrice);
 
         for (let pi = 0; pi < Math.min(atmPuts.length - 1, 4); pi++) {
           for (let ci = 0; ci < Math.min(otmCalls.length - 1, 4); ci++) {
-            const sellPut = atmPuts[atmPuts.length - 1 - pi]; // highest below ATM
+            const sellPut = atmPuts[atmPuts.length - 1 - pi];
             const buyPut = atmPuts.length > 1 + pi ? atmPuts[atmPuts.length - 2 - pi] : null;
-            const sellCall = otmCalls[ci]; // lowest above ATM
+            const sellCall = otmCalls[ci];
             const buyCall = otmCalls.length > ci + 1 ? otmCalls[ci + 1] : null;
             if (!buyPut || !buyCall) continue;
 
@@ -413,86 +414,62 @@ export default function StrategyTrackerTab() {
             const { price: bcP, isLive: l4 } = getPrice(buyCall.ticker, "ofVenda");
             if (spP <= 0 || bpP <= 0 || scP <= 0 || bcP <= 0) continue;
 
-            const netCredit = (spP - bpP) + (scP - bcP);
-            if (netCredit <= 0) continue;
-
-            const putWidth = sellPut.strike - buyPut.strike;
-            const callWidth = buyCall.strike - sellCall.strike;
-            const maxWidth = Math.max(putWidth, callWidth);
-            const maxLoss = (maxWidth - netCredit) * (parseInt(quantity) || 100);
-            const maxProfit = netCredit * (parseInt(quantity) || 100);
+            const netCred = (spP - bpP) + (scP - bcP);
+            if (netCred <= 0) continue;
+            const maxWidth = Math.max(sellPut.strike - buyPut.strike, buyCall.strike - sellCall.strike);
+            const maxLoss = (maxWidth - netCred) * qty;
+            const maxProfit = netCred * qty;
             const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
-
             allResults.push({
               id: `ic_${buyPut.ticker}_${sellPut.ticker}_${sellCall.ticker}_${buyCall.ticker}`,
-              strategy: "iron_condor",
+              strategy: "iron_condor", strategyLabel: stratLabel,
               legs: [
-                { ticker: buyPut.ticker, side: "buy", type: "PUT", strike: buyPut.strike, price: bpP, qty: parseInt(quantity) || 100 },
-                { ticker: sellPut.ticker, side: "sell", type: "PUT", strike: sellPut.strike, price: spP, qty: parseInt(quantity) || 100 },
-                { ticker: sellCall.ticker, side: "sell", type: "CALL", strike: sellCall.strike, price: scP, qty: parseInt(quantity) || 100 },
-                { ticker: buyCall.ticker, side: "buy", type: "CALL", strike: buyCall.strike, price: bcP, qty: parseInt(quantity) || 100 },
+                { ticker: buyPut.ticker, side: "buy", type: "PUT", strike: buyPut.strike, price: bpP, qty },
+                { ticker: sellPut.ticker, side: "sell", type: "PUT", strike: sellPut.strike, price: spP, qty },
+                { ticker: sellCall.ticker, side: "sell", type: "CALL", strike: sellCall.strike, price: scP, qty },
+                { ticker: buyCall.ticker, side: "buy", type: "CALL", strike: buyCall.strike, price: bcP, qty },
               ],
-              maxProfit,
-              maxLoss,
-              breakeven: [sellPut.strike - netCredit, sellCall.strike + netCredit],
-              returnPct,
+              maxProfit, maxLoss, breakeven: [sellPut.strike - netCred, sellCall.strike + netCred], returnPct,
               qualityScore: maxLoss > 0 ? maxProfit / maxLoss : 0,
-              netCredit: maxProfit,
-              vencimento: venc,
-              isLive: l1 && l2 && l3 && l4,
+              netCredit: maxProfit, vencimento: venc, isLive: l1 && l2 && l3 && l4,
             });
           }
         }
       });
     }
 
-    // ── BORBOLETA (BUTTERFLY) ──────────────────────────────
+    // ── BORBOLETA ──────────────────────────────────────────
     if (selectedStrategy === "butterfly") {
       const byVenc = new Map<string, B3Option[]>();
-      calls.forEach((c) => {
-        if (!byVenc.has(c.vencimento)) byVenc.set(c.vencimento, []);
-        byVenc.get(c.vencimento)!.push(c);
-      });
-
+      calls.forEach((c) => { if (!byVenc.has(c.vencimento)) byVenc.set(c.vencimento, []); byVenc.get(c.vencimento)!.push(c); });
       byVenc.forEach((vc, venc) => {
         const sorted = [...vc].sort((a, b) => a.strike - b.strike);
         for (let i = 0; i < sorted.length; i++) {
           for (let j = i + 1; j < sorted.length; j++) {
             for (let k = j + 1; k < sorted.length; k++) {
               const c1 = sorted[i], c2 = sorted[j], c3 = sorted[k];
-              // Check equidistant
-              const w1 = c2.strike - c1.strike;
-              const w2 = c3.strike - c2.strike;
-              if (Math.abs(w1 - w2) > 0.1) continue;
-
+              if (Math.abs((c2.strike - c1.strike) - (c3.strike - c2.strike)) > 0.1) continue;
               const { price: p1, isLive: l1 } = getPrice(c1.ticker, "ofVenda");
               const { price: p2, isLive: l2 } = getPrice(c2.ticker, "ofCompra");
               const { price: p3, isLive: l3 } = getPrice(c3.ticker, "ofVenda");
               if (p1 <= 0 || p2 <= 0 || p3 <= 0) continue;
-
               const netCost = p1 - 2 * p2 + p3;
               if (netCost <= 0) continue;
-
-              const maxProfit = (w1 - netCost) * (parseInt(quantity) || 100);
-              const maxLoss = netCost * (parseInt(quantity) || 100);
+              const w1 = c2.strike - c1.strike;
+              const maxProfit = (w1 - netCost) * qty;
+              const maxLoss = netCost * qty;
               const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
-
               allResults.push({
                 id: `bf_${c1.ticker}_${c2.ticker}_${c3.ticker}`,
-                strategy: "butterfly",
+                strategy: "butterfly", strategyLabel: stratLabel,
                 legs: [
-                  { ticker: c1.ticker, side: "buy", type: "CALL", strike: c1.strike, price: p1, qty: parseInt(quantity) || 100 },
-                  { ticker: c2.ticker, side: "sell", type: "CALL", strike: c2.strike, price: p2, qty: (parseInt(quantity) || 100) * 2 },
-                  { ticker: c3.ticker, side: "buy", type: "CALL", strike: c3.strike, price: p3, qty: parseInt(quantity) || 100 },
+                  { ticker: c1.ticker, side: "buy", type: "CALL", strike: c1.strike, price: p1, qty },
+                  { ticker: c2.ticker, side: "sell", type: "CALL", strike: c2.strike, price: p2, qty: qty * 2 },
+                  { ticker: c3.ticker, side: "buy", type: "CALL", strike: c3.strike, price: p3, qty },
                 ],
-                maxProfit,
-                maxLoss,
-                breakeven: [c1.strike + netCost, c3.strike - netCost],
-                returnPct,
+                maxProfit, maxLoss, breakeven: [c1.strike + netCost, c3.strike - netCost], returnPct,
                 qualityScore: maxLoss > 0 ? maxProfit / maxLoss : 0,
-                netCredit: -netCost * (parseInt(quantity) || 100),
-                vencimento: venc,
-                isLive: l1 && l2 && l3,
+                netCredit: -netCost * qty, vencimento: venc, isLive: l1 && l2 && l3,
               });
             }
           }
@@ -500,28 +477,79 @@ export default function StrategyTrackerTab() {
       });
     }
 
-    // Sort by returnPct descending
-    return allResults.sort((a, b) => b.returnPct - a.returnPct).slice(0, 50);
-  }, [selectedFamily, selectedStrategy, selectedVencimento, moneynessFilter, minPremium, quantity, stockPrice, options, rows, status, getPrice, addTicker, stockTicker]);
+    // ── STRADDLE ───────────────────────────────────────────
+    if (selectedStrategy === "straddle") {
+      const byStrikeVenc = new Map<string, { call: B3Option; put: B3Option }>();
+      calls.forEach((c) => { const k = `${c.strike}|${c.vencimento}`; const e = byStrikeVenc.get(k); if (e) e.call = c; else byStrikeVenc.set(k, { call: c, put: null as any }); });
+      puts.forEach((p) => { const k = `${p.strike}|${p.vencimento}`; const e = byStrikeVenc.get(k); if (e) e.put = p; else byStrikeVenc.set(k, { call: null as any, put: p }); });
+      byStrikeVenc.forEach((pair) => {
+        if (!pair.call || !pair.put) return;
+        const { price: cp, isLive: l1 } = getPrice(pair.call.ticker, "ofVenda");
+        const { price: pp, isLive: l2 } = getPrice(pair.put.ticker, "ofVenda");
+        if (cp <= 0 || pp <= 0) return;
+        const totalCost = (cp + pp) * qty;
+        const maxLoss = totalCost;
+        const beUp = pair.call.strike + cp + pp;
+        const beDown = pair.put.strike - cp - pp;
+        // Estimate max profit at ±20% move
+        const bigMove = stockPrice * 0.2;
+        const maxProfit = (bigMove - cp - pp) * qty;
+        const returnPct = maxLoss > 0 && maxProfit > 0 ? (maxProfit / maxLoss) * 100 : 0;
+        allResults.push({
+          id: `str_${pair.call.ticker}_${pair.put.ticker}`, strategy: "straddle", strategyLabel: stratLabel,
+          legs: [
+            { ticker: pair.call.ticker, side: "buy", type: "CALL", strike: pair.call.strike, price: cp, qty },
+            { ticker: pair.put.ticker, side: "buy", type: "PUT", strike: pair.put.strike, price: pp, qty },
+          ],
+          maxProfit: Math.max(maxProfit, 0), maxLoss, breakeven: [Math.max(beDown, 0), beUp], returnPct: Math.max(returnPct, 0),
+          qualityScore: maxLoss > 0 ? Math.max(maxProfit, 0) / maxLoss : 0,
+          netCredit: -totalCost, vencimento: pair.call.vencimento, isLive: l1 && l2,
+        });
+      });
+    }
+
+    // ── STRANGLE ──────────────────────────────────────────
+    if (selectedStrategy === "strangle") {
+      for (const put of puts) {
+        if (put.strike >= stockPrice) continue; // OTM puts only
+        for (const call of calls) {
+          if (call.strike <= stockPrice) continue; // OTM calls only
+          if (put.vencimento !== call.vencimento) continue;
+          const { price: pp, isLive: l1 } = getPrice(put.ticker, "ofVenda");
+          const { price: cp, isLive: l2 } = getPrice(call.ticker, "ofVenda");
+          if (pp <= 0 || cp <= 0) continue;
+          const totalCost = (pp + cp) * qty;
+          const beUp = call.strike + pp + cp;
+          const beDown = put.strike - pp - cp;
+          const bigMove = stockPrice * 0.2;
+          const maxProfit = Math.max((bigMove - pp - cp) * qty, 0);
+          const returnPct = totalCost > 0 && maxProfit > 0 ? (maxProfit / totalCost) * 100 : 0;
+          allResults.push({
+            id: `stg_${put.ticker}_${call.ticker}`, strategy: "strangle", strategyLabel: stratLabel,
+            legs: [
+              { ticker: put.ticker, side: "buy", type: "PUT", strike: put.strike, price: pp, qty },
+              { ticker: call.ticker, side: "buy", type: "CALL", strike: call.strike, price: cp, qty },
+            ],
+            maxProfit, maxLoss: totalCost, breakeven: [Math.max(beDown, 0), beUp], returnPct,
+            qualityScore: totalCost > 0 ? maxProfit / totalCost : 0,
+            netCredit: -totalCost, vencimento: put.vencimento, isLive: l1 && l2,
+          });
+        }
+      }
+    }
+
+    // Sort
+    const sorter = sortBy === "return" ? (a: StrategyResult, b: StrategyResult) => b.returnPct - a.returnPct
+      : sortBy === "quality" ? (a: StrategyResult, b: StrategyResult) => b.qualityScore - a.qualityScore
+      : (a: StrategyResult, b: StrategyResult) => b.maxProfit - a.maxProfit;
+    return allResults.sort(sorter).slice(0, 50);
+  }, [selectedFamily, selectedStrategy, selectedVencimento, moneynessFilter, minPremium, quantity, stockPrice, options, rows, status, getPrice, addTicker, stockTicker, sortBy]);
 
   const top3 = results.slice(0, 3);
   const rest = results.slice(3);
-
   const currentView = STRATEGIES.find((s) => s.id === selectedStrategy)?.view ?? "alta";
+  const viewCfg = VIEW_CONFIG[currentView];
 
-  const viewColors: Record<MarketView, string> = {
-    alta: "text-emerald-500",
-    baixa: "text-red-500",
-    lateral: "text-amber-500",
-  };
-
-  const viewBg: Record<MarketView, string> = {
-    alta: "from-emerald-500/10 to-emerald-500/5",
-    baixa: "from-red-500/10 to-red-500/5",
-    lateral: "from-amber-500/10 to-amber-500/5",
-  };
-
-  // CDI comparison helper
   const cdiComparison = useCallback((result: StrategyResult) => {
     const vDate = parseVencimento(result.vencimento);
     if (!vDate) return null;
@@ -537,78 +565,91 @@ export default function StrategyTrackerTab() {
 
   return (
     <div className="space-y-6">
-      {/* HEADER */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <Target className="h-7 w-7 text-primary" />
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
-              Rastreador de Estratégias
-            </h1>
-            <Badge className="bg-primary/20 text-primary border-0 text-xs font-black">PRO</Badge>
-            {status === "connected" && (
-              <Badge className="bg-emerald-500/20 text-emerald-500 border-0 text-xs font-black animate-pulse">
-                <Wifi className="h-3 w-3 mr-1" /> AO VIVO
+      {/* ═══ HEADER ═══ */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 p-6">
+        <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+        <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                <Target className="h-5 w-5 text-primary" />
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">
+                Rastreador PRO X
+              </h1>
+              <Badge className="bg-primary text-primary-foreground border-0 text-xs font-black px-3 py-1 shadow-lg shadow-primary/30">
+                <Zap className="h-3 w-3 mr-1" /> PRO
               </Badge>
-            )}
+              {status === "connected" && (
+                <Badge className="bg-emerald-500/20 text-emerald-500 border-emerald-500/30 text-xs font-black animate-pulse shadow-[0_0_12px_rgba(16,185,129,0.3)]">
+                  <Wifi className="h-3 w-3 mr-1" /> AO VIVO
+                </Badge>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground max-w-lg">
+              Escaneie <strong className="text-foreground">10 estratégias</strong> em tempo real e encontre as melhores combinações para cada cenário de mercado
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Escaneie automaticamente as melhores combinações de opções da B3 para cada cenário de mercado
-          </p>
+          {/* Stats */}
+          <div className="flex gap-4">
+            <div className="text-center">
+              <p className="text-2xl font-black text-primary">{results.length}</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Resultados</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-black text-foreground">10</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Estratégias</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* ASSET SELECTOR */}
-      <Card className="border-primary/20">
-        <CardHeader className="pb-3">
+      {/* ═══ ASSET SELECTOR ═══ */}
+      <Card className="border-primary/20 overflow-hidden">
+        <CardHeader className="pb-3 bg-gradient-to-r from-primary/5 to-transparent">
           <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
             <Database className="h-4 w-4 text-primary" />
             Escolher o Ativo
+            {stockPrice > 0 && (
+              <Badge variant="outline" className="ml-auto text-xs font-black">
+                R$ {stockPrice.toFixed(2)}
+                {status === "connected" && <Wifi className="h-2.5 w-2.5 ml-1 text-emerald-500" />}
+              </Badge>
+            )}
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-3">
           <div className="flex flex-wrap gap-1.5">
             {TOP_STOCKS.map((s) => (
               <button
                 key={s.family}
                 onClick={() => setSelectedFamily(s.family)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all",
+                  "px-3 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all",
                   selectedFamily === s.family
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-105"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground hover:scale-105"
                 )}
               >
                 {s.label}
               </button>
             ))}
           </div>
-          {stockPrice > 0 && (
-            <div className="mt-3 flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">Preço do ativo:</span>
-              <span className="font-black text-foreground">R$ {stockPrice.toFixed(2)}</span>
-              {status === "connected" && (
-                <Badge variant="outline" className="text-emerald-500 border-emerald-500/40 text-[10px]">
-                  <Wifi className="h-2.5 w-2.5 mr-1" /> RTD
-                </Badge>
-              )}
-            </div>
-          )}
         </CardContent>
       </Card>
 
-      {/* STRATEGY SELECTOR */}
-      <div className="space-y-3">
+      {/* ═══ STRATEGY SELECTOR ═══ */}
+      <div className="space-y-4">
         <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-          <BarChart2 className="h-4 w-4" /> Cenário de Mercado e Estratégia
+          <BarChart2 className="h-4 w-4 text-primary" /> Cenário de Mercado
         </h2>
-        
+
         {/* Market view tabs */}
-        <div className="flex gap-2">
-          {(["alta", "baixa", "lateral"] as MarketView[]).map((view) => {
-            const Icon = view === "alta" ? TrendingUp : view === "baixa" ? TrendingDown : Activity;
-            const label = view === "alta" ? "📈 ALTA" : view === "baixa" ? "📉 BAIXA" : "➡️ LATERAL";
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {(["alta", "baixa", "lateral", "volatilidade"] as MarketView[]).map((view) => {
+            const cfg = VIEW_CONFIG[view];
             const active = currentView === view;
+            const count = STRATEGIES.filter((s) => s.view === view).length;
             return (
               <button
                 key={view}
@@ -617,70 +658,77 @@ export default function StrategyTrackerTab() {
                   if (first) setSelectedStrategy(first.id);
                 }}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex-1",
+                  "relative flex flex-col items-center gap-1 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all",
                   active
-                    ? `bg-gradient-to-b ${viewBg[view]} border-2 ${view === "alta" ? "border-emerald-500/40" : view === "baixa" ? "border-red-500/40" : "border-amber-500/40"} ${viewColors[view]} shadow-lg`
-                    : "bg-muted text-muted-foreground hover:bg-muted/80 border-2 border-transparent"
+                    ? `bg-gradient-to-b ${cfg.bg} border-2 ${cfg.border} ${cfg.color} ${cfg.glow}`
+                    : "bg-card text-muted-foreground hover:bg-muted/50 border-2 border-border/40 hover:border-primary/20"
                 )}
               >
-                <Icon className="h-4 w-4" />
-                {label}
+                <span className="text-lg">{cfg.emoji}</span>
+                <span>{cfg.label}</span>
+                <span className={cn("text-[10px] font-bold", active ? "opacity-80" : "opacity-50")}>{count} estratégias</span>
               </button>
             );
           })}
         </div>
 
         {/* Strategies for current view */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-          {STRATEGIES.filter((s) => s.view === currentView).map((strat) => (
-            <button
-              key={strat.id}
-              onClick={() => setSelectedStrategy(strat.id)}
-              className={cn(
-                "p-3 rounded-xl text-left transition-all border-2",
-                selectedStrategy === strat.id
-                  ? "bg-primary/10 border-primary/40 shadow-md"
-                  : "bg-card border-border/40 hover:border-primary/20"
-              )}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <strat.icon className={cn("h-4 w-4", selectedStrategy === strat.id ? "text-primary" : "text-muted-foreground")} />
-                <span className="text-xs font-black uppercase tracking-wide">{strat.label}</span>
-              </div>
-              <p className="text-[10px] text-muted-foreground leading-snug">{strat.description}</p>
-            </button>
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {STRATEGIES.filter((s) => s.view === currentView).map((strat) => {
+            const active = selectedStrategy === strat.id;
+            return (
+              <button
+                key={strat.id}
+                onClick={() => setSelectedStrategy(strat.id)}
+                className={cn(
+                  "relative p-4 rounded-xl text-left transition-all border-2 group",
+                  "hover:shadow-md hover:scale-[1.02]",
+                  active
+                    ? `bg-gradient-to-br ${VIEW_CONFIG[strat.view].bg} ${VIEW_CONFIG[strat.view].border} shadow-lg`
+                    : "bg-card border-border/40 hover:border-primary/20"
+                )}
+                style={{ perspective: "800px", transform: active ? "perspective(800px) rotateX(1deg)" : undefined }}
+              >
+                <div className="flex items-center gap-2.5 mb-2">
+                  <div className={cn(
+                    "h-8 w-8 rounded-lg flex items-center justify-center",
+                    active ? "bg-primary/20" : "bg-muted"
+                  )}>
+                    <strat.icon className={cn("h-4 w-4", active ? "text-primary" : "text-muted-foreground")} />
+                  </div>
+                  <span className="text-xs font-black uppercase tracking-wide text-foreground">{strat.label}</span>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">{strat.description}</p>
+                <p className="text-[10px] text-muted-foreground/60 mt-1.5 font-bold">{strat.composition}</p>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* FILTERS */}
-      <Card className="border-border/40">
-        <CardHeader className="pb-2">
+      {/* ═══ FILTERS ═══ */}
+      <Card className="border-border/40 overflow-hidden">
+        <CardHeader className="pb-2 bg-muted/30">
           <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
-            <Filter className="h-3.5 w-3.5 text-primary" /> Filtros
+            <Filter className="h-3.5 w-3.5 text-primary" /> Filtros e Ordenação
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-            {/* Vencimento */}
+        <CardContent className="pt-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-muted-foreground uppercase">Vencimento</label>
+              <label className="text-xs font-bold text-muted-foreground uppercase">Vencimento</label>
               <Select value={selectedVencimento} onValueChange={setSelectedVencimento}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  {availableVencimentos.map((v) => (
-                    <SelectItem key={v} value={v}>{v}</SelectItem>
-                  ))}
+                  {availableVencimentos.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Moneyness */}
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-muted-foreground uppercase">Moneyness</label>
+              <label className="text-xs font-bold text-muted-foreground uppercase">Moneyness</label>
               <Select value={moneynessFilter} onValueChange={setMoneynessFilter}>
-                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas</SelectItem>
                   <SelectItem value="itm">ITM</SelectItem>
@@ -689,176 +737,199 @@ export default function StrategyTrackerTab() {
                 </SelectContent>
               </Select>
             </div>
-
-            {/* Prêmio mínimo */}
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-muted-foreground uppercase">Prêmio Mín R$</label>
-              <Input
-                type="number"
-                value={minPremium}
-                onChange={(e) => setMinPremium(e.target.value)}
-                placeholder="0.00"
-                className="h-8 text-xs"
-              />
+              <label className="text-xs font-bold text-muted-foreground uppercase">Prêmio Mín</label>
+              <Input type="number" value={minPremium} onChange={(e) => setMinPremium(e.target.value)} placeholder="R$ 0.00" className="h-9 text-xs" />
             </div>
-
-            {/* Quantidade */}
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-muted-foreground uppercase">Quantidade</label>
-              <Input
-                type="number"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                placeholder="100"
-                className="h-8 text-xs"
-              />
+              <label className="text-xs font-bold text-muted-foreground uppercase">Quantidade</label>
+              <Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="100" className="h-9 text-xs" />
             </div>
-
-            {/* CDI */}
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
-                CDI %
-                <Switch checked={showCdi} onCheckedChange={setShowCdi} className="scale-75" />
+              <label className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-1">
+                CDI % <Switch checked={showCdi} onCheckedChange={setShowCdi} className="scale-75" />
               </label>
-              <Input
-                type="number"
-                value={cdiRate}
-                onChange={(e) => setCdiRate(e.target.value)}
-                placeholder="14.65"
-                className="h-8 text-xs"
-                disabled={!showCdi}
-              />
+              <Input type="number" value={cdiRate} onChange={(e) => setCdiRate(e.target.value)} placeholder="14.65" className="h-9 text-xs" disabled={!showCdi} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-muted-foreground uppercase">Ordenar por</label>
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="return">Maior Retorno %</SelectItem>
+                  <SelectItem value="quality">Melhor Quality</SelectItem>
+                  <SelectItem value="profit">Maior Lucro R$</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* NO FAMILY SELECTED */}
+      {/* ═══ EMPTY STATE ═══ */}
       {!selectedFamily && (
-        <div className="text-center py-16 space-y-3">
-          <Database className="h-12 w-12 text-muted-foreground mx-auto" />
-          <p className="text-lg font-bold text-muted-foreground">Selecione um ativo para rastrear</p>
-          <p className="text-sm text-muted-foreground">Escolha um dos ativos acima para iniciar a varredura de estratégias</p>
+        <div className="text-center py-20 space-y-4">
+          <div className="h-20 w-20 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+            <Target className="h-10 w-10 text-primary" />
+          </div>
+          <p className="text-xl font-black text-foreground">Selecione um ativo para rastrear</p>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">Escolha um dos 18 ativos mais líquidos acima para iniciar a varredura automática de estratégias</p>
         </div>
       )}
 
-      {/* RESULTS */}
+      {/* ═══ RESULTS ═══ */}
       {selectedFamily && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+        <div className="space-y-5">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h2 className="text-sm font-black uppercase tracking-widest text-foreground flex items-center gap-2">
               <Trophy className="h-4 w-4 text-primary" />
               Top Resultados — {STRATEGIES.find((s) => s.id === selectedStrategy)?.label}
-              <Badge variant="outline" className="text-[10px]">{results.length} encontrados</Badge>
             </h2>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-xs font-bold">{results.length} encontrados</Badge>
+              <Badge className={cn("text-xs font-black border-0", viewCfg.color, `bg-current/10`)}>
+                {viewCfg.emoji} {viewCfg.label}
+              </Badge>
+            </div>
           </div>
 
           {results.length === 0 && (
-            <div className="text-center py-12 space-y-3">
-              <AlertTriangle className="h-10 w-10 text-amber-500 mx-auto" />
-              <p className="text-sm font-bold text-muted-foreground">Nenhuma combinação encontrada</p>
-              <p className="text-xs text-muted-foreground">Tente ajustar os filtros ou selecionar outro vencimento</p>
-            </div>
+            <Card className="border-amber-500/20 bg-amber-500/5">
+              <CardContent className="flex flex-col items-center justify-center py-12 space-y-3">
+                <AlertTriangle className="h-12 w-12 text-amber-500" />
+                <p className="text-sm font-black text-foreground">Nenhuma combinação encontrada</p>
+                <p className="text-xs text-muted-foreground">Ajuste os filtros, selecione outro vencimento ou tente uma estratégia diferente</p>
+              </CardContent>
+            </Card>
           )}
 
-          {/* TOP 3 PODIUM */}
+          {/* ═══ TOP 3 PODIUM ═══ */}
           {top3.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {top3.map((result, idx) => {
                 const cdi = showCdi ? cdiComparison(result) : null;
                 const expanded = expandedResult === result.id;
+                const podiumColors = [
+                  "border-yellow-400/60 shadow-[0_0_30px_rgba(250,204,21,0.25)] bg-gradient-to-b from-yellow-400/10 to-transparent",
+                  "border-gray-400/50 shadow-[0_0_20px_rgba(156,163,175,0.15)] bg-gradient-to-b from-gray-400/10 to-transparent",
+                  "border-amber-600/40 shadow-[0_0_15px_rgba(217,119,6,0.15)] bg-gradient-to-b from-amber-600/10 to-transparent",
+                ];
                 return (
                   <Card
                     key={result.id}
                     className={cn(
-                      "relative overflow-hidden transition-all cursor-pointer hover:shadow-lg border-2",
-                      idx === 0 ? "border-yellow-400/60 shadow-[0_0_20px_rgba(250,204,21,0.3)]" :
-                      idx === 1 ? "border-gray-400/40 shadow-[0_0_12px_rgba(156,163,175,0.2)]" :
-                      "border-amber-600/30"
+                      "relative overflow-hidden transition-all cursor-pointer hover:shadow-xl border-2 hover:scale-[1.02]",
+                      podiumColors[idx]
                     )}
+                    style={{ perspective: "800px", transform: "perspective(800px) rotateX(1deg)" }}
                     onClick={() => setExpandedResult(expanded ? null : result.id)}
                   >
-                    <CardContent className="p-4 space-y-3">
+                    {/* Top accent bar */}
+                    <div className={cn(
+                      "h-1 w-full",
+                      idx === 0 ? "bg-gradient-to-r from-yellow-400 to-yellow-500" :
+                      idx === 1 ? "bg-gradient-to-r from-gray-300 to-gray-400" :
+                      "bg-gradient-to-r from-amber-500 to-amber-600"
+                    )} />
+
+                    <CardContent className="p-5 space-y-4">
                       {/* Trophy header */}
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <img src={trophyImages[idx]} alt={trophyLabels[idx]} className="h-8 w-8 object-contain" />
+                        <div className="flex items-center gap-3">
+                          <img src={trophyImages[idx]} alt={trophyLabels[idx]} className="h-10 w-10 object-contain drop-shadow-lg" />
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{trophyLabels[idx]}</p>
+                            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">{trophyLabels[idx]}</p>
                             <p className="text-xs font-bold text-foreground">{result.vencimento}</p>
                           </div>
                         </div>
                         {result.isLive && (
-                          <Badge className="bg-emerald-500/20 text-emerald-500 border-0 text-[8px] font-black">
-                            <Wifi className="h-2.5 w-2.5 mr-0.5" /> LIVE
-                          </Badge>
-                        )}
-                      </div>
-
-                      {/* Key metrics */}
-                      <div className="space-y-2">
-                        <div className="flex items-baseline justify-between">
-                          <span className="text-[10px] text-muted-foreground font-bold uppercase">Retorno</span>
-                          <span className={cn("text-2xl font-black", result.returnPct > 0 ? "text-emerald-500" : "text-red-500")}>
-                            {result.returnPct.toFixed(1)}%
-                          </span>
-                        </div>
-                        <div className="flex items-baseline justify-between">
-                          <span className="text-[10px] text-muted-foreground font-bold uppercase">Lucro Máx</span>
-                          <span className="text-sm font-black text-emerald-500">R$ {result.maxProfit.toFixed(2)}</span>
-                        </div>
-                        <div className="flex items-baseline justify-between">
-                          <span className="text-[10px] text-muted-foreground font-bold uppercase">Risco Máx</span>
-                          <span className="text-sm font-black text-red-500">R$ {result.maxLoss.toFixed(2)}</span>
-                        </div>
-                        <div className="flex items-baseline justify-between">
-                          <span className="text-[10px] text-muted-foreground font-bold uppercase">Quality Score</span>
-                          <span className="text-sm font-black text-primary">{result.qualityScore.toFixed(2)}</span>
-                        </div>
-                        {cdi && (
-                          <div className="flex items-baseline justify-between">
-                            <span className="text-[10px] text-muted-foreground font-bold uppercase">vs CDI ({cdi.days}du)</span>
-                            <span className={cn("text-sm font-black", cdi.beats ? "text-emerald-500" : "text-red-500")}>
-                              {cdi.beats ? "+" : ""}{cdi.diff}%
-                            </span>
+                          <div className="flex items-center gap-1 bg-emerald-500/20 text-emerald-500 rounded-full px-2 py-1">
+                            <Wifi className="h-3 w-3" />
+                            <span className="text-[10px] font-black">LIVE</span>
                           </div>
                         )}
                       </div>
 
-                      {/* Breakeven */}
-                      <div className="text-[10px] text-muted-foreground">
-                        <span className="font-bold uppercase">Breakeven:</span>{" "}
-                        {result.breakeven.map((b) => `R$ ${b.toFixed(2)}`).join(" | ")}
+                      {/* Big Return */}
+                      <div className="text-center py-2">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Retorno</p>
+                        <p className={cn(
+                          "text-4xl font-black tracking-tighter",
+                          result.returnPct > 0 ? "text-emerald-500" : "text-red-500"
+                        )}>
+                          {result.returnPct.toFixed(1)}%
+                        </p>
+                      </div>
+
+                      {/* Metrics grid */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-emerald-500/10 rounded-lg p-2.5 text-center">
+                          <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase">Lucro Máx</p>
+                          <p className="text-sm font-black text-emerald-500">R$ {result.maxProfit.toFixed(0)}</p>
+                        </div>
+                        <div className="bg-red-500/10 rounded-lg p-2.5 text-center">
+                          <p className="text-[10px] text-red-600 dark:text-red-400 font-bold uppercase">Risco Máx</p>
+                          <p className="text-sm font-black text-red-500">R$ {result.maxLoss.toFixed(0)}</p>
+                        </div>
+                        <div className="bg-primary/10 rounded-lg p-2.5 text-center">
+                          <p className="text-[10px] text-primary font-bold uppercase">Quality</p>
+                          <p className="text-sm font-black text-primary">{result.qualityScore.toFixed(2)}</p>
+                        </div>
+                        {cdi ? (
+                          <div className={cn("rounded-lg p-2.5 text-center", cdi.beats ? "bg-emerald-500/10" : "bg-red-500/10")}>
+                            <p className="text-[10px] font-bold uppercase text-muted-foreground">vs CDI</p>
+                            <p className={cn("text-sm font-black", cdi.beats ? "text-emerald-500" : "text-red-500")}>
+                              {cdi.beats ? "+" : ""}{cdi.diff}%
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="bg-muted/50 rounded-lg p-2.5 text-center">
+                            <p className="text-[10px] text-muted-foreground font-bold uppercase">Breakeven</p>
+                            <p className="text-xs font-black text-foreground">{result.breakeven.map((b) => b.toFixed(2)).join(" | ")}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Breakeven line */}
+                      <div className="bg-muted/30 rounded-lg px-3 py-2 flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase text-muted-foreground">Breakeven</span>
+                        <span className="text-xs font-black text-foreground">{result.breakeven.map((b) => `R$ ${b.toFixed(2)}`).join(" | ")}</span>
                       </div>
 
                       {/* Expanded legs */}
                       {expanded && (
-                        <div className="pt-2 border-t border-border/40 space-y-1.5 animate-fade-in">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Pernas da Operação</p>
+                        <div className="pt-3 border-t border-border/40 space-y-2 animate-in slide-in-from-top-2 duration-200">
+                          <p className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+                            <Layers className="h-3.5 w-3.5" /> Pernas da Operação
+                          </p>
                           {result.legs.map((leg, li) => (
-                            <div key={li} className="flex items-center justify-between bg-muted/50 rounded-lg px-3 py-1.5">
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline" className={cn(
-                                  "text-[8px] font-black",
-                                  leg.side === "buy" ? "border-emerald-500/40 text-emerald-500" : "border-red-500/40 text-red-500"
+                            <div key={li} className="flex items-center justify-between bg-card border border-border/40 rounded-xl px-4 py-2.5 shadow-sm">
+                              <div className="flex items-center gap-2.5">
+                                <div className={cn(
+                                  "h-7 w-7 rounded-lg flex items-center justify-center text-[10px] font-black",
+                                  leg.side === "buy"
+                                    ? "bg-emerald-500/20 text-emerald-500"
+                                    : "bg-red-500/20 text-red-500"
                                 )}>
-                                  {leg.side === "buy" ? "COMPRA" : "VENDA"}
-                                </Badge>
-                                <span className="text-[10px] font-bold">{leg.ticker}</span>
-                                <span className="text-[10px] text-muted-foreground">{leg.type}</span>
+                                  {leg.side === "buy" ? "C" : "V"}
+                                </div>
+                                <div>
+                                  <p className="text-xs font-black text-foreground">{leg.ticker}</p>
+                                  <p className="text-[10px] text-muted-foreground">{leg.type}{leg.strike > 0 ? ` K${leg.strike.toFixed(2)}` : ""}</p>
+                                </div>
                               </div>
                               <div className="text-right">
-                                {leg.strike > 0 && <p className="text-[10px] font-bold">K: {leg.strike.toFixed(2)}</p>}
-                                <p className="text-[10px] text-muted-foreground">R$ {leg.price.toFixed(2)} × {leg.qty}</p>
+                                <p className="text-xs font-black text-foreground">R$ {leg.price.toFixed(2)}</p>
+                                <p className="text-[10px] text-muted-foreground">× {leg.qty}</p>
                               </div>
                             </div>
                           ))}
                         </div>
                       )}
 
-                      <div className="flex items-center justify-center pt-1">
-                        {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-                      </div>
+                      <button className="w-full flex items-center justify-center gap-1 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors pt-1">
+                        {expanded ? <><ChevronUp className="h-4 w-4" /> Recolher</> : <><ChevronDown className="h-4 w-4" /> Ver Pernas</>}
+                      </button>
                     </CardContent>
                   </Card>
                 );
@@ -866,62 +937,70 @@ export default function StrategyTrackerTab() {
             </div>
           )}
 
-          {/* REST OF RESULTS TABLE */}
+          {/* ═══ REST TABLE ═══ */}
           {rest.length > 0 && (
-            <Card className="border-border/40">
+            <Card className="border-border/40 overflow-hidden">
+              <CardHeader className="py-3 bg-muted/20">
+                <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                  <ArrowUpDown className="h-3.5 w-3.5 text-primary" />
+                  Mais Resultados ({rest.length})
+                </CardTitle>
+              </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="border-b border-border/40 bg-muted/30">
-                        <th className="text-left p-2 font-black uppercase tracking-widest text-[10px]">#</th>
-                        <th className="text-left p-2 font-black uppercase tracking-widest text-[10px]">Pernas</th>
-                        <th className="text-right p-2 font-black uppercase tracking-widest text-[10px]">Retorno %</th>
-                        <th className="text-right p-2 font-black uppercase tracking-widest text-[10px]">Lucro Máx</th>
-                        <th className="text-right p-2 font-black uppercase tracking-widest text-[10px]">Risco Máx</th>
-                        <th className="text-right p-2 font-black uppercase tracking-widest text-[10px]">Breakeven</th>
-                        <th className="text-right p-2 font-black uppercase tracking-widest text-[10px]">Venc.</th>
-                        {showCdi && <th className="text-right p-2 font-black uppercase tracking-widest text-[10px]">vs CDI</th>}
+                        <th className="text-left p-3 font-black uppercase tracking-widest text-xs text-muted-foreground">#</th>
+                        <th className="text-left p-3 font-black uppercase tracking-widest text-xs text-muted-foreground">Pernas</th>
+                        <th className="text-right p-3 font-black uppercase tracking-widest text-xs text-muted-foreground">Retorno</th>
+                        <th className="text-right p-3 font-black uppercase tracking-widest text-xs text-muted-foreground">Lucro</th>
+                        <th className="text-right p-3 font-black uppercase tracking-widest text-xs text-muted-foreground">Risco</th>
+                        <th className="text-right p-3 font-black uppercase tracking-widest text-xs text-muted-foreground">Quality</th>
+                        <th className="text-right p-3 font-black uppercase tracking-widest text-xs text-muted-foreground">Venc.</th>
+                        {showCdi && <th className="text-right p-3 font-black uppercase tracking-widest text-xs text-muted-foreground">vs CDI</th>}
                       </tr>
                     </thead>
                     <tbody>
                       {rest.map((r, i) => {
                         const cdi = showCdi ? cdiComparison(r) : null;
+                        const isExpanded = expandedResult === r.id;
                         return (
-                          <tr key={r.id} className="border-b border-border/20 hover:bg-muted/20 transition-colors cursor-pointer" onClick={() => setExpandedResult(expandedResult === r.id ? null : r.id)}>
-                            <td className="p-2 text-muted-foreground font-bold">{i + 4}</td>
-                            <td className="p-2">
-                              <div className="flex flex-wrap gap-1">
+                          <tr
+                            key={r.id}
+                            className="border-b border-border/20 hover:bg-muted/20 transition-colors cursor-pointer"
+                            onClick={() => setExpandedResult(isExpanded ? null : r.id)}
+                          >
+                            <td className="p-3 text-muted-foreground font-black">{i + 4}</td>
+                            <td className="p-3">
+                              <div className="flex flex-wrap gap-1.5">
                                 {r.legs.map((l, li) => (
-                                  <span key={li} className="text-[10px] font-bold">
+                                  <Badge key={li} variant="outline" className={cn(
+                                    "text-[10px] font-black",
+                                    l.side === "buy" ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400" : "border-red-500/40 text-red-600 dark:text-red-400"
+                                  )}>
                                     {l.side === "buy" ? "C" : "V"} {l.ticker}
-                                  </span>
+                                  </Badge>
                                 ))}
                               </div>
-                              {expandedResult === r.id && (
+                              {isExpanded && (
                                 <div className="mt-2 space-y-1">
                                   {r.legs.map((leg, li) => (
-                                    <div key={li} className="flex gap-2 text-[10px] text-muted-foreground">
-                                      <Badge variant="outline" className={cn("text-[7px]", leg.side === "buy" ? "text-emerald-500" : "text-red-500")}>
-                                        {leg.side === "buy" ? "C" : "V"}
-                                      </Badge>
-                                      {leg.ticker} {leg.type} K:{leg.strike.toFixed(2)} R${leg.price.toFixed(2)}×{leg.qty}
+                                    <div key={li} className="text-xs text-muted-foreground">
+                                      {leg.side === "buy" ? "Compra" : "Venda"} {leg.ticker} {leg.type} K:{leg.strike.toFixed(2)} R${leg.price.toFixed(2)}×{leg.qty}
                                     </div>
                                   ))}
+                                  <p className="text-xs text-muted-foreground">Breakeven: {r.breakeven.map((b) => `R$ ${b.toFixed(2)}`).join(" | ")}</p>
                                 </div>
                               )}
                             </td>
-                            <td className={cn("p-2 text-right font-black", r.returnPct > 0 ? "text-emerald-500" : "text-red-500")}>{r.returnPct.toFixed(1)}%</td>
-                            <td className="p-2 text-right font-bold text-emerald-500">R$ {r.maxProfit.toFixed(0)}</td>
-                            <td className="p-2 text-right font-bold text-red-500">R$ {r.maxLoss.toFixed(0)}</td>
-                            <td className="p-2 text-right text-muted-foreground">{r.breakeven.map((b) => b.toFixed(2)).join(" | ")}</td>
-                            <td className="p-2 text-right text-muted-foreground">{r.vencimento}</td>
-                            {showCdi && cdi && (
-                              <td className={cn("p-2 text-right font-bold", cdi.beats ? "text-emerald-500" : "text-red-500")}>
-                                {cdi.beats ? "+" : ""}{cdi.diff}%
-                              </td>
-                            )}
-                            {showCdi && !cdi && <td className="p-2" />}
+                            <td className={cn("p-3 text-right font-black text-sm", r.returnPct > 0 ? "text-emerald-500" : "text-red-500")}>{r.returnPct.toFixed(1)}%</td>
+                            <td className="p-3 text-right font-bold text-emerald-500">R$ {r.maxProfit.toFixed(0)}</td>
+                            <td className="p-3 text-right font-bold text-red-500">R$ {r.maxLoss.toFixed(0)}</td>
+                            <td className="p-3 text-right font-black text-primary">{r.qualityScore.toFixed(2)}</td>
+                            <td className="p-3 text-right text-muted-foreground font-bold">{r.vencimento}</td>
+                            {showCdi && cdi && <td className={cn("p-3 text-right font-black", cdi.beats ? "text-emerald-500" : "text-red-500")}>{cdi.beats ? "+" : ""}{cdi.diff}%</td>}
+                            {showCdi && !cdi && <td className="p-3" />}
                           </tr>
                         );
                       })}
