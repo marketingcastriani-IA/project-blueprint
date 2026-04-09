@@ -76,7 +76,7 @@ export default function Header() {
     { label: 'Rastrear Box', path: '/box-tracker', icon: BarChart2 },
     ...(collarEnabled ? [{ label: 'Collar', path: '/collar-tracker', icon: ShieldCheck }] : []),
     { label: 'Opções B3', path: '/ticker-opcoes', icon: Database },
-    { label: 'Estratégias', path: '/strategy-tracker', icon: Zap },
+    { label: 'Rastreador PRO', path: '/strategy-tracker', icon: Zap, highlight: true },
   ];
 
   const secondaryNav = [
