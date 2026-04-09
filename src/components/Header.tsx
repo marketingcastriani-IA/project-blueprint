@@ -91,7 +91,7 @@ export default function Header() {
     ...(access.isAdmin ? [{ label: 'Admin', path: '/admin', icon: Shield }] : []),
   ];
 
-  const allNavItems = [...primaryNav, ...secondaryNav];
+  const allNavItems = [...primaryNav, ...trackerNav, ...secondaryNav];
   const isFree = access.planType === 'free';
 
   const themes = [
