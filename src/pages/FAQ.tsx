@@ -109,12 +109,17 @@ export default function FAQ() {
                 historico: faqHistorico,
                 portfolio: faqPortfolio,
                 ai: faqAnaliseDetalhe,
+                ai2: faqAnaliseDetalhe2,
                 diversificador: faqDiversificador,
                 temporeal: faqTempoReal,
                 box: faqRastreadorBox,
+                boxTabela: faqBoxTabela,
                 tickerOpcoes: faqTickerOpcoes,
                 tickerOpcoesBusca: faqTickerOpcoesBusca,
                 tickerOpcoesTabela: faqTickerOpcoesTabela,
+                temasCores: faqTemasCores,
+                manualTabela: faqManualTabela,
+                manualGrafico: faqManualGrafico,
               };
               await generateFAQPdf(faqImages);
               toast.success('PDF do manual baixado!');
