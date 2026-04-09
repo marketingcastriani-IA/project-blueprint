@@ -171,7 +171,7 @@ export default function Header() {
       </div>
 
       {/* Row 2: Secondary Nav + RTD + Theme (desktop) — scrollable */}
-      <div className="hidden md:flex border-t border-primary-foreground/10 bg-primary">
+      <div className="hidden md:flex border-t border-border/40 bg-background">
         <div className="container flex items-center gap-3 py-1.5 overflow-x-auto scrollbar-none">
           <nav className="flex items-center gap-1 shrink-0">
             {secondaryNav.map(item => {
@@ -182,8 +182,8 @@ export default function Header() {
                   onClick={() => navigate(item.path)}
                   className={cn(
                     'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] lg:text-xs font-black uppercase tracking-wide lg:tracking-widest transition-all whitespace-nowrap',
-                    isActive && 'bg-primary-foreground/20 text-primary-foreground',
-                    !isActive && 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
+                    isActive && 'bg-primary text-primary-foreground shadow-md',
+                    !isActive && 'text-foreground/80 hover:text-foreground hover:bg-muted'
                   )}
                 >
                   <item.icon className="h-3.5 w-3.5 shrink-0" />
