@@ -1267,42 +1267,58 @@ export default function StrategyTrackerTab() {
                         const cdi = showCdi ? cdiComparison(r) : null;
                         const isExpanded = expandedResult === r.id;
                         return (
-                          <tr
-                            key={r.id}
-                            className="border-b border-border/20 hover:bg-muted/20 transition-colors cursor-pointer"
-                            onClick={() => setExpandedResult(isExpanded ? null : r.id)}
-                          >
-                            <td className="p-3 text-muted-foreground font-black">{i + 4}</td>
-                            <td className="p-3">
-                              <div className="flex flex-wrap gap-1.5">
-                                {r.legs.map((l, li) => (
-                                  <Badge key={li} variant="outline" className={cn(
-                                    "text-[10px] font-black",
-                                    l.side === "buy" ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400" : "border-red-500/40 text-red-600 dark:text-red-400"
-                                  )}>
-                                    {l.side === "buy" ? "C" : "V"} {l.ticker}
-                                  </Badge>
-                                ))}
-                              </div>
-                              {isExpanded && (
-                                <div className="mt-2 space-y-1">
-                                  {r.legs.map((leg, li) => (
-                                    <div key={li} className="text-xs text-muted-foreground">
-                                      {leg.side === "buy" ? "Compra" : "Venda"} {leg.ticker} {leg.type} K:{leg.strike.toFixed(2)} R${leg.price.toFixed(2)}×{leg.qty}
-                                    </div>
+                          <>
+                            <tr
+                              key={r.id}
+                              className="border-b border-border/20 hover:bg-muted/20 transition-colors cursor-pointer"
+                              onClick={() => setExpandedResult(isExpanded ? null : r.id)}
+                            >
+                              <td className="p-3 text-muted-foreground font-black">{i + 4}</td>
+                              <td className="p-3">
+                                <div className="flex flex-wrap gap-1.5">
+                                  {r.legs.map((l, li) => (
+                                    <Badge key={li} variant="outline" className={cn(
+                                      "text-[10px] font-black",
+                                      l.side === "buy" ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400" : "border-red-500/40 text-red-600 dark:text-red-400"
+                                    )}>
+                                      {l.side === "buy" ? "C" : "V"} {l.ticker}
+                                    </Badge>
                                   ))}
-                                  <p className="text-xs text-muted-foreground">Breakeven: {r.breakeven.map((b) => `R$ ${b.toFixed(2)}`).join(" | ")}</p>
                                 </div>
-                              )}
-                            </td>
-                            <td className={cn("p-3 text-right font-black text-sm", r.returnPct > 0 ? "text-emerald-500" : "text-red-500")}>{r.returnPct.toFixed(1)}%</td>
-                            <td className="p-3 text-right font-bold text-emerald-500">R$ {r.maxProfit.toFixed(0)}</td>
-                            <td className="p-3 text-right font-bold text-red-500">R$ {r.maxLoss.toFixed(0)}</td>
-                            <td className="p-3 text-right font-black text-primary">{r.qualityScore.toFixed(2)}</td>
-                            <td className="p-3 text-right text-muted-foreground font-bold">{r.vencimento}</td>
-                            {showCdi && cdi && <td className={cn("p-3 text-right font-black", cdi.beats ? "text-emerald-500" : "text-red-500")}>{cdi.beats ? "+" : ""}{cdi.diff}%</td>}
-                            {showCdi && !cdi && <td className="p-3" />}
-                          </tr>
+                              </td>
+                              <td className={cn("p-3 text-right font-black text-sm", r.returnPct > 0 ? "text-emerald-500" : "text-red-500")}>{r.returnPct.toFixed(1)}%</td>
+                              <td className="p-3 text-right font-bold text-emerald-500">R$ {r.maxProfit.toFixed(0)}</td>
+                              <td className="p-3 text-right font-bold text-red-500">R$ {r.maxLoss.toFixed(0)}</td>
+                              <td className="p-3 text-right font-black text-primary">{r.qualityScore.toFixed(2)}</td>
+                              <td className="p-3 text-right text-muted-foreground font-bold">{r.vencimento}</td>
+                              {showCdi && cdi && <td className={cn("p-3 text-right font-black", cdi.beats ? "text-emerald-500" : "text-red-500")}>{cdi.beats ? "+" : ""}{cdi.diff}%</td>}
+                              {showCdi && !cdi && <td className="p-3" />}
+                            </tr>
+                            {isExpanded && (
+                              <tr key={`${r.id}_expanded`} className="border-b border-border/20 bg-muted/10">
+                                <td colSpan={showCdi ? 8 : 7} className="p-4">
+                                  <div className="space-y-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      {r.legs.map((leg, li) => (
+                                        <div key={li} className="flex items-center justify-between bg-card border border-border/40 rounded-lg px-3 py-2 text-xs">
+                                          <div className="flex items-center gap-2">
+                                            <span className={cn("font-black", leg.side === "buy" ? "text-emerald-500" : "text-red-500")}>
+                                              {leg.side === "buy" ? "C" : "V"}
+                                            </span>
+                                            <span className="font-bold text-foreground">{leg.ticker}</span>
+                                            <span className="text-muted-foreground">{leg.type} K:{leg.strike.toFixed(2)}</span>
+                                          </div>
+                                          <span className="font-black text-foreground">R$ {leg.price.toFixed(2)} × {leg.qty}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">Breakeven: {r.breakeven.map((b) => `R$ ${b.toFixed(2)}`).join(" | ")}</p>
+                                    <MiniPayoffChart result={r} spotPrice={stockPrice} />
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </>
                         );
                       })}
                     </tbody>
