@@ -199,10 +199,11 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     '12. Rastreador de Box',
     '13. Ticker Opções B3',
     '14. Rastreador de Collar (Risco Zero)',
-    '15. Alertas na Tela (Box Tracker)',
-    '16. Temas e Personalização',
-    '17. Tabelas de Referência',
-    '18. Perguntas Frequentes',
+    '15. Rastreador PRO X (Estratégias)',
+    '16. Alertas na Tela (Box Tracker)',
+    '17. Temas e Personalização',
+    '18. Tabelas de Referência',
+    '19. Perguntas Frequentes',
   ];
   doc.setFontSize(10);
   doc.setTextColor(...COLORS.gray);
@@ -240,6 +241,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
       ['Rastreador de Box', 'Ranking dos melhores boxes da B3 em tempo real'],
       ['Ticker Opções B3', 'Banco com 99.000+ opções, Seleção Rápida Top 18 com ranking e pares Call+Put'],
       ['Rastreador de Collar', 'Proteção Risco Zero com modelos Collar de Alta e Baixa em tempo real'],
+      ['Rastreador PRO X', '10+ estratégias (Venda Coberta, Trava, Iron Condor, Straddle, Strangle) com ranking Top 3'],
       ['Alertas na Tela', 'Toasts visuais quando Box atinge threshold do CDI (normal e urgente)'],
       ['Calculadora CDI', 'Compare retorno de opções vs renda fixa com IR automático'],
     ],
@@ -517,7 +519,43 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
     columnStyles: { 0: { cellWidth: 45, fontStyle: 'bold' as const } },
   });
 
-  // ── 15. ALERTAS NA TELA ──
+  // ── 15. RASTREADOR PRO X ──
+  y = checkPageBreak(doc, y, 50);
+  y = addSectionTitle(doc, '15. Rastreador PRO X — Estratégias em Tempo Real', y);
+  y = addParagraph(doc, 'O Rastreador PRO X analisa em tempo real 10+ estratégias divididas por cenários (Alta, Baixa, Lateral e Volatilidade), ranqueando as melhores combinações em pódio Top 3. Inclui Venda Coberta, Trava de Alta/Baixa, Iron Condor, Borboleta, Straddle (Comprado/Vendido) e Strangle (Comprado/Vendido). Suporta comparação CDI, gráficos de payoff avançados e importação direta de tickers da página Opções B3.', y);
+
+  const strategyImg = getImg('strategyTracker');
+  if (strategyImg) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, strategyImg, y, 182, 120));
+  }
+
+  const strategyVolImg = getImg('strategyVolatility');
+  if (strategyVolImg) {
+    y = checkPageBreak(doc, y, 140);
+    ({ newY: y } = addImageToPdf(doc, strategyVolImg, y, 182, 120));
+  }
+
+  y = addTable(doc, {
+    startY: y,
+    head: [['Estratégia', 'Cenário', 'Descrição']],
+    body: [
+      ['Venda Coberta', 'Alta', 'Ação + Venda Call — renda com proteção parcial'],
+      ['Trava de Alta', 'Alta', 'Compra Call K1 + Venda Call K2 — risco definido'],
+      ['Venda de Put', 'Baixa', 'Venda Put — renda com compromisso de compra'],
+      ['Trava de Baixa', 'Baixa', 'Compra Put K1 + Venda Put K2 — risco definido'],
+      ['Iron Condor', 'Lateral', 'Trava Put + Trava Call — lucro na lateralização'],
+      ['Borboleta', 'Lateral', 'C1 + 2xC2 + C3 — lucro máximo no strike central'],
+      ['Straddle Comprado', 'Volatilidade', 'Compra Call+Put mesmo strike — lucra com alta volatilidade'],
+      ['Straddle Vendido', 'Volatilidade', 'Vende Call+Put mesmo strike — lucra com baixa volatilidade'],
+      ['Strangle Comprado', 'Volatilidade', 'Compra Call+Put OTM — mais barato que Straddle'],
+      ['Strangle Vendido', 'Volatilidade', 'Vende Call+Put OTM — lucra na faixa de estabilidade'],
+    ],
+    ...TABLE_STYLES,
+    columnStyles: { 0: { cellWidth: 40, fontStyle: 'bold' as const }, 1: { cellWidth: 25 } },
+  });
+
+  // ── 16. ALERTAS NA TELA ──
   y = checkPageBreak(doc, y, 50);
   y = addSectionTitle(doc, '15. Alertas na Tela (Box Tracker)', y);
   y = addParagraph(doc, 'O Rastreador de Box exibe alertas visuais na tela (toasts) quando um Box atinge o threshold do CDI configurado. Alertas normais (verde) aparecem por 10s com dados do box. Alertas urgentes (vermelho, >=150% CDI) duram 15s. Complementam as notificações push do navegador.', y);

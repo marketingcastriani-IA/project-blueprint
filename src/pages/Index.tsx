@@ -272,8 +272,31 @@ export default function Index() {
           </div>
         </div>
 
-        {/* NEW: Ticker Opções B3 + Collar Tracker row */}
+        {/* NEW: Rastreador PRO X + Ticker Opções B3 row */}
         <div className="grid md:grid-cols-2 gap-10 mt-10">
+          {/* Rastreador PRO X */}
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><Zap className="h-5 w-5 text-primary" /></div>
+                <h3 className="text-2xl font-black tracking-tight">Rastreador PRO X</h3>
+                <Badge className="bg-red-500/20 text-red-500 border-0 text-xs font-black animate-pulse">AO VIVO</Badge>
+                <Badge className="bg-primary/20 text-primary border-0 text-xs font-black">PRO</Badge>
+              </div>
+              <p className="text-muted-foreground">Rastreie 10+ estratégias em tempo real: Venda Coberta, Trava de Alta/Baixa, Iron Condor, Borboleta, Straddle e Strangle. Ranking Top 3 com comparação CDI.</p>
+            </div>
+            <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)] bg-card p-6 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                {['Venda Coberta', 'Trava de Alta', 'Iron Condor', 'Straddle'].map(s => (
+                  <div key={s} className="rounded-lg bg-primary/10 border border-primary/20 p-4 text-center">
+                    <p className="text-sm font-black text-primary">{s}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground text-center font-bold">+ Borboleta, Strangle, Venda de Put, Trava de Baixa e mais</p>
+            </div>
+          </div>
+
           {/* Ticker Opções B3 */}
           <div className="space-y-6">
             <div className="space-y-3">
@@ -288,14 +311,17 @@ export default function Index() {
               <img src="/assets/screenshot-ticker-opcoes.png" alt="Ticker Opções B3 — 99k+ Opções" className="w-full h-auto" loading="lazy" />
             </div>
           </div>
+        </div>
 
+        {/* Collar Tracker + Box Tracker row */}
+        <div className="grid md:grid-cols-2 gap-10 mt-10">
           {/* Rastreador Collar */}
           <div className="space-y-6">
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center"><ShieldCheck className="h-5 w-5 text-primary" /></div>
                 <h3 className="text-2xl font-black tracking-tight">Rastreador Collar</h3>
-                <Badge className="bg-red-500/20 text-red-500 border-0 text-xs font-black animate-pulse">🔴 AO VIVO</Badge>
+                <Badge className="bg-red-500/20 text-red-500 border-0 text-xs font-black animate-pulse">AO VIVO</Badge>
                 <Badge className="bg-primary/20 text-primary border-0 text-xs font-black">PRO</Badge>
               </div>
               <p className="text-muted-foreground">Encontre collars ideais em tempo real. Proteção com upside — rastreie automaticamente as melhores combinações de call coberta + put protetiva da B3.</p>
@@ -311,10 +337,7 @@ export default function Index() {
               <p className="text-xs text-muted-foreground text-center font-bold">Proteção + Renda automática com dados ao vivo do Profit RTD</p>
             </div>
           </div>
-        </div>
 
-        {/* Box Tracker + Calculadora CDI row */}
-        <div className="grid md:grid-cols-2 gap-10 mt-10">
           {/* Rastreador de Box */}
           <div className="space-y-6">
             <div className="space-y-3">
