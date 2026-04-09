@@ -424,10 +424,12 @@ export default function StrategyTrackerTab() {
   const [moneynessFilter, setMoneynessFilter] = useState<string>("all");
   const [minPremium, setMinPremium] = useState("");
   const [minTrades, setMinTrades] = useState("");
+  const [minReturnPct, setMinReturnPct] = useState("");
+  const [maxLossFilter, setMaxLossFilter] = useState("");
   const [quantity, setQuantity] = useState("100");
   const [cdiRate, setCdiRate] = useState("14.65");
   const [showCdi, setShowCdi] = useState(true);
-  const [expandedResult, setExpandedResult] = useState<string | null>(null);
+  const [selectedResult, setSelectedResult] = useState<StrategyResult | null>(null);
   const [sortBy, setSortBy] = useState<"return" | "quality" | "profit">("return");
 
   // Persist saved assets
@@ -927,12 +929,19 @@ export default function StrategyTrackerTab() {
       }
     }
 
+    // Post-scan filters
+    let filtered = allResults;
+    const minRet = parseFloat(minReturnPct) || 0;
+    if (minRet > 0) filtered = filtered.filter((r) => r.returnPct >= minRet);
+    const maxL = parseFloat(maxLossFilter) || 0;
+    if (maxL > 0) filtered = filtered.filter((r) => r.maxLoss <= maxL);
+
     // Sort
     const sorter = sortBy === "return" ? (a: StrategyResult, b: StrategyResult) => b.returnPct - a.returnPct
       : sortBy === "quality" ? (a: StrategyResult, b: StrategyResult) => b.qualityScore - a.qualityScore
       : (a: StrategyResult, b: StrategyResult) => b.maxProfit - a.maxProfit;
-    return allResults.sort(sorter).slice(0, 50);
-  }, [selectedFamily, selectedStrategy, selectedVencimento, moneynessFilter, minPremium, minTrades, quantity, stockPrice, options, rows, status, getPrice, addTicker, stockTicker, sortBy, hasMinTrades]);
+    return filtered.sort(sorter).slice(0, 50);
+  }, [selectedFamily, selectedStrategy, selectedVencimento, moneynessFilter, minPremium, minTrades, minReturnPct, maxLossFilter, quantity, stockPrice, options, rows, status, getPrice, addTicker, stockTicker, sortBy, hasMinTrades]);
 
   const top3 = results.slice(0, 3);
   const rest = results.slice(3);
@@ -1174,7 +1183,7 @@ export default function StrategyTrackerTab() {
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-3">
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
             <div className="space-y-1">
               <label className="text-xs font-bold text-muted-foreground uppercase">Vencimento</label>
               <Select value={selectedVencimento} onValueChange={setSelectedVencimento}>
@@ -1204,6 +1213,14 @@ export default function StrategyTrackerTab() {
             <div className="space-y-1">
               <label className="text-xs font-bold text-muted-foreground uppercase">Negócios ≥</label>
               <Input type="number" value={minTrades} onChange={(e) => setMinTrades(e.target.value)} placeholder="0" className="h-9 text-xs" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-muted-foreground uppercase">Retorno Mín %</label>
+              <Input type="number" value={minReturnPct} onChange={(e) => setMinReturnPct(e.target.value)} placeholder="0%" className="h-9 text-xs" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-muted-foreground uppercase">Risco Máx R$</label>
+              <Input type="number" value={maxLossFilter} onChange={(e) => setMaxLossFilter(e.target.value)} placeholder="Sem limite" className="h-9 text-xs" />
             </div>
             <div className="space-y-1">
               <label className="text-xs font-bold text-muted-foreground uppercase">Quantidade</label>
@@ -1264,145 +1281,232 @@ export default function StrategyTrackerTab() {
                 <AlertTriangle className="h-12 w-12 text-amber-500" />
                 <p className="text-sm font-black text-foreground">Nenhuma combinação encontrada</p>
                 <p className="text-xs text-muted-foreground text-center">
-                  Ajuste os filtros (reduza "Negócios ≥"), selecione outro vencimento ou tente uma estratégia diferente
+                  Ajuste os filtros (reduza "Negócios ≥" ou "Retorno Mín"), selecione outro vencimento ou tente uma estratégia diferente
                 </p>
               </CardContent>
             </Card>
           )}
 
-          {/* ═══ TOP 3 PODIUM ═══ */}
+          {/* ═══ TOP 3 CARDS (Collar-style) ═══ */}
           {top3.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {top3.map((result, idx) => {
                 const cdi = showCdi ? cdiComparison(result) : null;
-                const expanded = expandedResult === result.id;
-                const podiumColors = [
-                  "border-yellow-400/60 shadow-[0_0_30px_rgba(250,204,21,0.25)] bg-gradient-to-b from-yellow-400/10 to-transparent",
-                  "border-gray-400/50 shadow-[0_0_20px_rgba(156,163,175,0.15)] bg-gradient-to-b from-gray-400/10 to-transparent",
-                  "border-amber-600/40 shadow-[0_0_15px_rgba(217,119,6,0.15)] bg-gradient-to-b from-amber-600/10 to-transparent",
-                ];
+                const isSelected = selectedResult?.id === result.id;
+                const trophyImg = trophyImages[idx];
+                const qty = parseInt(quantity) || 100;
+                const investTotal = Math.abs(result.maxLoss);
+                const returnPctLiq = result.returnPct;
+                const cdiPct = cdi ? parseFloat(cdi.cdiPct) : 0;
+                const diffPp = cdi ? parseFloat(cdi.diff) : 0;
+                const beats = cdi?.beats ?? false;
+
                 return (
-                  <Card
+                  <div
                     key={result.id}
+                    onClick={() => setSelectedResult(isSelected ? null : result)}
                     className={cn(
-                      "relative overflow-hidden transition-all cursor-pointer hover:shadow-xl border-2 hover:scale-[1.02]",
-                      podiumColors[idx]
+                      "relative cursor-pointer rounded-2xl border-2 p-4 transition-all hover:shadow-lg active:scale-[0.98]",
+                      isSelected
+                        ? "border-primary bg-primary/5 shadow-md ring-2 ring-primary/30"
+                        : "border-border bg-card hover:border-primary/40"
                     )}
                     style={{ perspective: "800px", transform: "perspective(800px) rotateX(1deg)" }}
-                    onClick={() => setExpandedResult(expanded ? null : result.id)}
                   >
-                    <div className={cn(
-                      "h-1 w-full",
-                      idx === 0 ? "bg-gradient-to-r from-yellow-400 to-yellow-500" :
-                      idx === 1 ? "bg-gradient-to-r from-gray-300 to-gray-400" :
-                      "bg-gradient-to-r from-amber-500 to-amber-600"
-                    )} />
+                    <img src={trophyImg} alt={trophyLabels[idx]} className="absolute top-2 right-2 w-6 h-6" />
 
-                    <CardContent className="p-5 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <img src={trophyImages[idx]} alt={trophyLabels[idx]} className="h-10 w-10 object-contain drop-shadow-lg" />
-                          <div>
-                            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">{trophyLabels[idx]}</p>
-                            <p className="text-xs font-bold text-foreground">{result.vencimento}</p>
-                          </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge className={cn("text-[9px] font-black px-2 py-0.5 border-0", viewCfg.color, `bg-current/10`)}>
+                        {viewCfg.emoji} {result.strategyLabel}
+                      </Badge>
+                      <Badge variant="outline" className="text-[9px] font-black">
+                        {trophyLabels[idx]}
+                      </Badge>
+                    </div>
+
+                    <p className="text-lg font-black text-foreground">{selectedFamily}</p>
+
+                    {/* Legs */}
+                    <div className="mt-1.5 space-y-1 text-xs font-mono" style={{ textRendering: 'geometricPrecision', WebkitFontSmoothing: 'antialiased' }}>
+                      {result.legs.map((leg, li) => (
+                        <div key={li} className="flex items-center gap-1.5">
+                          <span className={cn("px-1 py-px rounded font-black",
+                            leg.side === "buy" ? "bg-emerald-500/20 text-emerald-500" : "bg-red-500/20 text-red-500"
+                          )}>
+                            {leg.side === "buy" ? "C" : "V"}
+                          </span>
+                          <span className="text-muted-foreground">{leg.type === "STOCK" ? "Ação" : leg.type}</span>
+                          <span className="font-bold text-foreground">{leg.ticker}</span>
+                          {leg.strike > 0 && <span className="text-muted-foreground">K {leg.strike.toFixed(2)}</span>}
                         </div>
-                        {result.isLive && (
-                          <div className="flex items-center gap-1 bg-emerald-500/20 text-emerald-500 rounded-full px-2 py-1">
-                            <Wifi className="h-3 w-3" />
-                            <span className="text-[10px] font-black">LIVE</span>
-                          </div>
-                        )}
+                      ))}
+                    </div>
+
+                    {/* Metrics grid */}
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold">Ganho Máx</p>
+                        <p className="text-sm font-black text-emerald-500">{result.returnPct.toFixed(2)}%</p>
+                        <p className="text-[9px] font-mono text-emerald-500">R$ {result.maxProfit.toFixed(0)}</p>
                       </div>
-
-                      <div className="text-center py-2">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Retorno</p>
-                        <p className={cn(
-                          "text-4xl font-black tracking-tighter",
-                          result.returnPct > 0 ? "text-emerald-500" : "text-red-500"
-                        )}>
-                          {result.returnPct.toFixed(1)}%
-                        </p>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold">Risco Máx</p>
+                        <p className="text-sm font-black text-red-500">R$ {result.maxLoss.toFixed(0)}</p>
                       </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="bg-emerald-500/10 rounded-lg p-2.5 text-center">
-                          <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase">Lucro Máx</p>
-                          <p className="text-sm font-black text-emerald-500">R$ {result.maxProfit.toFixed(0)}</p>
-                        </div>
-                        <div className="bg-red-500/10 rounded-lg p-2.5 text-center">
-                          <p className="text-[10px] text-red-600 dark:text-red-400 font-bold uppercase">Risco Máx</p>
-                          <p className="text-sm font-black text-red-500">R$ {result.maxLoss.toFixed(0)}</p>
-                        </div>
-                        <div className="bg-primary/10 rounded-lg p-2.5 text-center">
-                          <p className="text-[10px] text-primary font-bold uppercase">Quality</p>
-                          <p className="text-sm font-black text-primary">{result.qualityScore.toFixed(2)}</p>
-                        </div>
-                        {cdi ? (
-                          <div className={cn("rounded-lg p-2.5 text-center", cdi.beats ? "bg-emerald-500/10" : "bg-red-500/10")}>
-                            <p className="text-[10px] font-bold uppercase text-muted-foreground">vs CDI</p>
-                            <p className={cn("text-sm font-black", cdi.beats ? "text-emerald-500" : "text-red-500")}>
-                              {cdi.beats ? "+" : ""}{cdi.diff}%
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="bg-muted/50 rounded-lg p-2.5 text-center">
-                            <p className="text-[10px] text-muted-foreground font-bold uppercase">Breakeven</p>
-                            <p className="text-xs font-black text-foreground">{result.breakeven.map((b) => b.toFixed(2)).join(" | ")}</p>
-                          </div>
-                        )}
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold">Quality Score</p>
+                        <p className="text-sm font-black text-primary">{result.qualityScore.toFixed(2)}</p>
                       </div>
-
-                      <div className="bg-muted/30 rounded-lg px-3 py-2 flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase text-muted-foreground">Breakeven</span>
-                        <span className="text-xs font-black text-foreground">{result.breakeven.map((b) => `R$ ${b.toFixed(2)}`).join(" | ")}</span>
-                      </div>
-
-                      {expanded && (
-                        <div className="pt-3 border-t border-border/40 space-y-2 animate-in slide-in-from-top-2 duration-200">
-                          <p className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
-                            <Layers className="h-3.5 w-3.5" /> Pernas da Operação
-                          </p>
-                          {result.legs.map((leg, li) => (
-                            <div key={li} className="flex items-center justify-between bg-card border border-border/40 rounded-xl px-4 py-2.5 shadow-sm">
-                              <div className="flex items-center gap-2.5">
-                                <div className={cn(
-                                  "h-7 w-7 rounded-lg flex items-center justify-center text-[10px] font-black",
-                                  leg.side === "buy"
-                                    ? "bg-emerald-500/20 text-emerald-500"
-                                    : "bg-red-500/20 text-red-500"
-                                )}>
-                                  {leg.side === "buy" ? "C" : "V"}
-                                </div>
-                                <div>
-                                  <p className="text-xs font-black text-foreground">{leg.ticker}</p>
-                                  <p className="text-[10px] text-muted-foreground">{leg.type}{leg.strike > 0 ? ` K${leg.strike.toFixed(2)}` : ""}</p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-xs font-black text-foreground">R$ {leg.price.toFixed(2)}</p>
-                                <p className="text-[10px] text-muted-foreground">× {leg.qty}</p>
-                              </div>
-                            </div>
-                          ))}
-
-                          {/* Mini Payoff Chart */}
-                          <div className="pt-3 border-t border-border/30">
-                            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 mb-3">
-                              <BarChart2 className="h-3.5 w-3.5" /> Gráfico de Payoff
-                            </p>
-                            <MiniPayoffChart result={result} spotPrice={stockPrice} cdiRate={parseFloat(cdiRate) || 14.65} qty={parseInt(quantity) || 100} />
-                          </div>
+                      {cdi && (
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase font-bold">CDI Período</p>
+                          <p className="text-sm font-black text-amber-500">{cdi.cdiPct}%</p>
                         </div>
                       )}
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold">Net Credit</p>
+                        <p className={cn("text-sm font-black", result.netCredit >= 0 ? "text-emerald-500" : "text-red-500")}>
+                          R$ {result.netCredit.toFixed(0)}
+                        </p>
+                      </div>
+                      {cdi && (
+                        <div>
+                          <p className="text-[10px] text-muted-foreground uppercase font-bold">vs CDI</p>
+                          <p className={cn("text-sm font-black", beats ? "text-emerald-500" : "text-red-500")}>
+                            {beats ? "+" : ""}{diffPp.toFixed(2)} pp
+                          </p>
+                        </div>
+                      )}
+                    </div>
 
-                      <button className="w-full flex items-center justify-center gap-1 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors pt-1">
-                        {expanded ? <><ChevronUp className="h-4 w-4" /> Recolher</> : <><ChevronDown className="h-4 w-4" /> Ver Pernas</>}
-                      </button>
-                    </CardContent>
-                  </Card>
+                    {/* Breakeven */}
+                    <div className="mt-2 bg-muted/30 rounded-lg px-3 py-1.5 flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase text-muted-foreground">Breakeven</span>
+                      <span className="text-xs font-black text-foreground">{result.breakeven.map((b) => `R$ ${b.toFixed(2)}`).join(" | ")}</span>
+                    </div>
+
+                    {/* Winner badge */}
+                    {cdi && (
+                      <div className={cn(
+                        "mt-2 text-center py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest",
+                        beats
+                          ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                          : "bg-red-500/10 text-red-500 border border-red-500/20"
+                      )}>
+                        {beats ? "✅ GANHA DO CDI" : "⚠️ CDI RENDE MAIS"}
+                      </div>
+                    )}
+
+                    {result.vencimento && (
+                      <p className="text-[10px] text-muted-foreground mt-2">
+                        Venc: <span className="font-bold text-foreground">{result.vencimento}</span>
+                        {cdi?.days && <span> · {cdi.days}du</span>}
+                      </p>
+                    )}
+                  </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* ═══ SELECTED RESULT DETAIL + CHART (Collar-style) ═══ */}
+          {selectedResult && stockPrice > 0 && (
+            <div className="rounded-2xl border-2 border-primary/30 bg-card overflow-hidden shadow-lg">
+              <div className="px-4 py-3 bg-muted/30 border-b border-border/50">
+                <div className="flex items-center gap-3">
+                  <Badge className={cn("text-xs font-black px-2.5 py-1 border-0", viewCfg.color, `bg-current/10`)}>
+                    {viewCfg.emoji} {selectedResult.strategyLabel}
+                  </Badge>
+                  {selectedResult.isLive && (
+                    <>
+                      <Wifi className="w-4 h-4 text-emerald-500" />
+                      <span className="text-xs text-emerald-500 font-black uppercase">Ao Vivo</span>
+                    </>
+                  )}
+                  <span className="text-sm font-black text-foreground ml-auto">{selectedFamily}</span>
+                </div>
+              </div>
+
+              {/* Metrics row */}
+              {(() => {
+                const cdi = showCdi ? cdiComparison(selectedResult) : null;
+                const qty = parseInt(quantity) || 100;
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-4 p-4 border-b border-border/50 bg-muted/10">
+                    <div>
+                      <p className="text-xs font-black uppercase text-muted-foreground">Investimento</p>
+                      <p className="text-sm font-black text-foreground">R$ {Math.abs(selectedResult.maxLoss).toFixed(0)}</p>
+                      <p className="text-[10px] font-mono text-muted-foreground">{qty} × ops</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase text-muted-foreground">Lucro Máximo</p>
+                      <p className="text-sm font-black text-emerald-500">{selectedResult.returnPct.toFixed(2)}%</p>
+                      <p className="text-[10px] font-mono text-emerald-500">R$ {selectedResult.maxProfit.toFixed(0)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase text-muted-foreground">Risco Máximo</p>
+                      <p className="text-sm font-black text-red-500">R$ {selectedResult.maxLoss.toFixed(0)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase text-muted-foreground">Net Cost/Credit</p>
+                      <p className={cn("text-sm font-black", selectedResult.netCredit >= 0 ? "text-emerald-500" : "text-red-500")}>
+                        R$ {selectedResult.netCredit.toFixed(0)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase text-muted-foreground">Break-even</p>
+                      <p className="text-sm font-black text-foreground">{selectedResult.breakeven.map((b) => `R$ ${b.toFixed(2)}`).join(" | ")}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase text-muted-foreground">Quality Score</p>
+                      <p className="text-sm font-black text-primary">{selectedResult.qualityScore.toFixed(2)}</p>
+                    </div>
+                    {cdi && (
+                      <>
+                        <div>
+                          <p className="text-xs font-black uppercase text-muted-foreground">CDI Período</p>
+                          <p className="text-sm font-black text-amber-500">{cdi.cdiPct}%</p>
+                          <p className={cn("text-[10px] font-bold font-mono", cdi.beats ? "text-emerald-500" : "text-red-500")}>
+                            {cdi.beats ? "+" : ""}{cdi.diff} pp vs CDI
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-black uppercase text-muted-foreground">Retorno R$</p>
+                          <p className="text-sm font-black text-emerald-500">R$ {selectedResult.maxProfit.toFixed(0)}</p>
+                          <p className="text-[10px] font-mono text-muted-foreground">em {qty} contratos</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Chart */}
+              <div className="px-3 py-4">
+                <MiniPayoffChart result={selectedResult} spotPrice={stockPrice} cdiRate={parseFloat(cdiRate) || 14.65} qty={parseInt(quantity) || 100} />
+              </div>
+
+              {/* Structure summary */}
+              <div className="px-4 pb-4">
+                <div className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                  <p className="text-xs font-black uppercase text-muted-foreground mb-2">Estrutura da Operação</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {selectedResult.legs.map((leg, li) => (
+                      <div key={li} className="flex items-center gap-2 text-xs">
+                        <span className={cn("w-2 h-2 rounded-full",
+                          leg.side === "buy" ? "bg-emerald-500" : "bg-red-500"
+                        )} />
+                        <span className="text-muted-foreground">
+                          {leg.side === "buy" ? "Compra" : "Venda"} <span className="font-black text-foreground">{leg.ticker}</span>
+                        </span>
+                        <span className="ml-auto font-bold">
+                          {leg.type}{leg.strike > 0 ? ` K ${leg.strike.toFixed(2)}` : ""} · R$ {leg.price.toFixed(2)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -1433,60 +1537,37 @@ export default function StrategyTrackerTab() {
                     <tbody>
                       {rest.map((r, i) => {
                         const cdi = showCdi ? cdiComparison(r) : null;
-                        const isExpanded = expandedResult === r.id;
+                        const isSelected = selectedResult?.id === r.id;
                         return (
-                          <>
-                            <tr
-                              key={r.id}
-                              className="border-b border-border/20 hover:bg-muted/20 transition-colors cursor-pointer"
-                              onClick={() => setExpandedResult(isExpanded ? null : r.id)}
-                            >
-                              <td className="p-3 text-muted-foreground font-black">{i + 4}</td>
-                              <td className="p-3">
-                                <div className="flex flex-wrap gap-1.5">
-                                  {r.legs.map((l, li) => (
-                                    <Badge key={li} variant="outline" className={cn(
-                                      "text-[10px] font-black",
-                                      l.side === "buy" ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400" : "border-red-500/40 text-red-600 dark:text-red-400"
-                                    )}>
-                                      {l.side === "buy" ? "C" : "V"} {l.ticker}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              </td>
-                              <td className={cn("p-3 text-right font-black text-sm", r.returnPct > 0 ? "text-emerald-500" : "text-red-500")}>{r.returnPct.toFixed(1)}%</td>
-                              <td className="p-3 text-right font-bold text-emerald-500">R$ {r.maxProfit.toFixed(0)}</td>
-                              <td className="p-3 text-right font-bold text-red-500">R$ {r.maxLoss.toFixed(0)}</td>
-                              <td className="p-3 text-right font-black text-primary">{r.qualityScore.toFixed(2)}</td>
-                              <td className="p-3 text-right text-muted-foreground font-bold">{r.vencimento}</td>
-                              {showCdi && cdi && <td className={cn("p-3 text-right font-black", cdi.beats ? "text-emerald-500" : "text-red-500")}>{cdi.beats ? "+" : ""}{cdi.diff}%</td>}
-                              {showCdi && !cdi && <td className="p-3" />}
-                            </tr>
-                            {isExpanded && (
-                              <tr key={`${r.id}_expanded`} className="border-b border-border/20 bg-muted/10">
-                                <td colSpan={showCdi ? 8 : 7} className="p-4">
-                                  <div className="space-y-3">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                      {r.legs.map((leg, li) => (
-                                        <div key={li} className="flex items-center justify-between bg-card border border-border/40 rounded-lg px-3 py-2 text-xs">
-                                          <div className="flex items-center gap-2">
-                                            <span className={cn("font-black", leg.side === "buy" ? "text-emerald-500" : "text-red-500")}>
-                                              {leg.side === "buy" ? "C" : "V"}
-                                            </span>
-                                            <span className="font-bold text-foreground">{leg.ticker}</span>
-                                            <span className="text-muted-foreground">{leg.type} K:{leg.strike.toFixed(2)}</span>
-                                          </div>
-                                          <span className="font-black text-foreground">R$ {leg.price.toFixed(2)} × {leg.qty}</span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">Breakeven: {r.breakeven.map((b) => `R$ ${b.toFixed(2)}`).join(" | ")}</p>
-                                    <MiniPayoffChart result={r} spotPrice={stockPrice} cdiRate={parseFloat(cdiRate) || 14.65} qty={parseInt(quantity) || 100} />
-                                  </div>
-                                </td>
-                              </tr>
+                          <tr
+                            key={r.id}
+                            className={cn(
+                              "border-b border-border/20 hover:bg-muted/20 transition-colors cursor-pointer",
+                              isSelected && "bg-primary/5 border-primary/30"
                             )}
-                          </>
+                            onClick={() => setSelectedResult(isSelected ? null : r)}
+                          >
+                            <td className="p-3 text-muted-foreground font-black">{i + 4}</td>
+                            <td className="p-3">
+                              <div className="flex flex-wrap gap-1.5">
+                                {r.legs.map((l, li) => (
+                                  <Badge key={li} variant="outline" className={cn(
+                                    "text-[10px] font-black",
+                                    l.side === "buy" ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400" : "border-red-500/40 text-red-600 dark:text-red-400"
+                                  )}>
+                                    {l.side === "buy" ? "C" : "V"} {l.ticker}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </td>
+                            <td className={cn("p-3 text-right font-black text-sm", r.returnPct > 0 ? "text-emerald-500" : "text-red-500")}>{r.returnPct.toFixed(1)}%</td>
+                            <td className="p-3 text-right font-bold text-emerald-500">R$ {r.maxProfit.toFixed(0)}</td>
+                            <td className="p-3 text-right font-bold text-red-500">R$ {r.maxLoss.toFixed(0)}</td>
+                            <td className="p-3 text-right font-black text-primary">{r.qualityScore.toFixed(2)}</td>
+                            <td className="p-3 text-right text-muted-foreground font-bold">{r.vencimento}</td>
+                            {showCdi && cdi && <td className={cn("p-3 text-right font-black", cdi.beats ? "text-emerald-500" : "text-red-500")}>{cdi.beats ? "+" : ""}{cdi.diff}%</td>}
+                            {showCdi && !cdi && <td className="p-3" />}
+                          </tr>
                         );
                       })}
                     </tbody>
