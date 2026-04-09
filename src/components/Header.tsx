@@ -68,14 +68,19 @@ export default function Header() {
     return () => window.removeEventListener('storage', handler);
   }, []);
 
-  const primaryNav = [
+  const primaryNavLeft = [
     { label: 'Análise', path: '/dashboard', icon: PlusCircle },
     { label: 'Operações', path: '/history', icon: History },
     { label: 'Portfólio', path: '/portfolio', icon: Briefcase },
+  ];
+
+  const primaryNavRight = [
     { label: 'Diversificar', path: '/diversificador', icon: PieChart },
     { label: 'Tempo Real', path: '/dados-ao-vivo', icon: Radio },
     { label: 'Opções B3', path: '/ticker-opcoes', icon: Database },
   ];
+
+  const primaryNav = [...primaryNavLeft, ...primaryNavRight];
 
   const trackerNav = [
     { label: 'Rastreador PRO', path: '/strategy-tracker', icon: Zap },
