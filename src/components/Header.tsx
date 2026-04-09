@@ -74,13 +74,16 @@ export default function Header() {
     { label: 'Portfólio', path: '/portfolio', icon: Briefcase },
     { label: 'Diversificar', path: '/diversificador', icon: PieChart },
     { label: 'Tempo Real', path: '/dados-ao-vivo', icon: Radio },
-    { label: 'Rastrear Box', path: '/box-tracker', icon: BarChart2 },
-    ...(collarEnabled ? [{ label: 'Collar', path: '/collar-tracker', icon: ShieldCheck }] : []),
     { label: 'Opções B3', path: '/ticker-opcoes', icon: Database },
   ];
 
-  const secondaryNav = [
+  const trackerNav = [
     { label: 'Rastreador PRO', path: '/strategy-tracker', icon: Zap },
+    { label: 'Rastrear Box', path: '/box-tracker', icon: BarChart2 },
+    ...(collarEnabled ? [{ label: 'Rastrear Collar', path: '/collar-tracker', icon: ShieldCheck }] : []),
+  ];
+
+  const secondaryNav = [
     { label: 'CDI x Opções', path: '/calculadora-renda-fixa', icon: Calculator },
     { label: 'Manual', path: '/manual', icon: BookOpen },
     { label: 'FAQ', path: '/faq', icon: HelpCircle },
