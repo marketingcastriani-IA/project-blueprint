@@ -27,8 +27,37 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Area, CartesianGrid, ReferenceLine, XAxis, YAxis, ComposedChart, Line, ResponsiveContainer } from "recharts";
+import { Area, CartesianGrid, ReferenceLine, XAxis, YAxis, ComposedChart, Line, ResponsiveContainer, Tooltip } from "recharts";
 import { calculatePayoffAtExpiry } from "@/lib/payoff";
+
+// ─── PAYOFF CHART TOOLTIP (same style as Collar) ─────────────
+const StrategyChartTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border border-border bg-card/95 p-3 shadow-xl backdrop-blur-sm">
+      <div className="mb-2 border-b border-border/50 pb-1">
+        <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Preço do Ativo</p>
+        <p className="text-sm font-bold font-mono">R$ {Number(label).toFixed(2)}</p>
+      </div>
+      <div className="space-y-1.5">
+        {payload.map((p: any, i: number) => {
+          if (p.dataKey === "belowZero" || p.dataKey === "aboveZero") return null;
+          return (
+            <div key={i} className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
+                <span className="text-xs font-bold text-foreground/80">{p.name}</span>
+              </div>
+              <span className={cn("text-xs font-black font-mono", p.value >= 0 ? "text-emerald-500" : "text-red-500")}>
+                R$ {Number(p.value).toFixed(2)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 // ─── TIPOS ───────────────────────────────────────────────────
 type MarketView = "alta" | "baixa" | "lateral" | "volatilidade";
