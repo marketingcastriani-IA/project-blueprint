@@ -1086,7 +1086,7 @@ export default function StrategyTrackerTab() {
       : sortBy === "quality" ? (a: StrategyResult, b: StrategyResult) => b.qualityScore - a.qualityScore
       : (a: StrategyResult, b: StrategyResult) => b.maxProfit - a.maxProfit;
     return filtered.sort(sorter).slice(0, 50);
-  }, [selectedFamily, selectedStrategy, selectedVencimento, moneynessFilter, minPremium, minTrades, minReturnPct, maxLossFilter, quantity, stockPrice, options, rows, status, getPrice, addTicker, stockTicker, sortBy, hasMinTrades]);
+  }, [selectedFamily, selectedStrategies, selectedVencimento, moneynessFilter, minPremium, minTrades, minReturnPct, maxLossFilter, quantity, stockPrice, options, rows, status, getPrice, addTicker, stockTicker, sortBy, hasMinTrades]);
 
   // Auto-select winner (first result) whenever results change
   useEffect(() => {
@@ -1099,7 +1099,7 @@ export default function StrategyTrackerTab() {
 
   const top3 = results.slice(0, 3);
   const rest = results.slice(3);
-  const currentView = STRATEGIES.find((s) => s.id === selectedStrategy)?.view ?? "alta";
+  const currentView = STRATEGIES.find((s) => selectedStrategies.includes(s.id))?.view ?? "alta";
   const viewCfg = VIEW_CONFIG[currentView];
 
   const cdiComparison = useCallback((result: StrategyResult) => {
@@ -1278,8 +1278,8 @@ export default function StrategyTrackerTab() {
               <button
                 key={view}
                 onClick={() => {
-                  const first = STRATEGIES.find((s) => s.view === view);
-                  if (first) setSelectedStrategy(first.id);
+                  const viewStrats = STRATEGIES.filter((s) => s.view === view).map(s => s.id);
+                  setSelectedStrategies(viewStrats);
                 }}
                 className={cn(
                   "relative flex flex-col items-center gap-1.5 px-4 py-4 rounded-2xl font-black uppercase tracking-widest transition-all duration-200",
@@ -1299,11 +1299,11 @@ export default function StrategyTrackerTab() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {STRATEGIES.filter((s) => s.view === currentView).map((strat) => {
-            const active = selectedStrategy === strat.id;
+            const active = selectedStrategies.includes(strat.id);
             return (
               <div key={strat.id} className="relative group">
                 <button
-                  onClick={() => setSelectedStrategy(strat.id)}
+                  onClick={() => setSelectedStrategies(prev => prev.includes(strat.id) ? (prev.length > 1 ? prev.filter(s => s !== strat.id) : prev) : [...prev, strat.id])}
                   className={cn(
                     "relative w-full p-4 rounded-2xl text-left transition-all duration-200 border-2 group",
                     "hover:shadow-lg hover:scale-[1.03]",
@@ -1493,7 +1493,7 @@ export default function StrategyTrackerTab() {
           <div className="flex items-center justify-between flex-wrap gap-2">
             <h2 className="text-sm font-black uppercase tracking-widest text-foreground flex items-center gap-2">
               <Trophy className="h-4 w-4 text-primary" />
-              Top Resultados — {STRATEGIES.find((s) => s.id === selectedStrategy)?.label}
+              Top Resultados — {selectedStrategies.length === 1 ? STRATEGIES.find((s) => s.id === selectedStrategies[0])?.label : `${selectedStrategies.length} Estratégias`}
               <Badge variant="outline" className="text-xs font-bold ml-1">{selectedFamily}</Badge>
             </h2>
             <div className="flex items-center gap-2">
