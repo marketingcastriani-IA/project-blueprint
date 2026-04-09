@@ -67,15 +67,21 @@ export default function AccessBlocked({ status }: AccessBlockedProps) {
   const c = content[status];
 
   const proFeatures = [
-    { icon: Bot, label: 'Análise por IA ilimitada' },
-    { icon: Camera, label: 'OCR — Leitura de imagens' },
-    { icon: History, label: 'Histórico completo' },
-    { icon: Briefcase, label: 'Portfólio de operações' },
-    { icon: Zap, label: 'Simulações ilimitadas' },
-    { icon: Crown, label: 'Rastreadores Box & Collar ao vivo' },
-    { icon: Crown, label: 'Tempo Real com Profit RTD' },
-    { icon: Crown, label: 'Calculadora CDI x Opções' },
-    { icon: Crown, label: 'Diversificador de carteira' },
+    { icon: Zap, label: 'Simulações ILIMITADAS' },
+    { icon: BarChart3, label: 'Gráfico de Payoff completo' },
+    { icon: PieChart, label: 'Comparativo vs CDI' },
+    { icon: Bot, label: 'Análise com Inteligência Artificial' },
+    { icon: Camera, label: 'OCR de Imagem (IA)' },
+    { icon: Briefcase, label: 'Portfólio e P&L consolidado' },
+    { icon: History, label: 'Histórico de análises' },
+    { icon: Radio, label: 'Tempo Real — Conexão Profit RTD' },
+    { icon: Shield, label: 'Rastreador Box × CDI' },
+    { icon: Shield, label: 'Rastreador Collar — Proteção + Renda' },
+    { icon: Database, label: 'Ticker Opções B3 — 99k+ opções' },
+    { icon: Calculator, label: 'Calculadora CDI × Opções' },
+    { icon: Bell, label: 'Alertas na Tela (Box Tracker)' },
+    { icon: BookOpen, label: 'Rastreador PRO X — 12 Estratégias' },
+    { icon: PieChart, label: 'Diversificador de carteira' },
     { icon: Crown, label: 'Suporte prioritário' },
   ];
 
