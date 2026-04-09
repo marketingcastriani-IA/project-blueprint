@@ -201,7 +201,7 @@ export default function Header() {
 
           {/* Theme selector */}
           <div className="flex items-center gap-1 shrink-0">
-            <Palette className="h-3 w-3 text-primary-foreground/60" />
+            <Palette className="h-3 w-3 text-muted-foreground" />
             {themes.map(item => (
               <button
                 key={item.key}
@@ -209,8 +209,8 @@ export default function Header() {
                 className={cn(
                   'flex items-center gap-1 px-2 py-1 rounded-full text-[10px] lg:text-xs font-semibold transition-all whitespace-nowrap',
                   theme === item.key
-                    ? 'bg-primary-foreground/20 text-primary-foreground ring-1 ring-primary-foreground/30'
-                    : 'text-primary-foreground/60 hover:bg-primary-foreground/10 hover:text-primary-foreground'
+                    ? 'bg-primary text-primary-foreground ring-1 ring-primary/30'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 )}
               >
                 <item.icon className="h-3 w-3" />
