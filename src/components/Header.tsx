@@ -150,6 +150,43 @@ export default function Header() {
           {primaryNav.map(item => (
             <NavButton key={item.path} item={item} />
           ))}
+
+          {/* Dropdown: Rastreadores PRO X */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className={cn(
+                  'flex items-center gap-1 rounded-lg font-black uppercase tracking-wide transition-all whitespace-nowrap',
+                  'px-2 py-1.5 text-[10px] lg:px-3 lg:py-2 lg:text-xs xl:tracking-widest',
+                  trackerNav.some(t => location.pathname === t.path)
+                    ? 'bg-primary-foreground/20 text-primary-foreground'
+                    : 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
+                )}
+              >
+                <Crosshair className="h-3.5 w-3.5 shrink-0 lg:h-4 lg:w-4" />
+                <span>Rastreadores</span>
+                <ChevronDown className="h-3 w-3 shrink-0" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-[200px]">
+              {trackerNav.map(item => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <DropdownMenuItem
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className={cn(
+                      'flex items-center gap-2 font-bold uppercase tracking-wide text-xs cursor-pointer',
+                      isActive && 'bg-primary/10 text-primary'
+                    )}
+                  >
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    {item.label}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </nav>
 
         {/* Right actions */}
