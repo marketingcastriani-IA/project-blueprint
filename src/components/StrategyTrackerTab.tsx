@@ -13,6 +13,7 @@ import iconAlta from "@/assets/icon-alta.png";
 import iconBaixa from "@/assets/icon-baixa.png";
 import iconLateral from "@/assets/icon-lateral.png";
 import iconVolatilidade from "@/assets/icon-volatilidade.png";
+import iconDica from "@/assets/icon-dica.png";
 import {
   TrendingUp, TrendingDown, Activity, Target, Layers,
   ChevronDown, ChevronUp, Trophy, Wifi, WifiOff, Info,
