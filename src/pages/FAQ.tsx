@@ -540,6 +540,7 @@ export default function FAQ() {
             </p>
 
             <ScreenshotImage src={faqRastreadorBox} alt="Rastreador de Box Spread" />
+            <ScreenshotImage src={faqBoxTabela} alt="Tabela de Box por Strike - Opções PRO X" />
 
             <div className="space-y-4">
               <StepCard 
@@ -879,9 +880,8 @@ export default function FAQ() {
               A página de <strong className="text-foreground">Configurações</strong> (/settings) permite personalizar sua experiência no Opções PRO X.
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[
-                { label: 'Tema (Dark/Light)', desc: 'Alterne entre modo escuro e claro conforme sua preferência visual' },
+            <ScreenshotImage src={faqTemasCores} alt="Temas e Personalização - Opções PRO X" />
+
                 { label: 'Nome de Exibição', desc: 'Personalize como seu nome aparece no topo da aplicação' },
                 { label: 'Foto de Perfil', desc: 'Faça upload de uma imagem de perfil para identificação visual' },
                 { label: 'Informações do Plano', desc: 'Veja o status do seu plano (Free/PRO), data de expiração e simulações restantes' },
