@@ -411,18 +411,33 @@ export default function StrategyTrackerTab() {
 
   const [selectedFamily, setSelectedFamily] = useState<string>("");
   const [selectedStrategy, setSelectedStrategy] = useState<StrategyType>("covered_call");
-  // Auto-select next MONTHLY expiry (skip weeklies)
-  // B3 monthly options expire on the 3rd Monday (typically day 13-21)
+  // Auto-select next MONTHLY expiry (3rd Friday of the month — B3 standard)
   const nextMonthlyExpiry = useMemo(() => {
     if (vencimentos.length === 0) return "all";
     const now = new Date();
-    // First pass: find monthly expirations (day between 13 and 21)
+
+    // Helper: get the 3rd Friday of a given month/year
+    const thirdFriday = (year: number, month: number): Date => {
+      // First day of month
+      const first = new Date(year, month, 1);
+      // Day of week (0=Sun..6=Sat); Friday=5
+      const firstFriday = ((5 - first.getDay()) + 7) % 7 + 1; // day-of-month of 1st Friday
+      return new Date(year, month, firstFriday + 14); // 3rd Friday = 1st Friday + 14
+    };
+
+    // Check if a date is "close" to the 3rd Friday (within ±2 days, to account for holidays)
+    const isMonthlyExpiry = (d: Date): boolean => {
+      const tf = thirdFriday(d.getFullYear(), d.getMonth());
+      const diff = Math.abs(d.getTime() - tf.getTime()) / (1000 * 60 * 60 * 24);
+      return diff <= 2;
+    };
+
+    // First pass: find next monthly expiration
     for (const v of vencimentos) {
       const parts = v.split("/");
       if (parts.length === 3) {
-        const day = parseInt(parts[0]);
-        const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, day);
-        if (d >= now && day >= 13 && day <= 21) return v;
+        const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+        if (d >= now && isMonthlyExpiry(d)) return v;
       }
     }
     // Fallback: first future expiry
