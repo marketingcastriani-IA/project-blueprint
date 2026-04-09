@@ -421,12 +421,7 @@ export default function StrategyTrackerTab() {
   const [selectedResult, setSelectedResult] = useState<StrategyResult | null>(null);
   const [sortBy, setSortBy] = useState<"return" | "quality" | "profit">("return");
 
-  // Auto-select next monthly expiry when available
-  useEffect(() => {
-    if (!selectedVencimento && nextMonthlyExpiry !== "all") {
-      setSelectedVencimento(nextMonthlyExpiry);
-    }
-  }, [nextMonthlyExpiry]);
+  // (auto-select vencimento moved after availableVencimentos declaration)
 
   // Persist saved assets
   useEffect(() => {
@@ -558,6 +553,24 @@ export default function StrategyTrackerTab() {
     const vSet = new Set(fOpts.map((o) => o.vencimento));
     return vencimentos.filter((v) => vSet.has(v));
   }, [selectedFamily, options, vencimentos]);
+
+  // Auto-select nearest expiry when family changes or vencimentos load
+  useEffect(() => {
+    if (availableVencimentos.length > 0) {
+      const now = new Date();
+      let best = "";
+      for (const v of availableVencimentos) {
+        const parts = v.split("/");
+        let d: Date;
+        if (parts.length === 3) d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+        else if (parts.length === 2) d = new Date(parseInt(parts[1]), parseInt(parts[0]) - 1, 15);
+        else continue;
+        if (d >= now) { best = v; break; }
+      }
+      setSelectedVencimento(best || availableVencimentos[0]);
+    }
+  }, [selectedFamily, availableVencimentos.length]);
+
 
   const getPrice = useCallback((ticker: string, field: "ofCompra" | "ofVenda" | "ultimo"): { price: number; isLive: boolean } => {
     const row = rows.get(ticker);
@@ -1344,7 +1357,10 @@ export default function StrategyTrackerTab() {
                           <span className="font-bold text-foreground">{leg.ticker}</span>
                           {leg.type === "STOCK"
                             ? <span className="text-muted-foreground">@ R$ {leg.price.toFixed(2)}</span>
-                            : leg.strike > 0 && <span className="text-muted-foreground">K {leg.strike.toFixed(2)}</span>
+                            : <>
+                                {leg.strike > 0 && <span className="text-muted-foreground">K {leg.strike.toFixed(2)}</span>}
+                                <span className="text-primary font-bold">R$ {leg.price.toFixed(2)}</span>
+                              </>
                           }
                         </div>
                       ))}
