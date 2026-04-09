@@ -27,8 +27,37 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Area, CartesianGrid, ReferenceLine, XAxis, YAxis, ComposedChart, Line, ResponsiveContainer } from "recharts";
+import { Area, CartesianGrid, ReferenceLine, XAxis, YAxis, ComposedChart, Line, ResponsiveContainer, Tooltip } from "recharts";
 import { calculatePayoffAtExpiry } from "@/lib/payoff";
+
+// ─── PAYOFF CHART TOOLTIP (same style as Collar) ─────────────
+const StrategyChartTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border border-border bg-card/95 p-3 shadow-xl backdrop-blur-sm">
+      <div className="mb-2 border-b border-border/50 pb-1">
+        <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">Preço do Ativo</p>
+        <p className="text-sm font-bold font-mono">R$ {Number(label).toFixed(2)}</p>
+      </div>
+      <div className="space-y-1.5">
+        {payload.map((p: any, i: number) => {
+          if (p.dataKey === "belowZero" || p.dataKey === "aboveZero") return null;
+          return (
+            <div key={i} className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
+                <span className="text-xs font-bold text-foreground/80">{p.name}</span>
+              </div>
+              <span className={cn("text-xs font-black font-mono", p.value >= 0 ? "text-emerald-500" : "text-red-500")}>
+                R$ {Number(p.value).toFixed(2)}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 // ─── TIPOS ───────────────────────────────────────────────────
 type MarketView = "alta" | "baixa" | "lateral" | "volatilidade";
@@ -142,13 +171,38 @@ function diasUteis(from: Date, to: Date): number {
   return count;
 }
 
-// ─── MINI PAYOFF CHART ──────────────────────────────────────
-function MiniPayoffChart({ result, spotPrice }: { result: StrategyResult; spotPrice: number }) {
+// ─── PAYOFF CHART (Collar-style) ────────────────────────────
+function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { result: StrategyResult; spotPrice: number; cdiRate?: number; qty?: number }) {
   const [pctAbaixo, setPctAbaixo] = useState(5);
   const [pctAcima, setPctAcima] = useState(5);
 
   const priceMin = spotPrice * (1 - pctAbaixo / 100);
   const priceMax = spotPrice * (1 + pctAcima / 100);
+
+  // Extract strikes for reference lines
+  const strikes = useMemo(() => {
+    const s: { strike: number; type: string; side: string; ticker: string }[] = [];
+    result.legs.forEach((l) => {
+      if (l.type !== "STOCK" && l.strike > 0) {
+        s.push({ strike: l.strike, type: l.type, side: l.side, ticker: l.ticker });
+      }
+    });
+    return s;
+  }, [result.legs]);
+
+  // Calculate dias uteis from vencimento
+  const diasUteis = useMemo(() => {
+    if (!result.vencimento) return 0;
+    const parts = result.vencimento.split("/");
+    if (parts.length !== 2) return 0;
+    const expMonth = parseInt(parts[0]) - 1;
+    const expYear = parseInt(parts[1]);
+    const expDate = new Date(expYear, expMonth, 15); // approx mid-month
+    const now = new Date();
+    const diffMs = expDate.getTime() - now.getTime();
+    const diffDays = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+    return Math.round(diffDays * 252 / 365);
+  }, [result.vencimento]);
 
   const payoffData = useMemo(() => {
     const legs = result.legs.map((l) => ({
@@ -160,19 +214,63 @@ function MiniPayoffChart({ result, spotPrice }: { result: StrategyResult; spotPr
       quantity: l.qty,
     }));
 
-    const points: { price: number; payoff: number }[] = [];
-    const steps = 80;
+    const r = cdiRate / 100;
+    const v = 0.35; // implied vol estimate
+    const T = diasUteis > 0 ? diasUteis / 252 : 0;
+
+    // CDI profit for the period (per unit)
+    const investPerUnit = spotPrice;
+    const cdiPeriodPct = T > 0 ? (Math.pow(1 + r, T) - 1) : 0;
+    const cdiProfitPerUnit = investPerUnit * cdiPeriodPct;
+
+    const Ncdf = (x: number) => {
+      const t2 = 1 / (1 + 0.2316419 * Math.abs(x));
+      const d2 = 0.3989423 * Math.exp(-x * x / 2);
+      const p = d2 * t2 * (0.3193815 + t2 * (-0.3565638 + t2 * (1.7814779 + t2 * (-1.821256 + t2 * 1.3302744))));
+      return x > 0 ? 1 - p : p;
+    };
+
+    const points: { price: number; payoffExpiry: number; payoffToday: number; cdiLine: number }[] = [];
+    const steps = 200;
     const step = (priceMax - priceMin) / steps;
+
     for (let i = 0; i <= steps; i++) {
       const price = priceMin + i * step;
-      const payoff = calculatePayoffAtExpiry(legs, price);
-      points.push({ price: Math.round(price * 100) / 100, payoff: Math.round(payoff * 100) / 100 });
+      const payoffExpiry = calculatePayoffAtExpiry(legs, price);
+
+      // Black-Scholes for T+0
+      let payoffToday = payoffExpiry;
+      if (T > 0.001) {
+        let todayVal = 0;
+        for (const leg of legs) {
+          if (leg.option_type === "stock") {
+            todayVal += (leg.side === "buy" ? 1 : -1) * (price - leg.price) * leg.quantity;
+          } else {
+            const K = leg.strike;
+            const d1 = (Math.log(price / K) + (r + v * v / 2) * T) / (v * Math.sqrt(T));
+            const d2 = d1 - v * Math.sqrt(T);
+            let optVal: number;
+            if (leg.option_type === "call") {
+              optVal = price * Ncdf(d1) - K * Math.exp(-r * T) * Ncdf(d2);
+            } else {
+              optVal = K * Math.exp(-r * T) * Ncdf(-d2) - price * Ncdf(-d1);
+            }
+            const sign = leg.side === "buy" ? 1 : -1;
+            todayVal += sign * (optVal - leg.price) * leg.quantity;
+          }
+        }
+        payoffToday = todayVal;
+      }
+
+      points.push({
+        price: Math.round(price * 100) / 100,
+        payoffExpiry: Math.round(payoffExpiry * 100) / 100,
+        payoffToday: Math.round(payoffToday * 100) / 100,
+        cdiLine: Math.round(cdiProfitPerUnit * 100) / 100,
+      });
     }
     return points;
-  }, [result.legs, priceMin, priceMax]);
-
-  const gainData = payoffData.map((p) => ({ ...p, gain: p.payoff >= 0 ? p.payoff : 0 }));
-  const lossData = payoffData.map((p) => ({ ...p, loss: p.payoff < 0 ? p.payoff : 0 }));
+  }, [result.legs, priceMin, priceMax, cdiRate, diasUteis, spotPrice]);
 
   return (
     <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
@@ -200,9 +298,7 @@ function MiniPayoffChart({ result, spotPrice }: { result: StrategyResult; spotPr
             <Slider
               value={[pctAbaixo]}
               onValueChange={(v) => setPctAbaixo(v[0])}
-              min={1}
-              max={30}
-              step={1}
+              min={1} max={30} step={1}
               className="[&_[role=slider]]:border-sky-400 [&_[role=slider]]:bg-background [&_[role=slider]]:shadow-md"
             />
           </div>
@@ -216,73 +312,98 @@ function MiniPayoffChart({ result, spotPrice }: { result: StrategyResult; spotPr
             <Slider
               value={[pctAcima]}
               onValueChange={(v) => setPctAcima(v[0])}
-              min={1}
-              max={30}
-              step={1}
+              min={1} max={30} step={1}
               className="[&_[role=slider]]:border-sky-400 [&_[role=slider]]:bg-background [&_[role=slider]]:shadow-md"
             />
           </div>
         </div>
       </div>
 
-      {/* Chart */}
-      <div className="h-48 w-full">
+      {/* Chart — Collar-style */}
+      <div className="h-[400px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={payoffData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+          <ComposedChart data={payoffData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
             <defs>
-              <linearGradient id="miniGain" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.4} />
-                <stop offset="100%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.05} />
+              <linearGradient id="stratLoss" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.3} />
+                <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.02} />
               </linearGradient>
-              <linearGradient id="miniLoss" x1="0" y1="1" x2="0" y2="0">
-                <stop offset="0%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.4} />
-                <stop offset="100%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.05} />
+              <linearGradient id="stratGain" x1="0" y1="1" x2="0" y2="0">
+                <stop offset="0%" stopColor="hsl(142 76% 36%)" stopOpacity={0.05} />
+                <stop offset="100%" stopColor="hsl(142 76% 36%)" stopOpacity={0.35} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-            <XAxis
-              dataKey="price"
-              tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
-              tickFormatter={(v) => `${v.toFixed(0)}`}
-              tickCount={5}
-            />
-            <YAxis
-              tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
-              tickFormatter={(v) => `${v >= 0 ? "+" : ""}${v.toFixed(0)}`}
-              width={50}
-            />
-            <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeWidth={2} strokeOpacity={0.5} />
-            <ReferenceLine
-              x={spotPrice}
-              stroke="hsl(var(--primary))"
-              strokeDasharray="4 4"
-              strokeWidth={1.5}
-              label={{ value: "Spot", position: "top", fontSize: 9, fill: "hsl(var(--primary))" }}
-            />
-            <Area
-              type="monotone"
-              dataKey="payoff"
-              stroke="none"
-              fill="url(#miniGain)"
-              fillOpacity={1}
-              baseValue={0}
-              isAnimationActive={false}
-            />
-            <Line
-              type="monotone"
-              dataKey="payoff"
-              stroke="hsl(var(--primary))"
-              strokeWidth={2}
-              dot={false}
-              isAnimationActive={false}
-            />
+            <CartesianGrid strokeDasharray="3 3" className="stroke-border" opacity={0.3} />
+            <XAxis type="number" dataKey="price" domain={["dataMin", "dataMax"]}
+              tickFormatter={(v: number) => v.toFixed(2)} stroke="hsl(var(--muted-foreground))" fontSize={11}
+              label={{ value: "Preço", position: "insideBottomRight", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+            <YAxis tickFormatter={(v: number) => `R$${v.toFixed(0)}`}
+              stroke="hsl(var(--muted-foreground))" fontSize={11} width={65}
+              label={{ value: "Lucro", angle: -90, position: "insideLeft", offset: 5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+
+            {/* Zero line */}
+            <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" strokeOpacity={0.5} />
+
+            {/* Strike reference lines */}
+            {strikes.map((s, i) => (
+              <ReferenceLine key={`strike-${i}`} x={s.strike}
+                stroke={s.type === "PUT" ? "hsl(0 84% 60%)" : "hsl(217 91% 60%)"}
+                strokeDasharray="6 3" strokeWidth={1.5}
+                label={{ value: `${s.type} ${s.strike.toFixed(2)}`, position: "top",
+                  fill: s.type === "PUT" ? "hsl(0 84% 60%)" : "hsl(217 91% 60%)", fontSize: 10, fontWeight: 700 }} />
+            ))}
+
+            {/* Spot price */}
+            <ReferenceLine x={spotPrice} stroke="hsl(var(--primary))" strokeWidth={2.5}
+              label={{ value: `PREÇO ${spotPrice.toFixed(2)}`, position: "top", fill: "hsl(var(--primary))", fontSize: 11, fontWeight: 900 }} />
+
+            {/* Breakeven lines */}
+            {result.breakeven.map((be, i) => (
+              <ReferenceLine key={`be-${i}`} x={be} stroke="hsl(45 95% 55%)" strokeDasharray="4 2" strokeWidth={1.5}
+                label={{ value: `BE ${be.toFixed(2)}`, position: "insideTopRight", fill: "hsl(45 95% 55%)", fontSize: 10, fontWeight: 700 }} />
+            ))}
+
+            <Tooltip content={<StrategyChartTooltip />} />
+
+            {/* Loss area fill */}
+            <Area type="monotone" dataKey="payoffExpiry" stroke="none" fill="url(#stratLoss)"
+              isAnimationActive={false} baseValue={0} activeDot={false} />
+
+            {/* CDI line */}
+            <Line name="── CDI ──" type="monotone" dataKey="cdiLine"
+              stroke="hsl(45 95% 55%)" strokeWidth={2.5} strokeDasharray="8 4"
+              dot={false} isAnimationActive={false} />
+
+            {/* Hoje (T+0) */}
+            <Line name="Hoje (T+0)" type="monotone" dataKey="payoffToday"
+              stroke="hsl(142 76% 36%)" strokeWidth={2} strokeDasharray="5 5"
+              dot={false} isAnimationActive={false} />
+
+            {/* No Vencimento */}
+            <Line name="No Vencimento" type="monotone" dataKey="payoffExpiry"
+              stroke="hsl(217 91% 60%)" strokeWidth={3} dot={false} isAnimationActive={false} />
           </ComposedChart>
         </ResponsiveContainer>
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap items-center justify-center gap-6 text-xs">
+        <span className="flex items-center gap-2">
+          <span className="w-6 h-0.5 bg-blue-500 rounded" style={{ display: "inline-block" }} />
+          <span className="text-muted-foreground font-bold">No Vencimento</span>
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="w-6 h-0.5 rounded" style={{ display: "inline-block", background: "hsl(142 76% 36%)" }} />
+          <span className="text-muted-foreground font-bold">Hoje (T+0)</span>
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="w-6 h-0.5 rounded" style={{ display: "inline-block", background: "hsl(45 95% 55%)", borderTop: "2px dashed hsl(45 95% 55%)" }} />
+          <span className="text-muted-foreground font-bold">── CDI ──</span>
+        </span>
       </div>
     </div>
   );
 }
-
 
 export default function StrategyTrackerTab() {
   const { options, vencimentos } = useB3Options();
@@ -1270,7 +1391,7 @@ export default function StrategyTrackerTab() {
                             <p className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 mb-3">
                               <BarChart2 className="h-3.5 w-3.5" /> Gráfico de Payoff
                             </p>
-                            <MiniPayoffChart result={result} spotPrice={stockPrice} />
+                            <MiniPayoffChart result={result} spotPrice={stockPrice} cdiRate={parseFloat(cdiRate) || 14.65} qty={parseInt(quantity) || 100} />
                           </div>
                         </div>
                       )}
@@ -1360,7 +1481,7 @@ export default function StrategyTrackerTab() {
                                       ))}
                                     </div>
                                     <p className="text-xs text-muted-foreground">Breakeven: {r.breakeven.map((b) => `R$ ${b.toFixed(2)}`).join(" | ")}</p>
-                                    <MiniPayoffChart result={r} spotPrice={stockPrice} />
+                                    <MiniPayoffChart result={r} spotPrice={stockPrice} cdiRate={parseFloat(cdiRate) || 14.65} qty={parseInt(quantity) || 100} />
                                   </div>
                                 </td>
                               </tr>
