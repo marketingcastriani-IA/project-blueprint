@@ -1347,7 +1347,7 @@ export default function StrategyTrackerTab() {
               </div>
               <Badge variant="outline" className="text-xs font-bold">{results.length} encontrados</Badge>
               <Badge className={cn("text-xs font-black border-0", viewCfg.color, `bg-current/10`)}>
-                {viewCfg.emoji} {viewCfg.label}
+                {viewCfg.label} {viewCfg.label}
               </Badge>
             </div>
           </div>
@@ -1399,7 +1399,7 @@ export default function StrategyTrackerTab() {
 
                     <div className="flex items-center gap-2 mb-2">
                       <Badge className={cn("text-[9px] font-black px-2 py-0.5 border-0", viewCfg.color, `bg-current/10`)}>
-                        {viewCfg.emoji} {result.strategyLabel}
+                        {viewCfg.label} {result.strategyLabel}
                       </Badge>
                       <Badge variant="outline" className="text-[9px] font-black">
                         {trophyLabels[idx]}
@@ -1523,7 +1523,7 @@ export default function StrategyTrackerTab() {
               <div className="px-4 py-3 bg-muted/30 border-b border-border/50">
                 <div className="flex items-center gap-3">
                   <Badge className={cn("text-xs font-black px-2.5 py-1 border-0", viewCfg.color, `bg-current/10`)}>
-                    {viewCfg.emoji} {selectedResult.strategyLabel}
+                    {viewCfg.label} {selectedResult.strategyLabel}
                   </Badge>
                   {selectedResult.isLive && (
                     <>
