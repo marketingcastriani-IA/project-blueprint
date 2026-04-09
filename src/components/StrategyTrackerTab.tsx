@@ -411,18 +411,25 @@ export default function StrategyTrackerTab() {
 
   const [selectedFamily, setSelectedFamily] = useState<string>("");
   const [selectedStrategy, setSelectedStrategy] = useState<StrategyType>("covered_call");
-  // Auto-select next monthly expiry
+  // Auto-select next MONTHLY expiry (skip weeklies)
+  // B3 monthly options expire on the 3rd Monday (typically day 13-21)
   const nextMonthlyExpiry = useMemo(() => {
     if (vencimentos.length === 0) return "all";
     const now = new Date();
-    // Parse vencimentos like "15/05/2026" and find next one
+    // First pass: find monthly expirations (day between 13 and 21)
+    for (const v of vencimentos) {
+      const parts = v.split("/");
+      if (parts.length === 3) {
+        const day = parseInt(parts[0]);
+        const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, day);
+        if (d >= now && day >= 13 && day <= 21) return v;
+      }
+    }
+    // Fallback: first future expiry
     for (const v of vencimentos) {
       const parts = v.split("/");
       if (parts.length === 3) {
         const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-        if (d >= now) return v;
-      } else if (parts.length === 2) {
-        const d = new Date(parseInt(parts[1]), parseInt(parts[0]) - 1, 15);
         if (d >= now) return v;
       }
     }
