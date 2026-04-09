@@ -1205,11 +1205,14 @@ export default function StrategyTrackerTab() {
                 <Dialog>
                   <DialogTrigger asChild>
                     <button
-                      className="absolute top-2 right-8 h-6 w-6 rounded-full bg-muted/80 hover:bg-primary/20 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 hover:!opacity-100 border border-border/40"
-                      style={{ opacity: active ? 1 : undefined }}
+                      className={cn(
+                        "absolute top-2 right-2 flex items-center gap-1 px-2 py-1 rounded-full bg-muted/90 hover:bg-primary/20 transition-all border border-border/50 shadow-sm",
+                        active ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                      )}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                      <img src={iconDica} alt="Dica" className="h-5 w-5 object-contain" loading="lazy" width={20} height={20} />
+                      <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Dica</span>
                     </button>
                   </DialogTrigger>
                   <DialogContent className="max-w-lg">
@@ -1369,17 +1372,17 @@ export default function StrategyTrackerTab() {
               <Badge variant="outline" className="text-xs font-bold ml-1">{selectedFamily}</Badge>
             </h2>
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5">
+              <div className="flex items-center gap-0.5 bg-muted/60 rounded-xl p-1 border-2 border-border/40">
                 <button
                   onClick={() => setViewMode("value")}
-                  className={cn("px-2.5 py-1 rounded-md text-[10px] font-black uppercase transition-all",
-                    viewMode === "value" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  className={cn("px-4 py-2 rounded-lg text-sm font-black uppercase tracking-wider transition-all",
+                    viewMode === "value" ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-105" : "text-muted-foreground hover:text-foreground hover:bg-muted"
                   )}
                 >R$</button>
                 <button
                   onClick={() => setViewMode("pct")}
-                  className={cn("px-2.5 py-1 rounded-md text-[10px] font-black uppercase transition-all",
-                    viewMode === "pct" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  className={cn("px-4 py-2 rounded-lg text-sm font-black uppercase tracking-wider transition-all",
+                    viewMode === "pct" ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30 scale-105" : "text-muted-foreground hover:text-foreground hover:bg-muted"
                   )}
                 >%</button>
               </div>
