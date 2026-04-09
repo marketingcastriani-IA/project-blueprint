@@ -722,6 +722,26 @@ export default function BoxTracker() {
       const lucroStr = best.lucro !== null ? `R$ ${best.lucro.toFixed(2)}` : '';
       const vencStr = best.vencimento || '';
       
+      // Toast na tela (sempre visível mesmo sem push)
+      const lucroStr = best.lucro !== null ? `R$ ${best.lucro.toFixed(2)}` : '';
+      const vencStr = best.vencimento || '';
+      const toastMsg = `${cdiPercent.toFixed(0)}% do CDI · Strike R$ ${best.strike.toFixed(2)} · Lucro: ${lucroStr} (${best.lucroPercent.toFixed(2)}%)${vencStr ? ` · Venc: ${vencStr}` : ''}`;
+
+      if (isUrgent) {
+        toast.error(`🚨 URGENTE! BOX ${best.familyName} — ${cdiPercent.toFixed(0)}% CDI!`, {
+          description: toastMsg,
+          duration: 15000,
+          important: true,
+        });
+      } else {
+        toast.success(`🚀 BOX ${best.familyName} ACIMA DO CDI!`, {
+          description: toastMsg,
+          duration: 10000,
+          important: true,
+        });
+      }
+
+      // Push notification (background/mobile)
       sendPushNotification(
         isUrgent
           ? `🚨 URGENTE! BOX ${best.familyName} — ${cdiPercent.toFixed(0)}% CDI!`
