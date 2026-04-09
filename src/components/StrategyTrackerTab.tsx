@@ -142,7 +142,148 @@ function diasUteis(from: Date, to: Date): number {
   return count;
 }
 
-// ─── COMPONENTE PRINCIPAL ────────────────────────────────────
+// ─── MINI PAYOFF CHART ──────────────────────────────────────
+function MiniPayoffChart({ result, spotPrice }: { result: StrategyResult; spotPrice: number }) {
+  const [pctAbaixo, setPctAbaixo] = useState(5);
+  const [pctAcima, setPctAcima] = useState(5);
+
+  const priceMin = spotPrice * (1 - pctAbaixo / 100);
+  const priceMax = spotPrice * (1 + pctAcima / 100);
+
+  const payoffData = useMemo(() => {
+    const legs = result.legs.map((l) => ({
+      side: l.side as "buy" | "sell",
+      option_type: l.type === "STOCK" ? "stock" as const : l.type === "CALL" ? "call" as const : "put" as const,
+      asset: l.ticker,
+      strike: l.strike,
+      price: l.price,
+      quantity: l.qty,
+    }));
+
+    const points: { price: number; payoff: number }[] = [];
+    const steps = 80;
+    const step = (priceMax - priceMin) / steps;
+    for (let i = 0; i <= steps; i++) {
+      const price = priceMin + i * step;
+      const payoff = calculatePayoffAtExpiry(legs, price);
+      points.push({ price: Math.round(price * 100) / 100, payoff: Math.round(payoff * 100) / 100 });
+    }
+    return points;
+  }, [result.legs, priceMin, priceMax]);
+
+  const gainData = payoffData.map((p) => ({ ...p, gain: p.payoff >= 0 ? p.payoff : 0 }));
+  const lossData = payoffData.map((p) => ({ ...p, loss: p.payoff < 0 ? p.payoff : 0 }));
+
+  return (
+    <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
+      {/* Range sliders */}
+      <div className="bg-muted/20 rounded-xl p-4 border border-border/30">
+        <div className="flex items-center justify-end mb-3">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-xs font-black border-red-400/40 text-red-500">
+              R$ {priceMin.toFixed(2)}
+            </Badge>
+            <span className="text-muted-foreground text-xs">—</span>
+            <Badge variant="outline" className="text-xs font-black border-emerald-400/40 text-emerald-500">
+              R$ {priceMax.toFixed(2)}
+            </Badge>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-widest text-red-500 flex items-center gap-1">
+                <TrendingDown className="h-3 w-3" /> ABAIXO
+              </span>
+              <span className="text-sm font-black text-red-500">{pctAbaixo}%</span>
+            </div>
+            <Slider
+              value={[pctAbaixo]}
+              onValueChange={(v) => setPctAbaixo(v[0])}
+              min={1}
+              max={30}
+              step={1}
+              className="[&_[role=slider]]:border-sky-400 [&_[role=slider]]:bg-background [&_[role=slider]]:shadow-md"
+            />
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" /> ACIMA
+              </span>
+              <span className="text-sm font-black text-emerald-500">{pctAcima}%</span>
+            </div>
+            <Slider
+              value={[pctAcima]}
+              onValueChange={(v) => setPctAcima(v[0])}
+              min={1}
+              max={30}
+              step={1}
+              className="[&_[role=slider]]:border-sky-400 [&_[role=slider]]:bg-background [&_[role=slider]]:shadow-md"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Chart */}
+      <div className="h-48 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={payoffData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
+            <defs>
+              <linearGradient id="miniGain" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.4} />
+                <stop offset="100%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.05} />
+              </linearGradient>
+              <linearGradient id="miniLoss" x1="0" y1="1" x2="0" y2="0">
+                <stop offset="0%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.4} />
+                <stop offset="100%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.05} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+            <XAxis
+              dataKey="price"
+              tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+              tickFormatter={(v) => `${v.toFixed(0)}`}
+              tickCount={5}
+            />
+            <YAxis
+              tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+              tickFormatter={(v) => `${v >= 0 ? "+" : ""}${v.toFixed(0)}`}
+              width={50}
+            />
+            <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeWidth={2} strokeOpacity={0.5} />
+            <ReferenceLine
+              x={spotPrice}
+              stroke="hsl(var(--primary))"
+              strokeDasharray="4 4"
+              strokeWidth={1.5}
+              label={{ value: "Spot", position: "top", fontSize: 9, fill: "hsl(var(--primary))" }}
+            />
+            <Area
+              type="monotone"
+              dataKey="payoff"
+              stroke="none"
+              fill="url(#miniGain)"
+              fillOpacity={1}
+              baseValue={0}
+              isAnimationActive={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="payoff"
+              stroke="hsl(var(--primary))"
+              strokeWidth={2}
+              dot={false}
+              isAnimationActive={false}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+
 export default function StrategyTrackerTab() {
   const { options, vencimentos } = useB3Options();
   const { status, rows, addTicker } = useSharedRtdBridge();
