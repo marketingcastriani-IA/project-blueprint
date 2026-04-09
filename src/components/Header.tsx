@@ -165,7 +165,14 @@ export default function Header() {
 
         {/* Desktop Primary Nav — scrollable */}
         <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 flex-1 overflow-x-auto scrollbar-none mx-2 pr-2" data-tour="nav-menu">
-          {primaryNav.map(item => (
+          {primaryNavLeft.map(item => (
+            <NavButton key={item.path} item={item} />
+          ))}
+
+          {/* PRO X center button */}
+          <ProXButton />
+
+          {primaryNavRight.map(item => (
             <NavButton key={item.path} item={item} />
           ))}
 
