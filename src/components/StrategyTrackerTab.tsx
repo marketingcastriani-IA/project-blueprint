@@ -1278,8 +1278,8 @@ export default function StrategyTrackerTab() {
               <button
                 key={view}
                 onClick={() => {
-                  const viewStrats = STRATEGIES.filter((s) => s.view === view).map(s => s.id);
-                  setSelectedStrategy(viewStrats);
+                  const firstStrat = STRATEGIES.find((s) => s.view === view);
+                  if (firstStrat) setSelectedStrategy(firstStrat.id);
                 }}
                 className={cn(
                   "relative flex flex-col items-center gap-1.5 px-4 py-4 rounded-2xl font-black uppercase tracking-widest transition-all duration-200",
