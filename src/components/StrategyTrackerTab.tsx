@@ -1175,7 +1175,7 @@ export default function StrategyTrackerTab() {
           {STRATEGIES.filter((s) => s.view === currentView).map((strat) => {
             const active = selectedStrategy === strat.id;
             return (
-              <div key={strat.id} className="relative">
+              <div key={strat.id} className="relative group">
                 <button
                   onClick={() => setSelectedStrategy(strat.id)}
                   className={cn(
