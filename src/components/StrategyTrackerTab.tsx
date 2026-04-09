@@ -601,23 +601,45 @@ export default function StrategyTrackerTab() {
     return vencimentos.filter((v) => vSet.has(v));
   }, [selectedFamily, options, vencimentos]);
 
-  // Auto-select nearest expiry when family changes or vencimentos load
+  // Auto-select nearest MONTHLY expiry (3rd Friday B3 rule) when family changes
   useEffect(() => {
     if (availableVencimentos.length > 0) {
       const now = new Date();
+
+      // Helper: 3rd Friday of a given month
+      const getThirdFriday = (year: number, month: number): number => {
+        const first = new Date(year, month, 1);
+        const firstFriday = ((5 - first.getDay()) + 7) % 7 + 1;
+        return firstFriday + 14;
+      };
+
+      // First pass: find next monthly (within ±2 days of 3rd Friday)
       let best = "";
       for (const v of availableVencimentos) {
         const parts = v.split("/");
-        let d: Date;
-        if (parts.length === 3) d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-        else if (parts.length === 2) d = new Date(parseInt(parts[1]), parseInt(parts[0]) - 1, 15);
-        else continue;
-        if (d >= now) { best = v; break; }
+        if (parts.length !== 3) continue;
+        const day = parseInt(parts[0]);
+        const month = parseInt(parts[1]) - 1;
+        const year = parseInt(parts[2]);
+        const d = new Date(year, month, day);
+        if (d < now) continue;
+        const thirdFri = getThirdFriday(year, month);
+        if (Math.abs(day - thirdFri) <= 2) { best = v; break; }
       }
+
+      // Fallback: first future date
+      if (!best) {
+        for (const v of availableVencimentos) {
+          const parts = v.split("/");
+          if (parts.length !== 3) continue;
+          const d = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+          if (d >= now) { best = v; break; }
+        }
+      }
+
       setSelectedVencimento(best || availableVencimentos[0]);
     }
   }, [selectedFamily, availableVencimentos.length]);
-
 
   const getPrice = useCallback((ticker: string, _field?: "ofCompra" | "ofVenda" | "ultimo"): { price: number; isLive: boolean } => {
     const row = rows.get(ticker);
