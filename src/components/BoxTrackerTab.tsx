@@ -7,6 +7,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { toast as toastSonner } from "sonner";
 import trophyGold from "@/assets/trophy-gold.png";
 import trophySilver from "@/assets/trophy-silver.png";
 import trophyBronze from "@/assets/trophy-bronze.png";
@@ -721,7 +722,22 @@ export default function BoxTracker() {
 
       const lucroStr = best.lucro !== null ? `R$ ${best.lucro.toFixed(2)}` : '';
       const vencStr = best.vencimento || '';
-      
+      const toastMsg = `${cdiPercent.toFixed(0)}% do CDI · Strike R$ ${best.strike.toFixed(2)} · Lucro: ${lucroStr} (${best.lucroPercent.toFixed(2)}%)${vencStr ? ` · Venc: ${vencStr}` : ''}`;
+
+      // Toast na tela (sempre visível)
+      if (isUrgent) {
+        toastSonner.error(`🚨 URGENTE! BOX ${best.familyName} — ${cdiPercent.toFixed(0)}% CDI!`, {
+          description: toastMsg,
+          duration: 15000,
+        });
+      } else {
+        toastSonner.success(`🚀 BOX ${best.familyName} ACIMA DO CDI!`, {
+          description: toastMsg,
+          duration: 10000,
+        });
+      }
+
+      // Push notification (background/mobile)
       sendPushNotification(
         isUrgent
           ? `🚨 URGENTE! BOX ${best.familyName} — ${cdiPercent.toFixed(0)}% CDI!`
