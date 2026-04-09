@@ -505,13 +505,14 @@ export default function AdminPanel() {
     }
   };
 
-  type EmailTemplate = 'promo' | 'renewal' | 'news' | 'custom' | 'calc_cdi' | 'box_tracker' | 'collar_tracker' | 'tempo_real' | 'diversificador' | 'resumo_geral' | 'boas_vindas_pro';
+  type EmailTemplate = 'promo' | 'renewal' | 'news' | 'custom' | 'calc_cdi' | 'box_tracker' | 'collar_tracker' | 'tempo_real' | 'diversificador' | 'resumo_geral' | 'boas_vindas_pro' | 'rastreador_pro_x';
 
   const EMAIL_TEMPLATE_OPTIONS: { value: EmailTemplate; label: string; icon: string; color: string }[] = [
     { value: 'boas_vindas_pro', label: 'Boas-vindas PRO', icon: '🎉', color: 'border-green-400/50 text-green-400 hover:bg-green-400/10' },
     { value: 'promo', label: 'Promoção', icon: '🔥', color: 'border-primary/30 hover:bg-primary/10' },
     { value: 'renewal', label: 'Renovação', icon: '⚠️', color: 'border-warning/30 text-warning hover:bg-warning/10' },
     { value: 'news', label: 'Novidades', icon: '🚀', color: 'border-success/30 text-success hover:bg-success/10' },
+    { value: 'rastreador_pro_x', label: 'Rastreador PRO X', icon: '⚡', color: 'border-cyan-400/50 text-cyan-400 hover:bg-cyan-400/10' },
     { value: 'calc_cdi', label: 'Calculadora CDI x Opções', icon: '🧮', color: 'border-yellow-400/50 text-yellow-500 hover:bg-yellow-400/10' },
     { value: 'box_tracker', label: 'Rastreador Box', icon: '📊', color: 'border-blue-400/50 text-blue-400 hover:bg-blue-400/10' },
     { value: 'collar_tracker', label: 'Rastreador Collar', icon: '🛡️', color: 'border-emerald-400/50 text-emerald-400 hover:bg-emerald-400/10' },
