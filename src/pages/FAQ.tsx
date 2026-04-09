@@ -683,6 +683,92 @@ export default function FAQ() {
           </div>
         </FeatureSection>
 
+        {/* ─── RASTREADOR PRO X ─── */}
+        <FeatureSection icon={Trophy} title="Rastreador PRO X — Estratégias em Tempo Real" badge="PRO">
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              O <strong className="text-foreground">Rastreador PRO X</strong> é a ferramenta mais avançada do sistema. Ele analisa em tempo real 
+              <strong className="text-foreground"> 10+ estratégias</strong> divididas por cenários (Alta, Baixa, Lateral e Volatilidade), 
+              ranqueando as melhores combinações em um pódio Top 3 com troféus ouro/prata/bronze.
+            </p>
+
+            <ScreenshotImage src={faqStrategyTracker} alt="Rastreador PRO X - Estratégias em Tempo Real" />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { label: 'Cenário Alta', desc: 'Venda Coberta (Covered Call) e Trava de Alta com Call — lucre com alta moderada do ativo.' },
+                { label: 'Cenário Baixa', desc: 'Venda de Put e Trava de Baixa com Put — lucre com queda ou estabilidade.' },
+                { label: 'Cenário Lateral', desc: 'Iron Condor e Borboleta (Butterfly) — lucre com ativo lateralizado.' },
+                { label: 'Cenário Volatilidade', desc: 'Straddle e Strangle (Comprado/Vendido) — lucre com alta ou baixa volatilidade.' },
+              ].map(item => (
+                <div key={item.label} className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                  <p className="text-xs font-bold">{item.label}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-4">
+              <StepCard 
+                step={1} icon={Target}
+                title="Selecione o Ativo e a Estratégia" 
+                description="Escolha entre os Top 18 ativos mais líquidos ou digite manualmente. Selecione o cenário (Alta/Baixa/Lateral/Volatilidade) e a estratégia específica."
+              />
+              <StepCard 
+                step={2} icon={Settings}
+                title="Configure Filtros e Vencimento" 
+                description="Ajuste vencimento (3a sexta-feira B3), moneyness (ITM/ATM/OTM), prêmio mínimo, quantidade e filtro de liquidez (Negócios >=). Compare com CDI."
+              />
+              <StepCard 
+                step={3} icon={Trophy}
+                title="Analise o Ranking Top 3" 
+                description="O sistema varre todas as combinações e rankeia por Retorno %, Quality Score ou Lucro. Os 3 melhores aparecem com troféus ouro/prata/bronze e detalhes expandíveis."
+              />
+              <StepCard 
+                step={4} icon={BarChart3}
+                title="Gráfico de Payoff Avançado" 
+                description="Clique em qualquer resultado para ver o payoff completo com curvas T+0 e Vencimento, breakeven, lucro máximo/mínimo e comparação com CDI."
+              />
+            </div>
+
+            <ScreenshotImage src={faqStrategyVolatility} alt="Estratégias de Volatilidade - Straddle e Strangle" />
+
+            <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 space-y-3">
+              <h4 className="text-sm font-black flex items-center gap-2">
+                <Zap className="h-4 w-4 text-primary" /> Estratégias de Volatilidade (NOVO)
+              </h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" />
+                  <span><strong className="text-foreground">Straddle Comprado:</strong> Compra Call + Put no mesmo strike. Lucra com alta volatilidade (movimentos bruscos para qualquer lado).</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" />
+                  <span><strong className="text-foreground">Straddle Vendido:</strong> Vende Call + Put no mesmo strike. Lucra com baixa volatilidade (ativo parado próximo ao strike).</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" />
+                  <span><strong className="text-foreground">Strangle Comprado:</strong> Compra Call + Put OTM com strikes diferentes. Mais barato que Straddle, aposta em alta volatilidade.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" />
+                  <span><strong className="text-foreground">Strangle Vendido:</strong> Vende Call + Put OTM. Lucra com estabilidade dentro de uma faixa de preço (zona de lucro).</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="p-4 rounded-xl bg-warning/5 border border-warning/20">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  <strong className="text-foreground">Dica:</strong> Importe tickers e vencimentos diretamente da página Opções B3 com 1 clique. 
+                  O sistema recalcula automaticamente a cada atualização de preço via RTD Bridge.
+                </p>
+              </div>
+            </div>
+          </div>
+        </FeatureSection>
+
         {/* ─── TICKER OPÇÕES B3 ─── */}
         <FeatureSection icon={Database} title="Ticker Opções B3 — Banco de Opções" badge="NOVO">
           <div className="space-y-4">
