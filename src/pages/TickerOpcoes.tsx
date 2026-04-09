@@ -520,6 +520,14 @@ export default function TickerOpcoes() {
       return;
     }
     const tickers = selected.map((o) => o.ticker);
+    // Get the most common vencimento from selected options
+    const vencimentoCount = new Map<string, number>();
+    selected.forEach((o) => {
+      if (o.vencimento) vencimentoCount.set(o.vencimento, (vencimentoCount.get(o.vencimento) || 0) + 1);
+    });
+    let bestVencimento = "";
+    let bestCount = 0;
+    vencimentoCount.forEach((count, v) => { if (count > bestCount) { bestCount = count; bestVencimento = v; } });
 
     let existingFamilies: SavedFamily[] = [];
     try {
@@ -535,8 +543,9 @@ export default function TickerOpcoes() {
       const autoSet = new Set(existingFamilies[existingIdx].autoImported || []);
       tickers.forEach((t) => autoSet.add(t));
       existingFamilies[existingIdx].autoImported = Array.from(autoSet);
+      if (bestVencimento) (existingFamilies[existingIdx] as any).vencimento = bestVencimento;
     } else {
-      existingFamilies.push({ name: familyName, tickers, autoImported: [...tickers] });
+      existingFamilies.push({ name: familyName, tickers, autoImported: [...tickers], ...(bestVencimento ? { vencimento: bestVencimento } : {}) } as any);
     }
 
     localStorage.setItem(STRATEGY_STORAGE_KEY, JSON.stringify(existingFamilies));

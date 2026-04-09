@@ -314,12 +314,44 @@ export default function StrategyTrackerTab() {
     localStorage.setItem(SAVED_ASSETS_KEY, JSON.stringify(savedAssets));
   }, [savedAssets]);
 
-  // Load initial selected family from saved assets
+  // ─── Load from strategy-tracker-families (sent from Opções B3) ──
+  useEffect(() => {
+    try {
+      const familiesRaw = localStorage.getItem(STRATEGY_STORAGE_KEY);
+      if (familiesRaw) {
+        const families: { name: string; tickers: string[]; vencimento?: string }[] = JSON.parse(familiesRaw);
+        if (families.length > 0) {
+          // Merge into saved assets
+          setSavedAssets((prev) => {
+            const newAssets = [...prev];
+            for (const fam of families) {
+              if (!newAssets.find((a) => a.family === fam.name)) {
+                newAssets.push({ family: fam.name, label: fam.name, addedAt: new Date().toISOString() });
+              }
+            }
+            return newAssets;
+          });
+          // Auto-select the first family
+          const first = families[0];
+          setSelectedFamily(first.name);
+          // Auto-set vencimento if provided
+          if (first.vencimento) {
+            setSelectedVencimento(first.vencimento);
+          }
+          // Clear the families key after consuming
+          localStorage.removeItem(STRATEGY_STORAGE_KEY);
+          toast.success(`Ativo ${first.name} carregado do Opções B3!`);
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Load initial selected family from saved assets (only if no family from import)
   useEffect(() => {
     if (!selectedFamily && savedAssets.length > 0) {
       setSelectedFamily(savedAssets[0].family);
     }
-  }, []);
+  }, [savedAssets.length]);
 
   const addSavedAsset = useCallback((family: string, label?: string) => {
     setSavedAssets((prev) => {
@@ -339,6 +371,13 @@ export default function StrategyTrackerTab() {
     }
     toast.info(`${family} removido do rastreamento`);
   }, [selectedFamily]);
+
+  const clearAllAssets = useCallback(() => {
+    setSavedAssets([]);
+    setSelectedFamily("");
+    localStorage.removeItem(STRATEGY_STORAGE_KEY);
+    toast.info("Lista de rastreamento limpa");
+  }, []);
 
   const handleAddCustomAsset = useCallback(() => {
     const input = customAssetInput.trim().toUpperCase();
@@ -844,6 +883,14 @@ export default function StrategyTrackerTab() {
               <Save className="h-3.5 w-3.5 text-primary" />
               Ativos Rastreados ({savedAssets.length})
               <span className="text-[10px] font-normal normal-case text-muted-foreground ml-1">— clique para analisar, X para remover</span>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={clearAllAssets}
+                className="ml-auto h-6 px-2.5 text-[10px] font-black uppercase"
+              >
+                <Trash2 className="h-3 w-3 mr-1" /> Limpar Tudo
+              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-2 pb-3">
