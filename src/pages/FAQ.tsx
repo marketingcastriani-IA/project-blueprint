@@ -122,6 +122,9 @@ export default function FAQ() {
                 temasCores: faqTemasCores,
                 manualTabela: faqManualTabela,
                 manualGrafico: faqManualGrafico,
+                strategyTracker: faqStrategyTracker,
+                strategyVolatility: faqStrategyVolatility,
+              };
               };
               await generateFAQPdf(faqImages);
               toast.success('PDF do manual baixado!');
