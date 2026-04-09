@@ -424,10 +424,12 @@ export default function StrategyTrackerTab() {
   const [moneynessFilter, setMoneynessFilter] = useState<string>("all");
   const [minPremium, setMinPremium] = useState("");
   const [minTrades, setMinTrades] = useState("");
+  const [minReturnPct, setMinReturnPct] = useState("");
+  const [maxLossFilter, setMaxLossFilter] = useState("");
   const [quantity, setQuantity] = useState("100");
   const [cdiRate, setCdiRate] = useState("14.65");
   const [showCdi, setShowCdi] = useState(true);
-  const [expandedResult, setExpandedResult] = useState<string | null>(null);
+  const [selectedResult, setSelectedResult] = useState<StrategyResult | null>(null);
   const [sortBy, setSortBy] = useState<"return" | "quality" | "profit">("return");
 
   // Persist saved assets
