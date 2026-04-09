@@ -1303,7 +1303,7 @@ export default function StrategyTrackerTab() {
             return (
               <div key={strat.id} className="relative group">
                 <button
-                  onClick={() => setSelectedStrategy(prev => prev.includes(strat.id) ? (prev.length > 1 ? prev.filter(s => s !== strat.id) : prev) : [...prev, strat.id])}
+                  onClick={() => setSelectedStrategy(strat.id)}
                   className={cn(
                     "relative w-full p-4 rounded-2xl text-left transition-all duration-200 border-2 group",
                     "hover:shadow-lg hover:scale-[1.03]",
