@@ -653,8 +653,9 @@ export default function FAQ() {
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground leading-relaxed">
               O módulo <strong className="text-foreground">Ticker Opções B3</strong> centraliza um banco de dados com mais de 
-              <strong className="text-foreground"> 99.000 opções</strong> listadas na B3. Pesquise por ticker, filtre por família, 
-              vencimento e tipo (Call/Put), e identifique pares Call+Put automaticamente para montagem de Box e outras estratégias.
+              <strong className="text-foreground"> 99.000 opções</strong> listadas na B3. Inclui uma <strong className="text-foreground">Seleção Rápida Top 18</strong> com 
+              as ações mais líquidas (as 6 primeiras com ranking numerado), filtros avançados por família, 
+              vencimento, tipo (Call/Put), moneyness e faixa de prêmio, além de identificação automática de pares Call+Put para montagem de Box e outras estratégias.
             </p>
 
             <ScreenshotImage src={faqTickerOpcoes} alt="Ticker Opções B3 - Banco de Opções" />
@@ -686,10 +687,10 @@ export default function FAQ() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[
-                { label: '99.000+ Opções', desc: 'Banco de dados completo com todas as opções listadas na B3' },
+                { label: 'Seleção Rápida Top 18', desc: 'Cards interativos das 18 ações mais líquidas com ranking numerado para as 6 primeiras' },
                 { label: 'Pares Automáticos', desc: 'Identificação automática de pares Call+Put com badge visual' },
-                { label: 'Filtros Avançados', desc: 'Busca por ticker, família, vencimento, tipo e distância do strike' },
-                { label: 'Integração Direta', desc: 'Envie tickers selecionados para Tempo Real ou Box Tracker em 1 clique' },
+                { label: 'Filtros Avançados', desc: 'Moneyness, prêmio, % do strike, família, vencimento e tipo com chips ativos' },
+                { label: 'Integração Direta', desc: 'Envie tickers para Tempo Real, Box Tracker ou Collar Tracker em 1 clique' },
               ].map(item => (
                 <div key={item.label} className="p-3 rounded-xl bg-muted/30 border border-border/50">
                   <p className="text-xs font-bold">{item.label}</p>
