@@ -1498,27 +1498,36 @@ export default function StrategyTrackerTab() {
               {(() => {
                 const cdi = showCdi ? cdiComparison(selectedResult) : null;
                 const qty = parseInt(quantity) || 100;
+                const custoM = selectedResult.legs.reduce((acc, leg) => {
+                  const sign = leg.side === "buy" ? -1 : 1;
+                  return acc + sign * leg.price * leg.qty;
+                }, 0);
                 return (
                   <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-4 p-4 border-b border-border/50 bg-muted/10">
                     <div>
-                      <p className="text-xs font-black uppercase text-muted-foreground">Investimento</p>
-                      <p className="text-sm font-black text-foreground">R$ {Math.abs(selectedResult.maxLoss).toFixed(0)}</p>
-                      <p className="text-[10px] font-mono text-muted-foreground">{qty} × ops</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-black uppercase text-muted-foreground">Lucro Máximo</p>
-                      <p className="text-sm font-black text-emerald-500">{selectedResult.returnPct.toFixed(2)}%</p>
-                      <p className="text-[10px] font-mono text-emerald-500">R$ {selectedResult.maxProfit.toFixed(0)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-black uppercase text-muted-foreground">Risco Máximo</p>
-                      <p className="text-sm font-black text-red-500">R$ {selectedResult.maxLoss.toFixed(0)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-black uppercase text-muted-foreground">Net Cost/Credit</p>
-                      <p className={cn("text-sm font-black", selectedResult.netCredit >= 0 ? "text-emerald-500" : "text-red-500")}>
-                        R$ {selectedResult.netCredit.toFixed(0)}
+                      <p className="text-xs font-black uppercase text-muted-foreground">Custo Montagem</p>
+                      <p className={cn("text-sm font-black", custoM >= 0 ? "text-emerald-500" : "text-red-500")}>
+                        R$ {Math.abs(custoM).toFixed(0)}
                       </p>
+                      <p className="text-[10px] font-mono text-muted-foreground">{custoM >= 0 ? "Crédito" : "Débito"} · {qty} ops</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase text-muted-foreground">Ganho Máximo</p>
+                      {viewMode === "value" ? (
+                        <>
+                          <p className="text-sm font-black text-emerald-500">R$ {selectedResult.maxProfit.toFixed(0)}</p>
+                          <p className="text-[10px] font-mono text-emerald-500/70">{selectedResult.returnPct.toFixed(2)}%</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm font-black text-emerald-500">{selectedResult.returnPct.toFixed(2)}%</p>
+                          <p className="text-[10px] font-mono text-emerald-500/70">R$ {selectedResult.maxProfit.toFixed(0)}</p>
+                        </>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase text-muted-foreground">Perda Máxima</p>
+                      <p className="text-sm font-black text-red-500">R$ {selectedResult.maxLoss.toFixed(0)}</p>
                     </div>
                     <div>
                       <p className="text-xs font-black uppercase text-muted-foreground">Break-even</p>
