@@ -19,6 +19,8 @@ import pdfTomadaDecisao from '@/assets/pdf-tomada-decisao.jpg';
 import pdfTickerOpcoes from '@/assets/pdf-ticker-opcoes.jpg';
 import pdfTickerOpcoesBusca from '@/assets/pdf-ticker-opcoes-busca.jpg';
 import pdfTickerOpcoesTabela from '@/assets/pdf-ticker-opcoes-tabela.jpg';
+import pdfStrategyTracker from '@/assets/pdf-strategy-tracker.jpg';
+import pdfStrategyVolatility from '@/assets/pdf-strategy-volatility.jpg';
 
 export const landingImages: PdfImageMap = {
   analysis: pdfNovaAnalise,
@@ -40,6 +42,8 @@ export const landingImages: PdfImageMap = {
   tickerOpcoes: pdfTickerOpcoes,
   tickerOpcoesBusca: pdfTickerOpcoesBusca,
   tickerOpcoesTabela: pdfTickerOpcoesTabela,
+  strategyTracker: pdfStrategyTracker,
+  strategyVolatility: pdfStrategyVolatility,
   // Keys used by FAQ manual PDF
   historico: pdfHistorico,
   temporeal: pdfTempoReal,

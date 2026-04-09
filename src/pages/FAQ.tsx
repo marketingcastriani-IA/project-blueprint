@@ -31,6 +31,8 @@ import faqTickerOpcoesTabela from '@/assets/pdf-ticker-opcoes-tabela.jpg';
 import faqTemasCores from '@/assets/pdf-temas-cores.jpg';
 import faqManualTabela from '@/assets/pdf-manual-tabela.jpg';
 import faqManualGrafico from '@/assets/pdf-manual-grafico.jpg';
+import faqStrategyTracker from '@/assets/pdf-strategy-tracker.jpg';
+import faqStrategyVolatility from '@/assets/pdf-strategy-volatility.jpg';
 
 const StepCard = ({ step, title, description, icon: Icon }: { step: number; title: string; description: string; icon: React.ComponentType<{ className?: string }> }) => (
   <div className="flex gap-4 items-start">
