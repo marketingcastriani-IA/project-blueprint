@@ -1290,6 +1290,20 @@ export default function StrategyTrackerTab() {
               <Badge variant="outline" className="text-xs font-bold ml-1">{selectedFamily}</Badge>
             </h2>
             <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5">
+                <button
+                  onClick={() => setViewMode("value")}
+                  className={cn("px-2.5 py-1 rounded-md text-[10px] font-black uppercase transition-all",
+                    viewMode === "value" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >R$</button>
+                <button
+                  onClick={() => setViewMode("pct")}
+                  className={cn("px-2.5 py-1 rounded-md text-[10px] font-black uppercase transition-all",
+                    viewMode === "pct" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >%</button>
+              </div>
               <Badge variant="outline" className="text-xs font-bold">{results.length} encontrados</Badge>
               <Badge className={cn("text-xs font-black border-0", viewCfg.color, `bg-current/10`)}>
                 {viewCfg.emoji} {viewCfg.label}
