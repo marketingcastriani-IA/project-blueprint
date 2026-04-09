@@ -114,7 +114,7 @@ export default function Header() {
         onClick={() => navigate(item.path)}
         className={cn(
           'flex items-center gap-1 rounded-lg font-black uppercase tracking-wide transition-all whitespace-nowrap',
-          'px-2 py-1.5 text-[10px] lg:px-3 lg:py-2 lg:text-xs xl:tracking-widest',
+          'px-1.5 py-1.5 text-[9px] lg:px-2.5 lg:py-1.5 lg:text-[11px] xl:tracking-widest',
           isActive && 'bg-primary-foreground/20 text-primary-foreground',
           !isActive && 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
         )}
@@ -131,8 +131,8 @@ export default function Header() {
       <button
         onClick={() => navigate('/strategy-tracker')}
         className={cn(
-          'flex items-center gap-1.5 rounded-xl font-black uppercase tracking-widest transition-all whitespace-nowrap',
-          'px-3 py-1.5 text-[10px] lg:px-4 lg:py-2 lg:text-xs',
+          'flex items-center gap-1 rounded-xl font-black uppercase tracking-wider transition-all whitespace-nowrap',
+          'px-2.5 py-1.5 text-[9px] lg:px-3 lg:py-2 lg:text-[11px]',
           isActive
             ? 'bg-amber-400 text-black shadow-[0_0_20px_rgba(251,191,36,0.6)] ring-2 ring-amber-300'
             : 'bg-amber-400/90 text-black hover:bg-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.4)] animate-pulse'
@@ -145,9 +145,9 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-primary/30 bg-primary shadow-lg">
+    <header className="sticky top-0 z-50 border-b border-primary/30 bg-primary shadow-lg overflow-hidden">
       {/* Row 1: Logo + Primary Nav + Actions */}
-      <div className="container flex h-14 items-center justify-between gap-2">
+      <div className="max-w-full px-3 lg:px-4 flex h-14 items-center justify-between gap-1">
         {/* Logo + Install */}
         <div className="flex flex-col items-start shrink-0">
           <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 font-black text-lg">
@@ -182,14 +182,14 @@ export default function Header() {
               <button
                 className={cn(
                   'flex items-center gap-1 rounded-lg font-black uppercase tracking-wide transition-all whitespace-nowrap',
-                  'px-2 py-1.5 text-[10px] lg:px-3 lg:py-2 lg:text-xs xl:tracking-widest',
+                  'px-1.5 py-1.5 text-[9px] lg:px-2.5 lg:py-1.5 lg:text-[11px] xl:tracking-widest',
                   trackerNav.some(t => location.pathname === t.path)
                     ? 'bg-primary-foreground/20 text-primary-foreground'
                     : 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
                 )}
               >
                 <Crosshair className="h-3.5 w-3.5 shrink-0 lg:h-4 lg:w-4" />
-                <span>Rastreadores</span>
+                <span>Rastr.</span>
                 <ChevronDown className="h-3 w-3 shrink-0" />
               </button>
             </DropdownMenuTrigger>
@@ -219,7 +219,7 @@ export default function Header() {
               <button
                 className={cn(
                   'flex items-center gap-1 rounded-lg font-black uppercase tracking-wide transition-all whitespace-nowrap',
-                  'px-2 py-1.5 text-[10px] lg:px-3 lg:py-2 lg:text-xs xl:tracking-widest',
+                  'px-1.5 py-1.5 text-[9px] lg:px-2.5 lg:py-1.5 lg:text-[11px] xl:tracking-widest',
                   location.pathname === '/suporte'
                     ? 'bg-primary-foreground/20 text-primary-foreground'
                     : 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
@@ -273,7 +273,7 @@ export default function Header() {
 
       {/* Row 2: Secondary Nav + RTD + Theme (desktop) — scrollable */}
       <div className="hidden md:flex border-t border-border/40 bg-background">
-        <div className="container flex items-center gap-3 py-1.5 overflow-x-auto scrollbar-none">
+        <div className="max-w-full px-3 lg:px-4 flex items-center gap-3 py-1.5 overflow-x-auto scrollbar-none w-full">
           <nav className="flex items-center gap-1 shrink-0">
             {secondaryNav.map(item => {
               const isActive = location.pathname === item.path;

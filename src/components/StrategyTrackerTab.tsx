@@ -232,20 +232,20 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
   }, [result.vencimento]);
 
   const payoffData = useMemo(() => {
-    const legsPerUnit = result.legs.map((l) => ({
+    const legsForCalc = result.legs.map((l) => ({
       side: l.side as "buy" | "sell",
       option_type: l.type === "STOCK" ? "stock" as const : l.type === "CALL" ? "call" as const : "put" as const,
       asset: l.ticker,
       strike: l.strike,
       price: l.price,
-      quantity: l.qty / (qty || 1),
+      quantity: l.qty,
     }));
 
     const r = cdiRate / 100;
     const v = 0.35;
     const T = diasUteisCalc > 0 ? diasUteisCalc / 252 : 0;
     const cdiPeriodPct = T > 0 ? (Math.pow(1 + r, T) - 1) : 0;
-    const cdiProfitPerUnit = spotPrice * cdiPeriodPct;
+    const cdiProfitTotal = spotPrice * cdiPeriodPct * (qty || 100);
 
     const Ncdf = (x: number) => {
       const t2 = 1 / (1 + 0.2316419 * Math.abs(x));
@@ -260,12 +260,12 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
 
     for (let i = 0; i <= steps; i++) {
       const price = priceRange.min + i * step;
-      const payoffExpiry = calculatePayoffAtExpiry(legsPerUnit, price);
+      const payoffExpiry = calculatePayoffAtExpiry(legsForCalc, price);
 
       let payoffToday = payoffExpiry;
       if (T > 0.001) {
         let todayVal = 0;
-        for (const leg of legsPerUnit) {
+        for (const leg of legsForCalc) {
           if (leg.option_type === "stock") {
             todayVal += (leg.side === "buy" ? 1 : -1) * (price - leg.price) * leg.quantity;
           } else {
@@ -289,7 +289,7 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
         price: Math.round(price * 100) / 100,
         payoffExpiry: Math.round(payoffExpiry * 100) / 100,
         payoffToday: Math.round(payoffToday * 100) / 100,
-        cdiLine: Math.round(cdiProfitPerUnit * 100) / 100,
+        cdiLine: Math.round(cdiProfitTotal * 100) / 100,
         gainZone: payoffExpiry >= 0 ? Math.round(payoffExpiry * 100) / 100 : null,
         lossZone: payoffExpiry < 0 ? Math.round(payoffExpiry * 100) / 100 : null,
       });
