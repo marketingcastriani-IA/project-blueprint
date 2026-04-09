@@ -76,12 +76,12 @@ export default function Header() {
     { label: 'Rastrear Box', path: '/box-tracker', icon: BarChart2 },
     ...(collarEnabled ? [{ label: 'Collar', path: '/collar-tracker', icon: ShieldCheck }] : []),
     { label: 'Opções B3', path: '/ticker-opcoes', icon: Database },
-    { label: 'Rastreador PRO', path: '/strategy-tracker', icon: Zap, highlight: true },
   ];
 
   const secondaryNav = [
-    { label: 'Manual', path: '/manual', icon: BookOpen },
+    { label: 'Rastreador PRO', path: '/strategy-tracker', icon: Zap, highlight: true },
     { label: 'CDI x Opções', path: '/calculadora-renda-fixa', icon: Calculator, highlight: true },
+    { label: 'Manual', path: '/manual', icon: BookOpen },
     { label: 'FAQ', path: '/faq', icon: HelpCircle },
     { label: 'Config.', path: '/settings', icon: Settings },
     ...(access.isAdmin ? [{ label: 'Admin', path: '/admin', icon: Shield }] : []),
