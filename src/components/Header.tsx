@@ -273,7 +273,7 @@ export default function Header() {
 
       {/* Row 2: Secondary Nav + RTD + Theme (desktop) — scrollable */}
       <div className="hidden md:flex border-t border-border/40 bg-background">
-        <div className="container flex items-center gap-3 py-1.5 overflow-x-auto scrollbar-none">
+        <div className="max-w-full px-3 lg:px-4 flex items-center gap-3 py-1.5 overflow-x-auto scrollbar-none w-full">
           <nav className="flex items-center gap-1 shrink-0">
             {secondaryNav.map(item => {
               const isActive = location.pathname === item.path;
