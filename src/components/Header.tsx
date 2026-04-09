@@ -219,7 +219,7 @@ export default function Header() {
               <button
                 className={cn(
                   'flex items-center gap-1 rounded-lg font-black uppercase tracking-wide transition-all whitespace-nowrap',
-                  'px-2 py-1.5 text-[10px] lg:px-3 lg:py-2 lg:text-xs xl:tracking-widest',
+                  'px-1.5 py-1.5 text-[9px] lg:px-2.5 lg:py-1.5 lg:text-[11px] xl:tracking-widest',
                   location.pathname === '/suporte'
                     ? 'bg-primary-foreground/20 text-primary-foreground'
                     : 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
