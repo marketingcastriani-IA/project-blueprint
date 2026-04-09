@@ -1175,31 +1175,66 @@ export default function StrategyTrackerTab() {
           {STRATEGIES.filter((s) => s.view === currentView).map((strat) => {
             const active = selectedStrategy === strat.id;
             return (
-              <button
-                key={strat.id}
-                onClick={() => setSelectedStrategy(strat.id)}
-                className={cn(
-                  "relative p-4 rounded-2xl text-left transition-all duration-200 border-2 group",
-                  "hover:shadow-lg hover:scale-[1.03]",
-                  active
-                    ? `bg-gradient-to-br ${VIEW_CONFIG[strat.view].bg} ${VIEW_CONFIG[strat.view].border} shadow-xl ${VIEW_CONFIG[strat.view].glow} scale-[1.02]`
-                    : "bg-card border-border/40 hover:border-primary/20"
-                )}
-                style={{ perspective: "800px", transform: active ? "perspective(800px) rotateX(1.5deg)" : undefined }}
-              >
-                {active && <div className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />}
-                <div className="flex items-center gap-2.5 mb-2">
-                  <div className={cn(
-                    "h-9 w-9 rounded-xl flex items-center justify-center transition-colors",
-                    active ? "bg-primary/20 shadow-inner" : "bg-muted"
-                  )}>
-                    <strat.icon className={cn("h-4.5 w-4.5", active ? "text-primary" : "text-muted-foreground")} />
+              <div key={strat.id} className="relative">
+                <button
+                  onClick={() => setSelectedStrategy(strat.id)}
+                  className={cn(
+                    "relative w-full p-4 rounded-2xl text-left transition-all duration-200 border-2 group",
+                    "hover:shadow-lg hover:scale-[1.03]",
+                    active
+                      ? `bg-gradient-to-br ${VIEW_CONFIG[strat.view].bg} ${VIEW_CONFIG[strat.view].border} shadow-xl ${VIEW_CONFIG[strat.view].glow} scale-[1.02]`
+                      : "bg-card border-border/40 hover:border-primary/20"
+                  )}
+                  style={{ perspective: "800px", transform: active ? "perspective(800px) rotateX(1.5deg)" : undefined }}
+                >
+                  {active && <div className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />}
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <div className={cn(
+                      "h-9 w-9 rounded-xl flex items-center justify-center transition-colors",
+                      active ? "bg-primary/20 shadow-inner" : "bg-muted"
+                    )}>
+                      <strat.icon className={cn("h-4.5 w-4.5", active ? "text-primary" : "text-muted-foreground")} />
+                    </div>
+                    <span className="text-sm font-black uppercase tracking-wide text-foreground">{strat.label}</span>
                   </div>
-                  <span className="text-sm font-black uppercase tracking-wide text-foreground">{strat.label}</span>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">{strat.description}</p>
-                <p className="text-xs text-muted-foreground/60 mt-1.5 font-bold">{strat.composition}</p>
-              </button>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{strat.description}</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1.5 font-bold">{strat.composition}</p>
+                </button>
+                {/* Info popup */}
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button
+                      className="absolute top-2 right-8 h-6 w-6 rounded-full bg-muted/80 hover:bg-primary/20 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 hover:!opacity-100 border border-border/40"
+                      style={{ opacity: active ? 1 : undefined }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-lg">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                          <strat.icon className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-lg font-black uppercase tracking-wide">{strat.label}</p>
+                          <p className="text-xs font-bold text-muted-foreground">{strat.composition}</p>
+                        </div>
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-2">
+                      <p className="text-sm text-foreground leading-relaxed">{strat.details}</p>
+                      <div className="flex items-center gap-2 pt-2">
+                        <Badge className={cn("text-xs font-black border-0", VIEW_CONFIG[strat.view].color, "bg-current/10")}>
+                          {VIEW_CONFIG[strat.view].label}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs font-bold">{strat.composition}</Badge>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
             );
           })}
         </div>
