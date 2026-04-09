@@ -1,4 +1,5 @@
 import { Mail } from 'lucide-react';
+import InstallAppButton from '@/components/InstallAppButton';
 
 export default function Footer() {
   return (
@@ -7,6 +8,11 @@ export default function Footer() {
         <div className="flex items-center justify-center gap-2.5 font-black text-xl">
           <img src="/assets/logo.png" alt="Opções PRO X" className="h-8 w-8 object-contain" />
           <span className="tracking-tighter text-foreground">Opções PRO X</span>
+        </div>
+
+        {/* Install App Button */}
+        <div className="flex justify-center">
+          <InstallAppButton />
         </div>
 
         <a

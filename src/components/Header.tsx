@@ -9,7 +9,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import InstallAppButton from '@/components/InstallAppButton';
+
 
 function RtdIndicator({ size = 'md' }: { size?: 'sm' | 'md' }) {
   const { status: rtdStatus } = useSharedRtdBridge();
@@ -138,7 +138,7 @@ export default function Header() {
               {access.planType === 'pro' ? 'PRO' : 'FREE'}
             </Badge>
           </button>
-          <InstallAppButton />
+          
         </div>
 
         {/* Desktop Primary Nav — scrollable */}
