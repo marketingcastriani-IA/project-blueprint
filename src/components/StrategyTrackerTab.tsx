@@ -93,7 +93,7 @@ interface StrategyResult {
   returnPct: number;
   qualityScore: number;
   netCredit: number;
-  custoMontagem: number;
+  custoMontagem?: number;
   vencimento: string;
   isLive: boolean;
 }
