@@ -486,7 +486,7 @@ export default function StrategyTrackerTab() {
         if (!pair.call || !pair.put) return;
         const { price: cp, isLive: l1 } = getPrice(pair.call.ticker, "ofVenda");
         const { price: pp, isLive: l2 } = getPrice(pair.put.ticker, "ofVenda");
-        if (cp <= 0 || pp <= 0) continue;
+        if (cp <= 0 || pp <= 0) return;
         const totalCost = (cp + pp) * qty;
         const maxLoss = totalCost;
         const beUp = pair.call.strike + cp + pp;
