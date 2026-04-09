@@ -572,12 +572,14 @@ export default function StrategyTrackerTab() {
   }, [selectedFamily, availableVencimentos.length]);
 
 
-  const getPrice = useCallback((ticker: string, field: "ofCompra" | "ofVenda" | "ultimo"): { price: number; isLive: boolean } => {
+  const getPrice = useCallback((ticker: string, _field?: "ofCompra" | "ofVenda" | "ultimo"): { price: number; isLive: boolean } => {
     const row = rows.get(ticker);
     if (row) {
-      const val = row[field];
-      if (val && val > 0) return { price: val, isLive: true };
+      // Always prioritize último (last traded price) - matches Profit Pro display
       if (row.ultimo && row.ultimo > 0) return { price: row.ultimo, isLive: true };
+      // Fallback to bid/ask if último not available
+      const val = _field ? row[_field] : null;
+      if (val && val > 0) return { price: val, isLive: true };
     }
     const opt = options.find((o) => o.ticker === ticker);
     return { price: opt?.precoUltimo ?? 0, isLive: false };
