@@ -20,6 +20,8 @@ import landingProxDashboard from '@/assets/landing-prox-dashboard.png';
 import landingProxResults from '@/assets/landing-prox-results.png';
 import landingCollarFeatures from '@/assets/landing-collar-features.png';
 import landingCollarDashboard from '@/assets/landing-collar-dashboard.png';
+import landingManualStrategies from '@/assets/landing-manual-strategies.png';
+import landingManualTable from '@/assets/landing-manual-table.png';
 
 type PlanPeriod = 'monthly' | 'yearly';
 
@@ -249,15 +251,11 @@ export default function Index() {
               </div>
               <p className="text-muted-foreground">Aprenda 9+ estratégias de opções com exemplos reais, gráficos de payoff, gregas e tabela comparativa completa.</p>
             </div>
-            <div className="rounded-2xl overflow-hidden border border-primary/20 shadow-xl bg-card p-6 space-y-3">
-              <div className="grid grid-cols-3 gap-2">
-                {['Covered Call', 'Iron Condor', 'Box Spread', 'Straddle', 'Bull Call', 'Collar'].map(s => (
-                  <div key={s} className="rounded-lg bg-primary/10 border border-primary/20 p-3 text-center">
-                    <p className="text-xs font-black text-primary">{s}</p>
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground text-center font-bold">+ Ratio Spread, Calendar Spread, Backspread e mais</p>
+            <div className="rounded-2xl overflow-hidden border border-primary/20 shadow-xl">
+              <img src={landingManualStrategies} alt="Manual de Estratégias — 12+ Estratégias" className="w-full h-auto" loading="lazy" />
+            </div>
+            <div className="rounded-2xl overflow-hidden border border-border/30 shadow-lg">
+              <img src={landingManualTable} alt="Tabela de Referência Rápida — Gregas e Complexidade" className="w-full h-auto" loading="lazy" />
             </div>
           </div>
 
