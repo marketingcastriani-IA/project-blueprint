@@ -239,7 +239,9 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
       ['Dados ao Vivo', 'Preços em tempo real via integração com Profit Pro'],
       ['Rastreador de Box', 'Ranking dos melhores boxes da B3 em tempo real'],
       ['Ticker Opções B3', 'Banco com 99.000+ opções, Seleção Rápida Top 18 com ranking e pares Call+Put'],
-      ['Rastreador de Collar', 'Monitoramento de proteção de carteira com collars em tempo real'],
+      ['Rastreador de Collar', 'Proteção Risco Zero com modelos Collar de Alta e Baixa em tempo real'],
+      ['Alertas na Tela', 'Toasts visuais quando Box atinge threshold do CDI (normal e urgente)'],
+      ['Calculadora CDI', 'Compare retorno de opções vs renda fixa com IR automático'],
     ],
     ...TABLE_STYLES,
   });
