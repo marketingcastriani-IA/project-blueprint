@@ -414,7 +414,7 @@ export default function StrategyTrackerTab() {
   const [customAssetInput, setCustomAssetInput] = useState("");
 
   const [selectedFamily, setSelectedFamily] = useState<string>("");
-  const [selectedStrategies, setSelectedStrategies] = useState<StrategyType[]>(["covered_call"]);
+  const [selectedStrategy, setSelectedStrategy] = useState<StrategyType>("covered_call");
   // Auto-select next MONTHLY expiry (3rd Friday of the month — B3 standard)
   const nextMonthlyExpiry = useMemo(() => {
     if (vencimentos.length === 0) return "all";
@@ -693,7 +693,7 @@ export default function StrategyTrackerTab() {
     const getStratLabel = (id: StrategyType) => STRATEGIES.find((s) => s.id === id)?.label ?? "";
 
     // ── VENDA COBERTA ──────────────────────────────────────
-    if (selectedStrategies.includes("covered_call")) {
+    if (selectedStrategy === ("covered_call")) {
       for (const call of calls) {
         if (!hasMinTrades(call.ticker)) continue;
         const { price: callPrice, isLive } = getPrice(call.ticker, "ofCompra");
@@ -703,7 +703,7 @@ export default function StrategyTrackerTab() {
         const breakeven = stockPrice - callPrice;
         const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
         allResults.push({
-          id: `cc_${call.ticker}`, strategy: "covered_call", strategyLabel: getStratLabel,
+          id: `cc_${call.ticker}`, strategy: "covered_call", strategyLabel: getStratLabel("covered_call"),
           legs: [
             { ticker: stockTicker || `${selectedFamily}4`, side: "buy", type: "STOCK", strike: 0, price: stockPrice, qty },
             { ticker: call.ticker, side: "sell", type: "CALL", strike: call.strike, price: callPrice, qty },
@@ -716,7 +716,7 @@ export default function StrategyTrackerTab() {
     }
 
     // ── VENDA DE PUT ───────────────────────────────────────
-    if (selectedStrategies.includes("cash_secured_put")) {
+    if (selectedStrategy === ("cash_secured_put")) {
       for (const put of puts) {
         if (!hasMinTrades(put.ticker)) continue;
         const { price: putPrice, isLive } = getPrice(put.ticker, "ofCompra");
@@ -725,7 +725,7 @@ export default function StrategyTrackerTab() {
         const maxLoss = (put.strike - putPrice) * qty;
         const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
         allResults.push({
-          id: `csp_${put.ticker}`, strategy: "cash_secured_put", strategyLabel: getStratLabel,
+          id: `csp_${put.ticker}`, strategy: "cash_secured_put", strategyLabel: getStratLabel("cash_secured_put"),
           legs: [{ ticker: put.ticker, side: "sell", type: "PUT", strike: put.strike, price: putPrice, qty }],
           maxProfit, maxLoss, breakeven: [put.strike - putPrice], returnPct,
           qualityScore: maxLoss > 0 ? maxProfit / maxLoss : 0,
@@ -735,7 +735,7 @@ export default function StrategyTrackerTab() {
     }
 
     // ── TRAVA DE ALTA COM CALL (debit) ─────────────────────
-    if (selectedStrategies.includes("bull_call_spread")) {
+    if (selectedStrategy === ("bull_call_spread")) {
       for (let i = 0; i < calls.length; i++) {
         for (let j = i + 1; j < calls.length && j < i + 8; j++) {
           const lc = calls[i], sc = calls[j];
@@ -752,7 +752,7 @@ export default function StrategyTrackerTab() {
           const maxLoss = netCost * qty;
           const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
           allResults.push({
-            id: `bcs_${lc.ticker}_${sc.ticker}`, strategy: "bull_call_spread", strategyLabel: getStratLabel,
+            id: `bcs_${lc.ticker}_${sc.ticker}`, strategy: "bull_call_spread", strategyLabel: getStratLabel("bull_call_spread"),
             legs: [
               { ticker: lc.ticker, side: "buy", type: "CALL", strike: lc.strike, price: lp, qty },
               { ticker: sc.ticker, side: "sell", type: "CALL", strike: sc.strike, price: sp, qty },
@@ -766,7 +766,7 @@ export default function StrategyTrackerTab() {
     }
 
     // ── TRAVA DE ALTA COM PUT (credit) ─────────────────────
-    if (selectedStrategies.includes("bull_put_spread")) {
+    if (selectedStrategy === ("bull_put_spread")) {
       for (let i = 0; i < puts.length; i++) {
         for (let j = i + 1; j < puts.length && j < i + 8; j++) {
           const buyPut = puts[i]; // lower strike
@@ -783,7 +783,7 @@ export default function StrategyTrackerTab() {
           const maxLoss = (width - netCredit) * qty;
           const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
           allResults.push({
-            id: `bups_${buyPut.ticker}_${sellPut.ticker}`, strategy: "bull_put_spread", strategyLabel: getStratLabel,
+            id: `bups_${buyPut.ticker}_${sellPut.ticker}`, strategy: "bull_put_spread", strategyLabel: getStratLabel("bull_put_spread"),
             legs: [
               { ticker: sellPut.ticker, side: "sell", type: "PUT", strike: sellPut.strike, price: sp, qty },
               { ticker: buyPut.ticker, side: "buy", type: "PUT", strike: buyPut.strike, price: bp, qty },
@@ -797,7 +797,7 @@ export default function StrategyTrackerTab() {
     }
 
     // ── TRAVA DE BAIXA COM PUT (debit) ─────────────────────
-    if (selectedStrategies.includes("bear_put_spread")) {
+    if (selectedStrategy === ("bear_put_spread")) {
       for (let i = 0; i < puts.length; i++) {
         for (let j = i + 1; j < puts.length && j < i + 8; j++) {
           const shortPut = puts[i]; const longPut = puts[j];
@@ -813,7 +813,7 @@ export default function StrategyTrackerTab() {
           const maxLoss = netCost * qty;
           const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
           allResults.push({
-            id: `bps_${longPut.ticker}_${shortPut.ticker}`, strategy: "bear_put_spread", strategyLabel: getStratLabel,
+            id: `bps_${longPut.ticker}_${shortPut.ticker}`, strategy: "bear_put_spread", strategyLabel: getStratLabel("bear_put_spread"),
             legs: [
               { ticker: longPut.ticker, side: "buy", type: "PUT", strike: longPut.strike, price: lp, qty },
               { ticker: shortPut.ticker, side: "sell", type: "PUT", strike: shortPut.strike, price: sp, qty },
@@ -827,7 +827,7 @@ export default function StrategyTrackerTab() {
     }
 
     // ── TRAVA DE BAIXA COM CALL (credit) ───────────────────
-    if (selectedStrategies.includes("bear_call_spread")) {
+    if (selectedStrategy === ("bear_call_spread")) {
       for (let i = 0; i < calls.length; i++) {
         for (let j = i + 1; j < calls.length && j < i + 8; j++) {
           const sellCall = calls[i]; const buyCall = calls[j];
@@ -843,7 +843,7 @@ export default function StrategyTrackerTab() {
           const maxLoss = (width - netCredit) * qty;
           const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
           allResults.push({
-            id: `becs_${sellCall.ticker}_${buyCall.ticker}`, strategy: "bear_call_spread", strategyLabel: getStratLabel,
+            id: `becs_${sellCall.ticker}_${buyCall.ticker}`, strategy: "bear_call_spread", strategyLabel: getStratLabel("bear_call_spread"),
             legs: [
               { ticker: sellCall.ticker, side: "sell", type: "CALL", strike: sellCall.strike, price: sp, qty },
               { ticker: buyCall.ticker, side: "buy", type: "CALL", strike: buyCall.strike, price: bp, qty },
@@ -857,7 +857,7 @@ export default function StrategyTrackerTab() {
     }
 
     // ── IRON CONDOR ────────────────────────────────────────
-    if (selectedStrategies.includes("iron_condor")) {
+    if (selectedStrategy === ("iron_condor")) {
       const byVenc = new Map<string, { calls: B3Option[]; puts: B3Option[] }>();
       calls.forEach((c) => { if (!byVenc.has(c.vencimento)) byVenc.set(c.vencimento, { calls: [], puts: [] }); byVenc.get(c.vencimento)!.calls.push(c); });
       puts.forEach((p) => { if (!byVenc.has(p.vencimento)) byVenc.set(p.vencimento, { calls: [], puts: [] }); byVenc.get(p.vencimento)!.puts.push(p); });
@@ -891,7 +891,7 @@ export default function StrategyTrackerTab() {
             const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
             allResults.push({
               id: `ic_${buyPut.ticker}_${sellPut.ticker}_${sellCall.ticker}_${buyCall.ticker}`,
-              strategy: "iron_condor", strategyLabel: getStratLabel,
+              strategy: "iron_condor", strategyLabel: getStratLabel("iron_condor"),
               legs: [
                 { ticker: buyPut.ticker, side: "buy", type: "PUT", strike: buyPut.strike, price: bpP, qty },
                 { ticker: sellPut.ticker, side: "sell", type: "PUT", strike: sellPut.strike, price: spP, qty },
@@ -908,7 +908,7 @@ export default function StrategyTrackerTab() {
     }
 
     // ── BORBOLETA ──────────────────────────────────────────
-    if (selectedStrategies.includes("butterfly")) {
+    if (selectedStrategy === ("butterfly")) {
       const byVenc = new Map<string, B3Option[]>();
       calls.forEach((c) => { if (!byVenc.has(c.vencimento)) byVenc.set(c.vencimento, []); byVenc.get(c.vencimento)!.push(c); });
       byVenc.forEach((vc, venc) => {
@@ -931,7 +931,7 @@ export default function StrategyTrackerTab() {
               const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
               allResults.push({
                 id: `bf_${c1.ticker}_${c2.ticker}_${c3.ticker}`,
-                strategy: "butterfly", strategyLabel: getStratLabel,
+                strategy: "butterfly", strategyLabel: getStratLabel("butterfly"),
                 legs: [
                   { ticker: c1.ticker, side: "buy", type: "CALL", strike: c1.strike, price: p1, qty },
                   { ticker: c2.ticker, side: "sell", type: "CALL", strike: c2.strike, price: p2, qty: qty * 2 },
@@ -948,7 +948,7 @@ export default function StrategyTrackerTab() {
     }
 
     // ── STRADDLE ───────────────────────────────────────────
-    if (selectedStrategies.includes("straddle")) {
+    if (selectedStrategy === ("straddle")) {
       const byStrikeVenc = new Map<string, { call: B3Option; put: B3Option }>();
       calls.forEach((c) => { const k = `${c.strike}|${c.vencimento}`; const e = byStrikeVenc.get(k); if (e) e.call = c; else byStrikeVenc.set(k, { call: c, put: null as any }); });
       puts.forEach((p) => { const k = `${p.strike}|${p.vencimento}`; const e = byStrikeVenc.get(k); if (e) e.put = p; else byStrikeVenc.set(k, { call: null as any, put: p }); });
@@ -966,7 +966,7 @@ export default function StrategyTrackerTab() {
         const maxProfit = (bigMove - cp - pp) * qty;
         const returnPct = maxLoss > 0 && maxProfit > 0 ? (maxProfit / maxLoss) * 100 : 0;
         allResults.push({
-          id: `str_${pair.call.ticker}_${pair.put.ticker}`, strategy: "straddle", strategyLabel: getStratLabel,
+          id: `str_${pair.call.ticker}_${pair.put.ticker}`, strategy: "straddle", strategyLabel: getStratLabel("straddle"),
           legs: [
             { ticker: pair.call.ticker, side: "buy", type: "CALL", strike: pair.call.strike, price: cp, qty },
             { ticker: pair.put.ticker, side: "buy", type: "PUT", strike: pair.put.strike, price: pp, qty },
@@ -979,7 +979,7 @@ export default function StrategyTrackerTab() {
     }
 
     // ── STRANGLE ──────────────────────────────────────────
-    if (selectedStrategies.includes("strangle")) {
+    if (selectedStrategy === ("strangle")) {
       for (const put of puts) {
         if (put.strike >= stockPrice) continue;
         if (!hasMinTrades(put.ticker)) continue;
@@ -997,7 +997,7 @@ export default function StrategyTrackerTab() {
           const maxProfit = Math.max((bigMove - pp - cp) * qty, 0);
           const returnPct = totalCost > 0 && maxProfit > 0 ? (maxProfit / totalCost) * 100 : 0;
           allResults.push({
-            id: `stg_${put.ticker}_${call.ticker}`, strategy: "strangle", strategyLabel: getStratLabel,
+            id: `stg_${put.ticker}_${call.ticker}`, strategy: "strangle", strategyLabel: getStratLabel("strangle"),
             legs: [
               { ticker: put.ticker, side: "buy", type: "PUT", strike: put.strike, price: pp, qty },
               { ticker: call.ticker, side: "buy", type: "CALL", strike: call.strike, price: cp, qty },
@@ -1011,7 +1011,7 @@ export default function StrategyTrackerTab() {
     }
 
     // ── SHORT STRADDLE (Vendido) ──────────────────────────────
-    if (selectedStrategies.includes("short_straddle")) {
+    if (selectedStrategy === ("short_straddle")) {
       const byStrikeVenc = new Map<string, { call: B3Option; put: B3Option }>();
       calls.forEach((c) => { const k = `${c.strike}|${c.vencimento}`; const e = byStrikeVenc.get(k); if (e) e.call = c; else byStrikeVenc.set(k, { call: c, put: null as any }); });
       puts.forEach((p) => { const k = `${p.strike}|${p.vencimento}`; const e = byStrikeVenc.get(k); if (e) e.put = p; else byStrikeVenc.set(k, { call: null as any, put: p }); });
@@ -1029,7 +1029,7 @@ export default function StrategyTrackerTab() {
         const maxLoss = (bigMove) * qty; // theoretical unlimited, estimate 20% move
         const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
         allResults.push({
-          id: `sstr_${pair.call.ticker}_${pair.put.ticker}`, strategy: "short_straddle", strategyLabel: getStratLabel,
+          id: `sstr_${pair.call.ticker}_${pair.put.ticker}`, strategy: "short_straddle", strategyLabel: getStratLabel("short_straddle"),
           legs: [
             { ticker: pair.call.ticker, side: "sell", type: "CALL", strike: pair.call.strike, price: cp, qty },
             { ticker: pair.put.ticker, side: "sell", type: "PUT", strike: pair.put.strike, price: pp, qty },
@@ -1042,7 +1042,7 @@ export default function StrategyTrackerTab() {
     }
 
     // ── SHORT STRANGLE (Vendido) ─────────────────────────────
-    if (selectedStrategies.includes("short_strangle")) {
+    if (selectedStrategy === ("short_strangle")) {
       for (const put of puts) {
         if (put.strike >= stockPrice) continue;
         if (!hasMinTrades(put.ticker)) continue;
@@ -1061,7 +1061,7 @@ export default function StrategyTrackerTab() {
           const maxLoss = (bigMove) * qty;
           const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
           allResults.push({
-            id: `sstg_${put.ticker}_${call.ticker}`, strategy: "short_strangle", strategyLabel: getStratLabel,
+            id: `sstg_${put.ticker}_${call.ticker}`, strategy: "short_strangle", strategyLabel: getStratLabel("short_strangle"),
             legs: [
               { ticker: put.ticker, side: "sell", type: "PUT", strike: put.strike, price: pp, qty },
               { ticker: call.ticker, side: "sell", type: "CALL", strike: call.strike, price: cp, qty },
@@ -1086,7 +1086,7 @@ export default function StrategyTrackerTab() {
       : sortBy === "quality" ? (a: StrategyResult, b: StrategyResult) => b.qualityScore - a.qualityScore
       : (a: StrategyResult, b: StrategyResult) => b.maxProfit - a.maxProfit;
     return filtered.sort(sorter).slice(0, 50);
-  }, [selectedFamily, selectedStrategies, selectedVencimento, moneynessFilter, minPremium, minTrades, minReturnPct, maxLossFilter, quantity, stockPrice, options, rows, status, getPrice, addTicker, stockTicker, sortBy, hasMinTrades]);
+  }, [selectedFamily, selectedStrategy, selectedVencimento, moneynessFilter, minPremium, minTrades, minReturnPct, maxLossFilter, quantity, stockPrice, options, rows, status, getPrice, addTicker, stockTicker, sortBy, hasMinTrades]);
 
   // Auto-select winner (first result) whenever results change
   useEffect(() => {
@@ -1099,7 +1099,7 @@ export default function StrategyTrackerTab() {
 
   const top3 = results.slice(0, 3);
   const rest = results.slice(3);
-  const currentView = STRATEGIES.find((s) => selectedStrategies.includes(s.id))?.view ?? "alta";
+  const currentView = STRATEGIES.find((s) => selectedStrategy === (s.id))?.view ?? "alta";
   const viewCfg = VIEW_CONFIG[currentView];
 
   const cdiComparison = useCallback((result: StrategyResult) => {
@@ -1278,8 +1278,8 @@ export default function StrategyTrackerTab() {
               <button
                 key={view}
                 onClick={() => {
-                  const viewStrats = STRATEGIES.filter((s) => s.view === view).map(s => s.id);
-                  setSelectedStrategies(viewStrats);
+                  const firstStrat = STRATEGIES.find((s) => s.view === view);
+                  if (firstStrat) setSelectedStrategy(firstStrat.id);
                 }}
                 className={cn(
                   "relative flex flex-col items-center gap-1.5 px-4 py-4 rounded-2xl font-black uppercase tracking-widest transition-all duration-200",
@@ -1299,11 +1299,11 @@ export default function StrategyTrackerTab() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {STRATEGIES.filter((s) => s.view === currentView).map((strat) => {
-            const active = selectedStrategies.includes(strat.id);
+            const active = selectedStrategy === (strat.id);
             return (
               <div key={strat.id} className="relative group">
                 <button
-                  onClick={() => setSelectedStrategies(prev => prev.includes(strat.id) ? (prev.length > 1 ? prev.filter(s => s !== strat.id) : prev) : [...prev, strat.id])}
+                  onClick={() => setSelectedStrategy(strat.id)}
                   className={cn(
                     "relative w-full p-4 rounded-2xl text-left transition-all duration-200 border-2 group",
                     "hover:shadow-lg hover:scale-[1.03]",
@@ -1493,7 +1493,7 @@ export default function StrategyTrackerTab() {
           <div className="flex items-center justify-between flex-wrap gap-2">
             <h2 className="text-sm font-black uppercase tracking-widest text-foreground flex items-center gap-2">
               <Trophy className="h-4 w-4 text-primary" />
-              Top Resultados — {selectedStrategies.length === 1 ? STRATEGIES.find((s) => s.id === selectedStrategies[0])?.label : `${selectedStrategies.length} Estratégias`}
+              Top Resultados — {STRATEGIES.find((s) => s.id === selectedStrategy)?.label ?? ""}
               <Badge variant="outline" className="text-xs font-bold ml-1">{selectedFamily}</Badge>
             </h2>
             <div className="flex items-center gap-2">
