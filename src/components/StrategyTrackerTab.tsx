@@ -41,7 +41,7 @@ const StrategyChartTooltip = ({ active, payload, label }: any) => {
       </div>
       <div className="space-y-1.5">
         {payload.map((p: any, i: number) => {
-          if (p.dataKey === "belowZero" || p.dataKey === "aboveZero") return null;
+          if (p.dataKey === "belowZero" || p.dataKey === "aboveZero" || p.dataKey === "gainZone" || p.dataKey === "lossZone") return null;
           return (
             <div key={i} className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
@@ -173,8 +173,6 @@ function diasUteis(from: Date, to: Date): number {
 
 // ─── PAYOFF CHART (Collar-style) ────────────────────────────
 function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { result: StrategyResult; spotPrice: number; cdiRate?: number; qty?: number }) {
-  const [pctAbaixo, setPctAbaixo] = useState(5);
-  const [pctAcima, setPctAcima] = useState(5);
 
   // Extract strikes for reference lines
   const strikes = useMemo(() => {
@@ -187,7 +185,7 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
     return s;
   }, [result.legs]);
 
-  // Dynamic range: include all strikes + spot with padding
+  // Dynamic range: include all strikes + spot with generous padding
   const priceRange = useMemo(() => {
     const allPrices = [spotPrice, ...strikes.map((s) => s.strike)];
     const minStrike = Math.min(...allPrices);
@@ -196,11 +194,8 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
     const padding = range * 0.8;
     const baseMin = Math.max(0, minStrike - padding);
     const baseMax = maxStrike + padding;
-    // Apply user pct adjustments on top
-    const adjMin = Math.min(baseMin, spotPrice * (1 - pctAbaixo / 100));
-    const adjMax = Math.max(baseMax, spotPrice * (1 + pctAcima / 100));
-    return { min: adjMin, max: adjMax };
-  }, [spotPrice, strikes, pctAbaixo, pctAcima]);
+    return { min: baseMin, max: baseMax };
+  }, [spotPrice, strikes]);
 
   // Calculate dias uteis from vencimento
   const diasUteisCalc = useMemo(() => {
@@ -217,21 +212,18 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
   }, [result.vencimento]);
 
   const payoffData = useMemo(() => {
-    // Build per-unit legs (qty=1) for chart — we show per-unit payoff like Collar
     const legsPerUnit = result.legs.map((l) => ({
       side: l.side as "buy" | "sell",
       option_type: l.type === "STOCK" ? "stock" as const : l.type === "CALL" ? "call" as const : "put" as const,
       asset: l.ticker,
       strike: l.strike,
       price: l.price,
-      quantity: l.qty / (qty || 1), // normalize: if legs have qty=100, divide by qty to get per-unit
+      quantity: l.qty / (qty || 1),
     }));
 
     const r = cdiRate / 100;
     const v = 0.35;
     const T = diasUteisCalc > 0 ? diasUteisCalc / 252 : 0;
-
-    // CDI profit for the period (per unit of investment)
     const cdiPeriodPct = T > 0 ? (Math.pow(1 + r, T) - 1) : 0;
     const cdiProfitPerUnit = spotPrice * cdiPeriodPct;
 
@@ -242,7 +234,7 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
       return x > 0 ? 1 - p : p;
     };
 
-    const points: { price: number; payoffExpiry: number; payoffToday: number; cdiLine: number }[] = [];
+    const points: { price: number; payoffExpiry: number; payoffToday: number; cdiLine: number; gainZone: number | null; lossZone: number | null }[] = [];
     const steps = 200;
     const step = (priceRange.max - priceRange.min) / steps;
 
@@ -250,7 +242,6 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
       const price = priceRange.min + i * step;
       const payoffExpiry = calculatePayoffAtExpiry(legsPerUnit, price);
 
-      // Black-Scholes for T+0
       let payoffToday = payoffExpiry;
       if (T > 0.001) {
         let todayVal = 0;
@@ -279,6 +270,8 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
         payoffExpiry: Math.round(payoffExpiry * 100) / 100,
         payoffToday: Math.round(payoffToday * 100) / 100,
         cdiLine: Math.round(cdiProfitPerUnit * 100) / 100,
+        gainZone: payoffExpiry >= 0 ? Math.round(payoffExpiry * 100) / 100 : null,
+        lossZone: payoffExpiry < 0 ? Math.round(payoffExpiry * 100) / 100 : null,
       });
     }
     return points;
@@ -286,75 +279,30 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
 
   return (
     <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
-      {/* Range sliders */}
-      <div className="bg-muted/20 rounded-xl p-4 border border-border/30">
-        <div className="flex items-center justify-end mb-3">
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs font-black border-red-400/40 text-red-500">
-              R$ {priceRange.min.toFixed(2)}
-            </Badge>
-            <span className="text-muted-foreground text-xs">—</span>
-            <Badge variant="outline" className="text-xs font-black border-emerald-400/40 text-emerald-500">
-              R$ {priceRange.max.toFixed(2)}
-            </Badge>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase tracking-widest text-red-500 flex items-center gap-1">
-                <TrendingDown className="h-3 w-3" /> ABAIXO
-              </span>
-              <span className="text-sm font-black text-red-500">{pctAbaixo}%</span>
-            </div>
-            <Slider
-              value={[pctAbaixo]}
-              onValueChange={(v) => setPctAbaixo(v[0])}
-              min={1} max={30} step={1}
-              className="[&_[role=slider]]:border-sky-400 [&_[role=slider]]:bg-background [&_[role=slider]]:shadow-md"
-            />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500 flex items-center gap-1">
-                <TrendingUp className="h-3 w-3" /> ACIMA
-              </span>
-              <span className="text-sm font-black text-emerald-500">{pctAcima}%</span>
-            </div>
-            <Slider
-              value={[pctAcima]}
-              onValueChange={(v) => setPctAcima(v[0])}
-              min={1} max={30} step={1}
-              className="[&_[role=slider]]:border-sky-400 [&_[role=slider]]:bg-background [&_[role=slider]]:shadow-md"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Chart — Collar-style */}
+      {/* Chart */}
       <div className="h-[400px] w-full">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={payoffData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
             <defs>
-              <linearGradient id="stratLoss" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.02} />
+              <linearGradient id="stratLossZone" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(0 84% 60%)" stopOpacity={0.0} />
+                <stop offset="100%" stopColor="hsl(0 84% 60%)" stopOpacity={0.35} />
               </linearGradient>
-              <linearGradient id="stratGain" x1="0" y1="1" x2="0" y2="0">
-                <stop offset="0%" stopColor="hsl(142 76% 36%)" stopOpacity={0.05} />
+              <linearGradient id="stratGainZone" x1="0" y1="1" x2="0" y2="0">
+                <stop offset="0%" stopColor="hsl(142 76% 36%)" stopOpacity={0.0} />
                 <stop offset="100%" stopColor="hsl(142 76% 36%)" stopOpacity={0.35} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" className="stroke-border" opacity={0.3} />
             <XAxis type="number" dataKey="price" domain={["dataMin", "dataMax"]}
               tickFormatter={(v: number) => v.toFixed(2)} stroke="hsl(var(--muted-foreground))" fontSize={11}
-              label={{ value: "Preço", position: "insideBottomRight", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+              label={{ value: "Preço do Ativo", position: "insideBottomRight", offset: -5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
             <YAxis tickFormatter={(v: number) => `R$${v.toFixed(0)}`}
               stroke="hsl(var(--muted-foreground))" fontSize={11} width={65}
-              label={{ value: "Lucro", angle: -90, position: "insideLeft", offset: 5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
+              label={{ value: "Lucro / Prejuízo", angle: -90, position: "insideLeft", offset: 5, fontSize: 11, fill: "hsl(var(--muted-foreground))" }} />
 
             {/* Zero line */}
-            <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" strokeOpacity={0.5} />
+            <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" strokeOpacity={0.6} />
 
             {/* Strike reference lines */}
             {strikes.map((s, i) => (
@@ -377,9 +325,13 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
 
             <Tooltip content={<StrategyChartTooltip />} />
 
-            {/* Loss area fill */}
-            <Area type="monotone" dataKey="payoffExpiry" stroke="none" fill="url(#stratLoss)"
-              isAnimationActive={false} baseValue={0} activeDot={false} />
+            {/* Gain zone fill (green, above zero) */}
+            <Area type="monotone" dataKey="gainZone" stroke="none" fill="url(#stratGainZone)"
+              isAnimationActive={false} baseValue={0} activeDot={false} connectNulls={false} />
+
+            {/* Loss zone fill (red, below zero) */}
+            <Area type="monotone" dataKey="lossZone" stroke="none" fill="url(#stratLossZone)"
+              isAnimationActive={false} baseValue={0} activeDot={false} connectNulls={false} />
 
             {/* CDI line */}
             <Line name="── CDI ──" type="monotone" dataKey="cdiLine"
@@ -399,18 +351,26 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center justify-center gap-6 text-xs">
+      <div className="flex flex-wrap items-center justify-center gap-4 text-xs px-2">
         <span className="flex items-center gap-2">
-          <span className="w-6 h-0.5 bg-blue-500 rounded" style={{ display: "inline-block" }} />
+          <span className="w-6 h-0.5 bg-blue-500 rounded inline-block" />
           <span className="text-muted-foreground font-bold">No Vencimento</span>
         </span>
         <span className="flex items-center gap-2">
-          <span className="w-6 h-0.5 rounded" style={{ display: "inline-block", background: "hsl(142 76% 36%)" }} />
+          <span className="w-6 h-0.5 rounded inline-block" style={{ background: "hsl(142 76% 36%)" }} />
           <span className="text-muted-foreground font-bold">Hoje (T+0)</span>
         </span>
         <span className="flex items-center gap-2">
-          <span className="w-6 h-0.5 rounded" style={{ display: "inline-block", background: "hsl(45 95% 55%)", borderTop: "2px dashed hsl(45 95% 55%)" }} />
-          <span className="text-muted-foreground font-bold">── CDI ──</span>
+          <span className="w-6 h-0.5 rounded inline-block border-t-2 border-dashed" style={{ borderColor: "hsl(45 95% 55%)" }} />
+          <span className="text-muted-foreground font-bold">CDI</span>
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="w-4 h-3 rounded-sm inline-block" style={{ background: "rgba(34,197,94,0.3)" }} />
+          <span className="text-muted-foreground font-bold">Zona de Ganho</span>
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="w-4 h-3 rounded-sm inline-block" style={{ background: "rgba(239,68,68,0.3)" }} />
+          <span className="text-muted-foreground font-bold">Zona de Perda</span>
         </span>
       </div>
     </div>
