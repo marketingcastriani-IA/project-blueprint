@@ -929,12 +929,19 @@ export default function StrategyTrackerTab() {
       }
     }
 
+    // Post-scan filters
+    let filtered = allResults;
+    const minRet = parseFloat(minReturnPct) || 0;
+    if (minRet > 0) filtered = filtered.filter((r) => r.returnPct >= minRet);
+    const maxL = parseFloat(maxLossFilter) || 0;
+    if (maxL > 0) filtered = filtered.filter((r) => r.maxLoss <= maxL);
+
     // Sort
     const sorter = sortBy === "return" ? (a: StrategyResult, b: StrategyResult) => b.returnPct - a.returnPct
       : sortBy === "quality" ? (a: StrategyResult, b: StrategyResult) => b.qualityScore - a.qualityScore
       : (a: StrategyResult, b: StrategyResult) => b.maxProfit - a.maxProfit;
-    return allResults.sort(sorter).slice(0, 50);
-  }, [selectedFamily, selectedStrategy, selectedVencimento, moneynessFilter, minPremium, minTrades, quantity, stockPrice, options, rows, status, getPrice, addTicker, stockTicker, sortBy, hasMinTrades]);
+    return filtered.sort(sorter).slice(0, 50);
+  }, [selectedFamily, selectedStrategy, selectedVencimento, moneynessFilter, minPremium, minTrades, minReturnPct, maxLossFilter, quantity, stockPrice, options, rows, status, getPrice, addTicker, stockTicker, sortBy, hasMinTrades]);
 
   const top3 = results.slice(0, 3);
   const rest = results.slice(3);
