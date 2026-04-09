@@ -109,24 +109,37 @@ export default function Header() {
 
   const NavButton = ({ item }: { item: typeof primaryNav[0] }) => {
     const isActive = location.pathname === item.path;
-    const isRealtime = item.path === '/dados-ao-vivo';
-    const isHighlight = 'highlight' in item && item.highlight;
     return (
       <button
         onClick={() => navigate(item.path)}
         className={cn(
           'flex items-center gap-1 rounded-lg font-black uppercase tracking-wide transition-all whitespace-nowrap',
           'px-2 py-1.5 text-[10px] lg:px-3 lg:py-2 lg:text-xs xl:tracking-widest',
-          isHighlight && !isActive && 'bg-yellow-400/90 text-black hover:bg-yellow-300 shadow-[0_0_16px_rgba(250,204,21,0.5)] animate-pulse border border-yellow-300/50',
-          isHighlight && isActive && 'bg-yellow-400 text-black shadow-[0_0_20px_rgba(250,204,21,0.6)] ring-2 ring-yellow-300',
-          isRealtime && !isHighlight && 'text-red-100 bg-red-600 hover:bg-red-500 animate-pulse shadow-[0_0_16px_rgba(239,68,68,0.5)] border border-red-400/50',
-          isRealtime && isActive && !isHighlight && 'ring-2 ring-red-300',
-          !isRealtime && !isHighlight && isActive && 'bg-primary-foreground/20 text-primary-foreground',
-          !isRealtime && !isHighlight && !isActive && 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
+          isActive && 'bg-primary-foreground/20 text-primary-foreground',
+          !isActive && 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
         )}
       >
-        <item.icon className={cn("h-3.5 w-3.5 shrink-0 lg:h-4 lg:w-4", isRealtime && "animate-pulse")} />
+        <item.icon className="h-3.5 w-3.5 shrink-0 lg:h-4 lg:w-4" />
         <span>{item.label}</span>
+      </button>
+    );
+  };
+
+  const ProXButton = () => {
+    const isActive = location.pathname === '/strategy-tracker';
+    return (
+      <button
+        onClick={() => navigate('/strategy-tracker')}
+        className={cn(
+          'flex items-center gap-1.5 rounded-xl font-black uppercase tracking-widest transition-all whitespace-nowrap',
+          'px-3 py-1.5 text-[10px] lg:px-4 lg:py-2 lg:text-xs',
+          isActive
+            ? 'bg-amber-400 text-black shadow-[0_0_20px_rgba(251,191,36,0.6)] ring-2 ring-amber-300'
+            : 'bg-amber-400/90 text-black hover:bg-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.4)] animate-pulse'
+        )}
+      >
+        <Zap className="h-3.5 w-3.5 lg:h-4 lg:w-4 fill-current" />
+        <span>PRO X</span>
       </button>
     );
   };
