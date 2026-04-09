@@ -693,7 +693,7 @@ export default function StrategyTrackerTab() {
     const getStratLabel = (id: StrategyType) => STRATEGIES.find((s) => s.id === id)?.label ?? "";
 
     // ── VENDA COBERTA ──────────────────────────────────────
-    if (selectedStrategies.includes("covered_call") {
+    if (selectedStrategies.includes("covered_call")) {
       for (const call of calls) {
         if (!hasMinTrades(call.ticker)) continue;
         const { price: callPrice, isLive } = getPrice(call.ticker, "ofCompra");
@@ -716,7 +716,7 @@ export default function StrategyTrackerTab() {
     }
 
     // ── VENDA DE PUT ───────────────────────────────────────
-    if (selectedStrategies.includes("cash_secured_put") {
+    if (selectedStrategies.includes("cash_secured_put")) {
       for (const put of puts) {
         if (!hasMinTrades(put.ticker)) continue;
         const { price: putPrice, isLive } = getPrice(put.ticker, "ofCompra");
@@ -735,7 +735,7 @@ export default function StrategyTrackerTab() {
     }
 
     // ── TRAVA DE ALTA COM CALL (debit) ─────────────────────
-    if (selectedStrategies.includes("bull_call_spread") {
+    if (selectedStrategies.includes("bull_call_spread")) {
       for (let i = 0; i < calls.length; i++) {
         for (let j = i + 1; j < calls.length && j < i + 8; j++) {
           const lc = calls[i], sc = calls[j];
@@ -766,7 +766,7 @@ export default function StrategyTrackerTab() {
     }
 
     // ── TRAVA DE ALTA COM PUT (credit) ─────────────────────
-    if (selectedStrategies.includes("bull_put_spread") {
+    if (selectedStrategies.includes("bull_put_spread")) {
       for (let i = 0; i < puts.length; i++) {
         for (let j = i + 1; j < puts.length && j < i + 8; j++) {
           const buyPut = puts[i]; // lower strike
@@ -797,7 +797,7 @@ export default function StrategyTrackerTab() {
     }
 
     // ── TRAVA DE BAIXA COM PUT (debit) ─────────────────────
-    if (selectedStrategies.includes("bear_put_spread") {
+    if (selectedStrategies.includes("bear_put_spread")) {
       for (let i = 0; i < puts.length; i++) {
         for (let j = i + 1; j < puts.length && j < i + 8; j++) {
           const shortPut = puts[i]; const longPut = puts[j];
@@ -827,7 +827,7 @@ export default function StrategyTrackerTab() {
     }
 
     // ── TRAVA DE BAIXA COM CALL (credit) ───────────────────
-    if (selectedStrategies.includes("bear_call_spread") {
+    if (selectedStrategies.includes("bear_call_spread")) {
       for (let i = 0; i < calls.length; i++) {
         for (let j = i + 1; j < calls.length && j < i + 8; j++) {
           const sellCall = calls[i]; const buyCall = calls[j];
@@ -857,7 +857,7 @@ export default function StrategyTrackerTab() {
     }
 
     // ── IRON CONDOR ────────────────────────────────────────
-    if (selectedStrategies.includes("iron_condor") {
+    if (selectedStrategies.includes("iron_condor")) {
       const byVenc = new Map<string, { calls: B3Option[]; puts: B3Option[] }>();
       calls.forEach((c) => { if (!byVenc.has(c.vencimento)) byVenc.set(c.vencimento, { calls: [], puts: [] }); byVenc.get(c.vencimento)!.calls.push(c); });
       puts.forEach((p) => { if (!byVenc.has(p.vencimento)) byVenc.set(p.vencimento, { calls: [], puts: [] }); byVenc.get(p.vencimento)!.puts.push(p); });
@@ -908,7 +908,7 @@ export default function StrategyTrackerTab() {
     }
 
     // ── BORBOLETA ──────────────────────────────────────────
-    if (selectedStrategies.includes("butterfly") {
+    if (selectedStrategies.includes("butterfly")) {
       const byVenc = new Map<string, B3Option[]>();
       calls.forEach((c) => { if (!byVenc.has(c.vencimento)) byVenc.set(c.vencimento, []); byVenc.get(c.vencimento)!.push(c); });
       byVenc.forEach((vc, venc) => {
@@ -948,7 +948,7 @@ export default function StrategyTrackerTab() {
     }
 
     // ── STRADDLE ───────────────────────────────────────────
-    if (selectedStrategies.includes("straddle") {
+    if (selectedStrategies.includes("straddle")) {
       const byStrikeVenc = new Map<string, { call: B3Option; put: B3Option }>();
       calls.forEach((c) => { const k = `${c.strike}|${c.vencimento}`; const e = byStrikeVenc.get(k); if (e) e.call = c; else byStrikeVenc.set(k, { call: c, put: null as any }); });
       puts.forEach((p) => { const k = `${p.strike}|${p.vencimento}`; const e = byStrikeVenc.get(k); if (e) e.put = p; else byStrikeVenc.set(k, { call: null as any, put: p }); });
@@ -979,7 +979,7 @@ export default function StrategyTrackerTab() {
     }
 
     // ── STRANGLE ──────────────────────────────────────────
-    if (selectedStrategies.includes("strangle") {
+    if (selectedStrategies.includes("strangle")) {
       for (const put of puts) {
         if (put.strike >= stockPrice) continue;
         if (!hasMinTrades(put.ticker)) continue;
@@ -1011,7 +1011,7 @@ export default function StrategyTrackerTab() {
     }
 
     // ── SHORT STRADDLE (Vendido) ──────────────────────────────
-    if (selectedStrategies.includes("short_straddle") {
+    if (selectedStrategies.includes("short_straddle")) {
       const byStrikeVenc = new Map<string, { call: B3Option; put: B3Option }>();
       calls.forEach((c) => { const k = `${c.strike}|${c.vencimento}`; const e = byStrikeVenc.get(k); if (e) e.call = c; else byStrikeVenc.set(k, { call: c, put: null as any }); });
       puts.forEach((p) => { const k = `${p.strike}|${p.vencimento}`; const e = byStrikeVenc.get(k); if (e) e.put = p; else byStrikeVenc.set(k, { call: null as any, put: p }); });
@@ -1042,7 +1042,7 @@ export default function StrategyTrackerTab() {
     }
 
     // ── SHORT STRANGLE (Vendido) ─────────────────────────────
-    if (selectedStrategies.includes("short_strangle") {
+    if (selectedStrategies.includes("short_strangle")) {
       for (const put of puts) {
         if (put.strike >= stockPrice) continue;
         if (!hasMinTrades(put.ticker)) continue;
