@@ -1391,7 +1391,7 @@ export default function StrategyTrackerTab() {
                             <p className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5 mb-3">
                               <BarChart2 className="h-3.5 w-3.5" /> Gráfico de Payoff
                             </p>
-                            <MiniPayoffChart result={result} spotPrice={stockPrice} />
+                            <MiniPayoffChart result={result} spotPrice={stockPrice} cdiRate={parseFloat(cdiRate) || 14.65} qty={parseInt(quantity) || 100} />
                           </div>
                         </div>
                       )}
@@ -1481,7 +1481,7 @@ export default function StrategyTrackerTab() {
                                       ))}
                                     </div>
                                     <p className="text-xs text-muted-foreground">Breakeven: {r.breakeven.map((b) => `R$ ${b.toFixed(2)}`).join(" | ")}</p>
-                                    <MiniPayoffChart result={r} spotPrice={stockPrice} />
+                                    <MiniPayoffChart result={r} spotPrice={stockPrice} cdiRate={parseFloat(cdiRate) || 14.65} qty={parseInt(quantity) || 100} />
                                   </div>
                                 </td>
                               </tr>
