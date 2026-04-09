@@ -458,7 +458,7 @@ export default function StrategyTrackerTab() {
   const [selectedVencimento, setSelectedVencimento] = useState<string>("");
   const [moneynessFilter, setMoneynessFilter] = useState<string>("atm");
   const [minPremium, setMinPremium] = useState("");
-  const [minTrades, setMinTrades] = useState("10");
+  const [minTrades, setMinTrades] = useState("0");
   const [minReturnPct, setMinReturnPct] = useState("");
   const [maxLossFilter, setMaxLossFilter] = useState("");
   const [quantity, setQuantity] = useState("100");
