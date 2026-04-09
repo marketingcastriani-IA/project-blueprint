@@ -561,7 +561,7 @@ export const generateFAQPdf = async (images: PdfImageMap = {}) => {
       ['É recomendação de investimento?', 'Não. É uma ferramenta de simulação. Consulte um profissional antes de operar.'],
       ['Como a IA funciona?', 'Utiliza IA (OpenAI) para avaliar risco/retorno e sugerir ajustes na estrutura.'],
       ['Diferença Free vs PRO?', 'Free: acesso básico com limites. PRO: simulações ilimitadas, IA, OCR, CDI, Box, Collar, Tempo Real, Diversificador, Ticker B3 e mais.'],
-      ['O que é Ticker Opções B3?', 'Banco com 99.000+ opções da B3. Busca inteligente, pares Call+Put e integração com Box/Tempo Real.'],
+      ['O que é Ticker Opções B3?', 'Banco com 99.000+ opções da B3. Seleção Rápida Top 18 com ranking, filtros avançados, pares Call+Put e integração com Box, Collar e Tempo Real.'],
       ['O que é a Calculadora CDI x Opções?', 'Ferramenta que compara o lucro de opções com o CDI do período, com IR automático e gráfico comparativo.'],
       ['O que é o Rastreador de Collar?', 'Monitora proteção de carteira (Ação+Put+Call) em tempo real com cálculo de piso, teto e custo.'],
     ],
