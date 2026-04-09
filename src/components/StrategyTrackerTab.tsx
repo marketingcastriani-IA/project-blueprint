@@ -1410,6 +1410,16 @@ export default function StrategyTrackerTab() {
                         {cdi?.days && <span> · {cdi.days}du</span>}
                       </p>
                     )}
+
+                    {/* Click hint */}
+                    <div className={cn(
+                      "mt-3 text-center py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all",
+                      isSelected
+                        ? "bg-primary/10 text-primary border border-primary/20"
+                        : "bg-muted/40 text-muted-foreground border border-border/30 animate-pulse"
+                    )}>
+                      {isSelected ? "📊 Gráfico Payoff aberto ↓" : "👆 Clique para ver o Gráfico Payoff"}
+                    </div>
                   </div>
                 );
               })}
