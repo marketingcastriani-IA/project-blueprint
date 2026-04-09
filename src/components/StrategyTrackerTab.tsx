@@ -414,7 +414,7 @@ export default function StrategyTrackerTab() {
   const [customAssetInput, setCustomAssetInput] = useState("");
 
   const [selectedFamily, setSelectedFamily] = useState<string>("");
-  const [selectedStrategy, setSelectedStrategy] = useState<StrategyType>("covered_call");
+  const [selectedStrategies, setSelectedStrategies] = useState<StrategyType[]>(["covered_call"]);
   // Auto-select next MONTHLY expiry (3rd Friday of the month — B3 standard)
   const nextMonthlyExpiry = useMemo(() => {
     if (vencimentos.length === 0) return "all";
