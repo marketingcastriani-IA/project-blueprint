@@ -93,6 +93,7 @@ interface StrategyResult {
   returnPct: number;
   qualityScore: number;
   netCredit: number;
+  custoMontagem?: number;
   vencimento: string;
   isLive: boolean;
 }
@@ -420,6 +421,7 @@ export default function StrategyTrackerTab() {
   const [showCdi, setShowCdi] = useState(true);
   const [selectedResult, setSelectedResult] = useState<StrategyResult | null>(null);
   const [sortBy, setSortBy] = useState<"return" | "quality" | "profit">("return");
+  const [viewMode, setViewMode] = useState<"pct" | "value">("value");
 
   // (auto-select vencimento moved after availableVencimentos declaration)
 
@@ -1242,9 +1244,12 @@ export default function StrategyTrackerTab() {
               <label className="text-xs font-black text-muted-foreground uppercase tracking-wide">Risco Máx R$</label>
               <Input type="number" value={maxLossFilter} onChange={(e) => setMaxLossFilter(e.target.value)} placeholder="Sem limite" className="h-10 text-sm font-bold" />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-black text-muted-foreground uppercase tracking-wide">Quantidade</label>
-              <Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="100" className="h-10 text-sm font-bold" />
+            <div className="space-y-1.5 relative rounded-xl border-2 border-primary/40 bg-primary/5 p-3 -m-1 shadow-sm">
+              <label className="text-xs font-black text-primary uppercase tracking-wide flex items-center gap-1.5">
+                📦 Quantidade
+              </label>
+              <Input type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="100" className="h-10 text-sm font-bold border-primary/30" />
+              <p className="text-[10px] text-primary/70 font-semibold">Nº de ações/contratos</p>
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-black text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
@@ -1288,6 +1293,20 @@ export default function StrategyTrackerTab() {
               <Badge variant="outline" className="text-xs font-bold ml-1">{selectedFamily}</Badge>
             </h2>
             <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5">
+                <button
+                  onClick={() => setViewMode("value")}
+                  className={cn("px-2.5 py-1 rounded-md text-[10px] font-black uppercase transition-all",
+                    viewMode === "value" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >R$</button>
+                <button
+                  onClick={() => setViewMode("pct")}
+                  className={cn("px-2.5 py-1 rounded-md text-[10px] font-black uppercase transition-all",
+                    viewMode === "pct" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >%</button>
+              </div>
               <Badge variant="outline" className="text-xs font-bold">{results.length} encontrados</Badge>
               <Badge className={cn("text-xs font-black border-0", viewCfg.color, `bg-current/10`)}>
                 {viewCfg.emoji} {viewCfg.label}
@@ -1320,6 +1339,11 @@ export default function StrategyTrackerTab() {
                 const cdiPct = cdi ? parseFloat(cdi.cdiPct) : 0;
                 const diffPp = cdi ? parseFloat(cdi.diff) : 0;
                 const beats = cdi?.beats ?? false;
+                // Custo da Montagem: sum of (side=buy costs - side=sell credits) per unit * qty
+                const custoMontagem = result.legs.reduce((acc, leg) => {
+                  const sign = leg.side === "buy" ? -1 : 1;
+                  return acc + sign * leg.price * leg.qty;
+                }, 0);
 
                 return (
                   <div
@@ -1372,16 +1396,28 @@ export default function StrategyTrackerTab() {
                     <div className="mt-2 grid grid-cols-2 gap-2">
                       <div>
                         <p className="text-[10px] text-muted-foreground uppercase font-bold">Ganho Máx</p>
-                        <p className="text-sm font-black text-emerald-500">{result.returnPct.toFixed(2)}%</p>
-                        <p className="text-[9px] font-mono text-emerald-500">R$ {result.maxProfit.toFixed(0)}</p>
+                        {viewMode === "value" ? (
+                          <>
+                            <p className="text-lg font-black text-emerald-500">R$ {result.maxProfit.toFixed(0)}</p>
+                            <p className="text-[9px] font-mono text-emerald-500/70">{result.returnPct.toFixed(2)}%</p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-lg font-black text-emerald-500">{result.returnPct.toFixed(2)}%</p>
+                            <p className="text-[9px] font-mono text-emerald-500/70">R$ {result.maxProfit.toFixed(0)}</p>
+                          </>
+                        )}
                       </div>
                       <div>
                         <p className="text-[10px] text-muted-foreground uppercase font-bold">Risco Máx</p>
                         <p className="text-sm font-black text-red-500">R$ {result.maxLoss.toFixed(0)}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-muted-foreground uppercase font-bold">Quality Score</p>
-                        <p className="text-sm font-black text-primary">{result.qualityScore.toFixed(2)}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold">Custo Montagem</p>
+                        <p className={cn("text-sm font-black", custoMontagem >= 0 ? "text-emerald-500" : "text-red-500")}>
+                          R$ {Math.abs(custoMontagem).toFixed(0)}
+                          <span className="text-[9px] ml-1 font-bold">{custoMontagem >= 0 ? "Crédito" : "Débito"}</span>
+                        </p>
                       </div>
                       {cdi && (
                         <div>
@@ -1390,10 +1426,8 @@ export default function StrategyTrackerTab() {
                         </div>
                       )}
                       <div>
-                        <p className="text-[10px] text-muted-foreground uppercase font-bold">Net Credit</p>
-                        <p className={cn("text-sm font-black", result.netCredit >= 0 ? "text-emerald-500" : "text-red-500")}>
-                          R$ {result.netCredit.toFixed(0)}
-                        </p>
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold">Quality Score</p>
+                        <p className="text-sm font-black text-primary">{result.qualityScore.toFixed(2)}</p>
                       </div>
                       {cdi && (
                         <div>
@@ -1467,27 +1501,36 @@ export default function StrategyTrackerTab() {
               {(() => {
                 const cdi = showCdi ? cdiComparison(selectedResult) : null;
                 const qty = parseInt(quantity) || 100;
+                const custoM = selectedResult.legs.reduce((acc, leg) => {
+                  const sign = leg.side === "buy" ? -1 : 1;
+                  return acc + sign * leg.price * leg.qty;
+                }, 0);
                 return (
                   <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-4 p-4 border-b border-border/50 bg-muted/10">
                     <div>
-                      <p className="text-xs font-black uppercase text-muted-foreground">Investimento</p>
-                      <p className="text-sm font-black text-foreground">R$ {Math.abs(selectedResult.maxLoss).toFixed(0)}</p>
-                      <p className="text-[10px] font-mono text-muted-foreground">{qty} × ops</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-black uppercase text-muted-foreground">Lucro Máximo</p>
-                      <p className="text-sm font-black text-emerald-500">{selectedResult.returnPct.toFixed(2)}%</p>
-                      <p className="text-[10px] font-mono text-emerald-500">R$ {selectedResult.maxProfit.toFixed(0)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-black uppercase text-muted-foreground">Risco Máximo</p>
-                      <p className="text-sm font-black text-red-500">R$ {selectedResult.maxLoss.toFixed(0)}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-black uppercase text-muted-foreground">Net Cost/Credit</p>
-                      <p className={cn("text-sm font-black", selectedResult.netCredit >= 0 ? "text-emerald-500" : "text-red-500")}>
-                        R$ {selectedResult.netCredit.toFixed(0)}
+                      <p className="text-xs font-black uppercase text-muted-foreground">Custo Montagem</p>
+                      <p className={cn("text-sm font-black", custoM >= 0 ? "text-emerald-500" : "text-red-500")}>
+                        R$ {Math.abs(custoM).toFixed(0)}
                       </p>
+                      <p className="text-[10px] font-mono text-muted-foreground">{custoM >= 0 ? "Crédito" : "Débito"} · {qty} ops</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase text-muted-foreground">Ganho Máximo</p>
+                      {viewMode === "value" ? (
+                        <>
+                          <p className="text-sm font-black text-emerald-500">R$ {selectedResult.maxProfit.toFixed(0)}</p>
+                          <p className="text-[10px] font-mono text-emerald-500/70">{selectedResult.returnPct.toFixed(2)}%</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm font-black text-emerald-500">{selectedResult.returnPct.toFixed(2)}%</p>
+                          <p className="text-[10px] font-mono text-emerald-500/70">R$ {selectedResult.maxProfit.toFixed(0)}</p>
+                        </>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase text-muted-foreground">Perda Máxima</p>
+                      <p className="text-sm font-black text-red-500">R$ {selectedResult.maxLoss.toFixed(0)}</p>
                     </div>
                     <div>
                       <p className="text-xs font-black uppercase text-muted-foreground">Break-even</p>
