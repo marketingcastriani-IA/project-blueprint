@@ -338,8 +338,6 @@ export default function Index() {
             </div>
           </div>
 
-        {/* Box Tracker + Calculadora CDI row */}
-        <div className="grid md:grid-cols-2 gap-10 mt-10">
           {/* Rastreador de Box */}
           <div className="space-y-6">
             <div className="space-y-3">
