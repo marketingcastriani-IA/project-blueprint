@@ -6,7 +6,7 @@ import {
   Lock, Sparkles, XCircle,
   Zap, Camera, FileSpreadsheet, Cpu, Star,
   BarChart3, PieChart, Bot, Radio, Shield, Calculator,
-  ChevronUp, Quote, Users, Award
+  ChevronUp, Quote, Users, Award, Database, ShieldCheck
 } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Sun, Moon } from 'lucide-react';
