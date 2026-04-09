@@ -79,8 +79,8 @@ export default function Header() {
   ];
 
   const secondaryNav = [
-    { label: 'Rastreador PRO', path: '/strategy-tracker', icon: Zap, highlight: true },
-    { label: 'CDI x Opções', path: '/calculadora-renda-fixa', icon: Calculator, highlight: true },
+    { label: 'Rastreador PRO', path: '/strategy-tracker', icon: Zap },
+    { label: 'CDI x Opções', path: '/calculadora-renda-fixa', icon: Calculator },
     { label: 'Manual', path: '/manual', icon: BookOpen },
     { label: 'FAQ', path: '/faq', icon: HelpCircle },
     { label: 'Config.', path: '/settings', icon: Settings },
