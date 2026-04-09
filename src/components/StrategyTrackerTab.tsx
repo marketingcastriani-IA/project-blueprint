@@ -176,9 +176,6 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
   const [pctAbaixo, setPctAbaixo] = useState(5);
   const [pctAcima, setPctAcima] = useState(5);
 
-  const priceMin = spotPrice * (1 - pctAbaixo / 100);
-  const priceMax = spotPrice * (1 + pctAcima / 100);
-
   // Extract strikes for reference lines
   const strikes = useMemo(() => {
     const s: { strike: number; type: string; side: string; ticker: string }[] = [];
@@ -190,14 +187,29 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
     return s;
   }, [result.legs]);
 
+  // Dynamic range: include all strikes + spot with padding
+  const priceRange = useMemo(() => {
+    const allPrices = [spotPrice, ...strikes.map((s) => s.strike)];
+    const minStrike = Math.min(...allPrices);
+    const maxStrike = Math.max(...allPrices);
+    const range = Math.max(maxStrike - minStrike, spotPrice * 0.1);
+    const padding = range * 0.8;
+    const baseMin = Math.max(0, minStrike - padding);
+    const baseMax = maxStrike + padding;
+    // Apply user pct adjustments on top
+    const adjMin = Math.min(baseMin, spotPrice * (1 - pctAbaixo / 100));
+    const adjMax = Math.max(baseMax, spotPrice * (1 + pctAcima / 100));
+    return { min: adjMin, max: adjMax };
+  }, [spotPrice, strikes, pctAbaixo, pctAcima]);
+
   // Calculate dias uteis from vencimento
-  const diasUteis = useMemo(() => {
+  const diasUteisCalc = useMemo(() => {
     if (!result.vencimento) return 0;
     const parts = result.vencimento.split("/");
     if (parts.length !== 2) return 0;
     const expMonth = parseInt(parts[0]) - 1;
     const expYear = parseInt(parts[1]);
-    const expDate = new Date(expYear, expMonth, 15); // approx mid-month
+    const expDate = new Date(expYear, expMonth, 15);
     const now = new Date();
     const diffMs = expDate.getTime() - now.getTime();
     const diffDays = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
@@ -205,23 +217,23 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
   }, [result.vencimento]);
 
   const payoffData = useMemo(() => {
-    const legs = result.legs.map((l) => ({
+    // Build per-unit legs (qty=1) for chart — we show per-unit payoff like Collar
+    const legsPerUnit = result.legs.map((l) => ({
       side: l.side as "buy" | "sell",
       option_type: l.type === "STOCK" ? "stock" as const : l.type === "CALL" ? "call" as const : "put" as const,
       asset: l.ticker,
       strike: l.strike,
       price: l.price,
-      quantity: l.qty,
+      quantity: l.qty / (qty || 1), // normalize: if legs have qty=100, divide by qty to get per-unit
     }));
 
     const r = cdiRate / 100;
-    const v = 0.35; // implied vol estimate
-    const T = diasUteis > 0 ? diasUteis / 252 : 0;
+    const v = 0.35;
+    const T = diasUteisCalc > 0 ? diasUteisCalc / 252 : 0;
 
-    // CDI profit for the period (per unit)
-    const investPerUnit = spotPrice;
+    // CDI profit for the period (per unit of investment)
     const cdiPeriodPct = T > 0 ? (Math.pow(1 + r, T) - 1) : 0;
-    const cdiProfitPerUnit = investPerUnit * cdiPeriodPct;
+    const cdiProfitPerUnit = spotPrice * cdiPeriodPct;
 
     const Ncdf = (x: number) => {
       const t2 = 1 / (1 + 0.2316419 * Math.abs(x));
@@ -232,28 +244,28 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
 
     const points: { price: number; payoffExpiry: number; payoffToday: number; cdiLine: number }[] = [];
     const steps = 200;
-    const step = (priceMax - priceMin) / steps;
+    const step = (priceRange.max - priceRange.min) / steps;
 
     for (let i = 0; i <= steps; i++) {
-      const price = priceMin + i * step;
-      const payoffExpiry = calculatePayoffAtExpiry(legs, price);
+      const price = priceRange.min + i * step;
+      const payoffExpiry = calculatePayoffAtExpiry(legsPerUnit, price);
 
       // Black-Scholes for T+0
       let payoffToday = payoffExpiry;
       if (T > 0.001) {
         let todayVal = 0;
-        for (const leg of legs) {
+        for (const leg of legsPerUnit) {
           if (leg.option_type === "stock") {
             todayVal += (leg.side === "buy" ? 1 : -1) * (price - leg.price) * leg.quantity;
           } else {
             const K = leg.strike;
             const d1 = (Math.log(price / K) + (r + v * v / 2) * T) / (v * Math.sqrt(T));
-            const d2 = d1 - v * Math.sqrt(T);
+            const d2bs = d1 - v * Math.sqrt(T);
             let optVal: number;
             if (leg.option_type === "call") {
-              optVal = price * Ncdf(d1) - K * Math.exp(-r * T) * Ncdf(d2);
+              optVal = price * Ncdf(d1) - K * Math.exp(-r * T) * Ncdf(d2bs);
             } else {
-              optVal = K * Math.exp(-r * T) * Ncdf(-d2) - price * Ncdf(-d1);
+              optVal = K * Math.exp(-r * T) * Ncdf(-d2bs) - price * Ncdf(-d1);
             }
             const sign = leg.side === "buy" ? 1 : -1;
             todayVal += sign * (optVal - leg.price) * leg.quantity;
@@ -270,7 +282,7 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
       });
     }
     return points;
-  }, [result.legs, priceMin, priceMax, cdiRate, diasUteis, spotPrice]);
+  }, [result.legs, priceRange, cdiRate, diasUteisCalc, spotPrice, qty]);
 
   return (
     <div className="space-y-3" onClick={(e) => e.stopPropagation()}>
@@ -279,11 +291,11 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
         <div className="flex items-center justify-end mb-3">
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-xs font-black border-red-400/40 text-red-500">
-              R$ {priceMin.toFixed(2)}
+              R$ {priceRange.min.toFixed(2)}
             </Badge>
             <span className="text-muted-foreground text-xs">—</span>
             <Badge variant="outline" className="text-xs font-black border-emerald-400/40 text-emerald-500">
-              R$ {priceMax.toFixed(2)}
+              R$ {priceRange.max.toFixed(2)}
             </Badge>
           </div>
         </div>
@@ -404,7 +416,6 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
     </div>
   );
 }
-
 export default function StrategyTrackerTab() {
   const { options, vencimentos } = useB3Options();
   const { status, rows, addTicker } = useSharedRtdBridge();
