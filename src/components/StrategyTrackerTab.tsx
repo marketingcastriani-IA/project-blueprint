@@ -627,10 +627,10 @@ export default function StrategyTrackerTab() {
         if (!hasMinTrades(call.ticker)) continue;
         const { price: callPrice, isLive } = getPrice(call.ticker, "ofCompra");
         if (callPrice <= 0 || callPrice < minPrem) continue;
-        const returnPct = (callPrice / stockPrice) * 100;
         const maxProfit = (call.strike - stockPrice + callPrice) * qty;
         const maxLoss = (stockPrice - callPrice) * qty;
         const breakeven = stockPrice - callPrice;
+        const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
         allResults.push({
           id: `cc_${call.ticker}`, strategy: "covered_call", strategyLabel: stratLabel,
           legs: [
@@ -650,9 +650,9 @@ export default function StrategyTrackerTab() {
         if (!hasMinTrades(put.ticker)) continue;
         const { price: putPrice, isLive } = getPrice(put.ticker, "ofCompra");
         if (putPrice <= 0 || putPrice < minPrem) continue;
-        const returnPct = (putPrice / put.strike) * 100;
         const maxProfit = putPrice * qty;
         const maxLoss = (put.strike - putPrice) * qty;
+        const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
         allResults.push({
           id: `csp_${put.ticker}`, strategy: "cash_secured_put", strategyLabel: stratLabel,
           legs: [{ ticker: put.ticker, side: "sell", type: "PUT", strike: put.strike, price: putPrice, qty }],
