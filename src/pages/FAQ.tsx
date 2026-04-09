@@ -786,6 +786,38 @@ export default function FAQ() {
           </div>
         </FeatureSection>
 
+        {/* ─── ALERTAS NA TELA ─── */}
+        <FeatureSection icon={Bell} title="Alertas na Tela (Box Tracker)" badge="PRO">
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              O Rastreador de Box agora exibe <strong className="text-foreground">alertas visuais na tela</strong> (toasts) 
+              quando um Box atinge o threshold do CDI configurado. Existem dois tipos de alertas:
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { label: 'Alerta Normal (Verde)', desc: 'Box acima do CDI target. Toast verde com ticker, % CDI, strike, lucro em R$ e %. Dura 10 segundos.' },
+                { label: 'Alerta Urgente (Vermelho)', desc: 'Box em threshold crítico (>=150% CDI). Toast vermelho com dados completos. Dura 15 segundos.' },
+              ].map(item => (
+                <div key={item.label} className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                  <p className="text-xs font-bold">{item.label}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+              <div className="flex items-start gap-2">
+                <Eye className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  <strong className="text-foreground">Dica:</strong> Os alertas na tela são complementares às notificações push do navegador. 
+                  Mesmo com o app em primeiro plano, você será avisado visualmente quando uma oportunidade surgir.
+                </p>
+              </div>
+            </div>
+          </div>
+        </FeatureSection>
+
         {/* ─── ATALHOS DE TECLADO ─── */}
         <FeatureSection icon={Keyboard} title="Atalhos de Teclado" badge="Power User">
           <div className="space-y-4">
