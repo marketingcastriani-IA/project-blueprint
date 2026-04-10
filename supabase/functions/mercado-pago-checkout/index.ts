@@ -114,10 +114,6 @@ serve(async (req) => {
           failure: `${PRODUCTION_URL}/settings?payment=failure`,
           pending: `${PRODUCTION_URL}/settings?payment=pending`,
         },
-          success: `${PRODUCTION_URL}/settings?payment=success`,
-          failure: `${PRODUCTION_URL}/settings?payment=failure`,
-          pending: `${PRODUCTION_URL}/settings?payment=pending`,
-        },
         auto_return: "approved",
         statement_descriptor: "OPCOES PRO X",
       })
