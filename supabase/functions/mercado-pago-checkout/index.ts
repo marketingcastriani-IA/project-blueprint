@@ -108,7 +108,12 @@ serve(async (req) => {
           installments: 1
         },
         external_reference: externalRef,
+        notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercado-pago-webhook`,
         back_urls: {
+          success: `${PRODUCTION_URL}/settings?payment=success`,
+          failure: `${PRODUCTION_URL}/settings?payment=failure`,
+          pending: `${PRODUCTION_URL}/settings?payment=pending`,
+        },
           success: `${PRODUCTION_URL}/settings?payment=success`,
           failure: `${PRODUCTION_URL}/settings?payment=failure`,
           pending: `${PRODUCTION_URL}/settings?payment=pending`,
