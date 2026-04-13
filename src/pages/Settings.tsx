@@ -30,19 +30,46 @@ export default function Settings() {
 
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
 
+  // Polling: após retorno do MP com payment=success, verifica se o webhook já ativou o PRO
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('payment') === 'success') {
+    const paymentStatus = params.get('payment');
+
+    if (paymentStatus === 'success') {
       setShowPaymentSuccess(true);
       window.history.replaceState({}, '', '/settings');
-    } else if (params.get('payment') === 'failure') {
+
+      // Poll a cada 3s por até 60s para detectar ativação PRO pelo webhook
+      let attempts = 0;
+      const maxAttempts = 20;
+      const pollInterval = setInterval(async () => {
+        attempts++;
+        if (!user) return;
+
+        const { data } = await supabase
+          .from('user_access')
+          .select('plan_type, status')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (data?.plan_type === 'pro' && data?.status === 'approved') {
+          clearInterval(pollInterval);
+          toast.success("🎉 Plano PRO ativado!", { description: "Seu acesso foi atualizado com sucesso." });
+        } else if (attempts >= maxAttempts) {
+          clearInterval(pollInterval);
+          toast.info("Pagamento recebido", { description: "Seu plano será atualizado em instantes. Se não atualizar, entre em contato pelo suporte." });
+        }
+      }, 3000);
+
+      return () => clearInterval(pollInterval);
+    } else if (paymentStatus === 'failure') {
       toast.error("Pagamento não concluído", { description: "Houve um problema com a transação." });
       window.history.replaceState({}, '', '/settings');
     } else if (params.get('upgrade') === 'true') {
       handleUpgrade();
       window.history.replaceState({}, '', '/settings');
     }
-  }, []);
+  }, [user]);
 
   const handleUpgrade = async () => {
     setUpgrading(true);
