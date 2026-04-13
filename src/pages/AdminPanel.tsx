@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccessControl } from '@/hooks/useAccessControl';
@@ -403,6 +403,38 @@ export default function AdminPanel() {
 
   useEffect(() => {
     if (access.isAdmin) fetchUsers();
+  }, [access.isAdmin]);
+
+  useEffect(() => {
+    if (!access.isAdmin) return;
+
+    const accessChannel = supabase
+      .channel('admin-user-access-live')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'user_access',
+      }, () => {
+        fetchUsers();
+      })
+      .subscribe();
+
+    const settingsChannel = supabase
+      .channel('admin-site-settings-live')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'site_settings',
+        filter: 'id=eq.pro_plan',
+      }, () => {
+        fetchUsers();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(accessChannel);
+      supabase.removeChannel(settingsChannel);
+    };
   }, [access.isAdmin]);
 
   if (authLoading || access.status === 'loading') {
