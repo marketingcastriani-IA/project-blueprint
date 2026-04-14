@@ -44,28 +44,29 @@ function SugestoesPanel() {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
+  const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
+  const [filterResolved, setFilterResolved] = useState<'all' | 'resolved' | 'pending'>('all');
 
-  useEffect(() => {
-    const fetchSugestoes = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('sugestoes' as any)
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (!error && data) {
-        const userIds = [...new Set((data as any[]).map((s: any) => s.user_id))];
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('user_id, email, display_name')
-          .in('user_id', userIds);
-        const profileMap: Record<string, any> = {};
-        (profiles || []).forEach((p: any) => { profileMap[p.user_id] = p; });
-        setSugestoes((data as any[]).map((s: any) => ({ ...s, profile: profileMap[s.user_id] })));
-      }
-      setLoading(false);
-    };
-    fetchSugestoes();
-  }, []);
+  const fetchSugestoes = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('sugestoes' as any)
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!error && data) {
+      const userIds = [...new Set((data as any[]).map((s: any) => s.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, email, display_name')
+        .in('user_id', userIds);
+      const profileMap: Record<string, any> = {};
+      (profiles || []).forEach((p: any) => { profileMap[p.user_id] = p; });
+      setSugestoes((data as any[]).map((s: any) => ({ ...s, profile: profileMap[s.user_id] })));
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchSugestoes(); }, []);
 
   const handleReply = async (s: any) => {
     if (!replyText.trim() || !s.profile?.email) return;
@@ -91,14 +92,52 @@ function SugestoesPanel() {
         },
       });
       if (error) throw error;
+
+      // Save reply to history
+      const currentHistory = Array.isArray(s.reply_history) ? s.reply_history : [];
+      const newEntry = { text: replyText, date: new Date().toISOString() };
+      const updatedHistory = [...currentHistory, newEntry];
+
+      await supabase
+        .from('sugestoes' as any)
+        .update({ reply_history: updatedHistory, resolved: true } as any)
+        .eq('id', s.id);
+
       toast.success(`Resposta enviada para ${s.profile.email}`);
       setReplyingTo(null);
       setReplyText('');
+      fetchSugestoes();
     } catch (err: any) {
       toast.error('Erro ao enviar resposta: ' + (err.message || 'Tente novamente'));
     }
     setSendingReply(false);
   };
+
+  const toggleResolved = async (s: any) => {
+    const newResolved = !s.resolved;
+    await supabase
+      .from('sugestoes' as any)
+      .update({ resolved: newResolved } as any)
+      .eq('id', s.id);
+    toast.success(newResolved ? 'Marcada como resolvida' : 'Marcada como pendente');
+    fetchSugestoes();
+  };
+
+  const clearHistory = async (s: any) => {
+    if (!confirm('Tem certeza que deseja apagar o histórico de respostas?')) return;
+    await supabase
+      .from('sugestoes' as any)
+      .update({ reply_history: [] } as any)
+      .eq('id', s.id);
+    toast.success('Histórico apagado');
+    fetchSugestoes();
+  };
+
+  const filteredSugestoes = sugestoes.filter(s => {
+    if (filterResolved === 'resolved') return s.resolved;
+    if (filterResolved === 'pending') return !s.resolved;
+    return true;
+  });
 
   if (loading) {
     return (
@@ -110,86 +149,157 @@ function SugestoesPanel() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
           <Mail className="h-4 w-4 text-primary" /> Sugestões dos Clientes
         </h3>
-        <Badge variant="outline" className="font-bold">{sugestoes.length} sugestões</Badge>
+        <div className="flex items-center gap-2">
+          <Select value={filterResolved} onValueChange={(v: any) => setFilterResolved(v)}>
+            <SelectTrigger className="h-7 text-xs w-[130px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas ({sugestoes.length})</SelectItem>
+              <SelectItem value="pending">Pendentes ({sugestoes.filter(s => !s.resolved).length})</SelectItem>
+              <SelectItem value="resolved">Resolvidas ({sugestoes.filter(s => s.resolved).length})</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {sugestoes.length === 0 ? (
+      {filteredSugestoes.length === 0 ? (
         <Card className="border-border/40">
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <Mail className="h-10 w-10 text-muted-foreground mb-3" />
-            <p className="text-sm font-bold text-muted-foreground">Nenhuma sugestão recebida ainda</p>
+            <p className="text-sm font-bold text-muted-foreground">
+              {filterResolved === 'all' ? 'Nenhuma sugestão recebida ainda' : `Nenhuma sugestão ${filterResolved === 'resolved' ? 'resolvida' : 'pendente'}`}
+            </p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-3">
-          {sugestoes.map((s: any) => (
-            <Card key={s.id} className="border-border/40 hover:border-primary/30 transition-all">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge className="text-[10px] font-black bg-primary/10 text-primary border-0">
-                        <User className="h-3 w-3 mr-1" />
-                        {s.profile?.display_name || s.profile?.email || 'Usuário'}
-                      </Badge>
-                      {s.profile?.email && (
-                        <span className="text-[10px] text-muted-foreground">{s.profile.email}</span>
+          {filteredSugestoes.map((s: any) => {
+            const history = Array.isArray(s.reply_history) ? s.reply_history : [];
+            const isExpanded = expandedHistory === s.id;
+
+            return (
+              <Card key={s.id} className={cn(
+                "border-border/40 hover:border-primary/30 transition-all",
+                s.resolved && "border-green-500/30 bg-green-500/5"
+              )}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge className="text-[10px] font-black bg-primary/10 text-primary border-0">
+                          <User className="h-3 w-3 mr-1" />
+                          {s.profile?.display_name || s.profile?.email || 'Usuário'}
+                        </Badge>
+                        {s.profile?.email && (
+                          <span className="text-[10px] text-muted-foreground">{s.profile.email}</span>
+                        )}
+                        <Badge
+                          variant={s.resolved ? 'default' : 'outline'}
+                          className={cn(
+                            "text-[10px] font-bold cursor-pointer select-none",
+                            s.resolved ? "bg-green-600 hover:bg-green-700 text-white" : "text-orange-500 border-orange-500/40 hover:bg-orange-500/10"
+                          )}
+                          onClick={() => toggleResolved(s)}
+                        >
+                          {s.resolved ? <><CheckCheck className="h-3 w-3 mr-1" /> Resolvida</> : <><CircleDot className="h-3 w-3 mr-1" /> Pendente</>}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-foreground leading-relaxed bg-muted/30 rounded-lg p-3 border border-border/30">
+                        {s.mensagem}
+                      </p>
+
+                      {/* Reply History */}
+                      {history.length > 0 && (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-[11px] gap-1 h-6 px-2 text-muted-foreground hover:text-foreground"
+                              onClick={() => setExpandedHistory(isExpanded ? null : s.id)}
+                            >
+                              <Clock className="h-3 w-3" />
+                              {history.length} resposta{history.length > 1 ? 's' : ''} enviada{history.length > 1 ? 's' : ''}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-[11px] gap-1 h-6 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => clearHistory(s)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                              Apagar histórico
+                            </Button>
+                          </div>
+                          {isExpanded && (
+                            <div className="space-y-2 pl-2 border-l-2 border-primary/20 ml-1">
+                              {history.map((h: any, i: number) => (
+                                <div key={i} className="text-xs bg-primary/5 rounded-md p-2.5 border border-primary/10">
+                                  <p className="text-foreground whitespace-pre-wrap">{h.text}</p>
+                                  <p className="text-[10px] text-muted-foreground mt-1">
+                                    {new Date(h.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })} às{' '}
+                                    {new Date(h.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Reply Section */}
+                      {replyingTo === s.id ? (
+                        <div className="space-y-2 pt-1">
+                          <Textarea
+                            placeholder="Escreva sua resposta ao cliente..."
+                            value={replyText}
+                            onChange={(e) => setReplyText(e.target.value)}
+                            rows={3}
+                            className="resize-none text-sm bg-background/50"
+                          />
+                          <div className="flex gap-2 justify-end">
+                            <Button size="sm" variant="ghost" className="text-xs" onClick={() => { setReplyingTo(null); setReplyText(''); }}>
+                              Cancelar
+                            </Button>
+                            <Button size="sm" className="text-xs gap-1.5 font-bold" onClick={() => handleReply(s)} disabled={sendingReply || !replyText.trim()}>
+                              {sendingReply ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                              {sendingReply ? 'Enviando...' : 'Enviar Resposta'}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        s.profile?.email && (
+                          <Button size="sm" variant="outline" className="text-xs gap-1.5 mt-1" onClick={() => setReplyingTo(s.id)}>
+                            <Send className="h-3 w-3" />
+                            Responder
+                          </Button>
+                        )
                       )}
                     </div>
-                    <p className="text-sm text-foreground leading-relaxed bg-muted/30 rounded-lg p-3 border border-border/30">
-                      {s.mensagem}
-                    </p>
-
-                    {/* Reply Section */}
-                    {replyingTo === s.id ? (
-                      <div className="space-y-2 pt-1">
-                        <Textarea
-                          placeholder="Escreva sua resposta ao cliente..."
-                          value={replyText}
-                          onChange={(e) => setReplyText(e.target.value)}
-                          rows={3}
-                          className="resize-none text-sm bg-background/50"
-                        />
-                        <div className="flex gap-2 justify-end">
-                          <Button size="sm" variant="ghost" className="text-xs" onClick={() => { setReplyingTo(null); setReplyText(''); }}>
-                            Cancelar
-                          </Button>
-                          <Button size="sm" className="text-xs gap-1.5 font-bold" onClick={() => handleReply(s)} disabled={sendingReply || !replyText.trim()}>
-                            {sendingReply ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
-                            {sendingReply ? 'Enviando...' : 'Enviar Resposta'}
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      s.profile?.email && (
-                        <Button size="sm" variant="outline" className="text-xs gap-1.5 mt-1" onClick={() => setReplyingTo(s.id)}>
-                          <Send className="h-3 w-3" />
-                          Responder
-                        </Button>
-                      )
-                    )}
+                    <div className="text-right shrink-0">
+                      <p className="text-[10px] text-muted-foreground font-bold">
+                        {new Date(s.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {new Date(s.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-[10px] text-muted-foreground font-bold">
-                      {new Date(s.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {new Date(s.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
+
 
 
 function MetricsPanel({ users, proPrice }: { users: UserRow[]; proPrice: number }) {
