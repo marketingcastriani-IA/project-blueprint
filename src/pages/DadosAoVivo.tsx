@@ -401,12 +401,25 @@ export default function DadosAoVivo() {
 
         {/* Setup guide — shown when not connected */}
         {status !== "connected" && (
-          <BridgeSetupGuide
-            status={status}
-            errorMsg={errorMsg}
-            reconnectCount={reconnectCount}
-            connect={connect}
-          />
+          <>
+            <Card className="border-warning/30 bg-warning/5">
+              <CardContent className="pt-4 flex items-center gap-3">
+                <WifiOff className="w-5 h-5 text-warning shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-warning">Você está offline</p>
+                  <p className="text-xs text-muted-foreground">
+                    Aperte <span className="font-bold text-primary">CONECTAR</span> no menu superior para iniciar a conexão com o Profit Pro.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            <BridgeSetupGuide
+              status={status}
+              errorMsg={errorMsg}
+              reconnectCount={reconnectCount}
+              connect={connect}
+            />
+          </>
         )}
 
         {/* Connected: add ticker */}
