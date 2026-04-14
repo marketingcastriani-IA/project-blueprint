@@ -107,6 +107,12 @@ export default function Index() {
             <Badge className="bg-red-600 text-white font-black text-xs animate-pulse shadow-lg">🔴 TEMPO REAL</Badge>
           </div>
           <img src="/assets/screenshot-realtime.png" alt="Operações em Tempo Real com Profit RTD" className="w-full h-auto" loading="lazy" />
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 pt-8">
+            <p className="text-white/90 text-xs font-medium text-center">
+              <ShieldCheck className="inline h-3.5 w-3.5 mr-1 text-primary" />
+              Necessário <strong>Profit Pro (Nelogica)</strong> para conexão via RTD Bridge — dados 100% locais
+            </p>
+          </div>
         </div>
       </section>
 
@@ -260,6 +266,9 @@ export default function Index() {
                 <Badge className="bg-red-500/20 text-red-500 border-0 text-xs font-black animate-pulse">AO VIVO</Badge>
               </div>
               <p className="text-muted-foreground text-sm">Conecte ao Profit Pro via RTD Bridge e acompanhe suas operações com preços ao vivo, P&L em tempo real e encerramento direto pelo app.</p>
+              <p className="text-xs text-amber-500 font-medium flex items-center gap-1 mt-1">
+                <ShieldCheck className="h-3.5 w-3.5" /> Necessário Profit Pro (Nelogica) para conexão via RTD
+              </p>
             </div>
             <div className="rounded-2xl overflow-hidden border-2 border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
               <img src="/assets/screenshot-realtime.png" alt="Tempo Real — Operações ao Vivo" className="w-full h-auto" loading="lazy" />
@@ -309,6 +318,9 @@ export default function Index() {
                 <Badge className="bg-primary/20 text-primary border-0 text-xs font-black">PRO</Badge>
               </div>
               <p className="text-muted-foreground text-sm">Rastreie automaticamente os melhores boxes da B3 em tempo real. Ranking com troféus, % do CDI, alertas na tela e montagem passo a passo.</p>
+              <p className="text-xs text-amber-500 font-medium flex items-center gap-1 mt-1">
+                <ShieldCheck className="h-3.5 w-3.5" /> Necessário Profit Pro (Nelogica) para conexão via RTD
+              </p>
             </div>
             <div className="rounded-2xl overflow-hidden border-2 border-primary/30 shadow-[0_0_30px_hsl(var(--primary)/0.2)]">
               <img src="/assets/box-tracker-winner.png" alt="Rastreador de Box x CDI — Ranking ao Vivo" className="w-full h-auto" loading="lazy" />
@@ -548,7 +560,7 @@ export default function Index() {
               <PricingItem included pro label="Análise com Inteligência Artificial" highlight />
               <PricingItem included pro label="Portfólio e P&L consolidado" highlight />
               <PricingItem included pro label="Histórico de análises" highlight />
-              <PricingItem included pro label="Tempo Real — Conexão Profit RTD" highlight />
+              <PricingItem included pro label="Tempo Real — Conexão Profit RTD *" highlight />
               <PricingItem included pro label="Rastreador Box × CDI" highlight />
               <PricingItem included pro label="Rastreador Collar — Proteção + Renda" highlight />
               <PricingItem included pro label="Ticker Opções B3 — 99k+ opções" highlight />
