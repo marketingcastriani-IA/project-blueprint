@@ -359,6 +359,9 @@ export default function DadosAoVivo() {
           <p className="text-muted-foreground max-w-md mx-auto">
             A conexão em tempo real com o Profit via RTD Bridge é exclusiva para assinantes do plano PRO.
           </p>
+          <p className="text-xs text-amber-500 font-medium max-w-md mx-auto">
+            Necessário Profit Pro (Nelogica) instalado para conexão via RTD Bridge
+          </p>
           <Button size="lg" className="font-black shadow-lg shadow-primary/20" onClick={() => navigate('/settings')}>
             Assinar PRO <Zap className="ml-2 h-5 w-5" />
           </Button>
@@ -379,7 +382,7 @@ export default function DadosAoVivo() {
           </div>
           <div>
             <h1 className="text-2xl font-black tracking-tight">Tempo Real — Estruturas</h1>
-            <p className="text-xs text-muted-foreground">Profit Pro → RTD Bridge → WebSocket → App</p>
+            <p className="text-xs text-muted-foreground">Profit Pro → RTD Bridge → WebSocket → App · <span className="text-amber-500 font-medium">Necessário Profit Pro (Nelogica)</span></p>
           </div>
           <Badge variant="outline" className={cn("ml-auto flex items-center gap-1.5", cfg.color)}>
             <StatusIcon className={cn("w-3 h-3", status === "connecting" && "animate-spin", status === "connected" && "animate-pulse")} />

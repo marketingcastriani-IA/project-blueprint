@@ -569,6 +569,9 @@ export default function Index() {
               <PricingItem included pro label="Rastreador PRO X — 12 Estratégias" highlight />
               <PricingItem included pro label="Push Notifications de Box" highlight />
             </ul>
+            <p className="text-xs text-muted-foreground mt-2">
+              * Tempo Real, Rastreador de Box e alertas necessitam do <strong className="text-foreground">Profit Pro (Nelogica)</strong> para conexão via RTD Bridge.
+            </p>
             <Button className="w-full h-14 text-lg font-black shadow-lg shadow-primary/30" onClick={() => navigate('/auth')}>
               ASSINAR PRO AGORA <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
