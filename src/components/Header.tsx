@@ -13,43 +13,51 @@ import { cn } from '@/lib/utils';
 
 
 function RtdIndicator({ size = 'md' }: { size?: 'sm' | 'md' }) {
-  const { status: rtdStatus, connect } = useSharedRtdBridge();
+  const { status: rtdStatus } = useSharedRtdBridge();
   const small = size === 'sm';
-  const isOffline = rtdStatus === 'disconnected' || rtdStatus === 'error';
 
   return (
-    <div
-      onClick={isOffline ? connect : undefined}
-      className={cn(
-        "flex items-center gap-1.5 rounded-full font-black uppercase border-2 transition-all shrink-0",
-        small ? "px-2.5 py-1 text-[9px] tracking-wider" : "px-3 py-1.5 text-[10px] tracking-widest",
-        rtdStatus === 'connected'
-          ? "bg-emerald-500/25 text-emerald-600 dark:text-emerald-300 border-emerald-400/60 shadow-[0_0_20px_rgba(16,185,129,0.6),0_0_40px_rgba(16,185,129,0.2)] cursor-default"
-          : rtdStatus === 'connecting'
-          ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/50 animate-pulse shadow-[0_0_12px_rgba(234,179,8,0.4)] cursor-default"
-          : "bg-muted text-muted-foreground border-border cursor-pointer hover:bg-primary/10 hover:border-primary/40 hover:text-primary"
-      )}
-      title={rtdStatus === 'connected' ? 'Bridge RTD conectado — dados ao vivo' : rtdStatus === 'connecting' ? 'Conectando ao Bridge...' : 'Clique para conectar ao Bridge RTD'}
-    >
-      {rtdStatus === 'connected' ? (
-        <>
-          <Wifi className={cn("shrink-0 drop-shadow-[0_0_6px_rgba(16,185,129,0.8)]", small ? "h-3 w-3" : "h-4 w-4")} />
-          <span className="drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]">CONECTADO</span>
-          <span className={cn("relative flex shrink-0", small ? "h-2 w-2" : "h-2.5 w-2.5")}>
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className={cn("relative inline-flex rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]", small ? "h-2 w-2" : "h-2.5 w-2.5")} />
-          </span>
-        </>
-      ) : rtdStatus === 'connecting' ? (
-        <>
-          <Wifi className={cn("shrink-0", small ? "h-3 w-3" : "h-4 w-4")} />
-          <span>CONECTANDO</span>
-        </>
-      ) : (
-        <>
-          <Wifi className={cn("shrink-0", small ? "h-3 w-3" : "h-4 w-4")} />
-          <span>CONECTAR</span>
-        </>
+    <div className="flex items-center gap-2 shrink-0">
+      <div
+        className={cn(
+          "flex items-center gap-1.5 rounded-full font-black uppercase border-2 transition-all shrink-0",
+          small ? "px-2.5 py-1 text-[9px] tracking-wider" : "px-3 py-1.5 text-[10px] tracking-widest",
+          rtdStatus === 'connected'
+            ? "bg-emerald-500/25 text-emerald-600 dark:text-emerald-300 border-emerald-400/60 shadow-[0_0_20px_rgba(16,185,129,0.6),0_0_40px_rgba(16,185,129,0.2)]"
+            : rtdStatus === 'connecting'
+            ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/50 animate-pulse shadow-[0_0_12px_rgba(234,179,8,0.4)]"
+            : "bg-muted text-muted-foreground border-border"
+        )}
+        title={rtdStatus === 'connected' ? 'Bridge RTD conectado — dados ao vivo' : rtdStatus === 'connecting' ? 'Conectando ao Bridge...' : 'Offline — use o menu Conectar Profit Pro'}
+      >
+        {rtdStatus === 'connected' ? (
+          <>
+            <Wifi className={cn("shrink-0 drop-shadow-[0_0_6px_rgba(16,185,129,0.8)]", small ? "h-3 w-3" : "h-4 w-4")} />
+            <span className="drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]">CONECTADO</span>
+            <span className={cn("relative flex shrink-0", small ? "h-2 w-2" : "h-2.5 w-2.5")}>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className={cn("relative inline-flex rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]", small ? "h-2 w-2" : "h-2.5 w-2.5")} />
+            </span>
+          </>
+        ) : rtdStatus === 'connecting' ? (
+          <>
+            <Wifi className={cn("shrink-0", small ? "h-3 w-3" : "h-4 w-4")} />
+            <span>CONECTANDO</span>
+          </>
+        ) : (
+          <>
+            <WifiOff className={cn("shrink-0", small ? "h-3 w-3" : "h-4 w-4")} />
+            <span>OFFLINE</span>
+          </>
+        )}
+      </div>
+      {rtdStatus !== 'connected' && rtdStatus !== 'connecting' && (
+        <span className={cn(
+          "text-muted-foreground font-semibold italic whitespace-nowrap",
+          small ? "text-[8px]" : "text-[10px]"
+        )}>
+          Aperte CONECTAR no menu
+        </span>
       )}
     </div>
   );
@@ -78,7 +86,7 @@ export default function Header() {
 
   const primaryNavRight = [
     { label: 'Diversificar', path: '/diversificador', icon: PieChart },
-    { label: 'Tempo Real', path: '/dados-ao-vivo', icon: Radio },
+    { label: 'Conectar Profit Pro', path: '/dados-ao-vivo', icon: Radio },
     { label: 'Opções B3', path: '/ticker-opcoes', icon: Database },
   ];
 
