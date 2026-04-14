@@ -162,6 +162,9 @@ export default function AccessBlocked({ status }: AccessBlockedProps) {
                   </li>
                 ))}
               </ul>
+              <p className="text-xs text-muted-foreground">
+                * Tempo Real, Rastreador de Box e alertas necessitam do <strong className="text-foreground">Profit Pro (Nelogica)</strong> para conexão via RTD.
+              </p>
 
               <Button
                 onClick={handleUpgrade}
