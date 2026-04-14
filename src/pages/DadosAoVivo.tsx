@@ -390,7 +390,7 @@ export default function DadosAoVivo() {
               Manual PDF
             </a>
           </Button>
-          <Badge variant="outline" className={cn("ml-auto flex items-center gap-1.5", cfg.color)}>
+          <Badge variant="outline" className={cn("flex items-center gap-1.5", cfg.color)}>
             <StatusIcon className={cn("w-3 h-3", status === "connecting" && "animate-spin", status === "connected" && "animate-pulse")} />
             {cfg.label}
             {status === "connected" && rows.size > 0 && (
