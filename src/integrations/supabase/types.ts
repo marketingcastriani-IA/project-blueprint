@@ -248,6 +248,8 @@ export type Database = {
           created_at: string
           id: string
           mensagem: string
+          reply_history: Json | null
+          resolved: boolean
           tipo: string
           user_id: string
         }
@@ -255,6 +257,8 @@ export type Database = {
           created_at?: string
           id?: string
           mensagem: string
+          reply_history?: Json | null
+          resolved?: boolean
           tipo?: string
           user_id: string
         }
@@ -262,6 +266,8 @@ export type Database = {
           created_at?: string
           id?: string
           mensagem?: string
+          reply_history?: Json | null
+          resolved?: boolean
           tipo?: string
           user_id?: string
         }
