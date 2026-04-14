@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { to, subject, body, imageDataUrl, attachment } = await req.json();
+    const { to, subject, body, imageDataUrl, attachment, hideCta } = await req.json();
 
     const recipients = Array.isArray(to)
       ? to.filter((email: string) => typeof email === 'string' && email.trim().length > 0)
@@ -154,7 +154,7 @@ Deno.serve(async (req) => {
                   </td>
                 </tr>
 
-                <!-- CTA Button -->
+                ${!hideCta ? `<!-- CTA Button -->
                 <tr>
                   <td style="padding: 8px 32px 32px; text-align: center;">
                     <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
@@ -167,7 +167,7 @@ Deno.serve(async (req) => {
                       </tr>
                     </table>
                   </td>
-                </tr>
+                </tr>` : ''}
 
               </table>
             </td>
