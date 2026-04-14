@@ -408,7 +408,7 @@ export default function DadosAoVivo() {
                 <div>
                   <p className="text-sm font-semibold text-warning">Você está offline</p>
                   <p className="text-xs text-muted-foreground">
-                    Aperte <span className="font-bold text-primary">CONECTAR</span> no menu superior para iniciar a conexão com o Profit Pro.
+                    Aperte <span className="font-bold text-primary">Conectar Profit Pro</span> no menu superior para iniciar a conexão.
                   </p>
                 </div>
               </CardContent>
