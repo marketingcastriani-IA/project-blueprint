@@ -13,21 +13,23 @@ import { cn } from '@/lib/utils';
 
 
 function RtdIndicator({ size = 'md' }: { size?: 'sm' | 'md' }) {
-  const { status: rtdStatus } = useSharedRtdBridge();
+  const { status: rtdStatus, connect } = useSharedRtdBridge();
   const small = size === 'sm';
+  const isOffline = rtdStatus === 'disconnected' || rtdStatus === 'error';
 
   return (
     <div
+      onClick={isOffline ? connect : undefined}
       className={cn(
-        "flex items-center gap-1.5 rounded-full font-black uppercase border-2 transition-all cursor-default shrink-0",
+        "flex items-center gap-1.5 rounded-full font-black uppercase border-2 transition-all shrink-0",
         small ? "px-2.5 py-1 text-[9px] tracking-wider" : "px-3 py-1.5 text-[10px] tracking-widest",
         rtdStatus === 'connected'
-          ? "bg-emerald-500/25 text-emerald-600 dark:text-emerald-300 border-emerald-400/60 shadow-[0_0_20px_rgba(16,185,129,0.6),0_0_40px_rgba(16,185,129,0.2)]"
+          ? "bg-emerald-500/25 text-emerald-600 dark:text-emerald-300 border-emerald-400/60 shadow-[0_0_20px_rgba(16,185,129,0.6),0_0_40px_rgba(16,185,129,0.2)] cursor-default"
           : rtdStatus === 'connecting'
-          ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/50 animate-pulse shadow-[0_0_12px_rgba(234,179,8,0.4)]"
-          : "bg-muted text-muted-foreground border-border"
+          ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/50 animate-pulse shadow-[0_0_12px_rgba(234,179,8,0.4)] cursor-default"
+          : "bg-muted text-muted-foreground border-border cursor-pointer hover:bg-primary/10 hover:border-primary/40 hover:text-primary"
       )}
-      title={rtdStatus === 'connected' ? 'Bridge RTD conectado — dados ao vivo' : rtdStatus === 'connecting' ? 'Conectando ao Bridge...' : 'Bridge RTD desconectado'}
+      title={rtdStatus === 'connected' ? 'Bridge RTD conectado — dados ao vivo' : rtdStatus === 'connecting' ? 'Conectando ao Bridge...' : 'Clique para conectar ao Bridge RTD'}
     >
       {rtdStatus === 'connected' ? (
         <>
@@ -45,8 +47,8 @@ function RtdIndicator({ size = 'md' }: { size?: 'sm' | 'md' }) {
         </>
       ) : (
         <>
-          <WifiOff className={cn("shrink-0", small ? "h-3 w-3" : "h-4 w-4")} />
-          <span>OFFLINE</span>
+          <Wifi className={cn("shrink-0", small ? "h-3 w-3" : "h-4 w-4")} />
+          <span>CONECTAR</span>
         </>
       )}
     </div>
