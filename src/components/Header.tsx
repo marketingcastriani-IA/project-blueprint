@@ -137,6 +137,8 @@ export default function Header() {
 
   const ProXButton = () => {
     const isActive = location.pathname === '/strategy-tracker';
+    const isConnected = rtdStatus === 'connected';
+
     return (
       <button
         onClick={() => navigate('/strategy-tracker')}
@@ -144,12 +146,16 @@ export default function Header() {
           'flex items-center gap-1 rounded-xl font-black uppercase tracking-wider transition-all whitespace-nowrap',
           'px-2.5 py-1.5 text-[9px] lg:px-3 lg:py-2 lg:text-[11px]',
           isActive
-            ? 'bg-amber-400 text-black shadow-[0_0_20px_rgba(251,191,36,0.6)] ring-2 ring-amber-300'
-            : 'bg-amber-400/90 text-black hover:bg-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.4)] animate-pulse'
+            ? isConnected
+              ? 'bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.6)] ring-2 ring-emerald-400'
+              : 'bg-amber-400 text-black shadow-[0_0_20px_rgba(251,191,36,0.6)] ring-2 ring-amber-300'
+            : isConnected
+              ? 'bg-emerald-500/90 text-white hover:bg-emerald-400 shadow-[0_0_14px_rgba(16,185,129,0.4)] animate-pulse'
+              : 'bg-amber-400/90 text-black hover:bg-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.4)] animate-pulse'
         )}
       >
         <Zap className="h-3.5 w-3.5 lg:h-4 lg:w-4 fill-current" />
-        <span>RASTREADOR PRO X</span>
+        <span>{isConnected ? 'RASTREADOR PRO X' : 'CONECTAR PROFIT PRO'}</span>
       </button>
     );
   };
