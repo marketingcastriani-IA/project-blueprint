@@ -41,6 +41,9 @@ interface UserRow {
 function SugestoesPanel() {
   const [sugestoes, setSugestoes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
 
   useEffect(() => {
     const fetchSugestoes = async () => {
@@ -50,7 +53,6 @@ function SugestoesPanel() {
         .select('*')
         .order('created_at', { ascending: false });
       if (!error && data) {
-        // Fetch user emails for each suggestion
         const userIds = [...new Set((data as any[]).map((s: any) => s.user_id))];
         const { data: profiles } = await supabase
           .from('profiles')
@@ -64,6 +66,39 @@ function SugestoesPanel() {
     };
     fetchSugestoes();
   }, []);
+
+  const handleReply = async (s: any) => {
+    if (!replyText.trim() || !s.profile?.email) return;
+    setSendingReply(true);
+    try {
+      const { error } = await supabase.functions.invoke('send-admin-email', {
+        body: {
+          to: s.profile.email,
+          subject: 'Resposta à sua sugestão — OpçõesProX',
+          html: `
+            <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#f8fafc;border-radius:12px;">
+              <h2 style="color:#1e40af;margin-bottom:16px;">Olá, ${s.profile.display_name || 'Usuário'}!</h2>
+              <p style="color:#475569;font-size:14px;">Recebemos sua sugestão e gostaríamos de responder:</p>
+              <div style="background:#e2e8f0;border-radius:8px;padding:12px;margin:16px 0;font-size:13px;color:#334155;">
+                <strong>Sua mensagem:</strong><br/>${s.mensagem}
+              </div>
+              <div style="background:#ffffff;border:1px solid #cbd5e1;border-radius:8px;padding:12px;margin:16px 0;font-size:14px;color:#1e293b;">
+                <strong>Nossa resposta:</strong><br/>${replyText.replace(/\n/g, '<br/>')}
+              </div>
+              <p style="color:#64748b;font-size:12px;margin-top:24px;">Equipe OpçõesProX</p>
+            </div>
+          `,
+        },
+      });
+      if (error) throw error;
+      toast.success(`Resposta enviada para ${s.profile.email}`);
+      setReplyingTo(null);
+      setReplyText('');
+    } catch (err: any) {
+      toast.error('Erro ao enviar resposta: ' + (err.message || 'Tente novamente'));
+    }
+    setSendingReply(false);
+  };
 
   if (loading) {
     return (
@@ -108,6 +143,35 @@ function SugestoesPanel() {
                     <p className="text-sm text-foreground leading-relaxed bg-muted/30 rounded-lg p-3 border border-border/30">
                       {s.mensagem}
                     </p>
+
+                    {/* Reply Section */}
+                    {replyingTo === s.id ? (
+                      <div className="space-y-2 pt-1">
+                        <Textarea
+                          placeholder="Escreva sua resposta ao cliente..."
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          rows={3}
+                          className="resize-none text-sm bg-background/50"
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <Button size="sm" variant="ghost" className="text-xs" onClick={() => { setReplyingTo(null); setReplyText(''); }}>
+                            Cancelar
+                          </Button>
+                          <Button size="sm" className="text-xs gap-1.5 font-bold" onClick={() => handleReply(s)} disabled={sendingReply || !replyText.trim()}>
+                            {sendingReply ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                            {sendingReply ? 'Enviando...' : 'Enviar Resposta'}
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      s.profile?.email && (
+                        <Button size="sm" variant="outline" className="text-xs gap-1.5 mt-1" onClick={() => setReplyingTo(s.id)}>
+                          <Send className="h-3 w-3" />
+                          Responder
+                        </Button>
+                      )
+                    )}
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-[10px] text-muted-foreground font-bold">
