@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { to, subject, body, imageDataUrl, attachment } = await req.json();
+    const { to, subject, body, imageDataUrl, attachment, hideCta } = await req.json();
 
     const recipients = Array.isArray(to)
       ? to.filter((email: string) => typeof email === 'string' && email.trim().length > 0)
