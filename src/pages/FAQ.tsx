@@ -488,6 +488,9 @@ export default function FAQ() {
               acompanhar operações em aberto com P&L atualizado e visualizar o gráfico de payoff com dados reais do mercado. 
               Todos os dados vêm diretamente do Profit Pro via WebSocket.
             </p>
+            <p className="text-xs text-amber-500 font-medium mt-1">
+              ⚠ Necessário Profit Pro (Nelogica) instalado para conexão via RTD Bridge
+            </p>
 
             <ScreenshotImage src={faqTempoReal} alt="Aba Tempo Real - Dados ao Vivo" />
 

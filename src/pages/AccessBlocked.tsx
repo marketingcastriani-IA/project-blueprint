@@ -74,7 +74,7 @@ export default function AccessBlocked({ status }: AccessBlockedProps) {
     { icon: Camera, label: 'OCR de Imagem (IA)' },
     { icon: Briefcase, label: 'Portfólio e P&L consolidado' },
     { icon: History, label: 'Histórico de análises' },
-    { icon: Radio, label: 'Tempo Real — Conexão Profit RTD' },
+    { icon: Radio, label: 'Tempo Real — Conexão Profit RTD *' },
     { icon: Shield, label: 'Rastreador Box × CDI' },
     { icon: Shield, label: 'Rastreador Collar — Proteção + Renda' },
     { icon: Database, label: 'Ticker Opções B3 — 99k+ opções' },
@@ -162,6 +162,9 @@ export default function AccessBlocked({ status }: AccessBlockedProps) {
                   </li>
                 ))}
               </ul>
+              <p className="text-xs text-muted-foreground">
+                * Tempo Real, Rastreador de Box e alertas necessitam do <strong className="text-foreground">Profit Pro (Nelogica)</strong> para conexão via RTD.
+              </p>
 
               <Button
                 onClick={handleUpgrade}
