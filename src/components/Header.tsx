@@ -137,7 +137,8 @@ export default function Header() {
 
   const ProXButton = () => {
     const isActive = location.pathname === '/strategy-tracker';
-    const isConnected = rtdStatus === 'connected';
+    const { status: proXStatus } = useSharedRtdBridge();
+    const isConnected = proXStatus === 'connected';
 
     return (
       <button
