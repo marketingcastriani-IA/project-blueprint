@@ -384,13 +384,12 @@ export default function DadosAoVivo() {
             <h1 className="text-2xl font-black tracking-tight">Tempo Real — Estruturas</h1>
             <p className="text-xs text-muted-foreground">Profit Pro → RTD Bridge → WebSocket → App · <span className="text-amber-500 font-medium">Necessário Profit Pro (Nelogica)</span></p>
           </div>
-          <Button size="sm" variant="outline" className="ml-auto mr-2 gap-1.5 text-xs" asChild>
+          <Button size="sm" variant="outline" className="ml-auto gap-1.5 text-xs" asChild>
             <a href="/downloads/Manual_Bridge_OpcoesProX.pdf" download>
               <BookOpen className="w-3.5 h-3.5" />
               Manual PDF
             </a>
           </Button>
-          </div>
           <Badge variant="outline" className={cn("ml-auto flex items-center gap-1.5", cfg.color)}>
             <StatusIcon className={cn("w-3 h-3", status === "connecting" && "animate-spin", status === "connected" && "animate-pulse")} />
             {cfg.label}
