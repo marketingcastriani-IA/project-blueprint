@@ -72,10 +72,21 @@ function SugestoesPanel() {
     if (!replyText.trim() || !s.profile?.email) return;
     setSendingReply(true);
     try {
+      // Check if user is PRO to conditionally hide CTA
+      const { data: accessData } = await supabase
+        .from('user_access')
+        .select('plan_type, status, expires_at')
+        .eq('user_id', s.user_id)
+        .maybeSingle();
+
+      const isPro = accessData?.plan_type === 'pro' && accessData?.status === 'approved' && 
+        (!accessData?.expires_at || new Date(accessData.expires_at) > new Date());
+
       const { error } = await supabase.functions.invoke('send-admin-email', {
         body: {
           to: s.profile.email,
           subject: 'Resposta à sua sugestão — OpçõesProX',
+          hideCta: isPro,
           body: `
             <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#f8fafc;border-radius:12px;">
               <h2 style="color:#1e40af;margin-bottom:16px;">Olá, ${s.profile.display_name || 'Usuário'}!</h2>
