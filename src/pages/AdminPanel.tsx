@@ -75,7 +75,7 @@ function SugestoesPanel() {
         body: {
           to: s.profile.email,
           subject: 'Resposta à sua sugestão — OpçõesProX',
-          html: `
+          body: `
             <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#f8fafc;border-radius:12px;">
               <h2 style="color:#1e40af;margin-bottom:16px;">Olá, ${s.profile.display_name || 'Usuário'}!</h2>
               <p style="color:#475569;font-size:14px;">Recebemos sua sugestão e gostaríamos de responder:</p>
