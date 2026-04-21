@@ -156,7 +156,7 @@ export default function Header() {
         )}
       >
         <Zap className="h-3.5 w-3.5 lg:h-4 lg:w-4 fill-current" />
-        <span>{isConnected ? 'RASTREADOR PRO X' : 'CONECTAR PROFIT PRO'}</span>
+        <span>RASTREADOR PRO X</span>
       </button>
     );
   };
