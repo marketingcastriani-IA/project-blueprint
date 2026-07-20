@@ -55,37 +55,37 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `Você é um especialista em ler telas de home broker e boletas de opções da B3 e extrair a estrutura da operação com precisão absoluta.
+            content: `Você lê telas de home broker / boletas de opções da B3 e extrai a estrutura com precisão absoluta. Trabalhe em DUAS etapas e devolva um único JSON.
 
-Retorne APENAS um JSON no formato { "legs": [ ... ] }. Cada perna tem:
-- side: "buy" (compra) ou "sell" (venda)
-- option_type: "call", "put" ou "stock" (ação à vista)
-- asset: ticker exatamente como aparece (ex.: PETR4, PETRT427)
-- strike: número (use 0 para ações à vista)
-- price: número POSITIVO (prêmio da opção ou preço da ação)
-- quantity: número inteiro POSITIVO
+ETAPA 1 — TRANSCRIÇÃO LITERAL (campo "linhas_lidas"):
+Para CADA linha da tabela de pernas, transcreva exatamente o que está escrito em cada coluna, sem interpretar:
+{ "lado_texto": "<letra ou palavra na coluna Lado, ex: C ou V>", "callput_texto": "<Put/Call/Ativo/->", "ticker": "<...>", "strike_texto": "<...>", "preco_texto": "<...>", "qtd_texto": "<...>" }
 
-COMO IDENTIFICAR O LADO (side) — este é o ponto MAIS crítico, NUNCA inverta:
-- "C", "Compra", "Comprado", "Buy", sinal "+", ou célula de COMPRA → side = "buy".
-- "V", "Venda", "Vendido", "Sell", sinal "-", ou célula de VENDA → side = "sell".
-- Localize a coluna "Lado"/"C/V"/"Operação" e leia o rótulo de CADA linha individualmente. Um "V" isolado numa célula é VENDA; um "C" é COMPRA. Não deduza pela ordem das linhas nem pelo tipo da opção — confie no rótulo explícito do lado daquela linha.
+REGRA ABSOLUTA PARA A COLUNA "LADO":
+- A coluna "Lado" (também chamada "C/V" ou "Operação") contém UMA LETRA por linha, dentro de um selo/quadrado colorido.
+- Letra "C" = COMPRA. Letra "V" = VENDA. SEMPRE.
+- IGNORE A COR do selo. As cores mudam de corretora para corretora e enganam: um "C" pode estar em selo laranja, amarelo, azul ou cinza — continua sendo COMPRA. Um "V" pode estar em selo verde ou vermelho — continua sendo VENDA. Leia a LETRA, nunca a cor.
+- NÃO confunda a coluna "Lado" (C/V) com a coluna "Call/Put" (tipo da opção). São colunas diferentes.
+- NÃO deduza o lado pelo tipo da opção, pela ordem das linhas, nem pelo nome da estratégia exibido no topo (ex.: "Colar", "Trava de Alta"). Use SOMENTE a letra da coluna Lado daquela linha.
 
-COMO IDENTIFICAR option_type:
-- Rótulo "Call"/"CALL" → "call"; "Put"/"PUT" → "put".
-- Ação à vista (ticker de 5 caracteres tipo PETR4/VALE3, sem strike, tipo "Ativo"/"Ação"/"-") → "stock".
-- Validação pela letra do ticker de opção da B3 (a letra após o radical): Call usa A–L (A=jan … L=dez); Put usa M–X (M=jan … X=dez). Ex.: PETRT427 → "T" = Put; PETRH429 → "H" = Call. Se o rótulo visível da coluna Tipo conflitar com a letra do ticker, priorize o rótulo explícito, mas mantenha o asset exatamente como está escrito.
+ETAPA 2 — CONVERSÃO (campo "legs"):
+Converta cada linha lida em uma perna:
+- side: "buy" se lado_texto começa com "C" (Compra); "sell" se começa com "V" (Venda).
+- option_type: "call" se Call; "put" se Put; "stock" se for ação à vista ("Ativo"/"Ação"/"-" e ticker de 5 caracteres tipo PETR4/VALE3).
+- asset: o ticker exatamente como escrito.
+- strike: número (0 para ação).
+- price: número POSITIVO (o sinal de compra/venda vai só em "side", nunca no preço).
+- quantity: inteiro POSITIVO.
+- Converta vírgula decimal para ponto (1,67 → 1.67).
 
-REGRAS GERAIS:
-- Extraia TODAS as pernas visíveis, na mesma ordem em que aparecem.
-- price e quantity são SEMPRE positivos — o sinal de compra/venda vai em "side", nunca no preço.
-- Converta vírgula decimal para ponto (1,47 → 1.47).
-- strike de ação = 0.
-- Não invente pernas ausentes. Se um campo estiver ilegível, use o valor mais provável pelo restante da linha.`
+VALIDAÇÃO EXTRA (não sobrepõe o rótulo, só confere): na B3 a letra após o radical do ticker de opção indica o tipo — Call usa A–L, Put usa M–X (ex.: PETRT427 → "T" = Put; PETRH429 → "H" = Call).
+
+Formato final: { "linhas_lidas": [ ... ], "legs": [ ... ] }. Extraia TODAS as pernas, na ordem em que aparecem. Não invente linhas ausentes.`
           },
           {
             role: "user",
             content: [
-              { type: "text", text: "Extraia todas as pernas desta imagem de corretora/home broker, lendo o LADO (compra/venda) de cada linha com atenção. Retorne somente o JSON { legs: [...] }." },
+              { type: "text", text: "Leia esta boleta. Primeiro transcreva a coluna LADO (a letra C ou V de cada linha, ignorando a cor do selo), depois monte as pernas. Retorne o JSON { linhas_lidas: [...], legs: [...] }." },
               { type: "image_url", image_url: { url: imageDataUrl, detail: "high" } },
             ],
           },
