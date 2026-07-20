@@ -79,8 +79,18 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
       ? (optionMaxGain / cdiReturn) * 100
       : null;
 
+    // Piso garantido (lucro mínimo) — só existe em estruturas sem risco (maxLoss >= 0)
+    const isRiskFreeStruct = metrics.isRiskFree && Number.isFinite(optionMaxLoss) && optionMaxLoss >= 0;
+    const floorGain = isRiskFreeStruct ? optionMaxLoss : null;
+    const floorEfficiency = floorGain !== null && cdiReturn > 0 ? (floorGain / cdiReturn) * 100 : null;
+    const floorRoi = floorGain !== null && investedCapital > 0 ? (floorGain / investedCapital) * 100 : null;
+
     let verdict = 'Dados insuficientes para concluir.';
-    if (metrics.isRiskFree && optionBetter) {
+    if (isRiskFreeStruct && floorEfficiency !== null && floorEfficiency >= 100) {
+      verdict = 'Risco zero e retorno acima do CDI mesmo no piso (pior caso). Excelente oportunidade.';
+    } else if (isRiskFreeStruct && optionBetter) {
+      verdict = `Risco zero, mas o retorno garantido (piso) equivale a ${floorEfficiency?.toFixed(0)}% do CDI. Só supera o CDI (até ${efficiency?.toFixed(0)}%) se o ativo caminhar a favor até o vencimento.`;
+    } else if (metrics.isRiskFree && optionBetter) {
       verdict = 'Estrutura com risco zero e retorno acima do CDI. Excelente oportunidade.';
     } else if (!Number.isFinite(optionMaxGain)) {
       verdict = 'Estrutura com ganho potencial ilimitado: avalie o risco antes de comparar.';
@@ -90,8 +100,8 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
       verdict = 'No cenário informado, CDI está mais competitivo que a estrutura.';
     }
 
-    return { optionBetter, spread, verdict, efficiency };
-  }, [cdiRate, daysToExpiry, cdiReturn, optionMaxGain, metrics.isRiskFree]);
+    return { optionBetter, spread, verdict, efficiency, floorGain, floorEfficiency, floorRoi };
+  }, [cdiRate, daysToExpiry, cdiReturn, optionMaxGain, optionMaxLoss, metrics.isRiskFree, investedCapital]);
 
   const cdiRoi = investedCapital > 0 ? (cdiReturn / investedCapital) * 100 : 0;
   const optionRoi = Number.isFinite(optionMaxGain) && investedCapital > 0
@@ -328,13 +338,36 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
               </div>
             </div>
 
+            {comparison?.floorGain !== null && comparison?.floorGain !== undefined && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border-2 border-warning/40 bg-warning/5 p-3 text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Piso garantido (pior caso)</p>
+                  <p className="text-lg sm:text-xl font-black font-mono">{formatMoney(comparison.floorGain)}</p>
+                  <p className={`text-sm font-mono font-bold ${(comparison.floorEfficiency ?? 0) >= 100 ? 'text-success' : 'text-destructive'}`}>
+                    {comparison.floorEfficiency?.toFixed(0)}% do CDI · ROI {comparison.floorRoi?.toFixed(2)}%
+                  </p>
+                </div>
+                <div className="rounded-lg border-2 border-success/40 bg-success/5 p-3 text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Teto (melhor caso)</p>
+                  <p className="text-lg sm:text-xl font-black font-mono text-success">
+                    {Number.isFinite(optionMaxGain) ? formatMoney(optionMaxGain) : 'Ilimitado'}
+                  </p>
+                  <p className="text-sm font-mono font-bold text-success">
+                    {comparison.efficiency?.toFixed(0)}% do CDI · ROI {optionRoi?.toFixed(2)}%
+                  </p>
+                </div>
+              </div>
+            )}
+
             {comparison && (
               <div className="rounded-lg border bg-muted/40 p-4 space-y-3">
                 <div className="text-center">
                   {comparison.efficiency !== null ? (
                     <div className={`text-5xl sm:text-6xl lg:text-7xl font-black font-mono ${comparison.efficiency >= 100 ? 'text-success' : 'text-destructive'}`}>
                       {comparison.efficiency.toFixed(0)}%
-                      <span className="text-lg sm:text-xl font-semibold ml-2">do CDI</span>
+                      <span className="text-lg sm:text-xl font-semibold ml-2">
+                        do CDI{comparison.floorGain !== null && (comparison.floorEfficiency ?? 0) < 100 ? ' (no teto)' : ''}
+                      </span>
                     </div>
                   ) : (
                     <div className="text-5xl sm:text-6xl lg:text-7xl font-black text-success font-mono">

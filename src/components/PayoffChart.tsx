@@ -168,8 +168,14 @@ export default function PayoffChart({
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
 
+  // Estrutura sem risco: a "perda máxima" é >= 0, ou seja, é na verdade
+  // um lucro mínimo garantido (piso do payoff acima de zero).
+  const isRiskFree = typeof maxLoss === 'number' && maxLoss >= 0;
+
   const riskRewardRatio = useMemo(() => {
-    if (!maxGain || !maxLoss || maxGain === 'Ilimitado' || maxLoss === 'Ilimitado') return null;
+    // Risco/retorno só faz sentido quando há risco real (perda < 0)
+    if (!maxGain || maxGain === 'Ilimitado' || maxLoss === 'Ilimitado') return null;
+    if (typeof maxLoss !== 'number' || maxLoss >= 0) return null;
     const ratio = Math.abs(maxGain) / Math.abs(maxLoss);
     return ratio.toFixed(2);
   }, [maxGain, maxLoss]);
@@ -184,12 +190,21 @@ export default function PayoffChart({
           </p>
           <p className="text-sm font-bold text-success font-mono">{formatVal(maxGain)}</p>
         </div>
-        <div className="p-3 rounded-xl bg-muted/20 border border-border/40 hover:border-destructive/30 transition-colors">
-          <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
-            <TrendingDown className="h-3 w-3 text-destructive" /> Risco Máx.
-          </p>
-          <p className="text-sm font-bold text-destructive font-mono">{formatVal(maxLoss)}</p>
-        </div>
+        {isRiskFree ? (
+          <div className="p-3 rounded-xl bg-muted/20 border border-border/40 hover:border-success/30 transition-colors">
+            <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
+              <TrendingUp className="h-3 w-3 text-success" /> Lucro Mín.
+            </p>
+            <p className="text-sm font-bold text-success font-mono">{formatVal(maxLoss)}</p>
+          </div>
+        ) : (
+          <div className="p-3 rounded-xl bg-muted/20 border border-border/40 hover:border-destructive/30 transition-colors">
+            <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
+              <TrendingDown className="h-3 w-3 text-destructive" /> Risco Máx.
+            </p>
+            <p className="text-sm font-bold text-destructive font-mono">{formatVal(maxLoss)}</p>
+          </div>
+        )}
         <div className="p-3 rounded-xl bg-muted/20 border border-border/40 hover:border-warning/30 transition-colors">
           <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
             <Target className="h-3 w-3 text-warning" /> Breakeven

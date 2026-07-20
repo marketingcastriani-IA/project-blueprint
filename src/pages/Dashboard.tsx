@@ -119,16 +119,25 @@ export default function Dashboard() {
       return;
     }
 
+    // Converte números que possam vir como texto ("1,47", "R$ 41,08") com segurança
+    const num = (v: any) => {
+      if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+      const n = parseFloat(String(v ?? '').replace(',', '.').replace(/[^\d.\-]/g, ''));
+      return Number.isFinite(n) ? n : 0;
+    };
+
     const sanitizedLegs: Leg[] = extractedLegs.map(l => ({
       side: (l.side === 'buy' || l.side === 'sell') ? l.side : 'buy',
       option_type: (l.option_type === 'call' || l.option_type === 'put' || l.option_type === 'stock') ? l.option_type : 'call',
       asset: String(l.asset || '').toUpperCase(),
-      strike: Number(l.strike) || 0,
-      price: Number(l.price) || 0,
-      quantity: Math.max(1, Number(l.quantity) || 1),
+      strike: num(l.strike),
+      price: Math.abs(num(l.price)),
+      quantity: Math.max(1, Math.round(num(l.quantity)) || 1),
     }));
 
-    setLegs(prev => [...prev, ...sanitizedLegs]); 
+    // Substitui a estrutura pela lida da imagem (não acumula com pernas anteriores).
+    // Isso dispara o recálculo de métricas e do gráfico automaticamente (useMemo em [legs]).
+    setLegs(sanitizedLegs);
     setInputMode('manual');
   }, [isLimitReached, user]);
 

@@ -19,9 +19,13 @@ export default function MetricsCards({ metrics, cdiReturn = 0, investedCapital =
   const isBullCallSpread = metrics.strategyType === 'BullCallSpread';
   const isBearPutSpread = metrics.strategyType === 'BearPutSpread';
 
+  // Convenção do card: positivo = débito (você paga), negativo = crédito (você recebe).
+  // montageTotal já segue essa convenção; netCost usa o sinal oposto (buy = -1),
+  // por isso é invertido aqui — senão o rótulo débito/crédito sai trocado em
+  // estruturas sem estratégia catalogada.
   const montageValue = hasStrategy
-    ? (metrics.montageTotal ?? metrics.netCost)
-    : metrics.netCost;
+    ? (metrics.montageTotal ?? -metrics.netCost)
+    : -metrics.netCost;
 
   const breakeven = hasStrategy && metrics.realBreakeven != null
     ? (Array.isArray(metrics.realBreakeven) ? metrics.realBreakeven : [metrics.realBreakeven])

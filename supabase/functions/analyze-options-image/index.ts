@@ -51,16 +51,42 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "gpt-4o",
+        temperature: 0,
         messages: [
-          { 
-            role: "system", 
-            content: "Você é um assistente especializado em extrair dados de operações financeiras da B3. Extraia as pernas da operação. Retorne APENAS um JSON com a chave 'legs'. Cada item deve ter: side ('buy' ou 'sell'), option_type ('call', 'put' ou 'stock'), asset (ticker), strike (número), price (número), quantity (número)." 
+          {
+            role: "system",
+            content: `Você é um especialista em ler telas de home broker e boletas de opções da B3 e extrair a estrutura da operação com precisão absoluta.
+
+Retorne APENAS um JSON no formato { "legs": [ ... ] }. Cada perna tem:
+- side: "buy" (compra) ou "sell" (venda)
+- option_type: "call", "put" ou "stock" (ação à vista)
+- asset: ticker exatamente como aparece (ex.: PETR4, PETRT427)
+- strike: número (use 0 para ações à vista)
+- price: número POSITIVO (prêmio da opção ou preço da ação)
+- quantity: número inteiro POSITIVO
+
+COMO IDENTIFICAR O LADO (side) — este é o ponto MAIS crítico, NUNCA inverta:
+- "C", "Compra", "Comprado", "Buy", sinal "+", ou célula de COMPRA → side = "buy".
+- "V", "Venda", "Vendido", "Sell", sinal "-", ou célula de VENDA → side = "sell".
+- Localize a coluna "Lado"/"C/V"/"Operação" e leia o rótulo de CADA linha individualmente. Um "V" isolado numa célula é VENDA; um "C" é COMPRA. Não deduza pela ordem das linhas nem pelo tipo da opção — confie no rótulo explícito do lado daquela linha.
+
+COMO IDENTIFICAR option_type:
+- Rótulo "Call"/"CALL" → "call"; "Put"/"PUT" → "put".
+- Ação à vista (ticker de 5 caracteres tipo PETR4/VALE3, sem strike, tipo "Ativo"/"Ação"/"-") → "stock".
+- Validação pela letra do ticker de opção da B3 (a letra após o radical): Call usa A–L (A=jan … L=dez); Put usa M–X (M=jan … X=dez). Ex.: PETRT427 → "T" = Put; PETRH429 → "H" = Call. Se o rótulo visível da coluna Tipo conflitar com a letra do ticker, priorize o rótulo explícito, mas mantenha o asset exatamente como está escrito.
+
+REGRAS GERAIS:
+- Extraia TODAS as pernas visíveis, na mesma ordem em que aparecem.
+- price e quantity são SEMPRE positivos — o sinal de compra/venda vai em "side", nunca no preço.
+- Converta vírgula decimal para ponto (1,47 → 1.47).
+- strike de ação = 0.
+- Não invente pernas ausentes. Se um campo estiver ilegível, use o valor mais provável pelo restante da linha.`
           },
           {
             role: "user",
             content: [
-              { type: "text", text: "Extraia os dados desta imagem de corretora/home broker. Retorne somente JSON." },
-              { type: "image_url", image_url: { url: imageDataUrl } },
+              { type: "text", text: "Extraia todas as pernas desta imagem de corretora/home broker, lendo o LADO (compra/venda) de cada linha com atenção. Retorne somente o JSON { legs: [...] }." },
+              { type: "image_url", image_url: { url: imageDataUrl, detail: "high" } },
             ],
           },
         ],
