@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 interface ImageUploadProps {
-  onLegsExtracted: (legs: Leg[]) => void;
+  onLegsExtracted: (legs: Leg[], imageDataUrl?: string) => void;
   onImageChange?: (hasImage: boolean) => void;
   onClear?: () => void;
 }
@@ -106,7 +106,7 @@ export default function ImageUpload({ onLegsExtracted, onImageChange, onClear }:
       }
       
       if (data?.legs && data.legs.length > 0) {
-        onLegsExtracted(data.legs);
+        onLegsExtracted(data.legs, imageDataUrl);
         toast.success(`✓ ${data.legs.length} perna(s) extraída(s) com sucesso!`);
       } else {
         toast.error('Nenhuma perna detectada na imagem.');

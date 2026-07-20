@@ -23,7 +23,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2, Info, AlertTriangle, Calendar, Percent, Trash2, CheckCircle2, Download, Calculator, ArrowRight, Zap } from 'lucide-react';
+import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2, Info, AlertTriangle, Calendar, Percent, Trash2, CheckCircle2, Download, Calculator, ArrowRight, Zap, Image as ImageIcon, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, SectionDivider, ProfessionalLayout } from '@/components/ProfessionalLayout';
@@ -51,6 +51,7 @@ export default function Dashboard() {
   const [aiProgress, setAiProgress] = useState(0);
   const [saving, setSaving] = useState(false);
   const [inputMode, setInputMode] = useState<InputMode>(null);
+  const [ocrPreview, setOcrPreview] = useState<string | null>(null);
   const aiSectionRef = useRef<HTMLDivElement>(null);
 
   const metrics = useMemo(() => calculateMetrics(legs), [legs]);
@@ -113,11 +114,13 @@ export default function Dashboard() {
   const removeLeg = useCallback((index: number) => { setLegs(prev => prev.filter((_, i) => i !== index)); }, []);
   const updateLeg = useCallback((index: number, leg: Leg) => { setLegs(prev => prev.map((item, i) => (i === index ? leg : item))); }, []);
   
-  const handleLegsFromImage = useCallback(async (extractedLegs: any[]) => { 
+  const handleLegsFromImage = useCallback(async (extractedLegs: any[], imageDataUrl?: string) => {
     if (isLimitReached) {
       toast.error('Período de teste expirado! Assine o PRO para continuar.');
       return;
     }
+    // Guarda a imagem lida para conferência lado a lado com a estrutura extraída
+    if (imageDataUrl) setOcrPreview(imageDataUrl);
 
     // Converte números que possam vir como texto ("1,47", "R$ 41,08") com segurança
     const num = (v: any) => {
@@ -427,6 +430,7 @@ export default function Dashboard() {
                   variant="destructive"
                   onClick={() => {
                     setLegs([]);
+                    setOcrPreview(null);
                     setAiAnalysis(null);
                     setAnalysisName('');
                     setHasManuallyNamed(false);
@@ -555,8 +559,26 @@ export default function Dashboard() {
                   <button onClick={() => setInputMode('manual')} className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all', inputMode === 'manual' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}><Keyboard className="h-4 w-4" /> Manual</button>
                   <button onClick={() => setInputMode('image')} className={cn('flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all', inputMode === 'image' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50')}><Camera className="h-4 w-4" /> Upload OCR</button>
                 </div>
-                {inputMode === 'manual' ? <Card className="border-border/40 bg-card/50 backdrop-blur-sm"><CardContent className="pt-6"><LegForm onAdd={addLeg} /></CardContent></Card> : <ImageUpload onLegsExtracted={handleLegsFromImage} onImageChange={(hasImage) => !hasImage && setLegs([])} />}
+                {inputMode === 'manual' ? <Card className="border-border/40 bg-card/50 backdrop-blur-sm"><CardContent className="pt-6"><LegForm onAdd={addLeg} /></CardContent></Card> : <ImageUpload onLegsExtracted={handleLegsFromImage} onImageChange={(hasImage) => { if (!hasImage) { setLegs([]); setOcrPreview(null); } }} />}
               </div>
+            )}
+
+            {ocrPreview && (
+              <Card className="border-primary/30 bg-primary/[0.03]">
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                      <ImageIcon className="h-3.5 w-3.5 text-primary" /> Imagem lida — confira se a estrutura abaixo confere (lado, tipo, strike e preço)
+                    </p>
+                    <button onClick={() => setOcrPreview(null)} aria-label="Fechar imagem de conferência" className="text-muted-foreground hover:text-foreground shrink-0">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <a href={ocrPreview} target="_blank" rel="noreferrer" title="Abrir imagem em tamanho real">
+                    <img src={ocrPreview} alt="Boleta lida pelo OCR" className="max-h-72 w-auto max-w-full rounded-lg border border-border/40 mx-auto" />
+                  </a>
+                </CardContent>
+              </Card>
             )}
 
             <LegsTable legs={legs} onRemove={removeLeg} onUpdate={updateLeg} />

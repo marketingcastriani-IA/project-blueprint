@@ -289,12 +289,14 @@ export default function History() {
           <div className="grid grid-cols-2 gap-3">
             {/* Lucro Máx */}
             <div>
-              <span className="text-xs text-muted-foreground uppercase tracking-wider">Lucro Máximo</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                {typeof m?.maxGain === 'number' && Number.isFinite(m.maxGain) && m.maxGain < 0 ? 'Resultado Máximo' : 'Lucro Máximo'}
+              </span>
               <div className={cn("text-xl font-extrabold font-mono mt-0.5", m && (m.maxGain === 'Ilimitado' || (typeof m.maxGain === 'number' && m.maxGain > 0)) ? "text-success" : "text-foreground")}>
                 {m ? (
                   <>
                     <span className="text-sm font-normal">R$</span>
-                    {m.maxGain === 'Ilimitado' ? '∞' : (typeof m.maxGain === 'number' ? m.maxGain.toFixed(2) : '—')}
+                    {m.maxGain === 'Ilimitado' ? '∞' : (typeof m.maxGain === 'number' && Number.isFinite(m.maxGain) ? m.maxGain.toFixed(2) : '—')}
                   </>
                 ) : '—'}
               </div>
@@ -310,7 +312,7 @@ export default function History() {
                       ? "bg-success/15 text-success"
                       : "bg-destructive/15 text-destructive"
                   )}>
-                    {m.isRiskFree ? 'R$ 0,00' : (typeof m.maxLoss === 'number' ? `R$ ${Math.abs(m.maxLoss).toFixed(2)}` : '—')}
+                    {m.isRiskFree ? 'R$ 0,00' : (typeof m.maxLoss === 'number' && Number.isFinite(m.maxLoss) ? `R$ ${Math.abs(m.maxLoss).toFixed(2)}` : '—')}
                   </span>
                 ) : (
                   <span className="text-xl font-bold text-muted-foreground">—</span>

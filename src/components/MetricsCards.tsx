@@ -33,11 +33,11 @@ export default function MetricsCards({ metrics, cdiReturn = 0, investedCapital =
 
   const maxGainValue = metrics.maxGain === 'Ilimitado'
     ? null
-    : (typeof metrics.maxGain === 'number' ? metrics.maxGain : null);
+    : (typeof metrics.maxGain === 'number' && Number.isFinite(metrics.maxGain) ? metrics.maxGain : null);
 
   const maxLossValue = metrics.maxLoss === 'Ilimitado'
     ? null
-    : (typeof metrics.maxLoss === 'number' ? metrics.maxLoss : null);
+    : (typeof metrics.maxLoss === 'number' && Number.isFinite(metrics.maxLoss) ? metrics.maxLoss : null);
 
   const efficiency = cdiReturn > 0 && maxGainValue !== null && maxGainValue > 0
     ? (maxGainValue / cdiReturn) * 100
@@ -155,7 +155,7 @@ export default function MetricsCards({ metrics, cdiReturn = 0, investedCapital =
       tip: costTip,
     },
     {
-      title: 'Lucro Máximo',
+      title: maxGainValue !== null && maxGainValue < 0 ? 'Resultado Máximo' : 'Lucro Máximo',
       value: maxGainValue !== null ? `R$ ${maxGainValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '∞',
       subtitle: maxGainValue !== null && investedCapital > 0
         ? `${((maxGainValue / investedCapital) * 100).toFixed(1)}% do capital`

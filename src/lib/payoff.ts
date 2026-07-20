@@ -241,6 +241,18 @@ export function calculateMetrics(legs: Leg[]): AnalysisMetrics {
 
   // Geramos uma curva ampla para análise de limites
   const curve = generatePayoffCurve(legs, 0, 14.90, 1000);
+
+  // Estrutura degenerada (sem strikes/preços válidos) gera curva vazia.
+  // Sem este guard, Math.max([]) = -Infinity apareceria como "-Infinity" na tela.
+  if (curve.length === 0) {
+    let netCost = 0;
+    for (const leg of legs) {
+      const multiplier = leg.side === 'buy' ? -1 : 1;
+      netCost += multiplier * leg.price * leg.quantity;
+    }
+    return { maxGain: 0, maxLoss: 0, breakevens: [], netCost: Math.round(netCost * 100) / 100 };
+  }
+
   const profits = curve.map(p => p.profitAtExpiry);
   const maxProfit = Math.max(...profits);
   const minProfit = Math.min(...profits);
