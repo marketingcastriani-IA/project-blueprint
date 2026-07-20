@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { generateFAQPdf, type PdfImageMap } from '@/lib/pdf-generator';
+import type { PdfImageMap } from '@/lib/pdf-generator';
 
 import faqNovaAnalise from '@/assets/pdf-nova-analise.jpg';
 import faqPayoff from '@/assets/pdf-payoff.jpg';
@@ -125,6 +125,7 @@ export default function FAQ() {
                 strategyTracker: faqStrategyTracker,
                 strategyVolatility: faqStrategyVolatility,
               };
+              const { generateFAQPdf } = await import('@/lib/pdf-generator');
               await generateFAQPdf(faqImages);
               toast.success('PDF do manual baixado!');
             }} 

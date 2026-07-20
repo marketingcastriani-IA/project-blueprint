@@ -192,7 +192,7 @@ Deno.serve(async (req) => {
 </body>
 </html>`;
 
-    const fromEmail = 'Opções PRO X <contato@opcoesprox.com.br>';
+    const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'Opções PRO X <contato@opcoesprox.com.br>';
 
     // Build attachments array for Resend
     const attachments: Array<{ filename: string; content: string; content_type?: string }> = [];

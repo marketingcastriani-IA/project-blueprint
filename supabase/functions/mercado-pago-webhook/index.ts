@@ -120,7 +120,7 @@ async function sendWelcomeEmail(supabaseAdmin: any, userId: string, now: Date, e
       method: 'POST',
       headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'Opções PRO X <contato@opcoesprox.com.br>',
+        from: Deno.env.get('RESEND_FROM_EMAIL') || 'Opções PRO X <contato@opcoesprox.com.br>',
         to: profile.email,
         subject: '🎉 Bem-vindo ao Opções PRO X — Seu Acesso PRO Está Ativo!',
         html: buildWelcomeEmailHtml(profile.display_name, now, expiresAt)

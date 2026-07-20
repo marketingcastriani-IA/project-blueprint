@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { EMAIL_TEMPLATE_OPTIONS, buildEmailTemplate, type EmailTemplate } from '@/pages/admin/email-templates';
 import {
   TrendingUp, Users, CheckCircle2, XCircle, Clock, Shield,
   Loader2, LogOut, Sun, Moon, RefreshCw, Search, Crown, Wallet,
@@ -535,9 +536,6 @@ export default function AdminPanel() {
     return flags;
   });
 
-  // Mercado Pago Config
-  const [mpPublicKey, setMpPublicKey] = useState('');
-  const [mpAccessToken, setMpAccessToken] = useState('');
   const [proPrice, setProPrice] = useState('14.90');
   const [annualDiscount, setAnnualDiscount] = useState('20');
 
@@ -722,79 +720,6 @@ export default function AdminPanel() {
     }
   };
 
-  type EmailTemplate = 'promo' | 'renewal' | 'news' | 'custom' | 'calc_cdi' | 'box_tracker' | 'collar_tracker' | 'tempo_real' | 'diversificador' | 'resumo_geral' | 'boas_vindas_pro' | 'rastreador_pro_x';
-
-  const EMAIL_TEMPLATE_OPTIONS: { value: EmailTemplate; label: string; icon: string; color: string }[] = [
-    { value: 'boas_vindas_pro', label: 'Boas-vindas PRO', icon: '🎉', color: 'border-green-400/50 text-green-400 hover:bg-green-400/10' },
-    { value: 'promo', label: 'Promoção', icon: '🔥', color: 'border-primary/30 hover:bg-primary/10' },
-    { value: 'renewal', label: 'Renovação', icon: '⚠️', color: 'border-warning/30 text-warning hover:bg-warning/10' },
-    { value: 'news', label: 'Novidades', icon: '🚀', color: 'border-success/30 text-success hover:bg-success/10' },
-    { value: 'rastreador_pro_x', label: 'Rastreador PRO X', icon: '⚡', color: 'border-cyan-400/50 text-cyan-400 hover:bg-cyan-400/10' },
-    { value: 'calc_cdi', label: 'Calculadora CDI x Opções', icon: '🧮', color: 'border-yellow-400/50 text-yellow-500 hover:bg-yellow-400/10' },
-    { value: 'box_tracker', label: 'Rastreador Box', icon: '📊', color: 'border-blue-400/50 text-blue-400 hover:bg-blue-400/10' },
-    { value: 'collar_tracker', label: 'Rastreador Collar', icon: '🛡️', color: 'border-emerald-400/50 text-emerald-400 hover:bg-emerald-400/10' },
-    { value: 'tempo_real', label: 'Dados ao Vivo', icon: '🔴', color: 'border-red-400/50 text-red-400 hover:bg-red-400/10' },
-    { value: 'diversificador', label: 'Diversificador', icon: '🎯', color: 'border-purple-400/50 text-purple-400 hover:bg-purple-400/10' },
-    { value: 'resumo_geral', label: 'Resumo Todas Novidades', icon: '📢', color: 'border-primary/50 text-primary hover:bg-primary/10' },
-    { value: 'custom', label: 'Personalizado', icon: '✏️', color: 'hover:bg-accent' },
-  ];
-
-  const buildEmailTemplate = (template: EmailTemplate, recipientName?: string) => {
-    const namePrefix = recipientName ? `Olá ${recipientName},` : 'Olá,';
-
-    const templates: Record<string, { subject: string; body: string }> = {
-      promo: {
-        subject: '🔥 Promoção Especial - Opções PRO X',
-        body: `${namePrefix}\n\nTemos uma promoção especial para você no Opções PRO X!\n\n✅ Acesso completo a todas as ferramentas\n✅ Análise de IA avançada\n✅ OCR para leitura automática de notas\n✅ Portfólio e histórico ilimitados\n\nAproveite agora!\n\nEquipe Opções PRO X`
-      },
-      renewal: {
-        subject: '⚠️ Renovação de Assinatura - Opções PRO X',
-        body: `${namePrefix}\n\nSua assinatura do Opções PRO X está próxima do vencimento.\n\nRenove agora para continuar com acesso total:\n✅ Simulações ilimitadas\n✅ Relatórios de IA\n✅ OCR e análise de imagens\n\nAcesse: https://www.opcoesprox.com.br/settings\n\nEquipe Opções PRO X`
-      },
-      news: {
-        subject: '🚀 Novidades - Opções PRO X',
-        body: `${namePrefix}\n\nConfira as últimas novidades do Opções PRO X!\n\n📊 Simulador de Estruturas — Monte e analise qualquer estratégia de opções\n🤖 IA Integrada — Análise inteligente e sugestões de melhoria\n📷 OCR — Tire foto da tela de opções e a IA monta a estrutura\n🧮 CDI x Opções — Compare o lucro com o CDI (com/sem IR)\n📊 Rastrear Box — Monitore Box Spread vs CDI em tempo real\n🛡️ Rastrear Collar — Proteção de carteira com piso e teto\n🔴 Tempo Real — Dados ao vivo do mercado via Bridge RTD\n🎯 Diversificador — Portfólio equilibrado de estratégias\n🔍 Ticker Opções B3 — Banco com 99.000+ opções, busca e pares automáticos\n📁 Portfólio e Histórico — Controle completo de operações\n🔔 Notificações Push — Alertas de oportunidades no navegador\n\nAcesse agora: https://www.opcoesprox.com.br\n\nEquipe Opções PRO X`
-      },
-      calc_cdi: {
-        subject: '🧮 NOVO! Compare sua estrutura de opções com o CDI em segundos',
-        body: `${namePrefix}\n\nTemos uma novidade exclusiva que vai transformar sua tomada de decisão:\n\n🧮 Calculadora CDI x Opções — NOVA FERRAMENTA!\n\nAgora você pode comparar, em tempo real, quanto sua estrutura de opções rende em relação ao CDI do período.\n\n✅ Insira o capital investido e a data de vencimento\n✅ Escolha se deseja considerar o Imposto de Renda (tabela regressiva automática)\n✅ Digite o % de lucro da sua estrutura\n✅ Descubra instantaneamente quantos % do CDI sua operação equivale\n\nExemplo prático:\nSe o CDI rende 1,12% no período e sua estrutura dá 1,8% — você está ganhando 160% do CDI! 🚀\n\n🔗 Acesse agora: Menu → CDI x Opções (destaque amarelo)\nhttps://www.opcoesprox.com.br/calculadora-renda-fixa\n\nEquipe Opções PRO X`
-      },
-      box_tracker: {
-        subject: '📊 Rastreie seu Box Spread e saiba se está acima do CDI',
-        body: `${namePrefix}\n\nVocê já conhece o Rastreador de Box Spread do Opções PRO X?\n\n📊 Rastrear Box — Controle Total da Rentabilidade\n\nCom esta ferramenta você consegue:\n\n✅ Monitorar a rentabilidade do Box em relação ao CDI\n✅ Acompanhar se a operação está acima ou abaixo do benchmark\n✅ Visualizar dias úteis restantes e taxa equivalente\n✅ Tomar decisão de manter ou encerrar com dados reais\n\n💡 Dica PRO: Combine o Rastreador de Box com a nova Calculadora CDI x Opções para ter uma visão completa da sua rentabilidade!\n\n🔗 Acesse agora: Menu → Rastrear Box\nhttps://www.opcoesprox.com.br/box-tracker\n\nEquipe Opções PRO X`
-      },
-      collar_tracker: {
-        subject: '🛡️ Proteja seu patrimônio com o Rastreador de Collar',
-        body: `${namePrefix}\n\nConheça o Rastreador de Collar — sua ferramenta de proteção inteligente:\n\n🛡️ Rastrear Collar — Proteção com Visibilidade\n\n✅ Acompanhe sua estratégia de proteção (Collar) em tempo real\n✅ Visualize os limites de proteção e ganho da operação\n✅ Saiba exatamente quando agir para ajustar sua posição\n✅ Ideal para quem tem carteira de ações e quer proteger sem abrir mão de ganhos\n\n🔗 Acesse agora: Menu → Rastrear Collar\nhttps://www.opcoesprox.com.br/collar-tracker\n\nEquipe Opções PRO X`
-      },
-      tempo_real: {
-        subject: '🔴 AO VIVO! Dados de mercado em tempo real no Opções PRO X',
-        body: `${namePrefix}\n\nJá experimentou os Dados ao Vivo do Opções PRO X?\n\n🔴 Tempo Real — Acompanhe o Mercado Sem Sair da Plataforma\n\n✅ Preços de ativos e opções atualizados em tempo real\n✅ Integração com o Bridge RTD para dados direto da sua corretora\n✅ Visualização profissional e limpa, sem distrações\n✅ Ideal para quem opera intraday ou precisa acompanhar vencimentos\n\n📥 Configure o Bridge: Menu → Manual → Configuração do Bridge\n\n🔗 Acesse agora: Menu → Tempo Real (botão vermelho pulsante)\nhttps://www.opcoesprox.com.br/dados-ao-vivo\n\nEquipe Opções PRO X`
-      },
-      rastreador_pro_x: {
-        subject: '⚡ NOVO: Rastreador PRO X — 12 Estratégias em Tempo Real!',
-        body: `${namePrefix}\n\nConheca o Rastreador PRO X, a mais nova ferramenta do Opções PRO X!\n\n⚡ RASTREADOR PRO X — 12 Estratégias em Tempo Real\n\nEscaneie automaticamente as melhores combinações de opções da B3, organizadas por cenário de mercado:\n\n📈 ALTA (3 estratégias)\n✅ Venda Coberta — Gere renda vendendo Call do ativo em carteira\n✅ Trava de Alta (Call) — Compra Call K1 + Venda Call K2 com risco limitado\n✅ Trava de Alta (Put) — Receba crédito apostando que não cai\n\n📉 BAIXA (3 estratégias)\n✅ Venda de Put (Cash-Secured) — Renda com compromisso de compra\n✅ Trava de Baixa (Put) — Compra Put K1 + Venda Put K2\n✅ Trava de Baixa (Call) — Receba crédito apostando que não sobe\n\n➡️ LATERAL (2 estratégias)\n✅ Iron Condor — Trava Put + Trava Call para lucrar na lateralidade\n✅ Borboleta — Lucro máximo no strike central\n\n⚡ VOLATILIDADE (4 estratégias)\n✅ Straddle Comprado — Compra Call+Put mesmo strike, lucra com volatilidade alta\n✅ Straddle Vendido — Vende Call+Put mesmo strike, lucra com mercado parado\n✅ Strangle Comprado — Compra Call+Put OTM, mais barato que Straddle\n✅ Strangle Vendido — Vende Call+Put OTM, lucra dentro da faixa de estabilidade\n\n🏆 Ranking Top 3 por Retorno %, Quality Score ou Lucro R$\n📊 Gráfico de Payoff avançado com curvas T+0 e Vencimento\n💰 Comparação CDI automática — saiba se a estratégia ganha do CDI\n🔄 Multi-ativos salvos e rastreamento simultâneo\n\n🔗 Acesse agora: Menu → Rastreador PRO X\nhttps://www.opcoesprox.com.br/strategy-tracker\n\nEquipe Opções PRO X`
-      },
-      diversificador: {
-        subject: '🎯 Diversifique suas estratégias com inteligência',
-        body: `${namePrefix}\n\nO Diversificador do Opções PRO X ajuda você a:\n\n🎯 Monte um Portfólio de Estratégias Equilibrado\n\n✅ Distribua seu patrimônio entre diferentes estratégias\n✅ Visualize a alocação por percentual e nível de risco\n✅ Controle alavancagem e frequência de cada estratégia\n✅ Veja o resultado consolidado com gráfico profissional\n\n💡 Dica PRO: Use junto com a Calculadora CDI x Opções para saber se cada estratégia supera o CDI!\n\n🔗 Acesse agora: Menu → Diversificador\nhttps://www.opcoesprox.com.br/diversificador\n\nEquipe Opções PRO X`
-      },
-      resumo_geral: {
-        subject: '📢 TODAS as Ferramentas do Opções PRO X — Guia Completo!',
-        body: `${namePrefix}\n\nO Opções PRO X é a plataforma mais completa de simulação e análise de opções da B3. Conheça TODAS as ferramentas disponíveis:\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📊 SIMULADOR DE ESTRUTURAS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ Monte qualquer estrutura: Box, Trava, Borboleta, Condor, Collar e mais\n✅ Gráfico de Payoff interativo com métricas completas\n✅ Breakeven, lucro máximo, risco máximo e custo líquido\n✅ Simulações ilimitadas no plano PRO\n🔗 https://www.opcoesprox.com.br/dashboard\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🤖 ANÁLISE POR INTELIGÊNCIA ARTIFICIAL\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ IA analisa risco/retorno e sugere melhorias\n✅ Veredito de Saída — saiba a hora certa de encerrar\n✅ Uso ilimitado no plano PRO\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📷 OCR — LEITURA DE IMAGENS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ Tire foto da tela de opções da sua corretora\n✅ A IA extrai automaticamente os dados e monta a estrutura\n✅ Funciona com qualquer corretora\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🧮 CALCULADORA CDI x OPÇÕES\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ Compare o lucro da operação com o CDI do período\n✅ Imposto de Renda automático (tabela regressiva)\n✅ Descubra se sua estrutura supera a renda fixa\n🔗 https://www.opcoesprox.com.br/calculadora-renda-fixa\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n⚡ RASTREADOR PRO X — NOVIDADE!\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ Rastreie 12 estratégias em tempo real com ranking Top 3\n✅ Cenários: Alta (Venda Coberta, Trava de Alta Call/Put)\n✅ Cenários: Baixa (Venda de Put, Trava de Baixa Put/Call)\n✅ Cenários: Lateral (Iron Condor, Borboleta)\n✅ Cenários: Volatilidade (Straddle e Strangle — Comprado e Vendido)\n✅ Gráfico de Payoff avançado com curvas T+0 e Vencimento\n✅ Comparação CDI automática e Quality Score\n✅ Multi-ativos salvos e filtros de liquidez\n🔗 https://www.opcoesprox.com.br/strategy-tracker\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📊 RASTREADOR DE BOX SPREAD\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ Monitore todas as combinações de Box vs CDI em tempo real\n✅ Ranking automático dos melhores spreads com troféus\n✅ Cards de destaque com o melhor box de cada ação\n✅ Alertas visuais na tela (toasts) quando Box supera o CDI\n✅ Notificações push no navegador para oportunidades\n✅ Instruções passo a passo de montagem\n🔗 https://www.opcoesprox.com.br/box-tracker\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🛡️ RASTREADOR DE COLLAR\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ Proteção de carteira com Ação + Put + Call vendida\n✅ Piso (floor) e teto (cap) calculados automaticamente\n✅ Identifica collars de custo zero\n🔗 https://www.opcoesprox.com.br/collar-tracker\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🔴 DADOS AO VIVO (TEMPO REAL)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ Cotações de ativos e opções atualizadas em tempo real\n✅ P&L automático das operações em aberto\n✅ Gráfico de payoff dinâmico com preços do mercado\n✅ Requer Profit Pro + Bridge RTD\n🔗 https://www.opcoesprox.com.br/dados-ao-vivo\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🔍 TICKER OPÇÕES B3 — BANCO DE OPÇÕES\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ Banco com 99.000+ opções listadas na B3\n✅ Busca inteligente por ticker, família e vencimento\n✅ Identificação automática de pares Call+Put\n✅ Envie tickers para Tempo Real ou Box Tracker em 1 clique\n✅ Detecta oportunidades de Box Spread automaticamente\n🔗 https://www.opcoesprox.com.br/ticker-opcoes\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🎯 DIVERSIFICADOR DE ESTRATÉGIAS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ Monte portfólio equilibrado de estratégias\n✅ Distribua patrimônio por risco e alavancagem\n✅ Gráfico profissional de alocação\n🔗 https://www.opcoesprox.com.br/diversificador\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📁 PORTFÓLIO E HISTÓRICO\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ Controle completo de operações ativas e encerradas\n✅ Filtros por mês, ano e status\n✅ Reabra operações encerradas se necessário\n✅ Relatórios em PDF para download\n🔗 https://www.opcoesprox.com.br/portfolio\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🔔 NOTIFICAÇÕES PUSH\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ Alertas no navegador quando o Box supera o CDI\n✅ Histórico de alertas disparados\n✅ Nunca perca uma oportunidade\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n⌨️ ATALHOS DE TECLADO\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ Ctrl+S (Salvar), Ctrl+Enter (IA), N (Nova), H (Histórico), P (Portfólio)\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📖 MANUAL E FAQ COMPLETO\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ 16 seções detalhadas com capturas de tela\n✅ Glossário de termos, estratégias e Gregas\n✅ Download em PDF\n🔗 https://www.opcoesprox.com.br/faq\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n👉 Acesse agora e explore todas as ferramentas!\nhttps://www.opcoesprox.com.br\n\n🚀 Assine PRO para acesso completo:\nhttps://www.opcoesprox.com.br/settings?upgrade=true\n\nEquipe Opções PRO X`
-      },
-      boas_vindas_pro: {
-        subject: '🎉 Bem-vindo ao Opções PRO X — Seu Acesso PRO Está Ativo!',
-        body: `${namePrefix}\n\nParabéns! 🚀 Seu plano PRO do Opções PRO X foi ativado com sucesso!\n\nAgora você tem acesso COMPLETO a todas as ferramentas profissionais da plataforma. Veja tudo o que você pode fazer:\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📊 SIMULADOR DE ESTRUTURAS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ Monte e analise qualquer estrutura de opções (Box, Trava, Borboleta, Condor, etc.)\n✅ Gráfico de Payoff interativo — visualize lucro e prejuízo em cada cenário\n✅ Simulações ILIMITADAS (sem limite de 3 por dia)\n✅ Salve, edite e acompanhe suas estruturas\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🤖 ANÁLISE POR INTELIGÊNCIA ARTIFICIAL\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ IA analisa sua estrutura e dá sugestões de melhoria\n✅ Identifica riscos, oportunidades e pontos de atenção\n✅ Recomendações personalizadas para cada operação\n✅ Uso ILIMITADO da IA\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📷 OCR — LEITURA DE IMAGENS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ Tire uma foto ou screenshot da sua tela de opções\n✅ A IA lê automaticamente os dados e monta a estrutura\n✅ Funciona com qualquer plataforma de corretora\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n⚡ RASTREADOR PRO X — 12 ESTRATÉGIAS!\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ Rastreie 12 estratégias em tempo real com ranking Top 3\n✅ Alta: Venda Coberta, Trava de Alta (Call), Trava de Alta (Put)\n✅ Baixa: Venda de Put, Trava de Baixa (Put), Trava de Baixa (Call)\n✅ Lateral: Iron Condor, Borboleta\n✅ Volatilidade: Straddle Comprado/Vendido, Strangle Comprado/Vendido\n✅ Gráfico de Payoff com curvas T+0 e Vencimento + CDI\n✅ Quality Score, filtros de liquidez e multi-ativos salvos\n🔗 https://www.opcoesprox.com.br/strategy-tracker\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🧮 CALCULADORA CDI x OPÇÕES\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ Compare o lucro da sua operação com o CDI do período\n✅ Com ou sem Imposto de Renda (tabela regressiva automática)\n✅ Descubra se sua estrutura supera a renda fixa\n🔗 https://www.opcoesprox.com.br/calculadora-renda-fixa\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📊 RASTREADOR DE BOX SPREAD\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ Monitore todas as combinações de Box vs CDI em tempo real\n✅ Ranking automático com troféus dos melhores spreads\n✅ Alertas visuais na tela quando Box supera o CDI\n✅ Notificações push no navegador\n✅ Instruções passo a passo de montagem\n🔗 https://www.opcoesprox.com.br/box-tracker\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🛡️ RASTREADOR DE COLLAR\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ Proteção de carteira com Ação + Put + Call vendida\n✅ Piso (floor) e teto (cap) calculados automaticamente\n✅ Identifica collars de custo zero\n🔗 https://www.opcoesprox.com.br/collar-tracker\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🎯 DIVERSIFICADOR DE ESTRATÉGIAS\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ Monte um portfólio equilibrado de estratégias\n✅ Distribua seu patrimônio por risco, alavancagem e frequência\n✅ Gráfico profissional de alocação\n🔗 https://www.opcoesprox.com.br/diversificador\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📁 PORTFÓLIO E HISTÓRICO\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ Portfólio completo com todas as suas operações\n✅ Histórico de análises — consulte a qualquer momento\n✅ Relatórios em PDF para download\n🔗 https://www.opcoesprox.com.br/portfolio\n🔗 https://www.opcoesprox.com.br/historico\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n🔴 DADOS AO VIVO (TEMPO REAL)\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n✅ Preços de ativos e opções atualizados em tempo real\n✅ Visualização profissional e limpa\n⚠️ IMPORTANTE: Esta funcionalidade requer conexão com o Profit Pro (Nelogica)\n✅ O Profit Pro é o software da sua corretora — a conexão é feita via Bridge RTD\n✅ Basta ter o Profit Pro aberto e o Bridge configurado\n📥 Guia de configuração: Menu → Manual → Configuração do Bridge\n🔗 https://www.opcoesprox.com.br/dados-ao-vivo\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n🔗 Acesse a plataforma agora:\nhttps://www.opcoesprox.com.br/dashboard\n\n📖 Manual completo:\nhttps://www.opcoesprox.com.br/manual\n\n❓ Perguntas frequentes:\nhttps://www.opcoesprox.com.br/faq\n\nQualquer dúvida, estamos à disposição!\n\nBons trades! 📈\nEquipe Opções PRO X`
-      },
-      custom: {
-        subject: '',
-        body: `${namePrefix}\n\n\n\nEquipe Opções PRO X`
-      }
-    };
-
-    return templates[template];
-  };
 
   const openEmailForUser = (u: UserRow, template: EmailTemplate) => {
     const recipient = u.email?.includes('@') ? u.email : null;
@@ -909,6 +834,25 @@ export default function AdminPanel() {
   };
 
   const filtered = users.filter(matchesUserFilters);
+
+  const openWinbackEmail = () => {
+    const now = new Date();
+    const recipients = users
+      .filter(u => u.plan_type === 'pro' && u.expires_at && new Date(u.expires_at) < now)
+      .map(u => u.email)
+      .filter((email): email is string => Boolean(email && email.includes('@')));
+
+    if (!recipients.length) {
+      toast.error('Nenhum cliente PRO expirado com e-mail válido');
+      return;
+    }
+
+    const templateData = buildEmailTemplate('winback');
+    setEmailRecipients(recipients);
+    setEmailContextLabel(`💜 Win-back: ${recipients.length} cliente(s) PRO expirado(s)`);
+    setEmailSubject(templateData.subject);
+    setEmailBody(templateData.body);
+  };
 
   const openBulkEmailForFiltered = (template: EmailTemplate) => {
     const recipients = filtered
@@ -1036,6 +980,9 @@ export default function AdminPanel() {
 
             <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/50 bg-card p-3">
               <p className="text-xs font-bold text-muted-foreground mr-1">📧 Email em massa:</p>
+              <Button size="sm" variant="outline" onClick={openWinbackEmail} className="h-8 px-3 text-xs font-bold border-purple-400/50 text-purple-400 hover:bg-purple-400/10">
+                💜 Win-back PROs expirados
+              </Button>
               {EMAIL_TEMPLATE_OPTIONS.map(t => (
                 <Button key={t.value} size="sm" variant="outline" onClick={() => openBulkEmailForFiltered(t.value)} className={cn("h-8 px-3 text-xs font-bold", t.color)}>
                   {t.icon} {t.label}
@@ -1312,15 +1259,15 @@ export default function AdminPanel() {
                     Integração Mercado Pago
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-black uppercase tracking-widest">Public Key</Label>
-                    <Input value={mpPublicKey} onChange={e => setMpPublicKey(e.target.value)} placeholder="APP_USR-..." className="font-mono" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-black uppercase tracking-widest">Access Token</Label>
-                    <Input type="password" value={mpAccessToken} onChange={e => setMpAccessToken(e.target.value)} placeholder="APP_USR-..." className="font-mono" />
-                  </div>
+                <CardContent className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    As credenciais do Mercado Pago são configuradas como secrets no painel do Supabase
+                    (<span className="font-mono text-xs">MP_ACCESS_TOKEN</span> e <span className="font-mono text-xs">MP_WEBHOOK_SECRET</span>),
+                    em Edge Functions → Secrets. Elas nunca ficam no banco nem no código.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Status: checkout e webhook ativos usando os secrets configurados.
+                  </p>
                 </CardContent>
               </Card>
 

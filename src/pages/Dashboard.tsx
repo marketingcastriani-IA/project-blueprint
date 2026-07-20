@@ -29,7 +29,6 @@ import { cn } from '@/lib/utils';
 import { ProfessionalHeader, SectionDivider, ProfessionalLayout } from '@/components/ProfessionalLayout';
 import DashboardSkeleton from '@/components/skeletons/DashboardSkeleton';
 import AIInsights from '@/components/AIInsights';
-import { generateAnalysisPdf } from '@/lib/pdf-generator';
 import OnboardingTour from '@/components/OnboardingTour';
 import PortfolioSummary from '@/components/dashboard/PortfolioSummary';
 import FloatingAnalysisBar from '@/components/dashboard/FloatingAnalysisBar';
@@ -611,12 +610,15 @@ export default function Dashboard() {
         <FloatingAnalysisBar
           onAnalyze={getAISuggestion}
           onSave={saveAnalysis}
-          onDownloadPdf={() => generateAnalysisPdf(
-            analysisName || 'Análise',
-            legs,
-            metrics,
-            { cdiRate, daysToExpiry, aiSuggestion: aiAnalysis ? JSON.stringify(aiAnalysis) : undefined }
-          )}
+          onDownloadPdf={async () => {
+            const { generateAnalysisPdf } = await import('@/lib/pdf-generator');
+            generateAnalysisPdf(
+              analysisName || 'Análise',
+              legs,
+              metrics,
+              { cdiRate, daysToExpiry, aiSuggestion: aiAnalysis ? JSON.stringify(aiAnalysis) : undefined }
+            );
+          }}
           loadingAI={loadingAI}
           saving={saving}
         />

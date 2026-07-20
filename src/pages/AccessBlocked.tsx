@@ -59,7 +59,7 @@ export default function AccessBlocked({ status }: AccessBlockedProps) {
     expired: {
       icon: <AlertTriangle className="h-16 w-16 text-warning" />,
       title: 'Período Expirado',
-      description: 'Seu período de acesso expirou. Renove agora para continuar usando a plataforma!',
+      description: 'Seu período de acesso expirou, mas suas análises e portfólio continuam salvos. Renove agora e retome exatamente de onde parou!',
       color: 'border-warning/30',
     },
   };

@@ -83,39 +83,27 @@ serve(async (req) => {
     // external_reference encodes period: "userId:yearly" or just "userId"
     const externalRef = planPeriod === 'yearly' ? `${user.id}:yearly` : user.id;
 
-    const mpResponse = await fetch("https://api.mercadopago.com/checkout/preferences", {
+    // Assinatura recorrente (preapproval): o Mercado Pago cobra automaticamente
+    // a cada ciclo e o webhook renova o acesso via subscription_authorized_payment.
+    const mpResponse = await fetch("https://api.mercadopago.com/preapproval", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${MP_ACCESS_TOKEN}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        items: [
-          {
-            title: itemTitle,
-            quantity: 1,
-            unit_price: price,
-            currency_id: "BRL",
-          }
-        ],
-        payer: {
-          email: user.email,
-        },
-        payment_methods: {
-          excluded_payment_types: [
-            { id: "ticket" }
-          ],
-          installments: 1
-        },
+        reason: itemTitle,
         external_reference: externalRef,
-        notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercado-pago-webhook`,
-        back_urls: {
-          success: `${PRODUCTION_URL}/settings?payment=success`,
-          failure: `${PRODUCTION_URL}/settings?payment=failure`,
-          pending: `${PRODUCTION_URL}/settings?payment=pending`,
+        payer_email: user.email,
+        auto_recurring: {
+          frequency: planPeriod === 'yearly' ? 12 : 1,
+          frequency_type: "months",
+          transaction_amount: price,
+          currency_id: "BRL",
         },
-        auto_return: "approved",
-        statement_descriptor: "OPCOES PRO X",
+        back_url: backUrl,
+        notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercado-pago-webhook`,
+        status: "pending",
       })
     })
 

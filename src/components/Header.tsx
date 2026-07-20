@@ -3,6 +3,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import { useSharedRtdBridge } from '@/contexts/RtdBridgeContext';
 import { Button } from '@/components/ui/button';
+import TrialBanner from '@/components/TrialBanner';
 
 import { Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, ShieldCheck, Briefcase, Settings, Zap, PieChart, HelpCircle, Sparkles, Palette, BookOpen, Radio, BarChart2, Calculator, Database, Waves, TreePine, Wifi, WifiOff, ChevronDown, Crosshair, Headphones, Mail, MessageSquarePlus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -163,6 +164,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-primary/30 bg-primary shadow-lg overflow-hidden">
+      <TrialBanner />
       {/* Row 1: Logo + Primary Nav + Actions */}
       <div className="max-w-full px-3 lg:px-4 flex h-14 items-center justify-between gap-1">
         {/* Logo + Install */}

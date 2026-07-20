@@ -18,7 +18,6 @@ import { countBusinessDays } from '@/lib/b3-calendar';
 import { calculateCDIReturn } from '@/lib/payoff';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
-import { generatePortfolioPdf } from '@/lib/pdf-generator';
 import ListSkeleton from '@/components/skeletons/ListSkeleton';
 import { AreaChart, Area, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 
@@ -270,7 +269,8 @@ export default function Portfolio() {
             </Button>
             <Button 
               variant="outline" 
-              onClick={() => {
+              onClick={async () => {
+                const { generatePortfolioPdf } = await import('@/lib/pdf-generator');
                 generatePortfolioPdf(filteredAnalyses, legsMap, {
                   totalPL: stats.totalPL,
                   totalInvested: stats.totalInvested,

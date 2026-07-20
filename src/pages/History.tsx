@@ -13,7 +13,6 @@ import { Loader2, Clock, PlusCircle, Trash2, Edit2, XCircle, RotateCcw, History 
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
-import { generateHistoryPdf } from '@/lib/pdf-generator';
 import { calculateMetrics, calculateCDIOpportunityCost } from '@/lib/payoff';
 import { Leg } from '@/lib/types';
 import type { AnalysisMetrics } from '@/lib/types';
@@ -471,6 +470,7 @@ export default function History() {
                     .eq('analysis_id', analysisId);
                   return (data || []) as any[];
                 };
+                const { generateHistoryPdf } = await import('@/lib/pdf-generator');
                 await generateHistoryPdf(filteredAnalyses, fetchLegs);
                 toast.success('PDF gerado com sucesso!');
               }} 
