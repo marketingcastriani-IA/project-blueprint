@@ -51,7 +51,7 @@ function SugestoesPanel() {
   const fetchSugestoes = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('sugestoes' as any)
+      .from('sugestoes')
       .select('*')
       .order('created_at', { ascending: false });
     if (!error && data) {
@@ -111,7 +111,7 @@ function SugestoesPanel() {
       const updatedHistory = [...currentHistory, newEntry];
 
       await supabase
-        .from('sugestoes' as any)
+        .from('sugestoes')
         .update({ reply_history: updatedHistory, resolved: true } as any)
         .eq('id', s.id);
 
@@ -128,7 +128,7 @@ function SugestoesPanel() {
   const toggleResolved = async (s: any) => {
     const newResolved = !s.resolved;
     await supabase
-      .from('sugestoes' as any)
+      .from('sugestoes')
       .update({ resolved: newResolved } as any)
       .eq('id', s.id);
     toast.success(newResolved ? 'Marcada como resolvida' : 'Marcada como pendente');
@@ -138,7 +138,7 @@ function SugestoesPanel() {
   const clearHistory = async (s: any) => {
     if (!confirm('Tem certeza que deseja apagar o histórico de respostas?')) return;
     await supabase
-      .from('sugestoes' as any)
+      .from('sugestoes')
       .update({ reply_history: [] } as any)
       .eq('id', s.id);
     toast.success('Histórico apagado');
@@ -1382,6 +1382,7 @@ export default function AdminPanel() {
                     <img src={emailImagePreview} alt="Preview" className="max-h-40 rounded-lg border border-border/40" />
                     <button
                       onClick={() => { setEmailImageDataUrl(null); setEmailImagePreview(null); }}
+                      aria-label="Remover imagem promocional"
                       className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center text-xs hover:scale-110 transition-transform"
                     >
                       ✕

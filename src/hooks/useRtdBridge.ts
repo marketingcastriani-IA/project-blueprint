@@ -254,10 +254,12 @@ export function useRtdBridge() {
   const [reconnectCount, setReconnectCount] = useState(0);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shouldReconnectRef = useRef(true);
   const { toast } = useToast();
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    shouldReconnectRef.current = true;
     setStatus("connecting");
 
     const ws = new WebSocket(WS_URL);
@@ -271,6 +273,8 @@ export function useRtdBridge() {
     };
 
     ws.onclose = () => {
+      // Não reagenda reconexão se o componente já desmontou (evita WebSocket órfão)
+      if (!shouldReconnectRef.current) return;
       setStatus("disconnected");
       setReconnectCount((prev) => {
         const next = prev + 1;
@@ -365,6 +369,7 @@ export function useRtdBridge() {
   useEffect(() => {
     connect();
     return () => {
+      shouldReconnectRef.current = false;
       reconnectTimer.current && clearTimeout(reconnectTimer.current);
       wsRef.current?.close();
     };

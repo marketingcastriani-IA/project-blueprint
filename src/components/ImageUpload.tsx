@@ -226,10 +226,11 @@ export default function ImageUpload({ onLegsExtracted, onImageChange, onClear }:
             <div className="relative w-full flex flex-col items-center gap-6 animate-fade-in">
               <div className="relative group/preview">
                 <img src={preview} alt="Preview" className="max-w-full max-h-[400px] rounded-2xl border-4 border-white/10 shadow-2xl transition-transform group-hover/preview:scale-[1.02]" />
-                <button 
+                <button
                   onClick={clearImage}
                   className="absolute -top-4 -right-4 h-10 w-10 rounded-full bg-destructive text-destructive-foreground shadow-lg flex items-center justify-center hover:scale-110 transition-transform z-10 border-2 border-background"
                   title="Remover imagem"
+                  aria-label="Remover imagem"
                 >
                   <X className="h-6 w-6" />
                 </button>

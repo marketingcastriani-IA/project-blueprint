@@ -280,11 +280,11 @@ export default function Header() {
           )}
           
           {user && (
-            <Button variant="ghost" size="icon" onClick={async () => { await signOut(); navigate('/auth'); }} className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/10">
+            <Button variant="ghost" size="icon" aria-label="Sair da conta" onClick={async () => { await signOut(); navigate('/auth'); }} className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/10">
               <LogOut className="h-4 w-4" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" className="h-8 w-8 md:hidden text-primary-foreground hover:bg-primary-foreground/10" onClick={() => setMobileOpen(!mobileOpen)}>
+          <Button variant="ghost" size="icon" aria-label={mobileOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={mobileOpen} className="h-8 w-8 md:hidden text-primary-foreground hover:bg-primary-foreground/10" onClick={() => setMobileOpen(!mobileOpen)}>
             {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </Button>
         </div>

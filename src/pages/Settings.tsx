@@ -106,6 +106,10 @@ export default function Settings() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (newPassword.length < 6) {
+      toast.error('A senha deve ter no mínimo 6 caracteres');
+      return;
+    }
     if (newPassword !== confirmPassword) {
       toast.error('As senhas não conferem');
       return;

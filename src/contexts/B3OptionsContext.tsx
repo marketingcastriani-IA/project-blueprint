@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 
 export interface B3Option {
   ticker: string;
@@ -14,6 +14,7 @@ interface B3OptionsContextValue {
   families: string[];
   vencimentos: string[];
   loading: boolean;
+  ensureLoaded: () => void;
   getByFamily: (family: string) => B3Option[];
   getByTicker: (ticker: string) => B3Option | undefined;
   getStrikeAndExpiry: (ticker: string) => { strike: number; vencimento: string; tipo: "CALL" | "PUT" } | null;
@@ -25,16 +26,21 @@ export function B3OptionsProvider({ children }: { children: ReactNode }) {
   const [options, setOptions] = useState<B3Option[]>([]);
   const [families, setFamilies] = useState<string[]>([]);
   const [vencimentos, setVencimentos] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  // idle até uma feature de opções realmente montar (evita baixar 7 MB em toda sessão)
+  const [loading, setLoading] = useState(false);
   const [optionMap, setOptionMap] = useState<Map<string, B3Option>>(new Map());
   const [familyMap, setFamilyMap] = useState<Map<string, B3Option[]>>(new Map());
+  const startedRef = useRef(false);
 
-  useEffect(() => {
-    let cancelled = false;
+  // Carrega o catálogo de opções sob demanda, uma única vez.
+  const ensureLoaded = useCallback(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    setLoading(true);
+
     fetch("/opcoes.json")
       .then((r) => r.json())
       .then((data: Array<{ t: string; s: number; v: string; tp: string; p: number; f: string }>) => {
-        if (cancelled) return;
         const parsed: B3Option[] = data.map((d) => ({
           ticker: d.t,
           strike: d.s,
@@ -72,9 +78,10 @@ export function B3OptionsProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       })
       .catch(() => {
-        if (!cancelled) setLoading(false);
+        // permite nova tentativa numa próxima montagem
+        startedRef.current = false;
+        setLoading(false);
       });
-    return () => { cancelled = true; };
   }, []);
 
   const getByFamily = useCallback((family: string) => familyMap.get(family) || [], [familyMap]);
@@ -89,7 +96,7 @@ export function B3OptionsProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <B3OptionsContext.Provider value={{ options, families, vencimentos, loading, getByFamily, getByTicker, getStrikeAndExpiry }}>
+    <B3OptionsContext.Provider value={{ options, families, vencimentos, loading, ensureLoaded, getByFamily, getByTicker, getStrikeAndExpiry }}>
       {children}
     </B3OptionsContext.Provider>
   );
@@ -98,5 +105,9 @@ export function B3OptionsProvider({ children }: { children: ReactNode }) {
 export function useB3Options(): B3OptionsContextValue {
   const ctx = useContext(B3OptionsContext);
   if (!ctx) throw new Error("useB3Options must be used within B3OptionsProvider");
+  // Dispara o carregamento do catálogo assim que a primeira feature de opções o consome.
+  useEffect(() => {
+    ctx.ensureLoaded();
+  }, [ctx]);
   return ctx;
 }

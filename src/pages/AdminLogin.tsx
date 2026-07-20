@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAccessControl } from '@/hooks/useAccessControl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,8 +22,7 @@ export default function AdminLogin() {
 
   // Already logged in as admin
   if (user && access.isAdmin) {
-    navigate('/admin', { replace: true });
-    return null;
+    return <Navigate to="/admin" replace />;
   }
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -80,8 +79,9 @@ export default function AdminLogin() {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label>Email</Label>
+                <Label htmlFor="admin-email">Email</Label>
                 <Input
+                  id="admin-email"
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
@@ -90,9 +90,10 @@ export default function AdminLogin() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Senha</Label>
+                <Label htmlFor="admin-password">Senha</Label>
                 <div className="relative">
                 <Input
+                  id="admin-password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
@@ -100,7 +101,7 @@ export default function AdminLogin() {
                   className="pr-10"
                   required
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
                 </div>

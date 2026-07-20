@@ -107,8 +107,8 @@ export default function DadosAoVivo() {
   // Track which tickers were manually added by user (vs auto-subscribed from operations)
   const [manualTickers, setManualTickers] = useState<Set<string>>(new Set());
 
-  // Open operations state
-  const [openOps, setOpenOps] = useState<any[]>([]);
+  // Open operations state — dados crus do banco (sem P&L ao vivo)
+  const [openOpsRaw, setOpenOpsRaw] = useState<any[]>([]);
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [editNameValue, setEditNameValue] = useState("");
 
@@ -118,9 +118,11 @@ export default function DadosAoVivo() {
   // Only show manually added tickers in the table
   const manualRowsArr = rowsArr.filter(r => manualTickers.has(r.ticker));
 
-  // Fetch open operations
+  // Busca as operações abertas do banco. Só depende de [user] — NÃO refaz queries
+  // a cada tick do RTD. Uma única query de legs (.in) evita N+1.
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     const fetchOps = async () => {
       const { data: analyses } = await supabase
         .from('analyses')
@@ -128,14 +130,26 @@ export default function DadosAoVivo() {
         .eq('user_id', user.id)
         .eq('status', 'active')
         .order('created_at', { ascending: false });
-      if (!analyses) return;
+      if (cancelled || !analyses) return;
 
-      const ops = await Promise.all(analyses.map(async (a) => {
-        const { data: aLegs } = await supabase
+      const ids = analyses.map((a) => a.id);
+      const legsByAnalysis = new Map<string, any[]>();
+      if (ids.length > 0) {
+        const { data: allLegs } = await supabase
           .from('legs')
           .select('*')
-          .eq('analysis_id', a.id);
-        const legsList: Leg[] = (aLegs || []).map((l: any) => ({
+          .in('analysis_id', ids);
+        for (const l of allLegs || []) {
+          const arr = legsByAnalysis.get(l.analysis_id);
+          if (arr) arr.push(l);
+          else legsByAnalysis.set(l.analysis_id, [l]);
+        }
+      }
+      if (cancelled) return;
+
+      const ops = analyses.map((a) => {
+        const rawLegs = legsByAnalysis.get(a.id) || [];
+        const legsList: Leg[] = rawLegs.map((l: any) => ({
           side: l.side as 'buy' | 'sell',
           option_type: l.option_type as 'call' | 'put' | 'stock',
           asset: l.asset,
@@ -144,62 +158,66 @@ export default function DadosAoVivo() {
           quantity: l.quantity,
           expiry_date: l.expiry_date,
         }));
-        // Keep raw DB legs for current_price access
-        const rawLegs = aLegs || [];
-        const m = legsList.length > 0 ? calculateMetrics(legsList) : null;
-        const investido = legsList.reduce((acc, l) => {
-          const cost = l.price * l.quantity * (l.option_type === 'stock' ? 1 : 100);
-          return acc + (l.side === 'buy' ? cost : -cost);
-        }, 0);
-
-        // Calculate PnL using LIVE RTD prices (priority), fallback to saved current_price
-        let lucroAtual = 0;
-        let temDadoVivo = false;
-        for (let i = 0; i < legsList.length; i++) {
-          const leg = legsList[i];
-          const dbLeg = rawLegs[i];
-          const livePrice = rows.get(leg.asset)?.ultimo;
-          const savedPrice = dbLeg?.current_price;
-          const exitPrice = (livePrice != null && livePrice > 0) ? livePrice : (savedPrice != null && savedPrice > 0 ? savedPrice : null);
-          
-          if (exitPrice != null && exitPrice > 0) {
-            temDadoVivo = true;
-            const multiplier = leg.side === 'buy' ? 1 : -1;
-            const pnl = multiplier * (exitPrice - leg.price) * leg.quantity;
-            lucroAtual += pnl;
-          }
-        }
-
-        // CDI comparison: from opening date to TODAY (not expiry)
-        const createdAt = new Date(a.created_at);
-        const now = new Date();
-        const CDI_ANNUAL = 14.90;
-        const bizDays = countBusinessDays(createdAt, now);
-        const absInvestido = Math.abs(investido);
-        const cdiReturn = absInvestido > 0 && bizDays > 0
-          ? absInvestido * (Math.pow(1 + CDI_ANNUAL / 100, bizDays / 252) - 1)
-          : 0;
-        const cdiPct = cdiReturn > 0 ? (lucroAtual / cdiReturn) * 100 : 0;
-
-        return {
-          ...a,
-          legs: legsList,
-          metrics: m,
-          investido,
-          lucroAtual,
-          temDadoVivo,
-          pctLucro: investido !== 0 ? (lucroAtual / Math.abs(investido)) * 100 : 0,
-          cdiPct,
-          cdiReturn,
-          bizDays,
-        };
-      }));
-      setOpenOps(ops);
+        return { ...a, legs: legsList, rawLegs };
+      });
+      setOpenOpsRaw(ops);
     };
     fetchOps();
-    const interval = setInterval(fetchOps, 10000);
-    return () => clearInterval(interval);
-  }, [user, rows]);
+    const interval = setInterval(fetchOps, 30000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [user]);
+
+  // Deriva o P&L ao vivo a partir dos dados crus + cotações RTD.
+  // Recalcula a cada tick (só matemática, sem tocar no banco).
+  const openOps = useMemo(() => {
+    const CDI_ANNUAL = 14.90;
+    const now = new Date();
+    return openOpsRaw.map((op) => {
+      const legsList: Leg[] = op.legs;
+      const rawLegs: any[] = op.rawLegs;
+      const m = legsList.length > 0 ? calculateMetrics(legsList) : null;
+      const investido = legsList.reduce((acc, l) => {
+        const cost = l.price * l.quantity * (l.option_type === 'stock' ? 1 : 100);
+        return acc + (l.side === 'buy' ? cost : -cost);
+      }, 0);
+
+      let lucroAtual = 0;
+      let temDadoVivo = false;
+      for (let i = 0; i < legsList.length; i++) {
+        const leg = legsList[i];
+        const dbLeg = rawLegs[i];
+        const livePrice = rows.get(leg.asset)?.ultimo;
+        const savedPrice = dbLeg?.current_price;
+        const exitPrice = (livePrice != null && livePrice > 0) ? livePrice : (savedPrice != null && savedPrice > 0 ? savedPrice : null);
+
+        if (exitPrice != null && exitPrice > 0) {
+          temDadoVivo = true;
+          const multiplier = leg.side === 'buy' ? 1 : -1;
+          lucroAtual += multiplier * (exitPrice - leg.price) * leg.quantity;
+        }
+      }
+
+      const createdAt = new Date(op.created_at);
+      const bizDays = countBusinessDays(createdAt, now);
+      const absInvestido = Math.abs(investido);
+      const cdiReturn = absInvestido > 0 && bizDays > 0
+        ? absInvestido * (Math.pow(1 + CDI_ANNUAL / 100, bizDays / 252) - 1)
+        : 0;
+      const cdiPct = cdiReturn > 0 ? (lucroAtual / cdiReturn) * 100 : 0;
+
+      return {
+        ...op,
+        metrics: m,
+        investido,
+        lucroAtual,
+        temDadoVivo,
+        pctLucro: investido !== 0 ? (lucroAtual / Math.abs(investido)) * 100 : 0,
+        cdiPct,
+        cdiReturn,
+        bizDays,
+      };
+    });
+  }, [openOpsRaw, rows]);
 
   const handleAddTicker = () => {
     if (!newTicker.trim()) return;
@@ -340,7 +358,7 @@ export default function DadosAoVivo() {
       toast({ title: "Erro ao renomear", variant: "destructive" });
     } else {
       toast({ title: "Nome atualizado!" });
-      setOpenOps(prev => prev.map(op => op.id === id ? { ...op, name: editNameValue.trim() } : op));
+      setOpenOpsRaw(prev => prev.map(op => op.id === id ? { ...op, name: editNameValue.trim() } : op));
     }
     setEditingNameId(null);
   };

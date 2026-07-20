@@ -680,8 +680,8 @@ export default function BoxTracker() {
       }
     }
 
-    console.log('[BOX ALERT DIAG]', diag.join(' | '));
-    toast({ 
+    if (import.meta.env.DEV) console.log('[BOX ALERT DIAG]', diag.join(' | '));
+    toast({
       title: swOk ? "✅ Alerta teste enviado!" : "⚠️ Alerta enviado (fallback)", 
       description: swOk 
         ? "A notificação push deve aparecer agora." 

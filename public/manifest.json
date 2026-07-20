@@ -1,6 +1,6 @@
 {
-  "name": "OpçõesX PRO",
-  "short_name": "OpçõesX",
+  "name": "Opções PRO X",
+  "short_name": "Opções PRO X",
   "description": "Análise de opções com IA para a B3",
   "start_url": "/",
   "display": "standalone",
@@ -10,12 +10,20 @@
     {
       "src": "/favicon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/favicon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

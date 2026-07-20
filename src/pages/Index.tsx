@@ -431,7 +431,7 @@ export default function Index() {
             </div>
           </div>
           <div className="rounded-2xl overflow-hidden border-2 border-primary/20 shadow-2xl">
-            <img src="/assets/ocr_upload.png" alt="OCR Upload" className="w-full h-auto" />
+            <img src="/assets/ocr_upload.png" alt="OCR Upload" loading="lazy" className="w-full h-auto" />
           </div>
         </div>
       </section>
