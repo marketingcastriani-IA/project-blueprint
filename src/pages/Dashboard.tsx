@@ -23,7 +23,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2, Info, AlertTriangle, Calendar, Percent, Trash2, CheckCircle2, Download, Calculator, ArrowRight, Zap, Image as ImageIcon, X } from 'lucide-react';
+import { Save, Sparkles, Loader2, Camera, Keyboard, Wand2, Wallet, TrendingUp, TrendingDown, Lock, Crown, CreditCard, BarChart3, MousePointer2, Info, AlertTriangle, Calendar, Percent, Trash2, CheckCircle2, Download, Calculator, ArrowRight, Zap, Image as ImageIcon, X, Search } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, SectionDivider, ProfessionalLayout } from '@/components/ProfessionalLayout';
@@ -52,6 +52,15 @@ export default function Dashboard() {
   const [saving, setSaving] = useState(false);
   const [inputMode, setInputMode] = useState<InputMode>(null);
   const [ocrPreview, setOcrPreview] = useState<string | null>(null);
+  const [ocrLightbox, setOcrLightbox] = useState(false);
+  const [ocrZoomed, setOcrZoomed] = useState(false);
+
+  useEffect(() => {
+    if (!ocrLightbox) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOcrLightbox(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [ocrLightbox]);
   const aiSectionRef = useRef<HTMLDivElement>(null);
 
   const metrics = useMemo(() => calculateMetrics(legs), [legs]);
@@ -461,24 +470,27 @@ export default function Dashboard() {
             )}
 
             <div className="grid gap-4 grid-cols-1 lg:grid-cols-3" data-tour="analysis-config">
-              <div className="space-y-2">
-                <Label className="flex items-center gap-2 text-sm font-bold">
-                  Nome da análise
+              <div className="space-y-2 rounded-xl border-2 border-primary/40 shadow-[0_0_20px_-6px_hsl(var(--primary)/0.25)] bg-gradient-to-br from-primary/10 to-card p-3">
+                <Label className="flex items-center gap-2 font-black uppercase tracking-widest text-xs text-primary">
+                  <Sparkles className="h-4 w-4 text-primary" /> ✏️ Nome da Estrutura
                   {legs.length > 0 && !hasManuallyNamed && (
-                    <Badge variant="outline" className="text-xs border-primary/30 text-primary animate-pulse">
+                    <Badge variant="outline" className="ml-auto text-xs border-primary/30 text-primary animate-pulse">
                       <Wand2 className="h-2 w-2 mr-1" /> Auto
                     </Badge>
                   )}
                 </Label>
-                <Input 
-                  value={analysisName} 
+                <Input
+                  value={analysisName}
                   onChange={e => {
                     setAnalysisName(e.target.value);
                     setHasManuallyNamed(true);
-                  }} 
-                  placeholder="Ex: Trava de alta PETR4" 
-                  className="font-bold text-base h-14" 
+                  }}
+                  placeholder="Ex: Trava de alta PETR4"
+                  className="font-black text-base h-14 border-2 border-primary/40 bg-background/80 hover:border-primary focus-visible:border-primary transition-all"
                 />
+                <p className="text-xs text-primary/70 leading-relaxed">
+                  Dê um nome para <span className="font-black text-primary">identificar</span> esta estrutura nas suas operações.
+                </p>
               </div>
               <div className="space-y-2 rounded-xl border-2 border-primary shadow-[0_0_20px_-6px_hsl(var(--primary)/0.35)] bg-gradient-to-br from-primary/15 to-primary/5 p-3">
                 <Label className="flex items-center gap-2 font-black uppercase tracking-widest text-xs text-primary">
@@ -574,11 +586,50 @@ export default function Dashboard() {
                       <X className="h-4 w-4" />
                     </button>
                   </div>
-                  <a href={ocrPreview} target="_blank" rel="noreferrer" title="Abrir imagem em tamanho real">
-                    <img src={ocrPreview} alt="Boleta lida pelo OCR" className="max-h-72 w-auto max-w-full rounded-lg border border-border/40 mx-auto" />
-                  </a>
+                  <div
+                    onClick={() => { setOcrZoomed(false); setOcrLightbox(true); }}
+                    className="group relative overflow-hidden rounded-lg border border-border/40 cursor-zoom-in mx-auto w-fit max-w-full"
+                    title="Clique para ampliar"
+                  >
+                    <img
+                      src={ocrPreview}
+                      alt="Boleta lida pelo OCR"
+                      className="max-h-72 w-auto max-w-full block transition-transform duration-300 ease-out group-hover:scale-[1.6]"
+                    />
+                    <div className="pointer-events-none absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-black/70 px-2 py-1 text-[10px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Search className="h-3 w-3" /> Clique para ampliar
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
+            )}
+
+            {/* Lightbox do OCR — imagem em tela cheia com zoom por clique */}
+            {ocrLightbox && ocrPreview && (
+              <div
+                className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 animate-fade-in"
+                onClick={() => setOcrLightbox(false)}
+              >
+                <button
+                  onClick={(e) => { e.stopPropagation(); setOcrLightbox(false); }}
+                  aria-label="Fechar imagem"
+                  className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+                <img
+                  src={ocrPreview}
+                  alt="Boleta lida pelo OCR (ampliada)"
+                  onClick={(e) => { e.stopPropagation(); setOcrZoomed(z => !z); }}
+                  className={cn(
+                    "rounded-lg shadow-2xl transition-transform duration-300 ease-out",
+                    ocrZoomed ? "scale-[2] cursor-zoom-out" : "max-h-[90vh] max-w-[92vw] cursor-zoom-in"
+                  )}
+                />
+                <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs text-white/70 font-medium">
+                  {ocrZoomed ? 'Clique na imagem para reduzir' : 'Clique na imagem para dar zoom · Esc/fora para fechar'}
+                </p>
+              </div>
             )}
 
             <LegsTable legs={legs} onRemove={removeLeg} onUpdate={updateLeg} />

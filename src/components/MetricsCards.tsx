@@ -204,23 +204,31 @@ export default function MetricsCards({ metrics, cdiReturn = 0, investedCapital =
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-      {items.map(item => {
+      {items.map((item, idx) => {
         const t = themeClasses[item.theme];
         return (
           <Tooltip key={item.title}>
             <TooltipTrigger asChild>
-              <Card className={cn(
-                'cursor-help group relative overflow-hidden transition-all duration-200',
-                t.card
-              )}>
-                <CardContent className="p-5">
+              <Card
+                style={{ animationDelay: `${idx * 80}ms` }}
+                className={cn(
+                  'cursor-help group relative overflow-hidden transition-all duration-300 animate-cinematic-in hover:-translate-y-1 hover:shadow-xl',
+                  t.card
+                )}
+              >
+                {/* brilho cinematográfico ao passar o mouse */}
+                <span className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+                <CardContent className="p-5 relative">
                   <div className="flex items-center justify-between mb-3">
                     <span className={cn('text-xs font-medium', t.label)}>{item.title}</span>
-                    <div className={cn('flex h-7 w-7 items-center justify-center rounded-md', t.icon)}>
+                    <div className={cn('flex h-7 w-7 items-center justify-center rounded-md transition-transform duration-300 group-hover:scale-110', t.icon)}>
                       <item.icon className="h-3.5 w-3.5" />
                     </div>
                   </div>
-                  <p className={cn('text-2xl font-black tracking-tight leading-none', t.value)}>
+                  <p
+                    style={{ animationDelay: `${idx * 80 + 150}ms` }}
+                    className={cn('text-2xl font-black tracking-tight leading-none animate-value-pop', t.value)}
+                  >
                      {item.value}
                    </p>
                    {item.value.includes('%') && (

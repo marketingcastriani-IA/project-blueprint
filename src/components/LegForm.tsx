@@ -148,18 +148,22 @@ export default function LegForm({ onAdd }: LegFormProps) {
         {/* Data de Vencimento da Perna */}
         {!isStock && (
           <div className="space-y-1">
-            <Label className="text-xs font-semibold uppercase tracking-wider">Vencimento</Label>
+            <Label className="text-xs font-black uppercase tracking-wider flex items-center gap-1">
+              <CalendarIcon className="h-3 w-3 text-primary" /> Vencimento
+            </Label>
             <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "h-10 w-full justify-start text-left font-normal text-xs",
-                    !expiryDate && "text-muted-foreground"
+                    "h-10 w-full justify-start text-left text-xs border-2 font-bold transition-all shadow-sm",
+                    expiryDate
+                      ? "border-success/50 bg-success/5 text-foreground hover:border-success"
+                      : "border-amber-400/70 bg-amber-400/10 text-amber-600 dark:text-amber-400 hover:border-amber-400 shadow-[0_0_12px_-2px_rgba(251,191,36,0.5)] animate-pulse"
                   )}
                 >
                   <CalendarIcon className="mr-1 h-3.5 w-3.5" />
-                  {expiryDate ? format(expiryDate, "dd/MM/yy") : "Venc."}
+                  {expiryDate ? format(expiryDate, "dd/MM/yy") : "⚠ Preencher"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">

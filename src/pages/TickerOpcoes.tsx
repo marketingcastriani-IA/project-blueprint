@@ -69,7 +69,7 @@ const TOP_STOCKS = [
   { family: "RADL", label: "RADL", name: "Raia", sector: "Farmácia" },
 ];
 
-export default function TickerOpcoes() {
+export default function TickerOpcoes({ embedded = false }: { embedded?: boolean }) {
   const { options, families, vencimentos, loading } = useB3Options();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
@@ -620,9 +620,9 @@ export default function TickerOpcoes() {
 
   if (loading) {
     return (
-      <ProfessionalLayout>
-        <Header />
-        <div className="p-6 space-y-4">
+      <ProfessionalLayout className={embedded ? "!min-h-0 !bg-transparent" : ""}>
+        {!embedded && <Header />}
+        <div className={embedded ? "space-y-4" : "p-6 space-y-4"}>
           <Skeleton className="h-10 w-64" />
           <div className="grid grid-cols-3 gap-4">
             <Skeleton className="h-24" />
@@ -638,9 +638,9 @@ export default function TickerOpcoes() {
   const hasActiveFilters = activeFilterCount > 0 || precoBaseNum > 0;
 
   return (
-    <ProfessionalLayout>
-      <Header />
-      <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto">
+    <ProfessionalLayout className={embedded ? "!min-h-0 !bg-transparent" : ""}>
+      {!embedded && <Header />}
+      <div className={embedded ? "space-y-5" : "p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto"}>
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

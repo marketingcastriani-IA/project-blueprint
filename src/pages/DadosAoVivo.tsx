@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
+import TickerOpcoes from "@/pages/TickerOpcoes";
 import PayoffChart from "@/components/PayoffChart";
 import BridgeSetupGuide from "@/components/BridgeSetupGuide";
 import MetricsCards from "@/components/MetricsCards";
@@ -98,6 +99,7 @@ export default function DadosAoVivo() {
   const { status, rows, errorMsg, reconnectCount, connect, addTicker, removeTicker, updateRow } = useSharedRtdBridge();
 
   const [newTicker, setNewTicker] = useState("");
+  const [showBanco, setShowBanco] = useState(false);
   const [analysisName, setAnalysisName] = useState("");
   const [saving, setSaving] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -466,14 +468,29 @@ export default function DadosAoVivo() {
                 <Button onClick={handleAddTicker} className="gap-2 h-11 font-bold">
                   <Plus className="w-4 h-4" /> Monitorar
                 </Button>
-                <Button variant="outline" onClick={() => navigate('/ticker-opcoes')} className="gap-2 h-11 font-bold border-primary/40 text-primary hover:bg-primary/10">
-                  <Database className="w-4 h-4" /> Banco de Opções
+                <Button variant={showBanco ? "default" : "outline"} onClick={() => setShowBanco(v => !v)} className={cn("gap-2 h-11 font-bold", !showBanco && "border-primary/40 text-primary hover:bg-primary/10")}>
+                  <Database className="w-4 h-4" /> {showBanco ? 'Fechar Banco' : 'Banco de Opções'}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                 <Search className="w-3.5 h-3.5 shrink-0" />
-                Não sabe o código da opção? Abra o <span className="font-semibold text-primary">Banco de Opções</span> para buscar tickers, strikes e pares Call+Put da B3.
+                Não sabe o código da opção? Abra o <span className="font-semibold text-primary">Banco de Opções</span> aqui mesmo para buscar tickers, strikes e pares Call+Put da B3.
               </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Banco de Opções embutido — abre direto na tela, sem trocar de página */}
+        {status === "connected" && showBanco && (
+          <Card className="border-primary/30 animate-fade-in">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Database className="w-4 h-4 text-primary" /> Banco de Opções
+              </CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => setShowBanco(false)} className="h-7 text-xs text-muted-foreground">Fechar</Button>
+            </CardHeader>
+            <CardContent>
+              <TickerOpcoes embedded />
             </CardContent>
           </Card>
         )}

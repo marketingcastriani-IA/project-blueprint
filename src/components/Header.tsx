@@ -141,7 +141,7 @@ export default function Header() {
         onClick={() => navigate(item.path)}
         className={cn(
           'flex items-center gap-1.5 rounded-lg font-black uppercase tracking-wide transition-all duration-200 whitespace-nowrap',
-          'px-3 py-2 text-[11px] lg:px-3.5 lg:text-[13px]',
+          'px-3 py-2 text-[11px] lg:px-3.5 lg:text-[13px] xl:text-sm',
           isActive
             ? 'bg-background text-foreground ring-2 ring-white/70 shadow-[0_4px_16px_-2px_rgba(0,0,0,0.5)] scale-[1.04]'
             : 'text-primary-foreground/90 hover:bg-primary-foreground/15 hover:text-primary-foreground hover:-translate-y-px'
@@ -184,7 +184,7 @@ export default function Header() {
         </div>
 
         {/* Desktop Primary Nav — scrollable */}
-        <nav className="hidden md:flex items-center gap-0.5 lg:gap-1 flex-1 overflow-x-auto scrollbar-none mx-2 pr-2" data-tour="nav-menu">
+        <nav className="hidden md:flex items-center gap-1 lg:gap-1.5 xl:gap-2 flex-1 justify-center xl:justify-start overflow-x-auto scrollbar-none mx-2 pr-2" data-tour="nav-menu">
           {primaryNavLeft.map(item => (
             <NavButton key={item.path} item={item} />
           ))}
@@ -199,7 +199,7 @@ export default function Header() {
               <button
                 className={cn(
                   'flex items-center gap-1.5 rounded-lg font-black uppercase tracking-wide transition-all duration-200 whitespace-nowrap',
-                  'px-3 py-2 text-[11px] lg:px-3.5 lg:text-[13px]',
+                  'px-3 py-2 text-[11px] lg:px-3.5 lg:text-[13px] xl:text-sm',
                   trackerNav.some(t => location.pathname === t.path)
                     ? 'bg-background text-foreground ring-2 ring-white/70 shadow-[0_4px_16px_-2px_rgba(0,0,0,0.5)] scale-[1.04]'
                     : 'text-primary-foreground/90 hover:bg-primary-foreground/15 hover:text-primary-foreground hover:-translate-y-px'
@@ -299,7 +299,7 @@ export default function Header() {
                   key={item.path}
                   onClick={() => navigate(item.path)}
                   className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] lg:text-[13px] font-black uppercase tracking-wide transition-all duration-200 whitespace-nowrap',
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] lg:text-[13px] xl:text-sm font-black uppercase tracking-wide transition-all duration-200 whitespace-nowrap',
                     isActive && 'bg-primary text-primary-foreground ring-2 ring-white/40 shadow-[0_2px_14px_-2px_hsl(var(--primary)/0.85)] scale-[1.04]',
                     !isActive && 'text-slate-300 hover:text-white hover:bg-white/10 hover:-translate-y-px'
                   )}
@@ -315,7 +315,7 @@ export default function Header() {
           <button
             onClick={() => navigate(connectItem.path)}
             className={cn(
-              'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[11px] lg:text-[13px] font-black uppercase tracking-wide transition-all duration-200 whitespace-nowrap shrink-0',
+              'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[11px] lg:text-[13px] xl:text-sm font-black uppercase tracking-wide transition-all duration-200 whitespace-nowrap shrink-0',
               'bg-amber-400 text-black hover:bg-amber-300',
               location.pathname === connectItem.path
                 ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-105 shadow-[0_0_26px_rgba(251,191,36,0.95)]'
