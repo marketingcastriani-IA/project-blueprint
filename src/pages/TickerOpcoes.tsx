@@ -293,13 +293,18 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
 
       if (callPrice <= 0 || putPrice <= 0) return;
 
+      // Strike ao vivo do Profit (ajustado por proventos) tem prioridade sobre o
+      // nominal do JSON estático — senão o lucro fica superestimado (ex.: PETR).
+      const liveStrike = callRow?.strike ?? putRow?.strike ?? null;
+      const strikeReal = (liveStrike !== null && liveStrike > 0) ? liveStrike : call.strike;
+
       const custo = (usedStock + putPrice) - callPrice;
       if (custo <= 0) return;
-      const lucro = call.strike - custo;
+      const lucro = strikeReal - custo;
       const lucroPct = (lucro / custo) * 100;
       if (lucro > 0) {
         opportunities.push({
-          strike: call.strike, vencimento: call.vencimento,
+          strike: strikeReal, vencimento: call.vencimento,
           call, put, custo, lucro, lucroPct,
           stockPrice: usedStock, callPrice, putPrice, isLive,
         });
@@ -641,18 +646,18 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
     <ProfessionalLayout className={embedded ? "!min-h-0 !bg-transparent" : ""}>
       {!embedded && <Header />}
       <div className={embedded ? "space-y-5" : "p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto"}>
-        {/* Header */}
-        <div className="flex items-center justify-between">
+        {/* Hero */}
+        <div className="rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/[0.08] via-card to-card p-4 sm:p-5 shadow-[0_8px_30px_-12px_hsl(var(--primary)/0.3)] flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Database className="h-5 w-5 text-primary" />
+            <div className="h-12 w-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shadow-[0_0_22px_-4px_hsl(var(--primary))] shrink-0">
+              <Database className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-xl md:text-2xl font-black uppercase tracking-wider text-foreground">
+              <h1 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-foreground leading-tight">
                 Banco de Opções
               </h1>
-              <p className="text-xs text-muted-foreground">
-                {options.length.toLocaleString()} opções disponíveis
+              <p className="text-sm text-muted-foreground font-medium">
+                <span className="text-primary font-black">{options.length.toLocaleString()}</span> opções da B3
                 {pairCount > 0 && (
                   <span className="ml-2 text-primary font-semibold">· {pairCount} pares Call+Put</span>
                 )}
@@ -720,10 +725,14 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
 
         {/* Quick-select top stocks — compact dark cards */}
         <div className="rounded-xl border border-border/40 bg-gradient-to-b from-card/80 to-card/40 backdrop-blur-md overflow-hidden shadow-lg shadow-black/10" style={{ perspective: "800px" }}>
-          <div className="px-4 py-2.5 border-b border-border/30 flex items-center gap-2">
-            <Zap className="h-3.5 w-3.5 text-primary" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/80">Seleção Rápida</span>
-            <span className="text-[9px] text-muted-foreground ml-1">Top 18</span>
+          <div className="px-4 py-3 border-b border-border/30 flex items-center gap-2.5">
+            <div className="h-7 w-7 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+              <Zap className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex flex-col leading-tight">
+              <span className="text-sm font-black uppercase tracking-wide text-foreground">Seleção Rápida</span>
+              <span className="text-[11px] text-muted-foreground">Toque num ativo para ver as opções · Top 18</span>
+            </div>
             {selectedFamily !== "all" && (
               <button
                 onClick={() => setSelectedFamily("all")}
@@ -794,20 +803,23 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
             )}
           </div>
           <div className="p-4 space-y-4">
-            {/* Row 1: Search + Family + Vencimento + Tipo */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="col-span-2 md:col-span-1">
-                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1.5 block">Buscar Ticker</label>
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="PETR, VALE..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-9 h-9 text-sm uppercase bg-background/40 border-border/40 focus:border-primary/50 focus:bg-background/60 transition-all"
-                  />
-                </div>
+            {/* Barra de busca em destaque */}
+            <div>
+              <label className="text-[11px] uppercase text-primary font-bold tracking-widest mb-1.5 flex items-center gap-1.5">
+                <Search className="h-3.5 w-3.5" /> Buscar Ticker
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/70 pointer-events-none" />
+                <Input
+                  placeholder="Digite o ativo: PETR, VALE, BBAS..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-11 h-12 text-base uppercase font-semibold bg-background border-2 border-primary/30 focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 shadow-sm transition-all placeholder:normal-case placeholder:font-normal placeholder:text-muted-foreground"
+                />
               </div>
+            </div>
+            {/* Row 1: Family + Vencimento + Tipo */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <div>
                 <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1.5 block">Escolher o Ativo</label>
                 <Select value={selectedFamily} onValueChange={setSelectedFamily}>
@@ -992,48 +1004,85 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
         {/* Box Opportunities */}
         {boxOpportunities.length > 0 && (
           <div className="rounded-xl border border-primary/30 bg-primary/5 backdrop-blur-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-primary/20 flex items-center gap-2">
-              <Box className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold text-foreground">Oportunidades de Box</span>
-              <span className="text-[10px] text-muted-foreground ml-1">(Ação ASK + Put ASK) − Call BID</span>
-              <Badge variant="default" className="text-xs ml-auto">{boxOpportunities.length} pares</Badge>
+            <div className="px-4 py-3 border-b border-primary/20">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+                  <Box className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex flex-col leading-tight">
+                  <span className="text-sm font-black text-foreground">
+                    Oportunidades de Box <span className="font-medium text-muted-foreground">· renda fixa sintética</span>
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">
+                    Comprar a ação + a put e vender a call trava um <b className="text-foreground">lucro garantido</b> no vencimento — como um CDI. Toque para levar ao Rastrear Box.
+                  </span>
+                </div>
+                <Badge variant="default" className="text-xs ml-auto shrink-0">{boxOpportunities.length} achadas</Badge>
+              </div>
+              {/* Legenda do que cada número significa */}
+              <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+                <span><b className="text-foreground">Monta por</b> = sai do bolso hoje</span>
+                <span><b className="text-foreground">Recebe</b> = garantido no vencimento (o strike)</span>
+                <span><b className="text-emerald-600 dark:text-emerald-400">Lucro</b> = diferença travada</span>
+                <span><b className="text-primary">%</b> = retorno até vencer</span>
+              </div>
             </div>
-            <div className="p-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2">
+            <div className="p-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5">
               {boxOpportunities.map((opp) => (
                 <button
                   key={`${opp.call.ticker}-${opp.put.ticker}`}
                   onClick={() => sendOpportunityToBox(opp.call, opp.put)}
-                  className="text-left rounded-lg border border-border/50 bg-card/80 p-3 hover:bg-primary/10 hover:border-primary/40 transition-all group"
+                  className="text-left rounded-xl border-2 border-border/50 bg-card p-3.5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 transition-all group"
                 >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold text-foreground">Strike {opp.strike.toFixed(2)}</span>
-                    <div className="flex items-center gap-1">
-                      {opp.isLive && <Wifi className="h-2.5 w-2.5 text-primary" />}
-                      <Badge className={`text-xs font-bold border-0 ${opp.lucroPct > 1.5 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+                  {/* Topo: strike + retorno */}
+                  <div className="flex items-center justify-between mb-2 pb-2 border-b border-border/40">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-black text-foreground">Strike {opp.strike.toFixed(2)}</span>
+                      {opp.isLive && (
+                        <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
+                          <Wifi className="h-2.5 w-2.5" /> ao vivo
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-right leading-none">
+                      <div className={`text-base font-black ${opp.lucroPct > 1.5 ? "text-primary" : "text-muted-foreground"}`}>
                         {opp.lucroPct.toFixed(2)}%
-                      </Badge>
+                      </div>
+                      <div className="text-[9px] text-muted-foreground uppercase tracking-wide">retorno</div>
                     </div>
                   </div>
-                  <div className="text-xs text-muted-foreground space-y-0.5">
+
+                  {/* Valores em destaque, rotulados */}
+                  <div className="space-y-1 text-xs">
                     <div className="flex justify-between">
-                      <span>C: {opp.call.ticker}</span>
-                      <span>P: {opp.put.ticker}</span>
+                      <span className="text-muted-foreground">Monta por</span>
+                      <span className="font-semibold text-foreground">R$ {opp.custo.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Ativo: {opp.stockPrice.toFixed(2)}</span>
-                      <span>Call: {opp.callPrice.toFixed(2)}</span>
+                      <span className="text-muted-foreground">Recebe no venc.</span>
+                      <span className="font-semibold text-foreground">R$ {opp.strike.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Put: {opp.putPrice.toFixed(2)}</span>
-                      <span>Custo: {opp.custo.toFixed(2)}</span>
+                    <div className="flex justify-between items-center rounded-md bg-emerald-500/10 px-1.5 py-1 -mx-0.5">
+                      <span className="text-emerald-700 dark:text-emerald-300 font-semibold">Lucro travado</span>
+                      <span className="font-black text-emerald-600 dark:text-emerald-400">R$ {opp.lucro.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-primary font-semibold">Lucro: {opp.lucro.toFixed(2)}</span>
-                    </div>
-                    <div className="text-xs">{opp.vencimento}</div>
                   </div>
-                  <div className="flex items-center gap-1 mt-1.5 text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Send className="h-2.5 w-2.5" /> Enviar ao Rastrear Box
+
+                  {/* Rodapé: códigos, preços e vencimento */}
+                  <div className="mt-2 pt-2 border-t border-border/40 space-y-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-mono font-semibold text-foreground">{opp.call.ticker} <span className="font-sans font-normal text-muted-foreground">call</span></span>
+                      <span className="font-mono font-semibold text-foreground">{opp.put.ticker} <span className="font-sans font-normal text-muted-foreground">put</span></span>
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      Ativo {opp.stockPrice.toFixed(2)} · Call {opp.callPrice.toFixed(2)} · Put {opp.putPrice.toFixed(2)}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-muted-foreground">Vence {opp.vencimento}</span>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Send className="h-2.5 w-2.5" /> Rastrear
+                      </span>
+                    </div>
                   </div>
                 </button>
               ))}
@@ -1162,7 +1211,10 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
                   </TableRow>
                 ) : (
                   displayed.map((opt, i) => {
-                    const distPct = precoBaseNum > 0 ? ((opt.strike - precoBaseNum) / precoBaseNum) * 100 : null;
+                    // Strike ao vivo do Profit (ajustado por proventos) tem prioridade sobre o nominal do JSON
+                    const liveStrike = rows.get(opt.ticker)?.strike;
+                    const effStrike = (liveStrike != null && liveStrike > 0) ? liveStrike : opt.strike;
+                    const distPct = precoBaseNum > 0 ? ((effStrike - precoBaseNum) / precoBaseNum) * 100 : null;
                     const isSentToRtd = sentToRtd.has(opt.ticker);
                     const isPaired = pairedStrikeKeys.has(`${opt.strike}|${opt.vencimento}`);
                     return (
@@ -1200,7 +1252,7 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
                         <TableCell>
                           <Badge variant="secondary" className="text-xs font-semibold">{opt.family}</Badge>
                         </TableCell>
-                        <TableCell className="font-mono tabular-nums">{opt.strike.toFixed(2)}</TableCell>
+                        <TableCell className="font-mono tabular-nums">{effStrike.toFixed(2)}</TableCell>
                         <TableCell className="text-sm tabular-nums">{opt.vencimento}</TableCell>
                         <TableCell>
                           <Badge

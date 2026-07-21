@@ -45,6 +45,7 @@ import {
   Download,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 import { statusConfig } from "@/hooks/useRtdBridge";
@@ -972,23 +973,28 @@ export default function BoxTracker() {
           </button>
         </div>
 
-        {/* Row 2: Modern Alert Panel — colapsável para focar na tabela */}
-        <div className="rounded-2xl border-2 border-border bg-card shadow-sm overflow-hidden">
-          <button
-            onClick={() => setShowAlertConfig(v => !v)}
-            className="w-full flex items-center justify-between gap-2 px-4 py-3 text-left hover:bg-muted/30 transition-colors"
-          >
-            <span className="flex items-center gap-2 text-sm font-black">
-              {notifEnabled ? <Bell className="w-4 h-4 text-success" /> : <BellOff className="w-4 h-4 text-muted-foreground" />}
-              Alertas de Box
-              <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider", notifEnabled ? "bg-success/20 text-success" : "bg-muted text-muted-foreground")}>
-                {notifEnabled ? "ON" : "OFF"}
-              </span>
-            </span>
-            <ChevronDown className={cn("w-4 h-4 text-muted-foreground transition-transform shrink-0", showAlertConfig && "rotate-180")} />
-          </button>
-          {showAlertConfig && (
-          <div className="p-4 pt-0 space-y-4">
+        {/* Botão que abre o pop-up de Alertas (libera espaço na tela) */}
+        <button
+          onClick={() => setShowAlertConfig(true)}
+          className="inline-flex items-center gap-2 self-start px-4 py-2.5 rounded-xl border-2 border-border bg-card shadow-sm hover:border-primary/40 hover:bg-muted/30 transition-all text-sm font-black"
+        >
+          {notifEnabled ? <Bell className="w-4 h-4 text-success" /> : <BellOff className="w-4 h-4 text-muted-foreground" />}
+          Alertas de Box
+          <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider", notifEnabled ? "bg-success/20 text-success" : "bg-muted text-muted-foreground")}>
+            {notifEnabled ? "ON" : "OFF"}
+          </span>
+        </button>
+
+        {/* Pop-up (modal) de configuração de alertas */}
+        <Dialog open={showAlertConfig} onOpenChange={setShowAlertConfig}>
+          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {notifEnabled ? <Bell className="w-5 h-5 text-success" /> : <BellOff className="w-5 h-5 text-muted-foreground" />}
+                Alertas de Box
+              </DialogTitle>
+            </DialogHeader>
+          <div className="space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             {/* Left: Toggle + Status */}
             <div className="flex items-center gap-3">
@@ -1205,8 +1211,8 @@ export default function BoxTracker() {
             </div>
           )}
           </div>
-          )}
-        </div>
+          </DialogContent>
+        </Dialog>
       </div>
       {/* WINNER CARDS - Top 1 de cada ação */}
       {topPairs.length > 0 && (

@@ -6,7 +6,7 @@ import {
   Radio, Plus, Trash2, Wifi, WifiOff, RefreshCw,
   TrendingUp, TrendingDown, Activity, AlertTriangle, CheckCircle2,
   Terminal, Download, ExternalLink, Info, Save, CalendarIcon, Loader2,
-  Edit, DollarSign, Percent, Briefcase, Zap, BookOpen, Database, Search
+  Edit, DollarSign, Percent, Briefcase, Zap, BookOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -99,7 +99,6 @@ export default function DadosAoVivo() {
   const { status, rows, errorMsg, reconnectCount, connect, addTicker, removeTicker, updateRow } = useSharedRtdBridge();
 
   const [newTicker, setNewTicker] = useState("");
-  const [showBanco, setShowBanco] = useState(true);
   const [analysisName, setAnalysisName] = useState("");
   const [saving, setSaving] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -442,57 +441,37 @@ export default function DadosAoVivo() {
           </>
         )}
 
-        {/* Connected: add ticker + Banco de Opções */}
+        {/* Connected: status + monitorar ticker específico (compacto) */}
         {status === "connected" && (
-          <Card className="border-chart-profit/30 bg-gradient-to-br from-chart-profit/[0.07] to-card shadow-sm">
-            <CardContent className="pt-4 space-y-4">
-              <div className="flex items-center gap-2 text-chart-profit">
+          <Card className="border-chart-profit/30 bg-gradient-to-br from-chart-profit/[0.06] to-card shadow-sm">
+            <CardContent className="pt-4 flex flex-wrap items-end gap-3">
+              <div className="flex items-center gap-2 text-chart-profit w-full sm:w-auto sm:mr-auto">
                 <span className="relative flex h-2.5 w-2.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-chart-profit opacity-75" />
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-chart-profit" />
                 </span>
-                <span className="text-sm font-bold">Bridge conectado — dados chegando em tempo real</span>
-                <Activity className="w-3.5 h-3.5 animate-pulse ml-auto sm:ml-1" />
+                <span className="text-sm font-bold">Conectado — dados em tempo real</span>
               </div>
-              <div className="flex flex-wrap gap-2 items-end">
-                <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ticker a monitorar</label>
-                  <Input
-                    className="uppercase font-mono h-11"
-                    placeholder="ex: PETRG345"
-                    value={newTicker}
-                    onChange={(e) => setNewTicker(e.target.value.toUpperCase())}
-                    onKeyDown={(e) => e.key === "Enter" && handleAddTicker()}
-                  />
-                </div>
-                <Button onClick={handleAddTicker} className="gap-2 h-11 font-bold">
-                  <Plus className="w-4 h-4" /> Monitorar
-                </Button>
-                <Button variant={showBanco ? "default" : "outline"} onClick={() => setShowBanco(v => !v)} className={cn("gap-2 h-11 font-bold", !showBanco && "border-primary/40 text-primary hover:bg-primary/10")}>
-                  <Database className="w-4 h-4" /> {showBanco ? 'Fechar Banco' : 'Banco de Opções'}
-                </Button>
+              <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Monitorar ticker específico</label>
+                <Input
+                  className="uppercase font-mono h-11"
+                  placeholder="ex: PETRG345"
+                  value={newTicker}
+                  onChange={(e) => setNewTicker(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddTicker()}
+                />
               </div>
-              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <Search className="w-3.5 h-3.5 shrink-0" />
-                Não sabe o código da opção? Abra o <span className="font-semibold text-primary">Banco de Opções</span> aqui mesmo para buscar tickers, strikes e pares Call+Put da B3.
-              </p>
+              <Button onClick={handleAddTicker} className="gap-2 h-11 font-bold">
+                <Plus className="w-4 h-4" /> Monitorar
+              </Button>
             </CardContent>
           </Card>
         )}
 
-        {/* Banco de Opções embutido — abre direto na tela, sem trocar de página */}
-        {status === "connected" && showBanco && (
-          <Card className="border-primary/30 animate-fade-in">
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Database className="w-4 h-4 text-primary" /> Banco de Opções
-              </CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => setShowBanco(false)} className="h-7 text-xs text-muted-foreground">Fechar</Button>
-            </CardHeader>
-            <CardContent>
-              <TickerOpcoes embedded />
-            </CardContent>
-          </Card>
+        {/* Banco de Opções embutido — sempre aberto, direto na tela */}
+        {status === "connected" && (
+          <TickerOpcoes embedded />
         )}
 
         {/* Live table — only manually searched tickers */}
