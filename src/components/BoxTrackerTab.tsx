@@ -553,6 +553,8 @@ export default function BoxTracker() {
 
         const vencParaCalculo = vencimento;
         const diasUteis = calcDiasUteis(vencParaCalculo);
+        // Ignora opções já vencidas (0 dias úteis) — não têm cotação nem fazem sentido para box
+        if (vencimento && diasUteis !== null && diasUteis <= 0) return;
         const cdiPeriodo = diasUteis !== null && diasUteis > 0 ? calcCdiPeriodo(diasUteis, cdiAnual) : null;
 
         // CDI líquido com IR renda fixa (22.5%)
