@@ -38,17 +38,31 @@ type DiversificacaoSalva = {
 // ─── Paleta de cores disponíveis ──────────────────────────────────────────────
 
 const CORES_DISPONIVEIS = [
-  { label: "Violeta",  value: "#a78bfa" },
-  { label: "Verde",    value: "#34d399" },
-  { label: "Azul",     value: "#60a5fa" },
-  { label: "Âmbar",   value: "#f59e0b" },
-  { label: "Rosa",     value: "#f472b6" },
-  { label: "Vermelho", value: "#f87171" },
-  { label: "Ciano",    value: "#22d3ee" },
-  { label: "Laranja",  value: "#fb923c" },
-  { label: "Lima",     value: "#a3e635" },
-  { label: "Branco",   value: "#e4e4e7" },
+  { label: "Violeta",  value: "#7c3aed" },
+  { label: "Verde",    value: "#059669" },
+  { label: "Azul",     value: "#2563eb" },
+  { label: "Âmbar",    value: "#d97706" },
+  { label: "Rosa",     value: "#db2777" },
+  { label: "Vermelho", value: "#dc2626" },
+  { label: "Ciano",    value: "#0891b2" },
+  { label: "Laranja",  value: "#ea580c" },
+  { label: "Lima",     value: "#65a30d" },
+  { label: "Cinza",    value: "#64748b" },
 ];
+
+// Ajusta a cor do texto para ter contraste mínimo no fundo (escurece cores
+// muito claras, que somem no tema Branco).
+function corLegivel(hex: string): string {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!m) return hex;
+  const r = parseInt(m[1], 16), g = parseInt(m[2], 16), b = parseInt(m[3], 16);
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  if (lum > 0.65) {
+    const d = (c: number) => Math.round(c * 0.5);
+    return `rgb(${d(r)}, ${d(g)}, ${d(b)})`;
+  }
+  return hex;
+}
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -56,9 +70,9 @@ const FREQUENCIAS: Frequencia[] = ["Semanal", "Quinzenal", "Mensal"];
 const RISCOS: Risco[] = ["Baixo", "Médio", "Alto"];
 
 const RISCO_COR: Record<Risco, string> = {
-  Baixo: "bg-emerald-900/40 text-emerald-400 border border-emerald-700/40",
-  Médio: "bg-yellow-900/40 text-yellow-400 border border-yellow-700/40",
-  Alto:  "bg-red-900/40 text-red-400 border border-red-700/40",
+  Baixo: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40",
+  Médio: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/40",
+  Alto:  "bg-red-500/15 text-red-700 dark:text-red-300 border border-red-500/40",
 };
 
 const ESTRATEGIA_VAZIA: Omit<Estrategia, "id"> = {
@@ -265,7 +279,7 @@ function ModalEstrategia({ inicial, titulo, patrimonio, onSalvar, onFechar }: Mo
           <div className="rounded-xl border border-border bg-muted/30 px-4 py-3 flex items-center justify-between gap-4">
             <div>
               <p className="text-xs text-muted-foreground">Valor estimado</p>
-              <p className="text-base font-bold tabular-nums" style={{ color: form.corTexto }}>
+              <p className="text-base font-bold tabular-nums" style={{ color: corLegivel(form.corTexto) }}>
                 {fmt((patrimonio * form.percentual) / 100)}
               </p>
             </div>
@@ -799,7 +813,7 @@ export default function Diversificador() {
                       </button>
                       <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: e.corTexto }} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate" style={{ color: e.ativo ? e.corTexto : undefined }}>
+                        <p className="text-sm font-semibold truncate" style={{ color: e.ativo ? corLegivel(e.corTexto) : undefined }}>
                           {e.nome}
                         </p>
                         {e.descricao && <p className="text-xs text-muted-foreground truncate mt-0.5">{e.descricao}</p>}
@@ -839,7 +853,7 @@ export default function Diversificador() {
                           </div>
                           <div className="bg-muted/50 rounded-xl px-3 py-2">
                             <p className="text-xs text-muted-foreground">Margem estimada</p>
-                            <p className="text-sm font-bold tabular-nums" style={{ color: e.corTexto }}>{fmt(((patrimonio * e.percentual) / 100) * e.alavancagem)}</p>
+                            <p className="text-sm font-bold tabular-nums" style={{ color: corLegivel(e.corTexto) }}>{fmt(((patrimonio * e.percentual) / 100) * e.alavancagem)}</p>
                           </div>
                         </div>
                         {e.obs && <p className="text-xs text-muted-foreground bg-muted/40 rounded-xl px-3 py-2 leading-relaxed mb-3">{e.obs}</p>}
@@ -916,12 +930,12 @@ export default function Diversificador() {
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: a.estrategia.corTexto }} />
-                            <span className="font-medium" style={{ color: a.estrategia.corTexto }}>{a.estrategia.nome}</span>
+                            <span className="font-medium" style={{ color: corLegivel(a.estrategia.corTexto) }}>{a.estrategia.nome}</span>
                           </div>
                         </td>
                         <td className="px-4 py-3 text-right text-foreground/80 tabular-nums">{pct(a.estrategia.percentual)}</td>
                         <td className="px-4 py-3 text-right text-foreground font-medium tabular-nums">{fmt(a.valor)}</td>
-                        <td className="px-4 py-3 text-right font-medium tabular-nums" style={{ color: a.estrategia.corTexto }}>{fmt(a.margemUsada)}</td>
+                        <td className="px-4 py-3 text-right font-medium tabular-nums" style={{ color: corLegivel(a.estrategia.corTexto) }}>{fmt(a.margemUsada)}</td>
                         <td className="px-4 py-3 text-right text-muted-foreground text-xs">{a.estrategia.frequencia}</td>
                         <td className="px-4 py-3 text-right text-foreground/80 tabular-nums">{a.estrategia.vezes}x</td>
                         <td className="px-4 py-3 text-right"><Badge label={a.estrategia.risco} className={RISCO_COR[a.estrategia.risco]} /></td>
@@ -973,7 +987,7 @@ export default function Diversificador() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: a.estrategia.corTexto }} />
-                          <h3 className="text-sm font-semibold" style={{ color: a.estrategia.corTexto }}>{a.estrategia.nome}</h3>
+                          <h3 className="text-sm font-semibold" style={{ color: corLegivel(a.estrategia.corTexto) }}>{a.estrategia.nome}</h3>
                           <Badge label={a.estrategia.risco} className={RISCO_COR[a.estrategia.risco]} />
                         </div>
                         {a.estrategia.obs && <p className="text-xs text-muted-foreground mb-2">{a.estrategia.obs}</p>}
@@ -987,7 +1001,7 @@ export default function Diversificador() {
                         <p className="text-xs text-muted-foreground">Valor</p>
                         <p className="text-base font-bold text-foreground tabular-nums">{fmt(a.valor)}</p>
                         <p className="text-xs text-muted-foreground mt-1">Margem</p>
-                        <p className="text-sm font-semibold tabular-nums" style={{ color: a.estrategia.corTexto }}>{fmt(a.margemUsada)}</p>
+                        <p className="text-sm font-semibold tabular-nums" style={{ color: corLegivel(a.estrategia.corTexto) }}>{fmt(a.margemUsada)}</p>
                       </div>
                     </div>
                   </div>
