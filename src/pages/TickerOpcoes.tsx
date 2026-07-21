@@ -753,22 +753,22 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
                       isActive
                         ? "bg-primary/15 shadow-[inset_0_2px_8px_hsl(var(--primary)/0.2)]"
                         : index < 6
-                          ? "bg-gradient-to-b from-warning/5 to-card/70 hover:from-warning/15 hover:to-warning/5"
-                          : "bg-gradient-to-b from-card to-card/70 hover:from-muted/80 hover:to-muted/40"
+                          ? "bg-amber-50 dark:bg-amber-950/20 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                          : "bg-card hover:bg-muted/60"
                     }`}
                   >
                     {index < 6 && (
-                      <span className="flex items-center justify-center h-5 w-5 rounded-full bg-warning/15 text-warning text-[10px] font-bold border border-warning/30 shrink-0">
+                      <span className="flex items-center justify-center h-5 w-5 rounded-full bg-gradient-to-br from-amber-400 to-amber-500 text-white text-[10px] font-black shadow-sm shrink-0">
                         {index + 1}
                       </span>
                     )}
-                    <span className={`text-sm font-extrabold tracking-wide ${
-                      isActive ? "text-primary" : index < 6 ? "text-warning group-hover:text-warning/80" : "text-foreground/80 group-hover:text-primary/80"
+                    <span className={`text-sm font-black tracking-wide ${
+                      isActive ? "text-primary" : index < 6 ? "text-amber-600 dark:text-amber-400 group-hover:text-amber-500" : "text-foreground group-hover:text-primary"
                     } transition-colors`}>
                       {stock.label}
                     </span>
-                    <span className={`text-[10px] ${
-                      isActive ? "text-primary/60" : "text-muted-foreground/60 group-hover:text-muted-foreground/80"
+                    <span className={`text-[10px] font-medium ${
+                      isActive ? "text-primary/70" : "text-muted-foreground group-hover:text-foreground/70"
                     } transition-colors`}>
                       {stock.name}
                     </span>

@@ -260,28 +260,37 @@ export default function History() {
       return acc + (l.side === 'buy' ? cost : -cost);
     }, 0);
 
-    // CDI from opening date to NOW
+    // CDI do período da operação (abertura → vencimento), para comparar de forma
+    // justa com o Lucro Máximo (que é o potencial até o vencimento).
     const createdAt = new Date(a.created_at);
     const now = new Date();
-    const bizDays = countBusinessDays(createdAt, now);
+    let expiry: Date | null = null;
+    if (a.expiry_date) {
+      const [y, mo, d] = a.expiry_date.split('-').map(Number);
+      expiry = new Date(y, mo - 1, d);
+    }
+    const bizDaysTotal = expiry && expiry > createdAt ? countBusinessDays(createdAt, expiry) : countBusinessDays(createdAt, now);
+    const diasRestantes = expiry ? countBusinessDays(now, expiry) : null;
     const absInvestido = Math.abs(investido);
     const cdiRateVal = (a.cdi_rate || 14.65) / 100;
-    const cdiReturn = absInvestido > 0 && bizDays > 0
-      ? absInvestido * (Math.pow(1 + cdiRateVal, bizDays / 252) - 1)
+    const cdiReturn = absInvestido > 0 && bizDaysTotal > 0
+      ? absInvestido * (Math.pow(1 + cdiRateVal, bizDaysTotal / 252) - 1)
       : 0;
     const cdiEfficiency = cdiReturn > 0 && m && typeof m.maxGain === 'number'
       ? Math.round((m.maxGain / cdiReturn) * 100)
+      : null;
+    const roiPct = absInvestido > 0 && m && typeof m.maxGain === 'number' && Number.isFinite(m.maxGain)
+      ? (m.maxGain / absInvestido) * 100
       : null;
 
     return (
       <div
         key={a.id}
-        className="rounded-xl overflow-hidden border border-white/10 bg-card cursor-pointer transition-all duration-300 hover:-translate-y-2 shadow-[0_8px_30px_-4px_rgba(255,255,255,0.12),0_2px_8px_-2px_rgba(255,255,255,0.08)] hover:shadow-[0_20px_50px_-8px_rgba(255,255,255,0.2),0_4px_12px_-4px_rgba(255,255,255,0.15)]"
-        style={{ transform: 'perspective(800px) rotateX(1deg)', transformStyle: 'preserve-3d' }}
+        className="rounded-2xl overflow-hidden border border-border bg-card cursor-pointer transition-all duration-300 hover:-translate-y-1.5 shadow-[0_10px_30px_-8px_rgba(0,0,0,0.18),0_2px_8px_-3px_rgba(0,0,0,0.12)] hover:shadow-[0_24px_50px_-12px_rgba(0,0,0,0.28),0_8px_20px_-8px_rgba(0,0,0,0.18)] hover:border-primary/40"
         onClick={() => navigate(`/analysis/${a.id}`)}
       >
         {/* Dark header strip */}
-        <div className="bg-gradient-to-r from-primary to-primary/80 px-4 py-3">
+        <div className="bg-gradient-to-r from-primary to-primary/80 px-5 py-3.5">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 flex-1 min-w-0">
               <span className="font-extrabold text-base text-primary-foreground truncate tracking-tight">{a.name}</span>
@@ -303,19 +312,22 @@ export default function History() {
               {a.underlying_asset || legs[0]?.asset || '—'}
             </span>
             {a.expiry_date && (
-              <span className="text-xs text-primary-foreground/70">
+              <span className="text-xs text-primary-foreground/80 font-medium">
                 Venc: {(() => {
                   const [y, mo, d] = a.expiry_date!.split('-').map(Number);
                   return new Date(y, mo - 1, d).toLocaleDateString('pt-BR');
                 })()}
+                {diasRestantes !== null && diasRestantes > 0 && (
+                  <span className="text-primary-foreground/60"> · {diasRestantes} d.ú.</span>
+                )}
               </span>
             )}
           </div>
         </div>
 
         {/* Body with metrics */}
-        <div className="px-4 py-3 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+        <div className="px-5 py-4 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
             {/* Lucro Máx */}
             <div>
               <span className="text-xs text-muted-foreground uppercase tracking-wider">
@@ -329,6 +341,11 @@ export default function History() {
                   </>
                 ) : '—'}
               </div>
+              {roiPct !== null && (
+                <span className={cn("text-xs font-bold font-mono", roiPct >= 0 ? "text-success/80" : "text-destructive/80")}>
+                  {roiPct >= 0 ? '+' : ''}{roiPct.toFixed(1)}% do capital
+                </span>
+              )}
             </div>
             {/* Risco */}
             <div>
@@ -353,16 +370,16 @@ export default function History() {
           {/* CDI comparison */}
           {cdiReturn > 0 && (
             <div>
-              <span className="text-xs text-muted-foreground uppercase tracking-wider">vs CDI ({bizDays} dias úteis)</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">vs CDI até vencimento ({bizDaysTotal} {bizDaysTotal === 1 ? 'dia útil' : 'dias úteis'})</span>
               <div className="mt-0.5">
                 <span className={cn(
-                  "inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-sm font-bold font-mono",
+                  "inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-sm font-black font-mono border",
                   cdiEfficiency != null && cdiEfficiency >= 100
-                    ? "bg-success/15 text-success"
-                    : "bg-warning/15 text-warning"
+                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40"
+                    : "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/50"
                 )}>
                   {cdiEfficiency != null && cdiEfficiency >= 100 ? '▲' : '▼'} {cdiEfficiency ?? 0}% do CDI
-                  <span className="text-xs font-normal opacity-70 ml-1">
+                  <span className="text-xs font-semibold opacity-80 ml-1">
                     (CDI: R${cdiReturn.toFixed(2)})
                   </span>
                 </span>
@@ -383,13 +400,13 @@ export default function History() {
           )}
 
           {/* Footer: legs badge + actions */}
-          <div className="flex items-center justify-between pt-1 border-t border-border/50">
-            <div className="flex items-center gap-2">
-              <Badge className="bg-warning/90 text-warning-foreground font-bold text-xs px-2">
+          <div className="flex items-center justify-between gap-2 pt-3 border-t border-border/60">
+            <div className="flex items-center gap-2 min-w-0">
+              <Badge className="bg-amber-500 text-white font-black text-xs px-2.5 py-1 shadow-sm shrink-0 border-0">
                 {legs.length} perna{legs.length > 1 ? 's' : ''}
               </Badge>
               {m?.strategyLabel && (
-              <Badge variant="outline" className="text-xs border-primary/30 !text-black dark:!text-white font-bold bg-primary/10">
+                <Badge variant="outline" title={m.strategyLabel} className="text-xs border-primary/30 !text-foreground font-bold bg-primary/10 truncate max-w-[130px]">
                   {m.strategyLabel}
                 </Badge>
               )}
@@ -406,11 +423,12 @@ export default function History() {
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-7 text-xs text-warning hover:bg-warning/10"
+                title="Encerrar operação"
+                className="h-7 w-7 p-0 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
                 disabled={closingId === a.id}
                 onClick={(e) => handleClose(e, a.id)}
               >
-                {closingId === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="w-3 h-3" />}
+                {closingId === a.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
               </Button>
               <Button
                 size="sm"

@@ -99,7 +99,7 @@ export default function DadosAoVivo() {
   const { status, rows, errorMsg, reconnectCount, connect, addTicker, removeTicker, updateRow } = useSharedRtdBridge();
 
   const [newTicker, setNewTicker] = useState("");
-  const [showBanco, setShowBanco] = useState(false);
+  const [showBanco, setShowBanco] = useState(true);
   const [analysisName, setAnalysisName] = useState("");
   const [saving, setSaving] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
