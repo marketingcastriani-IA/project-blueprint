@@ -816,18 +816,19 @@ export default function CollarTrackerTab() {
 
   const topCollarsKey = topCollars.map(c => `${c.tipo}-${c.callSymbol}-${c.putSymbol}`).join(",");
 
-  // Todos os collars atuais (topo + tabelas por família), recalculados ao vivo
-  const allCollars = useMemo(
-    () => families.flatMap(f => calculateCollars(f).map(c => ({ ...c, familyName: (c as any).familyName ?? f.name }))),
-    [families, calculateCollars]
-  );
-
-  // Deriva o collar selecionado SEMPRE do array fresco (não guarda snapshot),
-  // para o painel de detalhe e o gráfico refletirem os preços ao vivo.
-  const selectedCollar = useMemo(
-    () => allCollars.find(c => `${c.tipo}-${c.callSymbol}-${c.putSymbol}` === selectedKey) ?? topCollars[0] ?? null,
-    [allCollars, topCollars, selectedKey]
-  );
+  // Deriva o collar selecionado SEMPRE do dado fresco (não guarda snapshot).
+  // Procura primeiro no topo (barato); só varre as famílias se a seleção veio
+  // de uma tabela expandida — evita recalcular TODAS as famílias a cada tick.
+  const selectedCollar = useMemo(() => {
+    if (!selectedKey) return topCollars[0] ?? null;
+    const inTop = topCollars.find(c => `${c.tipo}-${c.callSymbol}-${c.putSymbol}` === selectedKey);
+    if (inTop) return inTop;
+    for (const f of families) {
+      const found = calculateCollars(f).find(c => `${c.tipo}-${c.callSymbol}-${c.putSymbol}` === selectedKey);
+      if (found) return { ...found, familyName: (found as any).familyName ?? f.name };
+    }
+    return topCollars[0] ?? null;
+  }, [selectedKey, topCollars, families, calculateCollars]);
 
   // Push alert trigger
   useEffect(() => {
