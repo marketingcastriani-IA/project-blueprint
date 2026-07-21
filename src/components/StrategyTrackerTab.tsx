@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Area, CartesianGrid, ReferenceLine, XAxis, YAxis, ComposedChart, Line, ResponsiveContainer, Tooltip } from "recharts";
 import { calculatePayoffAtExpiry } from "@/lib/payoff";
+import { countBusinessDays } from "@/lib/b3-calendar";
 
 // ─── PAYOFF CHART TOOLTIP (same style as Collar) ─────────────
 const StrategyChartTooltip = ({ active, payload, label }: any) => {
@@ -172,14 +173,8 @@ function parseVencimento(v: string): Date | null {
 }
 
 function diasUteis(from: Date, to: Date): number {
-  let count = 0;
-  const curr = new Date(from);
-  while (curr < to) {
-    curr.setDate(curr.getDate() + 1);
-    const dow = curr.getDay();
-    if (dow !== 0 && dow !== 6) count++;
-  }
-  return count;
+  // Calendário da B3 (exclui feriados fixos + móveis), não só seg-sex
+  return countBusinessDays(from, to);
 }
 
 // ─── PAYOFF CHART (Collar-style) ────────────────────────────
@@ -224,15 +219,7 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
     }
     const now = new Date();
     if (expDate <= now) return 0;
-    // Count business days
-    let count = 0;
-    const curr = new Date(now);
-    while (curr < expDate) {
-      curr.setDate(curr.getDate() + 1);
-      const dow = curr.getDay();
-      if (dow !== 0 && dow !== 6) count++;
-    }
-    return count;
+    return countBusinessDays(now, expDate); // calendário B3 (com feriados)
   }, [result.vencimento]);
 
   const payoffData = useMemo(() => {
@@ -249,7 +236,9 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
     const v = 0.35;
     const T = diasUteisCalc > 0 ? diasUteisCalc / 252 : 0;
     const cdiPeriodPct = T > 0 ? (Math.pow(1 + r, T) - 1) : 0;
-    const cdiProfitTotal = spotPrice * cdiPeriodPct * (qty || 100);
+    // CDI sobre o CAPITAL da operação (mesmo do card = |perda máxima|), não sobre
+    // o valor cheio da ação — senão a linha do CDI fica ordens de grandeza maior.
+    const cdiProfitTotal = Math.abs(result.maxLoss) * cdiPeriodPct;
 
     const Ncdf = (x: number) => {
       const t2 = 1 / (1 + 0.2316419 * Math.abs(x));
@@ -464,7 +453,7 @@ export default function StrategyTrackerTab() {
   const [quantity, setQuantity] = useState("100");
   const [cdiRate, setCdiRate] = useState("14.65");
   const [showCdi, setShowCdi] = useState(true);
-  const [selectedResult, setSelectedResult] = useState<StrategyResult | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"return" | "quality" | "profit">("return");
   const [viewMode, setViewMode] = useState<"pct" | "value">("value");
 
@@ -475,7 +464,7 @@ export default function StrategyTrackerTab() {
     localStorage.setItem(SAVED_ASSETS_KEY, JSON.stringify(savedAssets));
   }, [savedAssets]);
 
-  // ─── Load from strategy-tracker-families (sent from Opções B3) ──
+  // ─── Load from strategy-tracker-families (sent from Banco de Opções) ──
   useEffect(() => {
     try {
       const familiesRaw = localStorage.getItem(STRATEGY_STORAGE_KEY);
@@ -501,7 +490,7 @@ export default function StrategyTrackerTab() {
           }
           // Clear the families key after consuming
           localStorage.removeItem(STRATEGY_STORAGE_KEY);
-          toast.success(`Ativo ${first.name} carregado do Opções B3!`);
+          toast.success(`Ativo ${first.name} carregado do Banco de Opções!`);
         }
       }
     } catch {}
@@ -667,6 +656,19 @@ export default function StrategyTrackerTab() {
     return false;
   }, [minTrades, rows, options]);
 
+  // Tickers a inscrever no RTD (derivados dos filtros) — efeito colateral fora do useMemo
+  const tickersToSubscribe = useMemo(() => {
+    if (!selectedFamily) return [] as string[];
+    let opts = options.filter((o) => o.family === selectedFamily);
+    const activeVenc = selectedVencimento || nextMonthlyExpiry;
+    if (activeVenc !== "all") opts = opts.filter((o) => o.vencimento === activeVenc);
+    return opts.slice(0, 80).map((o) => o.ticker);
+  }, [selectedFamily, selectedVencimento, nextMonthlyExpiry, options]);
+
+  useEffect(() => {
+    if (status === "connected") tickersToSubscribe.forEach((t) => addTicker(t));
+  }, [status, tickersToSubscribe, addTicker]);
+
   // ─── SCAN ENGINE ──────────────────────────────────────────
   const results = useMemo((): StrategyResult[] => {
     if (!selectedFamily || stockPrice <= 0) return [];
@@ -686,8 +688,6 @@ export default function StrategyTrackerTab() {
     const puts = opts.filter((o) => o.tipo === "PUT").sort((a, b) => a.strike - b.strike);
     const minPrem = parseFloat(minPremium) || 0;
     const qty = parseInt(quantity) || 100;
-
-    if (status === "connected") opts.slice(0, 80).forEach((o) => addTicker(o.ticker));
 
     const allResults: StrategyResult[] = [];
     const getStratLabel = (id: StrategyType) => STRATEGIES.find((s) => s.id === id)?.label ?? "";
@@ -1088,14 +1088,13 @@ export default function StrategyTrackerTab() {
     return filtered.sort(sorter).slice(0, 50);
   }, [selectedFamily, selectedStrategy, selectedVencimento, moneynessFilter, minPremium, minTrades, minReturnPct, maxLossFilter, quantity, stockPrice, options, rows, status, getPrice, addTicker, stockTicker, sortBy, hasMinTrades]);
 
-  // Auto-select winner (first result) whenever results change
-  useEffect(() => {
-    if (results.length > 0) {
-      setSelectedResult(results[0]);
-    } else {
-      setSelectedResult(null);
-    }
-  }, [results.length > 0 ? results[0]?.id : null]);
+  // Deriva o resultado selecionado SEMPRE do array fresco (não guarda snapshot),
+  // para o painel de detalhe e o gráfico refletirem os preços ao vivo.
+  // Sem seleção manual válida, mostra o líder atual (results[0]).
+  const selectedResult = useMemo(
+    () => results.find((r) => r.id === selectedId) ?? results[0] ?? null,
+    [results, selectedId]
+  );
 
   const top3 = results.slice(0, 3);
   const rest = results.slice(3);
@@ -1552,7 +1551,7 @@ export default function StrategyTrackerTab() {
                 return (
                   <div
                     key={result.id}
-                    onClick={() => setSelectedResult(isSelected ? null : result)}
+                    onClick={() => setSelectedId(isSelected ? null : result.id)}
                     className={cn(
                       "relative cursor-pointer rounded-2xl border-2 p-4 transition-all hover:shadow-lg active:scale-[0.98]",
                       isSelected
@@ -1630,7 +1629,7 @@ export default function StrategyTrackerTab() {
                         </div>
                       )}
                       <div>
-                        <p className="text-[10px] text-muted-foreground uppercase font-bold">Quality Score</p>
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold">Qualidade</p>
                         <p className="text-sm font-black text-primary">{result.qualityScore.toFixed(2)}</p>
                       </div>
                       {cdi && (
@@ -1773,7 +1772,7 @@ export default function StrategyTrackerTab() {
                       <p className="text-sm font-black text-foreground">{selectedResult.breakeven.map((b) => `R$ ${b.toFixed(2)}`).join(" | ")}</p>
                     </div>
                     <div>
-                      <p className="text-xs font-black uppercase text-muted-foreground">Quality Score</p>
+                      <p className="text-xs font-black uppercase text-muted-foreground">Qualidade</p>
                       <p className="text-sm font-black text-primary">{selectedResult.qualityScore.toFixed(2)}</p>
                     </div>
                     {cdi && (
@@ -1860,7 +1859,7 @@ export default function StrategyTrackerTab() {
                               "border-b border-border/20 hover:bg-muted/20 transition-colors cursor-pointer",
                               isSelected && "bg-primary/5 border-primary/30"
                             )}
-                            onClick={() => setSelectedResult(isSelected ? null : r)}
+                            onClick={() => setSelectedId(isSelected ? null : r.id)}
                           >
                             <td className="p-3 text-muted-foreground font-black">{i + 4}</td>
                             <td className="p-3">

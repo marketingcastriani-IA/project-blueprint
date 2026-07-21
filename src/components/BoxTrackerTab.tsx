@@ -52,6 +52,7 @@ import { statusConfig } from "@/hooks/useRtdBridge";
 import { useB3Options } from "@/contexts/B3OptionsContext";
 
 import { cn } from "@/lib/utils";
+import { countBusinessDays } from "@/lib/b3-calendar";
 
 // ─── TIPOS ───────────────────────────────────────────────────
 interface OptionTicker {
@@ -133,18 +134,21 @@ function calcDiasUteis(vencimentoStr: string | null): number | null {
   target.setHours(0, 0, 0, 0);
   if (target <= hoje) return 0;
 
-  let dias = 0;
-  const cursor = new Date(hoje);
-  while (cursor < target) {
-    cursor.setDate(cursor.getDate() + 1);
-    const dow = cursor.getDay();
-    if (dow !== 0 && dow !== 6) dias++;
-  }
-  return dias;
+  // Usa o calendário da B3 (exclui feriados fixos + móveis), não só seg-sex
+  return countBusinessDays(hoje, target);
 }
 
 function calcCdiPeriodo(diasUteis: number, cdiAnual: number): number {
   return ((1 + cdiAnual / 100) ** (diasUteis / 252) - 1) * 100;
+}
+
+// Score de ranking = % do CDI do período. Compara boxes de vencimentos diferentes
+// de forma justa: um box de 20 d.ú. a 3% (altíssimo vs CDI) deve superar um de
+// 200 d.ú. a 8% (abaixo do CDI no mesmo horizonte). Rankear por retorno bruto engana.
+function boxRankScore(lucroPercent: number | null, cdiPeriodo: number | null): number {
+  if (lucroPercent === null) return -Infinity;
+  if (cdiPeriodo && cdiPeriodo > 0) return lucroPercent / cdiPeriodo;
+  return lucroPercent;
 }
 
 function generateId(): string {
@@ -479,12 +483,15 @@ export default function BoxTracker() {
       const stockAsk = getPrice(stockRow, "ofVenda");
       const qty = quantidade;
 
-      const strikeMap = new Map<number, { calls: OptionTicker[]; puts: OptionTicker[] }>();
+      // Agrupa por strike + VENCIMENTO — senão call e put de meses diferentes
+      // com o mesmo strike formam um "box" inválido (payoff ≠ strike num só venc.)
+      const strikeMap = new Map<string, { calls: OptionTicker[]; puts: OptionTicker[]; strike: number }>();
       family.tickers.forEach((t) => {
-        // Group by TICKER-parsed strike so call/put pairs always match
-        const groupKey = t.strike;
-        if (groupKey <= 0) return;
-        if (!strikeMap.has(groupKey)) strikeMap.set(groupKey, { calls: [], puts: [] });
+        const gStrike = t.strike;
+        if (gStrike <= 0) return;
+        const venc = getStrikeAndExpiry(t.symbol)?.vencimento ?? rows.get(t.symbol)?.ven ?? "?";
+        const groupKey = `${gStrike}|${venc}`;
+        if (!strikeMap.has(groupKey)) strikeMap.set(groupKey, { calls: [], puts: [], strike: gStrike });
         const group = strikeMap.get(groupKey)!;
         if (t.type === "CALL") group.calls.push(t);
         else group.puts.push(t);
@@ -492,7 +499,8 @@ export default function BoxTracker() {
 
       const pairs: BoxPair[] = [];
 
-      strikeMap.forEach((group, tickerStrike) => {
+      strikeMap.forEach((group) => {
+        const tickerStrike = group.strike;
         const call = group.calls[0] || null;
         const put = group.puts[0] || null;
         const callRow = call ? rows.get(call.symbol) : null;
@@ -571,7 +579,7 @@ export default function BoxTracker() {
         });
       });
 
-      pairs.sort((a, b) => (b.lucroPercent ?? -999) - (a.lucroPercent ?? -999));
+      pairs.sort((a, b) => boxRankScore(b.lucroPercent, b.cdiPeriodo) - boxRankScore(a.lucroPercent, a.cdiPeriodo));
       return pairs;
     },
     [rows, quantidade, descontarIRAcoes, descontarIRRendaFixa, cdiAnual, getStrikeAndExpiry, familyStockTickers]
@@ -584,7 +592,7 @@ export default function BoxTracker() {
     const best = pairs.find((p) => p.lucroPercent !== null && p.lucroPercent > 0);
     if (best) bestPerFamily.push({ ...best, familyName: f.name });
   });
-  bestPerFamily.sort((a, b) => (b.lucroPercent ?? 0) - (a.lucroPercent ?? 0));
+  bestPerFamily.sort((a, b) => boxRankScore(b.lucroPercent, b.cdiPeriodo) - boxRankScore(a.lucroPercent, a.cdiPeriodo));
   const topPairs = bestPerFamily.slice(0, 10);
 
   const isConnected = status === "connected";
@@ -838,14 +846,14 @@ export default function BoxTracker() {
               <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">1</span>
               <div>
                 <p className="text-xs font-semibold text-foreground">Adicione uma família</p>
-                <p className="text-xs text-muted-foreground">Digite o nome base (ex: PETR, VALE) ou envie tickers automaticamente do <strong>Opções B3</strong></p>
+                <p className="text-xs text-muted-foreground">Digite o nome base (ex: PETR, VALE) ou envie tickers automaticamente do <strong>Banco de Opções</strong></p>
               </div>
             </div>
             <div className="flex items-start gap-2.5">
               <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</span>
               <div>
                 <p className="text-xs font-semibold text-foreground">Tickers automáticos</p>
-                <p className="text-xs text-muted-foreground">Conecte o Bridge para preços ao vivo — os tickers vindos do Opções B3 entram automaticamente</p>
+                <p className="text-xs text-muted-foreground">Conecte o Bridge para preços ao vivo — os tickers vindos do Banco de Opções entram automaticamente</p>
               </div>
             </div>
             <div className="flex items-start gap-2.5">
@@ -1466,12 +1474,12 @@ export default function BoxTracker() {
         <div className="text-center py-16 text-muted-foreground">
           <BarChart2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
           <p className="text-sm font-semibold">Nenhuma família criada.</p>
-          <p className="text-xs mt-1">Adicione um ativo acima ou envie tickers do Opções B3.</p>
+          <p className="text-xs mt-1">Adicione um ativo acima ou envie tickers do Banco de Opções.</p>
           <button
             onClick={() => navigate("/ticker-opcoes")}
             className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full text-sm font-bold transition-all shadow-md hover:shadow-lg active:scale-[0.97]"
           >
-            <Database className="w-4 h-4" /> Ir ao Opções B3 <ArrowRight className="w-3.5 h-3.5" />
+            <Database className="w-4 h-4" /> Ir ao Banco de Opções <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
       ) : (
@@ -1748,7 +1756,7 @@ function FamilyCard({
                 href="/ticker-opcoes"
                 className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 font-semibold transition-colors"
               >
-                <Database className="w-3 h-3" /> Ou selecione tickers no Opções B3 →
+                <Database className="w-3 h-3" /> Ou selecione tickers no Banco de Opções →
               </a>
             </div>
           ) : (

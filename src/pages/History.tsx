@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Loader2, Clock, PlusCircle, Trash2, Edit2, XCircle, RotateCcw, History as HistoryIcon, CalendarDays, Download, TrendingUp, TrendingDown, Target, ShieldCheck, AlertTriangle, BarChart3, Search, ArrowUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Clock, PlusCircle, Trash2, Edit2, XCircle, RotateCcw, History as HistoryIcon, CalendarDays, Download, TrendingUp, TrendingDown, Target, ShieldCheck, AlertTriangle, BarChart3, Search, ArrowUpDown, ChevronLeft, ChevronRight, Layers, Wallet, PieChart } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
@@ -216,6 +216,35 @@ export default function History() {
 
   const activeAnalyses = paginatedAnalyses.filter(a => a.status === 'active');
   const closedAnalyses = paginatedAnalyses.filter(a => a.status === 'closed');
+
+  // Resumo do portfólio — todas as operações ativas (não só a página atual)
+  const summary = (() => {
+    const actives = analyses.filter(a => a.status === 'active');
+    let totalInvestido = 0, totalLucro = 0, totalRisco = 0, riscoZero = 0;
+    let temIlimitado = false;
+    const porAtivo: Record<string, { investido: number; count: number }> = {};
+    for (const a of actives) {
+      const legs = legsMap[a.id] || [];
+      const m = metricsMap[a.id];
+      const investido = Math.abs(legs.reduce((acc, l) =>
+        acc + (l.side === 'buy' ? 1 : -1) * l.price * l.quantity * (l.option_type === 'stock' ? 1 : 100), 0));
+      totalInvestido += investido;
+      if (m) {
+        if (m.maxGain === 'Ilimitado') temIlimitado = true;
+        else if (typeof m.maxGain === 'number' && Number.isFinite(m.maxGain)) totalLucro += m.maxGain;
+        if (m.isRiskFree) riscoZero++;
+        else if (typeof m.maxLoss === 'number' && Number.isFinite(m.maxLoss) && m.maxLoss < 0) totalRisco += Math.abs(m.maxLoss);
+      }
+      const ativo = a.underlying_asset || legs[0]?.asset || '—';
+      if (!porAtivo[ativo]) porAtivo[ativo] = { investido: 0, count: 0 };
+      porAtivo[ativo].investido += investido;
+      porAtivo[ativo].count += 1;
+    }
+    const ativos = Object.entries(porAtivo)
+      .map(([nome, v]) => ({ nome, ...v }))
+      .sort((a, b) => b.investido - a.investido);
+    return { count: actives.length, totalInvestido, totalLucro, totalRisco, riscoZero, temIlimitado, ativos };
+  })();
 
   const formatValue = (val: number | string | 'Ilimitado') => {
     if (val === 'Ilimitado') return 'Ilimitado';
@@ -558,6 +587,71 @@ export default function History() {
           </ProfessionalCard>
         ) : (
           <div className="space-y-10">
+            {/* Dashboard de resumo do portfólio */}
+            {summary.count > 0 && (
+              <div className="space-y-4">
+                <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+                  <div className="rounded-xl border border-border/60 bg-gradient-to-br from-primary/[0.06] to-card p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Layers className="h-4 w-4 text-primary" />
+                      <span className="text-[11px] font-black uppercase tracking-wider text-muted-foreground">Operações Ativas</span>
+                    </div>
+                    <p className="text-3xl font-black tabular-nums">{summary.count}</p>
+                    {summary.riscoZero > 0 && (
+                      <p className="text-xs text-success font-bold flex items-center gap-1 mt-0.5">
+                        <ShieldCheck className="h-3 w-3" />{summary.riscoZero} sem risco
+                      </p>
+                    )}
+                  </div>
+                  <div className="rounded-xl border border-border/60 bg-gradient-to-br from-info/[0.06] to-card p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Wallet className="h-4 w-4 text-info" />
+                      <span className="text-[11px] font-black uppercase tracking-wider text-muted-foreground">Total Investido</span>
+                    </div>
+                    <p className="text-2xl font-black font-mono tabular-nums">{formatValue(summary.totalInvestido)}</p>
+                  </div>
+                  <div className="rounded-xl border border-success/30 bg-gradient-to-br from-success/[0.08] to-card p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <TrendingUp className="h-4 w-4 text-success" />
+                      <span className="text-[11px] font-black uppercase tracking-wider text-muted-foreground">Lucro Máx. Potencial</span>
+                    </div>
+                    <p className="text-2xl font-black font-mono text-success tabular-nums">{summary.temIlimitado ? '∞' : formatValue(summary.totalLucro)}</p>
+                  </div>
+                  <div className="rounded-xl border border-destructive/30 bg-gradient-to-br from-destructive/[0.08] to-card p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                      <span className="text-[11px] font-black uppercase tracking-wider text-muted-foreground">Risco Máximo</span>
+                    </div>
+                    <p className="text-2xl font-black font-mono text-destructive tabular-nums">{summary.totalRisco > 0 ? formatValue(summary.totalRisco) : 'R$ 0,00'}</p>
+                  </div>
+                </div>
+                {summary.ativos.length > 0 && (
+                  <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-3">
+                      <PieChart className="h-4 w-4 text-primary" />
+                      <span className="text-[11px] font-black uppercase tracking-wider text-muted-foreground">Exposição por Ativo</span>
+                    </div>
+                    <div className="space-y-2.5">
+                      {summary.ativos.slice(0, 6).map(at => {
+                        const pct = summary.totalInvestido > 0 ? (at.investido / summary.totalInvestido) * 100 : 0;
+                        return (
+                          <div key={at.nome}>
+                            <div className="flex items-center justify-between text-xs mb-1">
+                              <span className="font-bold uppercase">{at.nome} <span className="text-muted-foreground font-normal normal-case">· {at.count} op.</span></span>
+                              <span className="font-mono font-bold">{formatValue(at.investido)} <span className="text-muted-foreground">({pct.toFixed(0)}%)</span></span>
+                            </div>
+                            <div className="h-2 rounded-full bg-muted overflow-hidden">
+                              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {activeAnalyses.length > 0 && (
               <div className="space-y-4">
                 <div className="flex items-center gap-3">

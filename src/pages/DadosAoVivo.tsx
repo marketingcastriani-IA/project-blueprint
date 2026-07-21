@@ -6,7 +6,7 @@ import {
   Radio, Plus, Trash2, Wifi, WifiOff, RefreshCw,
   TrendingUp, TrendingDown, Activity, AlertTriangle, CheckCircle2,
   Terminal, Download, ExternalLink, Info, Save, CalendarIcon, Loader2,
-  Edit, DollarSign, Percent, Briefcase, Zap, BookOpen
+  Edit, DollarSign, Percent, Briefcase, Zap, BookOpen, Database, Search
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -440,30 +440,40 @@ export default function DadosAoVivo() {
           </>
         )}
 
-        {/* Connected: add ticker */}
+        {/* Connected: add ticker + Banco de Opções */}
         {status === "connected" && (
-          <Card className="border-chart-profit/20 bg-chart-profit/5">
-            <CardContent className="pt-4 space-y-3">
+          <Card className="border-chart-profit/30 bg-gradient-to-br from-chart-profit/[0.07] to-card shadow-sm">
+            <CardContent className="pt-4 space-y-4">
               <div className="flex items-center gap-2 text-chart-profit">
-                <CheckCircle2 className="w-4 h-4" />
-                <span className="text-sm font-medium">Bridge conectado — dados chegando em tempo real</span>
-                <Activity className="w-3.5 h-3.5 animate-pulse ml-1" />
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-chart-profit opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-chart-profit" />
+                </span>
+                <span className="text-sm font-bold">Bridge conectado — dados chegando em tempo real</span>
+                <Activity className="w-3.5 h-3.5 animate-pulse ml-auto sm:ml-1" />
               </div>
               <div className="flex flex-wrap gap-2 items-end">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs text-muted-foreground">Ticker a monitorar</label>
+                <div className="flex flex-col gap-1 flex-1 min-w-[180px]">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ticker a monitorar</label>
                   <Input
-                    className="w-40 uppercase font-mono"
+                    className="uppercase font-mono h-11"
                     placeholder="ex: PETRG345"
                     value={newTicker}
                     onChange={(e) => setNewTicker(e.target.value.toUpperCase())}
                     onKeyDown={(e) => e.key === "Enter" && handleAddTicker()}
                   />
                 </div>
-                <Button onClick={handleAddTicker} className="gap-2">
+                <Button onClick={handleAddTicker} className="gap-2 h-11 font-bold">
                   <Plus className="w-4 h-4" /> Monitorar
                 </Button>
+                <Button variant="outline" onClick={() => navigate('/ticker-opcoes')} className="gap-2 h-11 font-bold border-primary/40 text-primary hover:bg-primary/10">
+                  <Database className="w-4 h-4" /> Banco de Opções
+                </Button>
               </div>
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <Search className="w-3.5 h-3.5 shrink-0" />
+                Não sabe o código da opção? Abra o <span className="font-semibold text-primary">Banco de Opções</span> para buscar tickers, strikes e pares Call+Put da B3.
+              </p>
             </CardContent>
           </Card>
         )}
@@ -661,11 +671,14 @@ export default function DadosAoVivo() {
         {/* ── Open Operations Cards ─────────────────────────────────── */}
         {openOps.length > 0 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <Briefcase className="w-5 h-5 text-primary" />
-              Operações em Aberto
-              <Badge className="bg-primary text-primary-foreground">{openOps.length}</Badge>
-            </h2>
+            <div className="flex items-center gap-3 pt-2">
+              <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
+                <Briefcase className="w-5 h-5" />
+              </div>
+              <h2 className="text-xl font-black tracking-tight">Operações em Aberto</h2>
+              <Badge className="bg-primary text-primary-foreground text-sm px-2.5 py-0.5">{openOps.length}</Badge>
+              <div className="h-px flex-1 bg-gradient-to-r from-primary/30 to-transparent ml-1" />
+            </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {openOps.map((op) => {
                 const isProfit = op.lucroAtual > 0;

@@ -27,6 +27,7 @@ import { useB3Options } from "@/contexts/B3OptionsContext";
 import { useToast } from "@/hooks/use-toast";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
+import { countBusinessDays } from "@/lib/b3-calendar";
 import {
   ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid,
   ReferenceLine, ResponsiveContainer, Tooltip, ReferenceDot,
@@ -141,14 +142,8 @@ function calcDiasUteis(vencimentoStr: string | null): number | null {
   hoje.setHours(0, 0, 0, 0);
   target.setHours(0, 0, 0, 0);
   if (target <= hoje) return 0;
-  let dias = 0;
-  const cursor = new Date(hoje);
-  while (cursor < target) {
-    cursor.setDate(cursor.getDate() + 1);
-    const dow = cursor.getDay();
-    if (dow !== 0 && dow !== 6) dias++;
-  }
-  return dias;
+  // Calendário da B3 (exclui feriados fixos + móveis), não só seg-sex
+  return countBusinessDays(hoje, target);
 }
 
 function calcCdiPeriodo(diasUteis: number, cdiAnual: number): number {
@@ -338,7 +333,7 @@ export default function CollarTrackerTab() {
   const [newFamilyName, setNewFamilyName] = useState("");
   const [filterTipo, setFilterTipo] = useState<CollarTipo | "Todos">("Todos");
   const [rankingMethod, setRankingMethod] = useState<RankingMethod>("lucro");
-  const [selectedCollar, setSelectedCollar] = useState<(CollarResult & { familyName: string }) | null>(null);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [autoImportedMap, setAutoImportedMap] = useState<Map<string, Set<string>>>(new Map());
   const [cdiAnual, setCdiAnual] = useState<number>(() => {
     try {
@@ -537,7 +532,7 @@ export default function CollarTrackerTab() {
 
   const removeFamily = useCallback((familyId: string) => {
     setFamilies((prev) => prev.filter((f) => f.id !== familyId));
-    setSelectedCollar(null);
+    setSelectedKey(null);
   }, []);
 
   const toggleExpand = useCallback((familyId: string) => {
@@ -594,7 +589,7 @@ export default function CollarTrackerTab() {
         f.id !== familyId ? f : { ...f, tickers: f.tickers.filter((t) => t.id !== tickerId) }
       )
     );
-    setSelectedCollar(null);
+    setSelectedKey(null);
   }, []);
 
   const getPrice = (row: any, field: "ofCompra" | "ofVenda"): number | null => {
@@ -680,7 +675,7 @@ export default function CollarTrackerTab() {
 
             const diffCdiProfit = cdiPeriodo !== null ? maxProfitPct - cdiPeriodo : null;
 
-            // Quality Score
+            // Qualidade
             let qualityScore = 0;
             if (isRiskFree) {
               // Base 50 for being risk-free
@@ -800,8 +795,8 @@ export default function CollarTrackerTab() {
 
     const methods: { key: RankingMethod; label: string; sort: (a: CollarResult, b: CollarResult) => number }[] = [
       { key: "lucro", label: "Maior Lucro", sort: (a, b) => (b.maxProfitPct ?? -999) - (a.maxProfitPct ?? -999) },
-      { key: "score", label: "Quality Score", sort: (a, b) => b.qualityScore - a.qualityScore },
-      { key: "netcost", label: "Net Credit", sort: (a, b) => (b.netCostCredit ?? -999) - (a.netCostCredit ?? -999) },
+      { key: "score", label: "Qualidade", sort: (a, b) => b.qualityScore - a.qualityScore },
+      { key: "netcost", label: "Crédito Líquido", sort: (a, b) => (b.netCostCredit ?? -999) - (a.netCostCredit ?? -999) },
     ];
 
     const result: (CollarResult & { familyName: string; rankLabel: string; rankKey: RankingMethod })[] = [];
@@ -820,16 +815,19 @@ export default function CollarTrackerTab() {
   }, [families, calculateCollars]);
 
   const topCollarsKey = topCollars.map(c => `${c.tipo}-${c.callSymbol}-${c.putSymbol}`).join(",");
-  useEffect(() => {
-    if (topCollars.length > 0) {
-      const stillExists = selectedCollar && topCollars.some(
-        c => c.tipo === selectedCollar.tipo && c.callSymbol === selectedCollar.callSymbol && c.putSymbol === selectedCollar.putSymbol
-      );
-      if (!stillExists) setSelectedCollar(topCollars[0]);
-    } else {
-      setSelectedCollar(null);
-    }
-  }, [topCollarsKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Todos os collars atuais (topo + tabelas por família), recalculados ao vivo
+  const allCollars = useMemo(
+    () => families.flatMap(f => calculateCollars(f).map(c => ({ ...c, familyName: (c as any).familyName ?? f.name }))),
+    [families, calculateCollars]
+  );
+
+  // Deriva o collar selecionado SEMPRE do array fresco (não guarda snapshot),
+  // para o painel de detalhe e o gráfico refletirem os preços ao vivo.
+  const selectedCollar = useMemo(
+    () => allCollars.find(c => `${c.tipo}-${c.callSymbol}-${c.putSymbol}` === selectedKey) ?? topCollars[0] ?? null,
+    [allCollars, topCollars, selectedKey]
+  );
 
   // Push alert trigger
   useEffect(() => {
@@ -863,7 +861,7 @@ export default function CollarTrackerTab() {
       `Lucro Máx: ${formatPercent(best.maxProfitPct)} · Net: ${formatBRL(best.netCostCredit)}`,
       { url: '/collar-tracker', priority: isUrgent ? 'urgent' : 'normal', sound: soundEnabled }
     );
-  }, [topCollarsKey, notifEnabled, notifThreshold, notifThresholdUrgent, soundEnabled, sendPushNotification]);
+  }, [topCollarsKey, topCollars[0]?.qualityScore, notifEnabled, notifThreshold, notifThresholdUrgent, soundEnabled, sendPushNotification]);
 
   // ─── CHART DATA ─────────────────────────────────────────────
   const payoffData = useMemo(() => {
@@ -996,7 +994,7 @@ export default function CollarTrackerTab() {
 
             return (
               <div key={`${c.tipo}-${c.callSymbol}-${c.putSymbol}`}
-                onClick={() => setSelectedCollar(c)}
+                onClick={() => setSelectedKey(`${c.tipo}-${c.callSymbol}-${c.putSymbol}`)}
                 className={cn(
                   "relative cursor-pointer rounded-2xl border-2 p-4 transition-all hover:shadow-lg active:scale-[0.98]",
                   isSelected
@@ -1509,8 +1507,8 @@ export default function CollarTrackerTab() {
           <div className="flex flex-wrap gap-2">
             {([
               { key: "lucro" as RankingMethod, label: "Maior Lucro", desc: "Ordena pelo maior lucro máximo %" },
-              { key: "score" as RankingMethod, label: "Quality Score", desc: "Fórmula ponderada (lucro + margem)" },
-              { key: "netcost" as RankingMethod, label: "Net Credit", desc: "Maior crédito líquido" },
+              { key: "score" as RankingMethod, label: "Qualidade", desc: "Fórmula ponderada (lucro + margem)" },
+              { key: "netcost" as RankingMethod, label: "Crédito Líquido", desc: "Maior crédito líquido" },
             ]).map((m) => (
               <button key={m.key} onClick={() => setRankingMethod(m.key)} title={m.desc}
                 className={cn(
@@ -1525,7 +1523,7 @@ export default function CollarTrackerTab() {
           </div>
           <p className="text-[10px] text-muted-foreground mt-1.5">
             {rankingMethod === "lucro" && "Ordena pelo maior Lucro Máximo % — encontra a melhor oportunidade de ganho"}
-            {rankingMethod === "score" && "Quality Score (0-100): 50% risco zero + 30% lucro + 10% margem + 10% CDI"}
+            {rankingMethod === "score" && "Qualidade (0-100): 50% risco zero + 30% lucro + 10% margem + 10% CDI"}
             {rankingMethod === "netcost" && "Net = crédito/débito líquido da montagem. Positivo = você recebe."}
           </p>
         </div>
@@ -1673,17 +1671,17 @@ export default function CollarTrackerTab() {
                           <th className="text-right py-2 px-2 bg-muted/50">K Put</th>
                           <th className="text-right py-2 px-2" title="Prêmios usados na montagem">P Call</th>
                           <th className="text-right py-2 px-2">P Put</th>
-                          <th className="text-right py-2 px-2 font-black" title="Crédito/Débito líquido">Net</th>
+                          <th className="text-right py-2 px-2 font-black" title="Crédito/Débito líquido">Líquido</th>
                           <th className="text-right py-2 px-2 font-black" title="Lucro máximo %">Lucro Máx%</th>
                           <th className="text-right py-2 px-2 font-black" title="Lucro máximo em R$ (qty)">Lucro R$</th>
                           <th className="text-right py-2 px-2" title="Perda máxima %">Perda Máx%</th>
                           <th className="text-right py-2 px-2" title="Investimento total (qty × preço)">Invest. R$</th>
-                          <th className="text-right py-2 px-2" title="Break-even">B.E.</th>
+                          <th className="text-right py-2 px-2" title="Ponto de equilíbrio">Equil.</th>
                           <th className="text-right py-2 px-2" title="Margem acima de risco zero">Margem</th>
                           <th className="text-center py-2 px-2">Venc.</th>
                           <th className="text-right py-2 px-2">CDI Per.</th>
                           <th className="text-right py-2 px-2" title="Lucro - CDI (pp)">vs CDI</th>
-                          <th className="text-center py-2 px-1" title="Quality Score">Score</th>
+                          <th className="text-center py-2 px-1" title="Qualidade">Nota</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1692,7 +1690,7 @@ export default function CollarTrackerTab() {
                           const isSelected = selectedCollar?.tipo === c.tipo && selectedCollar?.callSymbol === c.callSymbol && selectedCollar?.putSymbol === c.putSymbol;
                           return (
                             <tr key={ci}
-                              onClick={() => setSelectedCollar({ ...c, familyName: family.name })}
+                              onClick={() => setSelectedKey(`${c.tipo}-${c.callSymbol}-${c.putSymbol}`)}
                               className={cn("border-b border-border/30 hover:bg-muted/20 transition-colors cursor-pointer",
                               ci === 0 && "bg-success/5",
                               isSelected && "ring-2 ring-primary/50 bg-primary/5")}>

@@ -5,7 +5,7 @@ import { useSharedRtdBridge } from '@/contexts/RtdBridgeContext';
 import { Button } from '@/components/ui/button';
 import TrialBanner from '@/components/TrialBanner';
 
-import { Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, ShieldCheck, Briefcase, Settings, Zap, PieChart, HelpCircle, Sparkles, Palette, BookOpen, Radio, BarChart2, Calculator, Database, Waves, TreePine, Wifi, WifiOff, ChevronDown, Crosshair, Headphones, Mail, MessageSquarePlus } from 'lucide-react';
+import { Sun, Moon, LogOut, PlusCircle, History, Menu, X, Shield, ShieldCheck, Briefcase, Settings, Zap, PieChart, HelpCircle, Sparkles, Palette, BookOpen, Radio, BarChart2, Calculator, Waves, TreePine, Wifi, WifiOff, ChevronDown, Headphones, Mail, MessageSquarePlus, CheckCircle2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
@@ -17,30 +17,45 @@ function RtdIndicator({ size = 'md' }: { size?: 'sm' | 'md' }) {
   const { status: rtdStatus } = useSharedRtdBridge();
   const small = size === 'sm';
 
+  // Conectado: moldura com luz de LED correndo ao redor
+  if (rtdStatus === 'connected') {
+    return (
+      <div
+        className="relative rounded-full p-[2px] overflow-hidden isolate shrink-0 shadow-[0_0_20px_rgba(16,185,129,0.5)]"
+        title="Bridge RTD conectado — dados ao vivo"
+      >
+        <span
+          className="absolute inset-[-150%] -z-10 animate-[spin_2.8s_linear_infinite]"
+          style={{ background: 'conic-gradient(from 0deg, transparent 0deg, transparent 185deg, rgba(110,231,183,0.85) 245deg, #34d399 300deg, rgba(167,243,208,0.95) 330deg, transparent 360deg)' }}
+        />
+        <div className={cn(
+          "relative flex items-center gap-1.5 rounded-full bg-slate-900/90 font-black uppercase text-emerald-300",
+          small ? "px-2.5 py-1 text-[9px] tracking-wider" : "px-3.5 py-1.5 text-[11px] tracking-widest"
+        )}>
+          <Wifi className={cn("shrink-0 drop-shadow-[0_0_6px_rgba(16,185,129,0.9)]", small ? "h-3 w-3" : "h-4 w-4")} />
+          <span className="drop-shadow-[0_0_8px_rgba(16,185,129,0.75)]">CONECTADO</span>
+          <span className={cn("relative flex shrink-0", small ? "h-2 w-2" : "h-2.5 w-2.5")}>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className={cn("relative inline-flex rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.9)]", small ? "h-2 w-2" : "h-2.5 w-2.5")} />
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center gap-2 shrink-0">
       <div
         className={cn(
           "flex items-center gap-1.5 rounded-full font-black uppercase border-2 transition-all shrink-0",
-          small ? "px-2.5 py-1 text-[9px] tracking-wider" : "px-3 py-1.5 text-[10px] tracking-widest",
-          rtdStatus === 'connected'
-            ? "bg-emerald-500/25 text-emerald-600 dark:text-emerald-300 border-emerald-400/60 shadow-[0_0_20px_rgba(16,185,129,0.6),0_0_40px_rgba(16,185,129,0.2)]"
-            : rtdStatus === 'connecting'
-            ? "bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/50 animate-pulse shadow-[0_0_12px_rgba(234,179,8,0.4)]"
-            : "bg-muted text-muted-foreground border-border"
+          small ? "px-2.5 py-1 text-[9px] tracking-wider" : "px-3.5 py-1.5 text-[11px] tracking-widest",
+          rtdStatus === 'connecting'
+            ? "bg-yellow-500/20 text-yellow-300 border-yellow-500/60 animate-pulse shadow-[0_0_12px_rgba(234,179,8,0.4)]"
+            : "bg-white/5 text-slate-400 border-white/15"
         )}
-        title={rtdStatus === 'connected' ? 'Bridge RTD conectado — dados ao vivo' : rtdStatus === 'connecting' ? 'Conectando ao Bridge...' : 'Offline — use o menu Conectar Profit Pro'}
+        title={rtdStatus === 'connecting' ? 'Conectando ao Bridge...' : 'Offline — use o menu Conectar Profit Pro'}
       >
-        {rtdStatus === 'connected' ? (
-          <>
-            <Wifi className={cn("shrink-0 drop-shadow-[0_0_6px_rgba(16,185,129,0.8)]", small ? "h-3 w-3" : "h-4 w-4")} />
-            <span className="drop-shadow-[0_0_8px_rgba(16,185,129,0.6)]">CONECTADO</span>
-            <span className={cn("relative flex shrink-0", small ? "h-2 w-2" : "h-2.5 w-2.5")}>
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className={cn("relative inline-flex rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]", small ? "h-2 w-2" : "h-2.5 w-2.5")} />
-            </span>
-          </>
-        ) : rtdStatus === 'connecting' ? (
+        {rtdStatus === 'connecting' ? (
           <>
             <Wifi className={cn("shrink-0", small ? "h-3 w-3" : "h-4 w-4")} />
             <span>CONECTANDO</span>
@@ -52,9 +67,9 @@ function RtdIndicator({ size = 'md' }: { size?: 'sm' | 'md' }) {
           </>
         )}
       </div>
-      {rtdStatus !== 'connected' && rtdStatus !== 'connecting' && (
+      {rtdStatus !== 'connecting' && (
         <span className={cn(
-          "text-muted-foreground font-semibold italic whitespace-nowrap",
+          "text-slate-400 font-semibold italic whitespace-nowrap",
           small ? "text-[8px]" : "text-[10px]"
         )}>
           Aperte CONECTAR no menu
@@ -81,15 +96,16 @@ export default function Header() {
 
   const primaryNavLeft = [
     { label: 'Análise', path: '/dashboard', icon: PlusCircle },
-    { label: 'Operações', path: '/history', icon: History },
+    { label: 'Operações em Aberto', path: '/history', icon: History },
     { label: 'Portfólio', path: '/portfolio', icon: Briefcase },
   ];
 
   const primaryNavRight = [
     { label: 'Diversificar', path: '/diversificador', icon: PieChart },
-    { label: 'Conectar Profit Pro', path: '/dados-ao-vivo', icon: Radio },
-    { label: 'Opções B3', path: '/ticker-opcoes', icon: Database },
   ];
+
+  // Conectar Profit Pro vive na barra inferior, ao lado do indicador CONECTADO
+  const connectItem = { label: 'Conectar Profit Pro', path: '/dados-ao-vivo', icon: Radio };
 
   const primaryNav = [...primaryNavLeft, ...primaryNavRight];
 
@@ -107,7 +123,7 @@ export default function Header() {
     ...(access.isAdmin ? [{ label: 'Admin', path: '/admin', icon: Shield }] : []),
   ];
 
-  const allNavItems = [...primaryNav, ...trackerNav, ...secondaryNav, { label: 'Suporte', path: '/suporte', icon: Headphones }];
+  const allNavItems = [...primaryNav, connectItem, ...trackerNav, ...secondaryNav, { label: 'Suporte', path: '/suporte', icon: Headphones }];
   const isFree = access.planType === 'free';
 
   const themes = [
@@ -124,62 +140,47 @@ export default function Header() {
       <button
         onClick={() => navigate(item.path)}
         className={cn(
-          'flex items-center gap-1 rounded-lg font-black uppercase tracking-wide transition-all whitespace-nowrap',
-          'px-1.5 py-1.5 text-[9px] lg:px-2.5 lg:py-1.5 lg:text-[11px] xl:tracking-widest',
-          isActive && 'bg-primary-foreground/20 text-primary-foreground',
-          !isActive && 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
+          'flex items-center gap-1.5 rounded-lg font-black uppercase tracking-wide transition-all duration-200 whitespace-nowrap',
+          'px-3 py-2 text-[11px] lg:px-3.5 lg:text-[13px]',
+          isActive
+            ? 'bg-background text-foreground ring-2 ring-white/70 shadow-[0_4px_16px_-2px_rgba(0,0,0,0.5)] scale-[1.04]'
+            : 'text-primary-foreground/90 hover:bg-primary-foreground/15 hover:text-primary-foreground hover:-translate-y-px'
         )}
       >
-        <item.icon className="h-3.5 w-3.5 shrink-0 lg:h-4 lg:w-4" />
+        <item.icon className={cn("h-4 w-4 shrink-0", isActive && "text-primary")} />
         <span>{item.label}</span>
       </button>
     );
   };
 
-  const ProXButton = () => {
-    const isActive = location.pathname === '/strategy-tracker';
-    const { status: proXStatus } = useSharedRtdBridge();
-    const isConnected = proXStatus === 'connected';
-
-    return (
-      <button
-        onClick={() => navigate('/strategy-tracker')}
-        className={cn(
-          'flex items-center gap-1 rounded-xl font-black uppercase tracking-wider transition-all whitespace-nowrap',
-          'px-2.5 py-1.5 text-[9px] lg:px-3 lg:py-2 lg:text-[11px]',
-          isActive
-            ? isConnected
-              ? 'bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.6)] ring-2 ring-emerald-400'
-              : 'bg-amber-400 text-black shadow-[0_0_20px_rgba(251,191,36,0.6)] ring-2 ring-amber-300'
-            : isConnected
-              ? 'bg-emerald-500/90 text-white hover:bg-emerald-400 shadow-[0_0_14px_rgba(16,185,129,0.4)] animate-pulse'
-              : 'bg-amber-400/90 text-black hover:bg-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.4)] animate-pulse'
-        )}
-      >
-        <Zap className="h-3.5 w-3.5 lg:h-4 lg:w-4 fill-current" />
-        <span>RASTREADOR PRO X</span>
-      </button>
-    );
-  };
-
   return (
-    <header className="sticky top-0 z-50 border-b border-primary/30 bg-primary shadow-lg overflow-hidden">
+    <header
+      className="sticky top-0 z-50 border-b border-black/10 overflow-hidden"
+      style={{
+        background: [
+          'radial-gradient(120% 130% at 10% -30%, color-mix(in srgb, hsl(var(--primary)) 78%, #fff) 0%, transparent 45%)',
+          'radial-gradient(140% 160% at 95% 130%, color-mix(in srgb, hsl(var(--primary)) 45%, #000) 0%, transparent 55%)',
+          'linear-gradient(180deg, color-mix(in srgb, hsl(var(--primary)) 94%, #000) 0%, color-mix(in srgb, hsl(var(--primary)) 60%, #000) 100%)',
+        ].join(', '),
+        boxShadow: 'inset 0 1px 0 color-mix(in srgb, hsl(var(--primary)) 55%, #fff), inset 0 -2px 6px rgba(0,0,0,0.35), 0 10px 32px -8px rgba(0,0,0,0.55)',
+      }}
+    >
       <TrialBanner />
       {/* Row 1: Logo + Primary Nav + Actions */}
       <div className="max-w-full px-3 lg:px-4 flex h-14 items-center justify-between gap-1">
         {/* Logo + Install */}
         <div className="flex flex-col items-start shrink-0">
-          <button onClick={() => navigate('/dashboard')} className="flex items-center gap-2 font-black text-lg">
-            <img src="/assets/logo.png" alt="Opções PRO X" className="h-8 w-8 object-contain" />
+          <button onClick={() => navigate('/dashboard')} className="group flex items-center gap-1.5 font-black text-base">
+            <img src="/assets/logo.png" alt="Opções PRO X" className="h-6 w-6 object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.25)] transition-transform group-hover:scale-105" />
             <span className="hidden sm:inline tracking-tight text-primary-foreground">Opções PRO X</span>
-            <Badge variant="outline" className={cn(
-              "text-[8px] hidden sm:inline-flex border-primary-foreground/40",
-              isFree ? "text-yellow-300" : "text-primary-foreground"
+            <Badge className={cn(
+              "text-[7px] px-1.5 py-0 font-black hidden sm:inline-flex border-0 shadow-sm",
+              isFree ? "bg-yellow-400 text-black" : "bg-background text-foreground"
             )}>
               {access.planType === 'pro' ? 'PRO' : 'FREE'}
             </Badge>
           </button>
-          
+
         </div>
 
         {/* Desktop Primary Nav — scrollable */}
@@ -188,28 +189,25 @@ export default function Header() {
             <NavButton key={item.path} item={item} />
           ))}
 
-          {/* PRO X center button */}
-          <ProXButton />
-
           {primaryNavRight.map(item => (
             <NavButton key={item.path} item={item} />
           ))}
 
-          {/* Dropdown: Rastreadores PRO X */}
+          {/* Dropdown: Rastreadores (agrupa PRO X, Box e Collar) */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 className={cn(
-                  'flex items-center gap-1 rounded-lg font-black uppercase tracking-wide transition-all whitespace-nowrap',
-                  'px-1.5 py-1.5 text-[9px] lg:px-2.5 lg:py-1.5 lg:text-[11px] xl:tracking-widest',
+                  'flex items-center gap-1.5 rounded-lg font-black uppercase tracking-wide transition-all duration-200 whitespace-nowrap',
+                  'px-3 py-2 text-[11px] lg:px-3.5 lg:text-[13px]',
                   trackerNav.some(t => location.pathname === t.path)
-                    ? 'bg-primary-foreground/20 text-primary-foreground'
-                    : 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
+                    ? 'bg-background text-foreground ring-2 ring-white/70 shadow-[0_4px_16px_-2px_rgba(0,0,0,0.5)] scale-[1.04]'
+                    : 'text-primary-foreground/90 hover:bg-primary-foreground/15 hover:text-primary-foreground hover:-translate-y-px'
                 )}
               >
-                <Crosshair className="h-3.5 w-3.5 shrink-0 lg:h-4 lg:w-4" />
-                <span>Rastr.</span>
-                <ChevronDown className="h-3 w-3 shrink-0" />
+                <Zap className="h-4 w-4 shrink-0" />
+                <span>Rastreadores B3</span>
+                <ChevronDown className="h-3.5 w-3.5 shrink-0" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="min-w-[200px]">
@@ -237,11 +235,11 @@ export default function Header() {
             <DropdownMenuTrigger asChild>
               <button
                 className={cn(
-                  'flex items-center gap-1 rounded-lg font-black uppercase tracking-wide transition-all whitespace-nowrap',
-                  'px-1.5 py-1.5 text-[9px] lg:px-2.5 lg:py-1.5 lg:text-[11px] xl:tracking-widest',
+                  'flex items-center gap-1.5 rounded-lg font-black uppercase tracking-wide transition-all duration-200 whitespace-nowrap',
+                  'px-2 py-1.5 text-[9px] lg:px-3 lg:py-1.5 lg:text-[11px]',
                   location.pathname === '/suporte'
-                    ? 'bg-primary-foreground/20 text-primary-foreground'
-                    : 'text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10'
+                    ? 'bg-background text-foreground ring-2 ring-white/70 shadow-[0_4px_16px_-2px_rgba(0,0,0,0.5)] scale-[1.04]'
+                    : 'text-primary-foreground/90 hover:bg-primary-foreground/15 hover:text-primary-foreground hover:-translate-y-px'
                 )}
               >
                 <Headphones className="h-3.5 w-3.5 shrink-0 lg:h-4 lg:w-4" />
@@ -280,18 +278,18 @@ export default function Header() {
           )}
           
           {user && (
-            <Button variant="ghost" size="icon" aria-label="Sair da conta" onClick={async () => { await signOut(); navigate('/auth'); }} className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/10">
+            <Button variant="ghost" size="icon" aria-label="Sair da conta" onClick={async () => { await signOut(); navigate('/auth'); }} className="h-8 w-8 text-primary-foreground/90 hover:text-primary-foreground hover:bg-primary-foreground/15">
               <LogOut className="h-4 w-4" />
             </Button>
           )}
-          <Button variant="ghost" size="icon" aria-label={mobileOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={mobileOpen} className="h-8 w-8 md:hidden text-primary-foreground hover:bg-primary-foreground/10" onClick={() => setMobileOpen(!mobileOpen)}>
+          <Button variant="ghost" size="icon" aria-label={mobileOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={mobileOpen} className="h-8 w-8 md:hidden text-primary-foreground/90 hover:text-primary-foreground hover:bg-primary-foreground/15" onClick={() => setMobileOpen(!mobileOpen)}>
             {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </Button>
         </div>
       </div>
 
       {/* Row 2: Secondary Nav + RTD + Theme (desktop) — scrollable */}
-      <div className="hidden md:flex border-t border-border/40 bg-background">
+      <div className="hidden md:flex border-t border-black/40 bg-gradient-to-b from-slate-800 to-slate-900 shadow-inner">
         <div className="max-w-full px-3 lg:px-4 flex items-center gap-3 py-1.5 overflow-x-auto scrollbar-none w-full">
           <nav className="flex items-center gap-1 shrink-0">
             {secondaryNav.map(item => {
@@ -301,9 +299,9 @@ export default function Header() {
                   key={item.path}
                   onClick={() => navigate(item.path)}
                   className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] lg:text-xs font-black uppercase tracking-wide lg:tracking-widest transition-all whitespace-nowrap',
-                    isActive && 'bg-primary text-primary-foreground shadow-md',
-                    !isActive && 'text-foreground/80 hover:text-foreground hover:bg-muted'
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] lg:text-[13px] font-black uppercase tracking-wide transition-all duration-200 whitespace-nowrap',
+                    isActive && 'bg-primary text-primary-foreground ring-2 ring-white/40 shadow-[0_2px_14px_-2px_hsl(var(--primary)/0.85)] scale-[1.04]',
+                    !isActive && 'text-slate-300 hover:text-white hover:bg-white/10 hover:-translate-y-px'
                   )}
                 >
                   <item.icon className="h-3.5 w-3.5 shrink-0" />
@@ -313,6 +311,21 @@ export default function Header() {
             })}
           </nav>
 
+          {/* Conectar Profit Pro — amarelo p/ chamar atenção, antes do indicador */}
+          <button
+            onClick={() => navigate(connectItem.path)}
+            className={cn(
+              'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[11px] lg:text-[13px] font-black uppercase tracking-wide transition-all duration-200 whitespace-nowrap shrink-0',
+              'bg-amber-400 text-black hover:bg-amber-300',
+              location.pathname === connectItem.path
+                ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-105 shadow-[0_0_26px_rgba(251,191,36,0.95)]'
+                : 'shadow-[0_0_16px_rgba(251,191,36,0.5)] ring-1 ring-amber-300/50 hover:-translate-y-px'
+            )}
+          >
+            {location.pathname === connectItem.path ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <Radio className="h-4 w-4 shrink-0" />}
+            Conectar Profit Pro
+          </button>
+
           {/* RTD Indicator */}
           <RtdIndicator size="md" />
 
@@ -320,17 +333,17 @@ export default function Header() {
           <div className="flex-1 min-w-0" />
 
           {/* Theme selector */}
-          <div className="flex items-center gap-1 shrink-0">
-            <Palette className="h-3 w-3 text-muted-foreground" />
+          <div className="flex items-center gap-1 shrink-0 rounded-full bg-white/5 p-0.5 ring-1 ring-white/10">
+            <Palette className="h-3 w-3 text-slate-400 ml-1.5" />
             {themes.map(item => (
               <button
                 key={item.key}
                 onClick={() => setTheme(item.key)}
                 className={cn(
-                  'flex items-center gap-1 px-2 py-1 rounded-full text-[10px] lg:text-xs font-semibold transition-all whitespace-nowrap',
+                  'flex items-center gap-1 px-2 py-1 rounded-full text-[10px] lg:text-xs font-semibold transition-all duration-200 whitespace-nowrap',
                   theme === item.key
-                    ? 'bg-primary text-primary-foreground ring-1 ring-primary/30'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-slate-400 hover:bg-white/10 hover:text-white'
                 )}
               >
                 <item.icon className="h-3 w-3" />

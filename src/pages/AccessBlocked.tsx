@@ -77,7 +77,7 @@ export default function AccessBlocked({ status }: AccessBlockedProps) {
     { icon: Radio, label: 'Tempo Real — Conexão Profit RTD *' },
     { icon: Shield, label: 'Rastreador Box × CDI' },
     { icon: Shield, label: 'Rastreador Collar — Proteção + Renda' },
-    { icon: Database, label: 'Ticker Opções B3 — 99k+ opções' },
+    { icon: Database, label: 'Banco de Opções — 99k+ opções' },
     { icon: Calculator, label: 'Calculadora CDI × Opções' },
     { icon: Bell, label: 'Alertas na Tela (Box Tracker)' },
     { icon: BookOpen, label: 'Rastreador PRO X — 12 Estratégias' },

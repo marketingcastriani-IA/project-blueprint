@@ -649,7 +649,7 @@ export default function TickerOpcoes() {
             </div>
             <div>
               <h1 className="text-xl md:text-2xl font-black uppercase tracking-wider text-foreground">
-                Opções B3
+                Banco de Opções
               </h1>
               <p className="text-xs text-muted-foreground">
                 {options.length.toLocaleString()} opções disponíveis
@@ -690,7 +690,7 @@ export default function TickerOpcoes() {
             </button>
             <div className="flex items-center gap-2 mb-3">
               <Info className="h-4 w-4 text-primary" />
-              <span className="text-sm font-bold text-foreground">Como usar o Opções B3</span>
+              <span className="text-sm font-bold text-foreground">Como usar o Banco de Opções</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="flex items-start gap-2.5">
