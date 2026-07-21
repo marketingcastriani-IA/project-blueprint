@@ -65,30 +65,40 @@ export default function Index() {
 
       {/* HERO */}
       <section className="relative pt-16 pb-24 overflow-hidden">
+        {/* Camadas de profundidade */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[800px] bg-primary/10 rounded-full blur-[200px] -z-10" />
-        
+        <div className="absolute top-40 right-0 w-[600px] h-[600px] bg-primary/[0.06] rounded-full blur-[160px] -z-10" />
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_center,transparent_0%,hsl(var(--background))_78%)]" />
+
         <div className="container text-center space-y-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/30 bg-primary/5 text-primary text-sm font-bold animate-fade-in">
-            <Sparkles className="h-4 w-4" /> ANÁLISE DE OPÇÕES COM IA — ÚNICO NO BRASIL
+          <div
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/40 bg-primary/10 text-primary text-sm font-black uppercase tracking-wider shadow-[0_0_24px_-6px_hsl(var(--primary)/0.5)] animate-cinematic-in"
+            style={{ animationDelay: '0ms' }}
+          >
+            <Sparkles className="h-4 w-4 animate-pulse" /> Análise de Opções com IA — Único no Brasil
           </div>
-          
-          <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.85] animate-fade-in">
-            ANALISE SUAS <span className="text-primary">OPÇÕES</span><br />
-            COM UM <span className="text-primary">PRINT.</span>
+
+          <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.85] animate-cinematic-in" style={{ animationDelay: '100ms' }}>
+            ANALISE SUAS <span className="bg-gradient-to-r from-primary via-primary to-primary/70 bg-clip-text text-transparent drop-shadow-[0_2px_24px_hsl(var(--primary)/0.5)]">OPÇÕES</span><br />
+            COM UM <span className="bg-gradient-to-r from-primary via-primary to-primary/70 bg-clip-text text-transparent">PRINT.</span>
           </h1>
-          
-          <p className="text-xl sm:text-2xl text-muted-foreground max-w-3xl mx-auto font-medium leading-relaxed">
+
+          <p className="text-xl sm:text-2xl text-muted-foreground max-w-3xl mx-auto font-medium leading-relaxed animate-cinematic-in" style={{ animationDelay: '200ms' }}>
             Tire um print da sua estrutura na corretora e receba <span className="text-foreground font-bold">payoff, métricas e análise de IA</span> em segundos. Sem planilhas, sem fórmulas.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-            <Button 
-              size="lg" 
-              className="h-16 px-12 text-xl font-black shadow-[0_20px_50px_-12px_hsl(var(--primary)/0.5)] hover:scale-105 transition-transform" 
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 animate-cinematic-in" style={{ animationDelay: '300ms' }}>
+            <Button
+              size="lg"
+              className="h-16 px-12 text-xl font-black shadow-[0_20px_50px_-12px_hsl(var(--primary)/0.6)] hover:scale-105 hover:shadow-[0_28px_64px_-12px_hsl(var(--primary)/0.85)] transition-all duration-300"
               onClick={() => navigate('/auth')}
             >
               TESTAR 7 DIAS GRÁTIS <ArrowRight className="ml-2 h-6 w-6" />
             </Button>
+          </div>
+
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground font-medium animate-cinematic-in" style={{ animationDelay: '400ms' }}>
+            <ShieldCheck className="h-4 w-4 text-success shrink-0" /> Sem cartão para testar · Cancele quando quiser
           </div>
         </div>
       </section>
