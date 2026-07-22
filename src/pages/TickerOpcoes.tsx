@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useB3Options, type B3Option } from "@/contexts/B3OptionsContext";
@@ -247,7 +247,39 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
   const displayed = filtered.slice(0, displayLimit);
   const remaining = filtered.length - displayLimit;
 
+  // Assina no RTD as opções visíveis na tabela (até 80) para cotarem ao vivo —
+  // senão, com o catálogo grande, a coluna Último fica vazia.
+  const visibleTickers = useMemo(
+    () => filtered.slice(0, Math.min(displayLimit, 80)).map((o) => o.ticker),
+    [filtered, displayLimit]
+  );
+  useEffect(() => {
+    if (status !== "connected") return;
+    visibleTickers.forEach((t) => addTicker(t));
+  }, [visibleTickers, status, addTicker]);
+
   // ─── BOX OPPORTUNITIES ─────────────────────────────────────
+  // Tickers candidatos a Box (pares call+put por strike, próximos do ATM) —
+  // subscritos no RTD para receberem BID/ASK ao vivo antes de virarem oportunidade.
+  const boxCandidateTickers = useMemo(() => {
+    if (selectedFamily === "all" || precoBaseNum <= 0) return [] as string[];
+    const groups = new Map<string, { call?: B3Option; put?: B3Option; strike: number }>();
+    filtered.forEach((o) => {
+      const key = `${o.strike}|${o.vencimento}`;
+      if (!groups.has(key)) groups.set(key, { strike: o.strike });
+      const g = groups.get(key)!;
+      if (o.tipo === "CALL") g.call = o; else g.put = o;
+    });
+    const pairs = [...groups.values()].filter((g) => g.call && g.put);
+    pairs.sort((a, b) => Math.abs(a.strike - precoBaseNum) - Math.abs(b.strike - precoBaseNum));
+    return pairs.slice(0, 20).flatMap((g) => [g.call!.ticker, g.put!.ticker]);
+  }, [filtered, selectedFamily, precoBaseNum]);
+
+  useEffect(() => {
+    if (status !== "connected") return;
+    boxCandidateTickers.forEach((t) => addTicker(t));
+  }, [boxCandidateTickers, status, addTicker]);
+
   const boxOpportunities = useMemo(() => {
     if (selectedFamily === "all" || precoBaseNum <= 0) return [];
     const groups = new Map<string, { calls: B3Option[]; puts: B3Option[] }>();
@@ -260,7 +292,9 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
     });
 
     const stockRow = stockTicker ? rows.get(stockTicker) : null;
-    const stockAsk = stockRow?.ofVenda ?? stockRow?.ultimo ?? precoBaseNum;
+    // Ativo ao vivo (RTD do ativo ou preço ao vivo); nunca um valor manual/estimado.
+    const liveStock = (livePrice && livePrice > 0 && !precoBaseManual) ? livePrice : null;
+    const stockAsk = stockRow?.ofVenda ?? stockRow?.ultimo ?? liveStock;
 
     const opportunities: Array<{
       strike: number;
@@ -285,18 +319,25 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
       const putRow = rows.get(put.ticker);
       const callBid = callRow?.ofCompra ?? null;
       const putAsk = putRow?.ofVenda ?? null;
-      const isLive = callBid !== null && callBid > 0 && putAsk !== null && putAsk > 0 && stockAsk > 0;
-
-      const callPrice = isLive ? callBid! : call.precoUltimo;
-      const putPrice = isLive ? putAsk! : put.precoUltimo;
-      const usedStock = isLive ? stockAsk : precoBaseNum;
-
-      if (callPrice <= 0 || putPrice <= 0) return;
-
-      // Strike ao vivo do Profit (ajustado por proventos) tem prioridade sobre o
-      // nominal do JSON estático — senão o lucro fica superestimado (ex.: PETR).
       const liveStrike = callRow?.strike ?? putRow?.strike ?? null;
-      const strikeReal = (liveStrike !== null && liveStrike > 0) ? liveStrike : call.strike;
+
+      // Box só é confiável com TUDO ao vivo e do mesmo feed: BID da call, ASK da
+      // put, ASK do ativo e o strike ajustado do Profit. Sem isso, os preços de
+      // fechamento do JSON geram lucros-fantasma (strike desatualizado por proventos).
+      if (callBid === null || callBid <= 0) return;
+      if (putAsk === null || putAsk <= 0) return;
+      if (stockAsk === null || stockAsk <= 0) return;
+      if (liveStrike === null || liveStrike <= 0) return;
+
+      const callPrice = callBid;
+      const putPrice = putAsk;
+      const usedStock = stockAsk;
+      const strikeReal = liveStrike;
+
+      // Sanidade: a call (BID) não pode valer bem menos que o intrínseco (ativo −
+      // strike). Se valer, os dados estão incoerentes — descarta.
+      const intrinsic = Math.max(0, usedStock - strikeReal);
+      if (callPrice < intrinsic - 0.05) return;
 
       const custo = (usedStock + putPrice) - callPrice;
       if (custo <= 0) return;
@@ -306,22 +347,13 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
         opportunities.push({
           strike: strikeReal, vencimento: call.vencimento,
           call, put, custo, lucro, lucroPct,
-          stockPrice: usedStock, callPrice, putPrice, isLive,
+          stockPrice: usedStock, callPrice, putPrice, isLive: true,
         });
       }
     });
 
     return opportunities.sort((a, b) => b.lucroPct - a.lucroPct).slice(0, 10);
-  }, [filtered, selectedFamily, precoBaseNum, rows, stockTicker]);
-
-  // Subscribe opportunity option tickers to RTD for live BID/ASK
-  useEffect(() => {
-    if (status !== "connected" || boxOpportunities.length === 0) return;
-    for (const opp of boxOpportunities) {
-      addTicker(opp.call.ticker);
-      addTicker(opp.put.ticker);
-    }
-  }, [boxOpportunities, status, addTicker]);
+  }, [filtered, selectedFamily, precoBaseNum, rows, stockTicker, livePrice, precoBaseManual]);
 
   const toggleRow = useCallback((ticker: string) => {
     setSelectedRows((prev) => {
@@ -380,6 +412,47 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
     const vSet = new Set(fOpts.map((o) => o.vencimento));
     return vencimentos.filter((v) => vSet.has(v));
   }, [selectedFamily, options, vencimentos]);
+
+  // Próximo vencimento mensal (3ª sexta) a partir de hoje — default dos cálculos
+  const nextMonthlyExpiry = useMemo(() => {
+    const list = availableVencimentos;
+    if (list.length === 0) return "all";
+    const now = new Date();
+    const thirdFriday = (year: number, month: number): Date => {
+      const first = new Date(year, month, 1);
+      const firstFriday = ((5 - first.getDay()) + 7) % 7 + 1;
+      return new Date(year, month, firstFriday + 14);
+    };
+    const parse = (v: string): Date | null => {
+      const p = v.split("/");
+      return p.length === 3 ? new Date(+p[2], +p[1] - 1, +p[0]) : null;
+    };
+    // 1ª tentativa: próximo vencimento mensal (±2 dias da 3ª sexta, por feriados)
+    for (const v of list) {
+      const d = parse(v);
+      if (d && d >= now) {
+        const tf = thirdFriday(d.getFullYear(), d.getMonth());
+        if (Math.abs(d.getTime() - tf.getTime()) / 86400000 <= 2) return v;
+      }
+    }
+    // Fallback: primeiro vencimento futuro
+    for (const v of list) {
+      const d = parse(v);
+      if (d && d >= now) return v;
+    }
+    return list[0] || "all";
+  }, [availableVencimentos]);
+
+  // Default: ao escolher um ativo, já seleciona o próximo vencimento mensal
+  const prevFamilyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (selectedFamily !== "all" && prevFamilyRef.current !== selectedFamily) {
+      if (nextMonthlyExpiry && nextMonthlyExpiry !== "all") {
+        setSelectedVencimento(nextMonthlyExpiry);
+      }
+    }
+    prevFamilyRef.current = selectedFamily;
+  }, [selectedFamily, nextMonthlyExpiry]);
 
   // ─── INTEGRATION: Send single ticker to RTD ────────────────
   const sendToRtd = useCallback((ticker: string) => {
@@ -788,10 +861,10 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
           </div>
         </div>
 
-        {/* Filters — modern glassmorphism panel */}
-        <div className="rounded-xl border border-border/40 bg-gradient-to-b from-card/60 to-card/30 backdrop-blur-lg overflow-hidden shadow-sm">
-          <div className="px-4 py-3 border-b border-border/20 flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+        {/* Filters — painel sólido */}
+        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-md">
+          <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center gap-2">
+            <div className="h-7 w-7 rounded-lg bg-primary/15 flex items-center justify-center">
               <Filter className="h-3.5 w-3.5 text-primary" />
             </div>
             <span className="text-sm font-bold text-foreground">Filtros Avançados</span>
@@ -821,9 +894,9 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
             {/* Row 1: Family + Vencimento + Tipo */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <div>
-                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1.5 block">Escolher o Ativo</label>
+                <label className="text-[11px] uppercase text-foreground/70 font-bold tracking-wide mb-1.5 block">Escolher o Ativo</label>
                 <Select value={selectedFamily} onValueChange={setSelectedFamily}>
-                  <SelectTrigger className="h-9 text-sm bg-background/40 border-border/40"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-11 text-sm font-medium bg-background border-border focus:border-primary/60"><SelectValue /></SelectTrigger>
                   <SelectContent className="max-h-[300px]">
                     <SelectItem value="all">Todos ({families.length})</SelectItem>
                     {families.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
@@ -831,19 +904,33 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
                 </Select>
               </div>
               <div>
-                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1.5 block">Vencimento</label>
+                <label className="text-[11px] uppercase text-foreground/70 font-bold tracking-wide mb-1.5 flex items-center gap-1.5">
+                  <span className="relative flex h-2.5 w-2.5">
+                    {selectedVencimento === "all" && (
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                    )}
+                    <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${selectedVencimento === "all" ? "bg-amber-500" : "bg-emerald-500"}`} />
+                  </span>
+                  Vencimento
+                  <span className={`normal-case tracking-normal font-semibold ${selectedVencimento === "all" ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+                    {selectedVencimento === "all" ? "· escolha o mês" : "· mês definido"}
+                  </span>
+                </label>
                 <Select value={selectedVencimento} onValueChange={setSelectedVencimento}>
-                  <SelectTrigger className="h-9 text-sm bg-background/40 border-border/40"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className={`h-11 text-sm font-bold bg-background focus:border-primary/60 ${selectedVencimento === "all" ? "border-2 border-amber-400/70 ring-2 ring-amber-400/20" : "border-2 border-emerald-500/40"}`}>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent className="max-h-[300px]">
-                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="all">Todos os meses</SelectItem>
                     {availableVencimentos.map((v) => <SelectItem key={v} value={v}>{v}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                <p className="text-[10px] text-muted-foreground mt-1 leading-tight">Defina o mês para lucro, retorno e dias úteis corretos.</p>
               </div>
               <div>
-                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1.5 block">Tipo</label>
+                <label className="text-[11px] uppercase text-foreground/70 font-bold tracking-wide mb-1.5 block">Tipo</label>
                 <Select value={selectedTipo} onValueChange={setSelectedTipo}>
-                  <SelectTrigger className="h-9 text-sm bg-background/40 border-border/40"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-11 text-sm font-medium bg-background border-border focus:border-primary/60"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos</SelectItem>
                     <SelectItem value="CALL">CALL</SelectItem>
@@ -856,9 +943,9 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
             {/* Row 2: Moneyness + Apenas PAR + Faixa de Prêmio */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-end">
               <div>
-                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1.5 block">Moneyness</label>
+                <label className="text-[11px] uppercase text-foreground/70 font-bold tracking-wide mb-1.5 block">Moneyness</label>
                 <Select value={moneyness} onValueChange={setMoneyness}>
-                  <SelectTrigger className="h-9 text-sm bg-background/40 border-border/40"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-11 text-sm font-medium bg-background border-border focus:border-primary/60"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos</SelectItem>
                     <SelectItem value="ITM">ITM (In The Money)</SelectItem>
@@ -868,10 +955,10 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
                 </Select>
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest flex items-center gap-1.5">
+                <label className="text-[11px] uppercase text-foreground/70 font-bold tracking-wide flex items-center gap-1.5">
                   <Box className="h-3 w-3" /> Apenas com PAR
                 </label>
-                <div className="flex items-center gap-2 h-9 px-3 rounded-md bg-background/40 border border-border/40">
+                <div className="flex items-center gap-2 h-11 px-3 rounded-md bg-background border border-border">
                   <Switch checked={onlyPaired} onCheckedChange={setOnlyPaired} />
                   <span className={`text-xs font-semibold ${onlyPaired ? "text-primary" : "text-muted-foreground"}`}>
                     {onlyPaired ? `${allPairedStrikeKeys.size} pares` : "Off"}
@@ -879,33 +966,33 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
                 </div>
               </div>
               <div>
-                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1.5 block">Prêmio Mín (R$)</label>
+                <label className="text-[11px] uppercase text-foreground/70 font-bold tracking-wide mb-1.5 block">Prêmio Mín (R$)</label>
                 <Input
                   type="number"
                   step="0.01"
                   placeholder="0.00"
                   value={precoMin}
                   onChange={(e) => setPrecoMin(e.target.value)}
-                  className="h-9 text-sm bg-background/40 border-border/40 font-mono"
+                  className="h-11 text-sm font-medium bg-background border-border focus:border-primary/60 font-mono"
                 />
               </div>
               <div>
-                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1.5 block">Prêmio Máx (R$)</label>
+                <label className="text-[11px] uppercase text-foreground/70 font-bold tracking-wide mb-1.5 block">Prêmio Máx (R$)</label>
                 <Input
                   type="number"
                   step="0.01"
                   placeholder="∞"
                   value={precoMax}
                   onChange={(e) => setPrecoMax(e.target.value)}
-                  className="h-9 text-sm bg-background/40 border-border/40 font-mono"
+                  className="h-11 text-sm font-medium bg-background border-border focus:border-primary/60 font-mono"
                 />
               </div>
             </div>
 
-            {/* Row 3: Strike % Range — glass card */}
-            <div className="rounded-xl border border-primary/15 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 p-4 space-y-3">
+            {/* Row 3: Strike % Range — card destacado */}
+            <div className="rounded-xl border border-primary/25 bg-primary/[0.06] p-4 space-y-3 shadow-sm">
               <div className="flex items-center justify-between">
-                <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest flex items-center gap-1.5">
+                <label className="text-[11px] uppercase text-foreground/70 font-bold tracking-wide flex items-center gap-1.5">
                   <DollarSign className="h-3.5 w-3.5 text-primary" /> Filtrar Strike por % do Preço Base
                 </label>
                 {precoBaseNum > 0 && (
@@ -922,7 +1009,7 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div>
-                  <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest mb-1.5 flex items-center gap-1.5">
+                  <label className="text-[11px] uppercase text-foreground/70 font-bold tracking-wide mb-1.5 flex items-center gap-1.5">
                     Preço do Ativo (R$)
                     {livePrice && livePrice > 0 && !precoBaseManual && (
                       <span className="flex items-center gap-0.5 text-primary">
@@ -931,20 +1018,20 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
                     )}
                   </label>
                   <div className="relative">
-                    <DollarSign className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/70 pointer-events-none" />
                     <Input
                       type="number"
                       step="0.01"
                       placeholder="Ex: 35.50"
                       value={precoBase}
                       onChange={(e) => { setPrecoBase(e.target.value); setPrecoBaseManual(true); }}
-                      className="pl-9 h-9 text-sm bg-background/40 border-border/40 font-mono"
+                      className="pl-9 h-11 text-sm font-medium bg-background border-border focus:border-primary/60 font-mono"
                     />
                   </div>
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest flex items-center gap-1">
+                    <label className="text-[11px] uppercase text-foreground/70 font-bold tracking-wide flex items-center gap-1">
                       <TrendingDown className="h-3 w-3 text-destructive" /> Abaixo
                     </label>
                     <span className="text-xs font-bold font-mono text-destructive">{pctAbaixo}%</span>
@@ -960,7 +1047,7 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-[10px] uppercase text-muted-foreground font-bold tracking-widest flex items-center gap-1">
+                    <label className="text-[11px] uppercase text-foreground/70 font-bold tracking-wide flex items-center gap-1">
                       <TrendingUp className="h-3 w-3 text-primary" /> Acima
                     </label>
                     <span className="text-xs font-bold font-mono text-primary">{pctAcima}%</span>
@@ -1002,6 +1089,35 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
         </div>
 
         {/* Box Opportunities */}
+        {/* Estado vazio: ativo selecionado, mas sem oportunidade de Box ao vivo */}
+        {selectedFamily !== "all" && precoBaseNum > 0 && boxOpportunities.length === 0 && (
+          <div className="rounded-xl border border-border bg-muted/30 p-4 flex items-start gap-3">
+            <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+              <Box className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div className="text-sm min-w-0">
+              <p className="font-bold text-foreground mb-0.5">Sem oportunidade de Box ao vivo para {selectedFamily} agora</p>
+              {boxCandidateTickers.length === 0 ? (
+                <p className="text-muted-foreground text-xs leading-relaxed">
+                  O catálogo de opções não tem pares Call+Put no mesmo strike para este ativo/vencimento —
+                  o banco de dados pode estar desatualizado. Tente outro vencimento ou atualize o catálogo.
+                </p>
+              ) : status === "connected" ? (
+                <p className="text-muted-foreground text-xs leading-relaxed">
+                  <b className="text-foreground">Abra a grade de opções do {selectedFamily} no seu Profit Pro</b> —
+                  o Profit só envia as cotações (BID/ASK) das opções que estão abertas nele. Assim que abrir, os
+                  dados chegam em segundos. Se mesmo assim não aparecer, o ativo pode não ter arbitragem positiva
+                  neste vencimento (comum em papéis de baixa liquidez).
+                </p>
+              ) : (
+                <p className="text-muted-foreground text-xs leading-relaxed">
+                  Conecte o Profit Pro para receber BID/ASK ao vivo e ver as oportunidades reais (sem dados ao vivo, não exibimos números para não induzir a erro).
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         {boxOpportunities.length > 0 && (
           <div className="rounded-xl border border-primary/30 bg-primary/5 backdrop-blur-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-primary/20">

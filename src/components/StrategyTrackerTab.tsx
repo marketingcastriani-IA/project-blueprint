@@ -670,8 +670,12 @@ export default function StrategyTrackerTab() {
     let opts = options.filter((o) => o.family === selectedFamily);
     const activeVenc = selectedVencimento || nextMonthlyExpiry;
     if (activeVenc !== "all") opts = opts.filter((o) => o.vencimento === activeVenc);
-    return opts.slice(0, 80).map((o) => o.ticker);
-  }, [selectedFamily, selectedVencimento, nextMonthlyExpiry, options]);
+    // Prioriza strikes perto do preço (ATM) — é onde há liquidez. Sem isso, com o
+    // catálogo grande da B3, assinaríamos séries ilíquidas longe do dinheiro e o
+    // rastreador não acharia nada.
+    if (stockPrice > 0) opts = [...opts].sort((a, b) => Math.abs(a.strike - stockPrice) - Math.abs(b.strike - stockPrice));
+    return opts.slice(0, 120).map((o) => o.ticker);
+  }, [selectedFamily, selectedVencimento, nextMonthlyExpiry, options, stockPrice]);
 
   useEffect(() => {
     if (status === "connected") tickersToSubscribe.forEach((t) => addTicker(t));
@@ -1543,8 +1547,12 @@ export default function StrategyTrackerTab() {
               <CardContent className="flex flex-col items-center justify-center py-12 space-y-3">
                 <AlertTriangle className="h-12 w-12 text-amber-500" />
                 <p className="text-sm font-black text-foreground">Nenhuma combinação encontrada</p>
-                <p className="text-xs text-muted-foreground text-center">
-                  Ajuste os filtros (reduza "Negócios ≥" ou "Retorno Mín"), selecione outro vencimento ou tente uma estratégia diferente
+                <p className="text-xs text-muted-foreground text-center max-w-md">
+                  {status === "connected" && selectedFamily ? (
+                    <><b className="text-foreground">Abra a grade de opções do {selectedFamily} no seu Profit Pro</b> — o Profit só cota as opções que estão abertas nele. Depois disso, ajuste os filtros (reduza "Negócios ≥" ou "Retorno Mín") ou tente outro vencimento.</>
+                  ) : (
+                    <>Ajuste os filtros (reduza "Negócios ≥" ou "Retorno Mín"), selecione outro vencimento ou tente uma estratégia diferente.</>
+                  )}
                 </p>
               </CardContent>
             </Card>
