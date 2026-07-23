@@ -1,0 +1,30 @@
+name: Atualizar catálogo de opções (B3)
+
+on:
+  schedule:
+    - cron: "0 12 * * 1-5"   # 12:00 UTC = 09:00 BRT, seg–sex
+  workflow_dispatch: {}
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Gerar catálogo a partir da B3
+        run: node scripts/gerar-catalogo-opcoes.mjs
+      - name: Commitar se houve mudança
+        run: |
+          if [[ -n "$(git status --porcelain public/opcoes.json)" ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add public/opcoes.json
+            git commit -m "chore: atualiza catálogo de opções (B3)"
+            git push
+          else
+            echo "Sem mudanças no catálogo hoje."
+          fi
