@@ -400,8 +400,18 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
       }
     });
 
-    return opportunities.sort((a, b) => b.lucroPct - a.lucroPct).slice(0, 10);
+    // Ganhadores (vencem o CDI) primeiro; entre eles, a maior folga sobre o CDI.
+    return opportunities.sort((a, b) => {
+      const aw = a.venceCDI ? 1 : 0, bw = b.venceCDI ? 1 : 0;
+      if (aw !== bw) return bw - aw;
+      const ad = a.cdiPeriodo != null ? a.lucroPct - a.cdiPeriodo : a.lucroPct;
+      const bd = b.cdiPeriodo != null ? b.lucroPct - b.cdiPeriodo : b.lucroPct;
+      return bd - ad;
+    }).slice(0, 10);
   }, [filtered, selectedFamily, precoBaseNum, getRow, stockTicker, livePrice, precoBaseManual, cdiCap]);
+
+  // Quantas oportunidades realmente vencem o CDI (os "ganhadores").
+  const boxWinners = useMemo(() => boxOpportunities.filter((o) => o.venceCDI).length, [boxOpportunities]);
 
   const toggleRow = useCallback((ticker: string) => {
     setSelectedRows((prev) => {
@@ -1181,7 +1191,16 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
                     Comprar a ação + a put e vender a call trava um <b className="text-foreground">lucro garantido</b> no vencimento — como um CDI. Toque para levar ao Rastrear Box.
                   </span>
                 </div>
-                <Badge variant="default" className="text-xs ml-auto shrink-0">{boxOpportunities.length} achadas</Badge>
+                <div className="ml-auto shrink-0 flex flex-col items-end gap-0.5">
+                  {boxWinners > 0 ? (
+                    <Badge className="text-xs bg-emerald-600 hover:bg-emerald-600 text-white border-0">
+                      🏆 {boxWinners} vence{boxWinners > 1 ? "m" : ""} o CDI
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-xs">nenhuma vence o CDI</Badge>
+                  )}
+                  <span className="text-[10px] text-muted-foreground">{boxOpportunities.length} achada{boxOpportunities.length > 1 ? "s" : ""}</span>
+                </div>
               </div>
               {/* Legenda do que cada número significa */}
               <div className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
@@ -1220,12 +1239,22 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
                 </span>
               </div>
             </div>
+            {boxWinners === 0 && (
+              <div className="px-4 py-2.5 bg-amber-500/5 border-t border-amber-500/15 text-[11px] text-muted-foreground flex items-start gap-2">
+                <Info className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+                <span>Nenhuma dessas <b className="text-foreground">vence o CDI</b> agora — todas rendem menos que a renda fixa. É normal (a arbitragem some rápido). Tente <b className="text-foreground">outro vencimento</b> ou volte mais tarde.</span>
+              </div>
+            )}
             <div className="p-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5">
               {boxOpportunities.map((opp) => (
                 <button
                   key={`${opp.call.ticker}-${opp.put.ticker}`}
                   onClick={() => sendOpportunityToBox(opp.call, opp.put)}
-                  className="text-left rounded-xl border-2 border-border/50 bg-card p-3.5 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 transition-all group"
+                  className={`text-left rounded-xl border-2 p-3.5 hover:shadow-lg hover:-translate-y-0.5 transition-all group ${
+                    opp.venceCDI
+                      ? "border-emerald-500/60 bg-emerald-500/[0.04] ring-1 ring-emerald-500/20 hover:border-emerald-500 hover:shadow-emerald-500/10"
+                      : "border-border/50 bg-card hover:border-primary/50 hover:shadow-primary/10"
+                  }`}
                 >
                   {/* Topo: strike + retorno */}
                   <div className="flex items-center justify-between mb-2 pb-2 border-b border-border/40">
