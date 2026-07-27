@@ -1,0 +1,30 @@
+name: Atualizar preços de fim de dia (B3 COTAHIST)
+
+on:
+  schedule:
+    - cron: "0 1 * * 2-6"   # 01:00 UTC (~22:00 BRT) — noites de seg a sex, após o fechamento
+  workflow_dispatch: {}
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Gerar preços de fim de dia a partir do COTAHIST da B3
+        run: node scripts/gerar-eod-opcoes.mjs
+      - name: Commitar se houve mudança
+        run: |
+          if [[ -n "$(git status --porcelain public/opcoes-eod.json)" ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add public/opcoes-eod.json
+            git commit -m "chore: atualiza preços de fim de dia (B3 COTAHIST)"
+            git push
+          else
+            echo "Sem mudanças no arquivo de fim de dia hoje."
+          fi
