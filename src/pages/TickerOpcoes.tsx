@@ -337,10 +337,16 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
       const usedStock = stockAsk;
       const strikeReal = liveStrike;
 
-      // Sanidade: a call (BID) não pode valer bem menos que o intrínseco (ativo −
+      // Sanidade da CALL: o BID não pode valer bem menos que o intrínseco (ativo −
       // strike). Se valer, os dados estão incoerentes — descarta.
       const intrinsic = Math.max(0, usedStock - strikeReal);
       if (callPrice < intrinsic - 0.05) return;
+
+      // Sanidade do PUT: um put ITM (strike > ativo) não pode valer menos que o seu
+      // intrínseco (strike − ativo) — senão seria arbitragem instantânea. É o caso
+      // clássico de preço velho de opção ilíquida gerando LUCRO-FANTASMA no box.
+      const putIntrinsic = Math.max(0, strikeReal - usedStock);
+      if (putPrice < putIntrinsic - 0.05) return;
 
       const custo = (usedStock + putPrice) - callPrice;
       if (custo <= 0) return;

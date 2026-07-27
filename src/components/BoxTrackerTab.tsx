@@ -537,13 +537,15 @@ export default function BoxTracker() {
         let lucroLiqAcoesPercent: number | null = null;
 
         // Box só é confiável com strike AO VIVO do Profit (ajustado por proventos) —
-        // senão o strike do JSON pode estar velho e gerar lucro-fantasma. Além disso,
-        // a call (BID) não pode valer bem menos que o intrínseco (ação − strike), e o
-        // custo tem de ser > 0 (custo ≤ 0 = cotação cruzada/dado ruim).
+        // senão o strike do JSON pode estar velho e gerar lucro-fantasma. Além disso:
+        // a call (BID) não pode valer menos que o intrínseco (ação − strike), o PUT (ASK)
+        // não pode valer menos que o SEU intrínseco (strike − ação), e o custo tem de ser
+        // > 0. Put ITM barato demais é o fantasma clássico de opção ilíquida.
         if (stockAsk !== null && callBid !== null && putAsk !== null && strikeRtd !== null) {
           const custo = (stockAsk + putAsk) - callBid;
           const intrinsic = Math.max(0, stockAsk - strikeRtd);
-          if (custo > 0 && callBid >= intrinsic - 0.05) {
+          const putIntrinsic = Math.max(0, strikeRtd - stockAsk);
+          if (custo > 0 && callBid >= intrinsic - 0.05 && putAsk >= putIntrinsic - 0.05) {
           compraBox = custo;
           lucro = strikeReal - compraBox;
           lucroTotal = lucro * qty;
