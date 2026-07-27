@@ -1024,7 +1024,7 @@ export default function BoxTracker() {
 
         {/* Pop-up (modal) de configuração de alertas */}
         <Dialog open={showAlertConfig} onOpenChange={setShowAlertConfig}>
-          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto overflow-x-hidden">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 {notifEnabled ? <Bell className="w-5 h-5 text-success" /> : <BellOff className="w-5 h-5 text-muted-foreground" />}
@@ -1032,9 +1032,9 @@ export default function BoxTracker() {
               </DialogTitle>
             </DialogHeader>
           <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             {/* Left: Toggle + Status */}
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={toggleNotifications}
                 className={cn(

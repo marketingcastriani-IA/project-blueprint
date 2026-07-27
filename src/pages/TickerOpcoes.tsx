@@ -17,6 +17,10 @@ import { Switch } from "@/components/ui/switch";
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { calcDiasUteis } from "@/lib/b3-utils";
+
+// Taxa CDI anual de referência p/ comparar o retorno do box com o CDI do período.
+const CDI_ANUAL = 14.65;
 
 const normalizeTickerSearch = (value: string) =>
   value.toUpperCase().replace(/[^A-Z0-9]/g, "").trim();
@@ -308,6 +312,8 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
       callPrice: number;
       putPrice: number;
       isLive: boolean;
+      cdiPeriodo: number | null;
+      venceCDI: boolean | null;
     }> = [];
 
     groups.forEach((g) => {
@@ -352,11 +358,21 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
       if (custo <= 0) return;
       const lucro = strikeReal - custo;
       const lucroPct = (lucro / custo) * 100;
+
+      // Vence o CDI? Compara o retorno do box com o CDI do MESMO período (dias úteis
+      // até o vencimento, base 252). Assim o card diz na hora se vale mais que o CDI.
+      const diasUteis = calcDiasUteis(call.vencimento);
+      const cdiPeriodo = (diasUteis && diasUteis > 0)
+        ? (Math.pow(1 + CDI_ANUAL / 100, diasUteis / 252) - 1) * 100
+        : null;
+      const venceCDI = cdiPeriodo != null ? lucroPct >= cdiPeriodo : null;
+
       if (lucro > 0) {
         opportunities.push({
           strike: strikeReal, vencimento: call.vencimento,
           call, put, custo, lucro, lucroPct,
           stockPrice: usedStock, callPrice, putPrice, isLive: boxLive,
+          cdiPeriodo, venceCDI,
         });
       }
     });
@@ -1170,12 +1186,26 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
                       )}
                     </div>
                     <div className="text-right leading-none">
-                      <div className={`text-base font-black ${opp.lucroPct > 1.5 ? "text-primary" : "text-muted-foreground"}`}>
+                      <div className={`text-base font-black ${opp.venceCDI ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}>
                         {opp.lucroPct.toFixed(2)}%
                       </div>
                       <div className="text-[9px] text-muted-foreground uppercase tracking-wide">retorno</div>
                     </div>
                   </div>
+
+                  {/* Vence o CDI do período? — prático, no topo do card */}
+                  {opp.venceCDI != null && opp.cdiPeriodo != null && (
+                    <div className={`flex items-center justify-center gap-1.5 rounded-md px-2 py-1 mb-2 text-[11px] font-bold ${
+                      opp.venceCDI
+                        ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                        : "bg-rose-500/10 text-rose-600 dark:text-rose-400"
+                    }`}>
+                      {opp.venceCDI ? "✓ vence o CDI" : "✕ abaixo do CDI"}
+                      <span className="font-mono font-normal opacity-80">
+                        ({opp.lucroPct - opp.cdiPeriodo >= 0 ? "+" : ""}{(opp.lucroPct - opp.cdiPeriodo).toFixed(2)} pp · CDI {opp.cdiPeriodo.toFixed(2)}%)
+                      </span>
+                    </div>
+                  )}
 
                   {/* Valores em destaque, rotulados */}
                   <div className="space-y-1 text-xs">
