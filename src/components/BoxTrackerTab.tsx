@@ -44,6 +44,7 @@ import {
   Zap,
   Download,
   Moon,
+  Shield,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -110,6 +111,16 @@ const CDI_ANUAL_DEFAULT = 14.15;
 const CDI_STORAGE_KEY = "box-tracker-cdi-anual";
 const IR_ACOES = 15;
 const IR_RENDA_FIXA = 22.5;
+// Filtro anti-erro: teto de retorno vs CDI (evita lucro-fantasma de opção ilíquida).
+// Mesma chave do Banco de Opções — os dois compartilham o valor.
+const BOX_CDI_CAP_KEY = "box-cdi-cap";
+const BOX_CDI_CAP_DEFAULT = 2.5;
+const BOX_CDI_CAP_PRESETS: { v: number; label: string }[] = [
+  { v: 2.5, label: "2,5×" },
+  { v: 5, label: "5×" },
+  { v: 10, label: "10×" },
+  { v: 999, label: "Tudo" },
+];
 const NOTIF_ENABLED_KEY = "box-tracker-notif-enabled";
 const NOTIF_THRESHOLD_KEY = "box-tracker-notif-threshold";
 const NOTIF_THRESHOLD_DEFAULT = 110;
@@ -202,6 +213,13 @@ export default function BoxTracker() {
   const [quantidade, setQuantidade] = useState<number>(100);
   const [descontarIRAcoes, setDescontarIRAcoes] = useState(false);
   const [descontarIRRendaFixa, setDescontarIRRendaFixa] = useState(false);
+  // Teto do filtro anti-erro (múltiplo do CDI). Compartilhado com o Banco via localStorage.
+  const [cdiCap, setCdiCap] = useState<number>(() => {
+    const s = localStorage.getItem(BOX_CDI_CAP_KEY);
+    const v = s ? parseFloat(s) : BOX_CDI_CAP_DEFAULT;
+    return isFinite(v) && v > 0 ? v : BOX_CDI_CAP_DEFAULT;
+  });
+  const setCdiCapPersist = (v: number) => { setCdiCap(v); localStorage.setItem(BOX_CDI_CAP_KEY, String(v)); };
   const [cdiAnual, setCdiAnual] = useState<number>(() => {
     try {
       const saved = localStorage.getItem(CDI_STORAGE_KEY);
@@ -583,6 +601,11 @@ export default function BoxTracker() {
           : null;
         const vsCDLiq = vsCD;
 
+        // Filtro anti-erro: descarta box com retorno MUITO acima do CDI (fantasma de
+        // opção ilíquida com preço velho). cdiCap = 999 ("Tudo") desliga o filtro.
+        if (lucroPercent !== null && cdiPeriodo !== null && cdiPeriodo > 0 && cdiCap < 900
+            && lucroPercent > cdiCap * cdiPeriodo) return;
+
         pairs.push({
           strike: strikeReal, strikeRtd, vencimento: vencParaCalculo,
           callSymbol: call?.symbol ?? null, putSymbol: put?.symbol ?? null,
@@ -605,7 +628,7 @@ export default function BoxTracker() {
       });
       return pairs;
     },
-    [getRow, quantidade, descontarIRAcoes, descontarIRRendaFixa, cdiAnual, getStrikeAndExpiry, familyStockTickers]
+    [getRow, quantidade, descontarIRAcoes, descontarIRRendaFixa, cdiAnual, cdiCap, getStrikeAndExpiry, familyStockTickers]
   );
 
   // Global ranking — only the #1 best box per family
@@ -1021,6 +1044,33 @@ export default function BoxTracker() {
             {notifEnabled ? "ON" : "OFF"}
           </span>
         </button>
+
+        {/* Filtro anti-erro: teto de retorno vs CDI (evita lucro-fantasma de opção ilíquida) */}
+        <div className="inline-flex flex-wrap items-center gap-2 self-start px-4 py-2.5 rounded-xl border-2 border-border bg-card shadow-sm">
+          <span className="inline-flex items-center gap-1.5 text-sm font-black text-foreground">
+            <Shield className="w-4 h-4 text-primary" /> Filtro anti-erro
+          </span>
+          <div className="flex items-center gap-1">
+            {BOX_CDI_CAP_PRESETS.map((p) => (
+              <button
+                key={p.v}
+                onClick={() => setCdiCapPersist(p.v)}
+                title={p.v >= 900 ? "Mostrar tudo (sem filtro)" : `Esconder box acima de ${p.label} o CDI`}
+                className={cn(
+                  "px-2.5 py-1 rounded-lg text-xs font-bold transition-all",
+                  cdiCap === p.v ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:bg-muted/70"
+                )}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+          <span className="text-[10px] text-muted-foreground leading-tight max-w-[190px]">
+            {cdiCap >= 900
+              ? "⚠️ sem filtro — pode incluir preço velho de opção ilíquida"
+              : `esconde box acima de ${cdiCap.toLocaleString("pt-BR")}× o CDI (preço velho de opção ilíquida)`}
+          </span>
+        </div>
 
         {/* Pop-up (modal) de configuração de alertas */}
         <Dialog open={showAlertConfig} onOpenChange={setShowAlertConfig}>

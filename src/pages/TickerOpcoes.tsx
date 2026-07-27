@@ -22,6 +22,17 @@ import { calcDiasUteis } from "@/lib/b3-utils";
 // Taxa CDI anual de referência p/ comparar o retorno do box com o CDI do período.
 const CDI_ANUAL = 14.65;
 
+// Filtro anti-erro: um box livre de risco não rende MUITO acima do CDI. Acima do teto
+// (múltiplo do CDI do período) é quase certo preço velho de opção ilíquida (lucro-fantasma).
+const BOX_CDI_CAP_KEY = "box-cdi-cap";
+const BOX_CDI_CAP_DEFAULT = 2.5;
+const BOX_CDI_CAP_PRESETS: { v: number; label: string }[] = [
+  { v: 2.5, label: "2,5×" },
+  { v: 5, label: "5×" },
+  { v: 10, label: "10×" },
+  { v: 999, label: "Tudo" }, // 999 = sem limite
+];
+
 const normalizeTickerSearch = (value: string) =>
   value.toUpperCase().replace(/[^A-Z0-9]/g, "").trim();
 
@@ -78,6 +89,13 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [selectedFamily, setSelectedFamily] = useState<string>("PETR");
+  // Teto do filtro anti-erro (múltiplo do CDI). Compartilhado via localStorage com o rastreador.
+  const [cdiCap, setCdiCap] = useState<number>(() => {
+    const s = localStorage.getItem(BOX_CDI_CAP_KEY);
+    const v = s ? parseFloat(s) : BOX_CDI_CAP_DEFAULT;
+    return isFinite(v) && v > 0 ? v : BOX_CDI_CAP_DEFAULT;
+  });
+  const setCdiCapPersist = (v: number) => { setCdiCap(v); localStorage.setItem(BOX_CDI_CAP_KEY, String(v)); };
   const [selectedVencimento, setSelectedVencimento] = useState<string>("all");
   const [selectedTipo, setSelectedTipo] = useState<string>("all");
   const [precoBase, setPrecoBase] = useState("");
@@ -367,6 +385,11 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
         : null;
       const venceCDI = cdiPeriodo != null ? lucroPct >= cdiPeriodo : null;
 
+      // Filtro anti-erro: box livre de risco não rende MUITO acima do CDI. Acima do teto
+      // (cdiCap × CDI do período) é quase certo preço velho de opção ilíquida (fantasma).
+      // cdiCap = 999 ("Tudo") desliga o filtro.
+      if (cdiPeriodo != null && cdiPeriodo > 0 && cdiCap < 900 && lucroPct > cdiCap * cdiPeriodo) return;
+
       if (lucro > 0) {
         opportunities.push({
           strike: strikeReal, vencimento: call.vencimento,
@@ -378,7 +401,7 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
     });
 
     return opportunities.sort((a, b) => b.lucroPct - a.lucroPct).slice(0, 10);
-  }, [filtered, selectedFamily, precoBaseNum, getRow, stockTicker, livePrice, precoBaseManual]);
+  }, [filtered, selectedFamily, precoBaseNum, getRow, stockTicker, livePrice, precoBaseManual, cdiCap]);
 
   const toggleRow = useCallback((ticker: string) => {
     setSelectedRows((prev) => {
@@ -1166,6 +1189,35 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
                 <span><b className="text-foreground">Recebe</b> = garantido no vencimento (o strike)</span>
                 <span><b className="text-emerald-600 dark:text-emerald-400">Lucro</b> = diferença travada</span>
                 <span><b className="text-primary">%</b> = retorno até vencer</span>
+              </div>
+
+              {/* Filtro anti-erro: teto de retorno vs CDI (evita lucro-fantasma de opção ilíquida) */}
+              <div className="mt-2.5 pt-2.5 border-t border-primary/15 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Shield className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-[11px] font-bold text-foreground">Filtro anti-erro</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  {BOX_CDI_CAP_PRESETS.map((p) => (
+                    <button
+                      key={p.v}
+                      onClick={() => setCdiCapPersist(p.v)}
+                      title={p.v >= 900 ? "Mostrar tudo (sem filtro)" : `Esconder box acima de ${p.label} o CDI`}
+                      className={`px-2 py-0.5 rounded-md text-[11px] font-bold transition-all ${
+                        cdiCap === p.v
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "bg-muted text-muted-foreground hover:bg-muted/70"
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+                <span className="text-[10px] text-muted-foreground min-w-0">
+                  {cdiCap >= 900
+                    ? "⚠️ mostrando tudo — pode incluir preço velho de opção ilíquida"
+                    : <>esconde box acima de <b className="text-foreground">{cdiCap.toLocaleString("pt-BR")}× o CDI</b> (quase sempre preço velho de opção ilíquida)</>}
+                </span>
               </div>
             </div>
             <div className="p-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5">
