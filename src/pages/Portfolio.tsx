@@ -15,7 +15,7 @@ import {
   RotateCcw, Trash2, Briefcase, Wallet, Target, CalendarDays, Percent, BarChart3, Download, FileDown
 } from 'lucide-react';
 import { countBusinessDays } from '@/lib/b3-calendar';
-import { calculateCDIReturn } from '@/lib/payoff';
+import { calculateCDIReturn, calculateMetrics } from '@/lib/payoff';
 import { cn } from '@/lib/utils';
 import { ProfessionalHeader, ProfessionalCard } from '@/components/ProfessionalLayout';
 import ListSkeleton from '@/components/skeletons/ListSkeleton';
@@ -135,6 +135,22 @@ export default function Portfolio() {
     }, 0);
   };
 
+  // Capital efetivamente em risco: desembolso (débito) ou, em estruturas de crédito,
+  // a perda máxima da estrutura. Evita o ROI "100% fixo" das operações de crédito.
+  const getRiskCapital = (analysisId: string): number => {
+    const montage = getMontageCost(analysisId);
+    if (montage < 0) return Math.abs(montage);
+    const legs = legsMap[analysisId] || [];
+    if (legs.length === 0) return 0;
+    try {
+      const m = calculateMetrics(legs as any);
+      if (typeof m.maxLoss === 'number' && Number.isFinite(m.maxLoss) && m.maxLoss < 0) {
+        return Math.abs(m.maxLoss);
+      }
+    } catch { /* estrutura degenerada — ignora */ }
+    return 0;
+  };
+
   const getExitValue = (analysisId: string): number => {
     const legs = legsMap[analysisId] || [];
     return legs.reduce((acc, leg) => {
@@ -156,10 +172,9 @@ export default function Portfolio() {
 
   const stats = useMemo(() => {
     const pnls = filteredAnalyses.map(a => getPnL(a.id));
-    const montageCosts = filteredAnalyses.map(a => getMontageCost(a.id));
-    
+
     const totalPL = pnls.reduce((s, p) => s + p, 0);
-    const totalInvested = montageCosts.reduce((s, c) => s + (c < 0 ? Math.abs(c) : 0), 0);
+    const totalInvested = filteredAnalyses.reduce((s, a) => s + getRiskCapital(a.id), 0);
     
     const wins = pnls.filter(p => p > 0).length;
     const losses = pnls.filter(p => p < 0).length;
@@ -170,8 +185,7 @@ export default function Portfolio() {
 
     // CDI total for all operations
     const totalCDI = filteredAnalyses.reduce((sum, a) => {
-      const montage = getMontageCost(a.id);
-      const invested = montage < 0 ? Math.abs(montage) : 0;
+      const invested = getRiskCapital(a.id);
       return sum + getCDIForPeriod(a.created_at, a.closed_at, a.cdi_rate, invested);
     }, 0);
 
@@ -479,8 +493,8 @@ export default function Portfolio() {
               const pnl = getPnL(a.id);
               const montage = getMontageCost(a.id);
               const exitValue = getExitValue(a.id);
-              const invested = montage < 0 ? Math.abs(montage) : 0;
-              const roi = invested > 0 ? (pnl / invested) * 100 : (pnl > 0 ? 100 : 0);
+              const invested = getRiskCapital(a.id);
+              const roi = invested > 0 ? (pnl / invested) * 100 : null;
               
               return (
                 <ProfessionalCard
@@ -538,7 +552,7 @@ export default function Portfolio() {
                       <div className="text-center lg:text-right">
                         <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-1">ROI</p>
                         <Badge className={cn('font-black text-sm px-3 py-1 rounded-full shadow-lg', pnl >= 0 ? 'bg-success text-success-foreground shadow-success/30' : 'bg-destructive text-destructive-foreground shadow-destructive/30')}>
-                          {roi >= 0 ? '+' : ''}{roi.toFixed(2)}%
+                          {roi === null ? '—' : `${roi >= 0 ? '+' : ''}${roi.toFixed(2)}%`}
                         </Badge>
                       </div>
                       <div className="text-center lg:text-right">
@@ -546,7 +560,7 @@ export default function Portfolio() {
                         {(() => {
                           const cdiReturn = getCDIForPeriod(a.created_at, a.closed_at, a.cdi_rate, invested);
                           const cdiPct = cdiReturn > 0 ? ((pnl / cdiReturn) * 100).toFixed(0) : 'N/A';
-                          const beats = typeof cdiPct === 'string' ? false : pnl >= cdiReturn;
+                          const beats = cdiReturn > 0 && pnl >= cdiReturn;
                           return (
                             <Badge variant="outline" className={cn('font-black text-xs px-2 py-0.5', beats ? 'border-success/50 text-success bg-success/10' : 'border-warning/50 text-warning bg-warning/10')}>
                               {cdiPct === 'N/A' ? 'N/A' : `${cdiPct}% CDI`}

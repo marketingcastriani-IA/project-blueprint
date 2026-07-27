@@ -105,6 +105,7 @@ interface StrategyResult {
   custoMontagem?: number;
   vencimento: string;
   isLive: boolean;
+  unlimitedRisk?: boolean; // venda a descoberto: perda teoricamente ilimitada
 }
 
 interface SavedAsset {
@@ -391,7 +392,7 @@ function MiniPayoffChart({ result, spotPrice, cdiRate = 14.65, qty = 100 }: { re
 }
 export default function StrategyTrackerTab() {
   const { options, vencimentos } = useB3Options();
-  const { status, rows, addTicker } = useSharedRtdBridge();
+  const { status, rows, addTicker, getRow, eodReady, eodDate } = useSharedRtdBridge();
 
   // ─── SAVED ASSETS (multi-asset tracking) ──────────────────
   const [savedAssets, setSavedAssets] = useState<SavedAsset[]>(() => {
@@ -560,11 +561,11 @@ export default function StrategyTrackerTab() {
   const stockTicker = useMemo(() => {
     if (stockCandidates.length === 0) return null;
     for (const c of stockCandidates) {
-      const row = rows.get(c);
+      const row = getRow(c);
       if (row?.ultimo && row.ultimo > 0) return c;
     }
     return stockCandidates[0];
-  }, [stockCandidates, rows]);
+  }, [stockCandidates, getRow]);
 
   useEffect(() => {
     if (stockCandidates.length === 0 || status !== "connected") return;
@@ -573,7 +574,7 @@ export default function StrategyTrackerTab() {
 
   const stockPrice = useMemo(() => {
     if (stockTicker) {
-      const row = rows.get(stockTicker);
+      const row = getRow(stockTicker);
       if (row?.ultimo && row.ultimo > 0) return row.ultimo;
     }
     if (!selectedFamily) return 0;
@@ -581,7 +582,7 @@ export default function StrategyTrackerTab() {
     if (familyOpts.length === 0) return 0;
     const strikes = familyOpts.map((o) => o.strike).sort((a, b) => a - b);
     return strikes[Math.floor(strikes.length / 2)];
-  }, [stockTicker, rows, selectedFamily, options]);
+  }, [stockTicker, getRow, selectedFamily, options]);
 
   const availableVencimentos = useMemo(() => {
     if (!selectedFamily) return vencimentos;
@@ -631,38 +632,40 @@ export default function StrategyTrackerTab() {
   }, [selectedFamily, availableVencimentos.length]);
 
   const getPrice = useCallback((ticker: string, _field?: "ofCompra" | "ofVenda" | "ultimo"): { price: number; isLive: boolean } => {
-    const row = rows.get(ticker);
+    // getRow devolve a row do Profit (ao vivo) OU uma row de fim de dia (EOD) — mesmo shape.
+    const row = getRow(ticker);
     if (row) {
-      // Always prioritize último (last traded price) - matches Profit Pro display
-      if (row.ultimo && row.ultimo > 0) return { price: row.ultimo, isLive: true };
-      // Fallback to bid/ask if último not available
-      const val = _field ? row[_field] : null;
-      if (val && val > 0) return { price: val, isLive: true };
+      const isLive = row._fonte === "rt"; // EOD conta como não-ao-vivo (a UI distingue)
+      // Prioriza o lado de EXECUÇÃO: ASK (ofVenda) ao comprar, BID (ofCompra) ao vender.
+      // Usar o "último" nas duas pernas ignora o spread e superestima o resultado (não executável).
+      const side = (_field && _field !== "ultimo") ? row[_field] : null;
+      if (side && side > 0) return { price: side, isLive };
+      if (row.ultimo && row.ultimo > 0) return { price: row.ultimo, isLive }; // fallback: último/fechamento
     }
     const opt = options.find((o) => o.ticker === ticker);
     return { price: opt?.precoUltimo ?? 0, isLive: false };
-  }, [rows, options]);
+  }, [getRow, options]);
 
   // Strike efetivo: o ao vivo do Profit (ajustado por proventos) tem prioridade
   // sobre o nominal do JSON estático — senão o P&L e o breakeven ficam errados
   // em ações que pagam dividendos (ex.: PETR).
   const strikeOf = useCallback((ticker: string, fallback: number): number => {
-    const k = rows.get(ticker)?.strike;
+    const k = getRow(ticker)?.strike;
     return (k != null && k > 0) ? k : fallback;
-  }, [rows]);
+  }, [getRow]);
 
   // Helper: check if option has enough trades (volume)
   const hasMinTrades = useCallback((ticker: string): boolean => {
     const minT = parseInt(minTrades) || 0;
     if (minT <= 0) return true;
-    const row = rows.get(ticker);
+    const row = getRow(ticker);
     if (row?.negocios && row.negocios >= minT) return true;
     // Also check from B3 options data
     const opt = options.find((o) => o.ticker === ticker);
     if (opt && (opt as any).negocios >= minT) return true;
     // If no trade data available and filter is set, check volume
     return false;
-  }, [minTrades, rows, options]);
+  }, [minTrades, getRow, options]);
 
   // Tickers a inscrever no RTD (derivados dos filtros) — efeito colateral fora do useMemo
   const tickersToSubscribe = useMemo(() => {
@@ -1049,8 +1052,9 @@ export default function StrategyTrackerTab() {
         const maxProfit = totalCredit;
         const beUp = kCall + cp + pp;
         const beDown = kPut - cp - pp;
-        const bigMove = stockPrice * 0.2;
-        const maxLoss = (bigMove) * qty; // theoretical unlimited, estimate 20% move
+        // Perda teoricamente ILIMITADA (call vendida a descoberto). O número é só uma
+        // referência de movimento de 20% líquido do crédito; a UI marca como ilimitado.
+        const maxLoss = Math.max(stockPrice * 0.2 - cp - pp, 0) * qty;
         const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
         allResults.push({
           id: `sstr_${pair.call.ticker}_${pair.put.ticker}`, strategy: "short_straddle", strategyLabel: getStratLabel("short_straddle"),
@@ -1060,7 +1064,7 @@ export default function StrategyTrackerTab() {
           ],
           maxProfit, maxLoss, breakeven: [Math.max(beDown, 0), beUp], returnPct,
           qualityScore: maxProfit > 0 && maxLoss > 0 ? maxProfit / maxLoss : 0,
-          netCredit: totalCredit, vencimento: pair.call.vencimento, isLive: l1 && l2,
+          netCredit: totalCredit, vencimento: pair.call.vencimento, isLive: l1 && l2, unlimitedRisk: true,
         });
       });
     }
@@ -1082,8 +1086,9 @@ export default function StrategyTrackerTab() {
           const maxProfit = totalCredit;
           const beUp = kCall + pp + cp;
           const beDown = kPut - pp - cp;
-          const bigMove = stockPrice * 0.2;
-          const maxLoss = (bigMove) * qty;
+          // Perda teoricamente ILIMITADA (call vendida a descoberto). Estimativa de
+          // movimento de 20% líquido do crédito; a UI marca como ilimitado.
+          const maxLoss = Math.max(stockPrice * 0.2 - pp - cp, 0) * qty;
           const returnPct = maxLoss > 0 ? (maxProfit / maxLoss) * 100 : 0;
           allResults.push({
             id: `sstg_${put.ticker}_${call.ticker}`, strategy: "short_strangle", strategyLabel: getStratLabel("short_strangle"),
@@ -1093,7 +1098,7 @@ export default function StrategyTrackerTab() {
             ],
             maxProfit, maxLoss, breakeven: [Math.max(beDown, 0), beUp], returnPct,
             qualityScore: maxProfit > 0 && maxLoss > 0 ? maxProfit / maxLoss : 0,
-            netCredit: totalCredit, vencimento: put.vencimento, isLive: l1 && l2,
+            netCredit: totalCredit, vencimento: put.vencimento, isLive: l1 && l2, unlimitedRisk: true,
           });
         }
       }
@@ -1549,7 +1554,7 @@ export default function StrategyTrackerTab() {
                 <p className="text-sm font-black text-foreground">Nenhuma combinação encontrada</p>
                 <p className="text-xs text-muted-foreground text-center max-w-md">
                   {status === "connected" && selectedFamily ? (
-                    <><b className="text-foreground">Abra a grade de opções do {selectedFamily} no seu Profit Pro</b> — o Profit só cota as opções que estão abertas nele. Depois disso, ajuste os filtros (reduza "Negócios ≥" ou "Retorno Mín") ou tente outro vencimento.</>
+                    <><b className="text-foreground">Abra a grade de opções do {selectedFamily} no Profit e expanda o vencimento que vai operar</b> (clique na seta ▶ ao lado do mês) — o Profit só cota as opções que estão <b className="text-foreground">abertas e visíveis</b> nele. Depois disso, ajuste os filtros (reduza "Negócios ≥" ou "Retorno Mín") ou tente outro vencimento.</>
                   ) : (
                     <>Ajuste os filtros (reduza "Negócios ≥" ou "Retorno Mín"), selecione outro vencimento ou tente uma estratégia diferente.</>
                   )}
@@ -1642,7 +1647,7 @@ export default function StrategyTrackerTab() {
                       </div>
                       <div>
                         <p className="text-[10px] text-muted-foreground uppercase font-bold">Risco Máx</p>
-                        <p className="text-sm font-black text-red-500">R$ {result.maxLoss.toFixed(0)}</p>
+                        <p className="text-sm font-black text-red-500">{result.unlimitedRisk ? "∞ Ilimitado" : `R$ ${result.maxLoss.toFixed(0)}`}</p>
                       </div>
                       <div>
                         <p className="text-[10px] text-muted-foreground uppercase font-bold">Custo Montagem</p>
@@ -1794,7 +1799,7 @@ export default function StrategyTrackerTab() {
                     </div>
                     <div>
                       <p className="text-xs font-black uppercase text-muted-foreground">Perda Máxima</p>
-                      <p className="text-sm font-black text-red-500">R$ {selectedResult.maxLoss.toFixed(0)}</p>
+                      <p className="text-sm font-black text-red-500">{selectedResult.unlimitedRisk ? "∞ Ilimitado" : `R$ ${selectedResult.maxLoss.toFixed(0)}`}</p>
                     </div>
                     <div>
                       <p className="text-xs font-black uppercase text-muted-foreground">Break-even</p>
@@ -1905,7 +1910,7 @@ export default function StrategyTrackerTab() {
                             </td>
                             <td className={cn("p-3 text-right font-black text-sm", r.returnPct > 0 ? "text-emerald-500" : "text-red-500")}>{r.returnPct.toFixed(1)}%</td>
                             <td className="p-3 text-right font-bold text-emerald-500">R$ {r.maxProfit.toFixed(0)}</td>
-                            <td className="p-3 text-right font-bold text-red-500">R$ {r.maxLoss.toFixed(0)}</td>
+                            <td className="p-3 text-right font-bold text-red-500">{r.unlimitedRisk ? "∞" : `R$ ${r.maxLoss.toFixed(0)}`}</td>
                             <td className="p-3 text-right font-black text-primary">{r.qualityScore.toFixed(2)}</td>
                             <td className="p-3 text-right text-muted-foreground font-bold">{r.vencimento}</td>
                             {showCdi && cdi && <td className={cn("p-3 text-right font-black", cdi.beats ? "text-emerald-500" : "text-red-500")}>{cdi.beats ? "+" : ""}{cdi.diff}%</td>}

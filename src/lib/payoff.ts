@@ -284,15 +284,19 @@ export function calculateMetrics(legs: Leg[]): AnalysisMetrics {
   const isGainUnlimited = !isMultiMaturity && lastProfit > secondLastProfit + 0.01;
   const isLossUnlimited = !isMultiMaturity && (lastProfit < secondLastProfit - 0.01);
 
-  // Cálculo da perda máxima real
+  // Cálculo da perda/ganho máximos reais: a curva não chega ao preço 0, então
+  // avaliamos o payoff em S=0 explicitamente (senão PUT comprada / ação vendida
+  // teria o ganho máximo truncado, e certas perdas idem).
   let absoluteMinProfit = minProfit;
+  let absoluteMaxProfit = maxProfit;
   if (!isMultiMaturity) {
-    const lossAtZero = calculatePayoffAtExpiry(legs, 0);
-    absoluteMinProfit = Math.min(minProfit, lossAtZero);
+    const payoffAtZero = calculatePayoffAtExpiry(legs, 0);
+    absoluteMinProfit = Math.min(minProfit, payoffAtZero);
+    absoluteMaxProfit = Math.max(maxProfit, payoffAtZero);
   }
 
   const result: AnalysisMetrics = {
-    maxGain: isGainUnlimited ? 'Ilimitado' : Math.round(maxProfit * 100) / 100,
+    maxGain: isGainUnlimited ? 'Ilimitado' : Math.round(absoluteMaxProfit * 100) / 100,
     maxLoss: isLossUnlimited ? 'Ilimitado' : Math.round(absoluteMinProfit * 100) / 100,
     breakevens: Array.from(new Set(breakevens)).sort((a, b) => a - b),
     netCost: Math.round(netCost * 100) / 100,
@@ -327,10 +331,13 @@ export function calculateCDIReturn(
   const grossReturn = principal * (Math.pow(1 + dailyRate, days) - 1);
   if (!withIR) return Math.round(grossReturn * 100) / 100;
 
+  // A alíquota regressiva de IR de renda fixa é definida em dias CORRIDOS, mas
+  // 'days' aqui são dias úteis (base 252) → converte para corridos p/ escolher a faixa.
+  const calendarDays = days * 365 / 252;
   let irRate = 0.225;
-  if (days > 720) irRate = 0.15;
-  else if (days > 360) irRate = 0.175;
-  else if (days > 180) irRate = 0.20;
+  if (calendarDays > 720) irRate = 0.15;
+  else if (calendarDays > 360) irRate = 0.175;
+  else if (calendarDays > 180) irRate = 0.20;
 
   return Math.round(grossReturn * (1 - irRate) * 100) / 100;
 }

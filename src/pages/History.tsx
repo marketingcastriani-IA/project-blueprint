@@ -227,7 +227,7 @@ export default function History() {
       const legs = legsMap[a.id] || [];
       const m = metricsMap[a.id];
       const investido = Math.abs(legs.reduce((acc, l) =>
-        acc + (l.side === 'buy' ? 1 : -1) * l.price * l.quantity * (l.option_type === 'stock' ? 1 : 100), 0));
+        acc + (l.side === 'buy' ? 1 : -1) * l.price * l.quantity, 0));
       totalInvestido += investido;
       if (m) {
         if (m.maxGain === 'Ilimitado') temIlimitado = true;
@@ -256,7 +256,7 @@ export default function History() {
     const m = metricsMap[a.id];
     const legs = legsMap[a.id] || [];
     const investido = legs.reduce((acc, l) => {
-      const cost = l.price * l.quantity * (l.option_type === 'stock' ? 1 : 100);
+      const cost = l.price * l.quantity;
       return acc + (l.side === 'buy' ? cost : -cost);
     }, 0);
 
@@ -370,7 +370,7 @@ export default function History() {
           {/* CDI comparison */}
           {cdiReturn > 0 && (
             <div>
-              <span className="text-xs text-muted-foreground uppercase tracking-wider">vs CDI até vencimento ({bizDaysTotal} {bizDaysTotal === 1 ? 'dia útil' : 'dias úteis'})</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">vs CDI até vencimento ({bizDaysTotal} {bizDaysTotal === 1 ? 'dia útil' : 'dias úteis'}) · melhor caso</span>
               <div className="mt-0.5">
                 <span className={cn(
                   "inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-sm font-black font-mono border",

@@ -78,10 +78,11 @@ function getThirdFriday(year: number, month: number): Date {
   const thirdFriday = firstFriday + 14;
   let expiry = new Date(year, month - 1, thirdFriday);
 
-  // If it's a holiday, go to previous business day
+  // Se cair em fim de semana/feriado, o vencimento vai para o PRÓXIMO dia útil
+  // (regra da B3 para opções). Ex.: 3ª sexta de nov/2026 = 20/11 (feriado) → 23/11.
   const holidays = getBankHolidays(year);
   while (expiry.getDay() === 0 || expiry.getDay() === 6 || holidays.has(formatDateKey(expiry))) {
-    expiry.setDate(expiry.getDate() - 1);
+    expiry.setDate(expiry.getDate() + 1);
   }
   return expiry;
 }

@@ -38,15 +38,20 @@ export default function CDIComparison({ metrics, cdiRate, setCdiRate, daysToExpi
 
   const hasStrategy = !!metrics.strategyType;
 
-  // Capital investido: usa montageTotal se disponível (estratégia detectada), senão netCost
-  // Sempre usa valor absoluto pois representa o desembolso real
+  // Capital em risco: a perda máxima da estrutura já representa o capital efetivamente
+  // exposto — cobre tanto débito (spread comprado, ação) quanto crédito (spread vendido,
+  // venda de put), evitando o ROI inflado quando o prêmio líquido é pequeno. Se a estrutura
+  // é sem risco (maxLoss >= 0), cai no desembolso de montagem / netCost.
   const investedCapital = useMemo(() => {
+    if (typeof metrics.maxLoss === 'number' && metrics.maxLoss < 0) {
+      return Math.abs(metrics.maxLoss);
+    }
     if (hasStrategy && metrics.montageTotal != null && metrics.montageTotal !== 0) {
       return Math.abs(metrics.montageTotal);
     }
     const nc = Math.abs(metrics.netCost);
     return nc > 0 ? nc : 100;
-  }, [hasStrategy, metrics.montageTotal, metrics.netCost]);
+  }, [hasStrategy, metrics.montageTotal, metrics.netCost, metrics.maxLoss]);
 
   const irCDIMultiplier = applyIRCDI ? (1 - irCDIRate / 100) : 1;
   const irOptionsMultiplier = applyIROptions ? (1 - irOptionsRate / 100) : 1;

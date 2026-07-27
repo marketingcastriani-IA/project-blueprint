@@ -19,7 +19,7 @@ import {
   ClipboardPaste, X, Shield, ShieldCheck, Trophy, Wifi, WifiOff, AlertTriangle,
   TrendingUp, TrendingDown, Minus, Pencil, Save,
   ToggleLeft, ToggleRight, BarChart3, Bell, BellOff, Volume2, VolumeX,
-  Smartphone, Monitor, Zap, Download, Info, Database,
+  Smartphone, Monitor, Zap, Download, Info, Database, Moon,
 } from "lucide-react";
 import { useSharedRtdBridge } from "@/contexts/RtdBridgeContext";
 import { statusConfig } from "@/hooks/useRtdBridge";
@@ -383,7 +383,7 @@ export default function CollarTrackerTab() {
     localStorage.setItem("collar-tracker-instructions-dismissed", "true");
   };
 
-  const { status, rows, connect, addTicker: bridgeAddTicker } = useSharedRtdBridge();
+  const { status, rows, connect, addTicker: bridgeAddTicker, getRow, eodReady, eodDate } = useSharedRtdBridge();
 
   const postToSW = useCallback(async (message: object) => {
     if (!('serviceWorker' in navigator)) return false;
@@ -603,10 +603,10 @@ export default function CollarTrackerTab() {
   const calculateCollars = useCallback(
     (family: StockFamily): CollarResult[] => {
       const stockTicker = familyStockTickers(family.name);
-      let stockRow = rows.get(stockTicker);
+      let stockRow = getRow(stockTicker);
       if (!stockRow || (!stockRow.ofCompra && !stockRow.ofVenda && !stockRow.ultimo)) {
         for (const s of ["4", "3", "11"]) {
-          const candidate = rows.get(`${family.name}${s}`);
+          const candidate = getRow(`${family.name}${s}`);
           if (candidate && (candidate.ofCompra || candidate.ofVenda || candidate.ultimo)) {
             stockRow = candidate;
             break;
@@ -624,8 +624,8 @@ export default function CollarTrackerTab() {
 
       for (const call of calls) {
         for (const put of puts) {
-          const callRow = rows.get(call.symbol);
-          const putRow = rows.get(put.symbol);
+          const callRow = getRow(call.symbol);
+          const putRow = getRow(put.symbol);
 
           const callBid = getPrice(callRow, "ofCompra");
           const callAsk = getPrice(callRow, "ofVenda");
@@ -777,7 +777,7 @@ export default function CollarTrackerTab() {
       });
       return results;
     },
-    [rows, cdiAnual, getStrikeAndExpiry, familyStockTickers, rankingMethod]
+    [getRow, cdiAnual, getStrikeAndExpiry, familyStockTickers, rankingMethod]
   );
 
   // Global best — one per ranking method
@@ -908,6 +908,14 @@ export default function CollarTrackerTab() {
             {status === "connected" ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
             {statusConfig[status]?.label ?? status}
           </span>
+          {status !== "connected" && eodReady && (
+            <span
+              className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 text-amber-500"
+              title="Collars calculados com o fechamento do último pregão (indicativo). Conecte o Profit para tempo real."
+            >
+              <Moon className="w-3.5 h-3.5" /> Fim de dia{eodDate ? ` · ${eodDate.slice(8, 10)}/${eodDate.slice(5, 7)}` : ""}
+            </span>
+          )}
           {status !== "connected" && (
             <button onClick={connect}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-full text-xs font-bold transition-all active:scale-[0.97]">
@@ -991,7 +999,10 @@ export default function CollarTrackerTab() {
 
             const diffPp = collarPctLiq - cdiPctLiq;
             const diffBrl = collarRendLiq - cdiRendLiq;
-            const collarGanha = diffPp >= 0;
+            // "Ganha do CDI" só quando o PISO GARANTIDO (não o teto/melhor caso) supera o
+            // CDI — senão seria comparar o melhor cenário (não garantido) com renda fixa garantida.
+            const pisoPctLiq = descontarIR ? (c.maxLossPct ?? 0) * (1 - IR_COLLAR) : (c.maxLossPct ?? 0);
+            const collarGanha = c.isRiskFree && pisoPctLiq >= cdiPctLiq;
 
             return (
               <div key={`${c.tipo}-${c.callSymbol}-${c.putSymbol}`}
@@ -1556,7 +1567,7 @@ export default function CollarTrackerTab() {
           return true;
         });
         const stockTicker = familyStockTickers(family.name);
-        const stockRow = rows.get(stockTicker) || rows.get(family.name);
+        const stockRow = getRow(stockTicker) || getRow(family.name);
         const stockPrice = stockRow?.ultimo;
         const calls = family.tickers.filter((t) => t.type === "CALL");
         const puts = family.tickers.filter((t) => t.type === "PUT");
@@ -1761,6 +1772,9 @@ export default function CollarTrackerTab() {
                     </p>
                     <p className="text-[10px] text-muted-foreground mt-1">
                       Adicione mais calls e puts para aumentar as combinações possíveis.
+                    </p>
+                    <p className="text-[10px] text-amber-500/90 mt-2 max-w-sm mx-auto leading-relaxed">
+                      Preços não chegam? Abra a grade do ativo no Profit <b>e expanda o vencimento que vai operar</b> (seta ▶ ao lado do mês) — o Profit só cota as opções abertas e visíveis nele.
                     </p>
                   </div>
                 )}

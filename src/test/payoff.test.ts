@@ -89,8 +89,10 @@ describe("calculateCDIReturn", () => {
     expect(calculateCDIReturn(1000, 12, 252, false)).toBeCloseTo(120, 2);
   });
 
-  it("aplica IR de 20% na faixa 181-360 dias", () => {
-    expect(calculateCDIReturn(1000, 12, 252, true)).toBeCloseTo(96, 2);
+  it("252 dias úteis (~365 dias corridos) aplica IR de 17,5%", () => {
+    // A faixa regressiva de IR usa dias CORRIDOS: 252 du ≈ 365 corridos → 17,5%.
+    // Bruto = 120; líquido = 120 * (1 - 0,175) = 99.
+    expect(calculateCDIReturn(1000, 12, 252, true)).toBeCloseTo(99, 2);
   });
 
   it("entradas inválidas retornam 0", () => {

@@ -43,6 +43,7 @@ import {
   Monitor,
   Zap,
   Download,
+  Moon,
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -307,7 +308,7 @@ export default function BoxTracker() {
     }
   }, [notifEnabled, notifThreshold]);
 
-  const { status, rows, connect, addTicker: bridgeAddTicker } = useSharedRtdBridge();
+  const { status, rows, connect, addTicker: bridgeAddTicker, getRow, eodReady, eodDate } = useSharedRtdBridge();
 
   // Instructional banner
   const [showBoxInstructions, setShowBoxInstructions] = useState(() => {
@@ -470,11 +471,11 @@ export default function BoxTracker() {
     (family: StockFamily): BoxPair[] => {
       // Try stock ticker with different suffixes (PETR4, PETR3, PETR11)
       const stockTicker = familyStockTickers(family.name);
-      let stockRow = rows.get(stockTicker);
+      let stockRow = getRow(stockTicker);
       // Fallback: try all suffixes
       if (!stockRow || (!stockRow.ofCompra && !stockRow.ofVenda && !stockRow.ultimo)) {
         for (const s of ["4", "3", "11"]) {
-          const candidate = rows.get(`${family.name}${s}`);
+          const candidate = getRow(`${family.name}${s}`);
           if (candidate && (candidate.ofCompra || candidate.ofVenda || candidate.ultimo)) {
             stockRow = candidate;
             break;
@@ -491,7 +492,7 @@ export default function BoxTracker() {
       family.tickers.forEach((t) => {
         const gStrike = t.strike;
         if (gStrike <= 0) return;
-        const venc = getStrikeAndExpiry(t.symbol)?.vencimento ?? rows.get(t.symbol)?.ven ?? "?";
+        const venc = getStrikeAndExpiry(t.symbol)?.vencimento ?? getRow(t.symbol)?.ven ?? "?";
         const groupKey = `${gStrike}|${venc}`;
         if (!strikeMap.has(groupKey)) strikeMap.set(groupKey, { calls: [], puts: [], strike: gStrike });
         const group = strikeMap.get(groupKey)!;
@@ -505,8 +506,8 @@ export default function BoxTracker() {
         const tickerStrike = group.strike;
         const call = group.calls[0] || null;
         const put = group.puts[0] || null;
-        const callRow = call ? rows.get(call.symbol) : null;
-        const putRow = put ? rows.get(put.symbol) : null;
+        const callRow = call ? getRow(call.symbol) : null;
+        const putRow = put ? getRow(put.symbol) : null;
 
         const callBid = getPrice(callRow, "ofCompra");
         const callAsk = getPrice(callRow, "ofVenda");
@@ -535,11 +536,18 @@ export default function BoxTracker() {
         let lucroLiqAcoesTotal: number | null = null;
         let lucroLiqAcoesPercent: number | null = null;
 
-        if (stockAsk !== null && callBid !== null && putAsk !== null) {
-          compraBox = (stockAsk + putAsk) - callBid;
+        // Box só é confiável com strike AO VIVO do Profit (ajustado por proventos) —
+        // senão o strike do JSON pode estar velho e gerar lucro-fantasma. Além disso,
+        // a call (BID) não pode valer bem menos que o intrínseco (ação − strike), e o
+        // custo tem de ser > 0 (custo ≤ 0 = cotação cruzada/dado ruim).
+        if (stockAsk !== null && callBid !== null && putAsk !== null && strikeRtd !== null) {
+          const custo = (stockAsk + putAsk) - callBid;
+          const intrinsic = Math.max(0, stockAsk - strikeRtd);
+          if (custo > 0 && callBid >= intrinsic - 0.05) {
+          compraBox = custo;
           lucro = strikeReal - compraBox;
           lucroTotal = lucro * qty;
-          lucroPercent = compraBox > 0 ? (lucro / compraBox) * 100 : null;
+          lucroPercent = (lucro / compraBox) * 100;
 
           // Lucro líquido com IR de ações (15%)
           if (descontarIRAcoes && lucro > 0) {
@@ -551,6 +559,7 @@ export default function BoxTracker() {
             lucroLiqAcoesTotal = lucroTotal;
             lucroLiqAcoesPercent = lucroPercent;
           }
+          } // fim: custo > 0 e call coerente com o intrínseco
         }
 
         const vencParaCalculo = vencimento;
@@ -583,10 +592,18 @@ export default function BoxTracker() {
         });
       });
 
-      pairs.sort((a, b) => boxRankScore(b.lucroPercent, b.cdiPeriodo) - boxRankScore(a.lucroPercent, a.cdiPeriodo));
+      // Ordena pelos MESMOS valores exibidos (líquidos quando o IR está ligado) —
+      // senão o ranking não bate com o %CDI mostrado na tela.
+      pairs.sort((a, b) => {
+        const la = descontarIRAcoes ? a.lucroLiqAcoesPercent : a.lucroPercent;
+        const lb = descontarIRAcoes ? b.lucroLiqAcoesPercent : b.lucroPercent;
+        const ca = descontarIRRendaFixa ? a.cdiPeriodoLiq : a.cdiPeriodo;
+        const cb = descontarIRRendaFixa ? b.cdiPeriodoLiq : b.cdiPeriodo;
+        return boxRankScore(lb, cb) - boxRankScore(la, ca);
+      });
       return pairs;
     },
-    [rows, quantidade, descontarIRAcoes, descontarIRRendaFixa, cdiAnual, getStrikeAndExpiry, familyStockTickers]
+    [getRow, quantidade, descontarIRAcoes, descontarIRRendaFixa, cdiAnual, getStrikeAndExpiry, familyStockTickers]
   );
 
   // Global ranking — only the #1 best box per family
@@ -819,16 +836,34 @@ export default function BoxTracker() {
         </div>
       </div>
 
-      {/* Bridge not connected warning */}
+      {/* Fonte de dados quando o Profit não está ao vivo */}
       {!isConnected && status !== "connecting" && (
-        <div className="mb-5 bg-warning/5 border border-warning/20 rounded-2xl p-4 text-sm backdrop-blur-sm">
-          <div className="flex items-center gap-2 text-warning font-bold mb-1">
-            <AlertTriangle className="w-4 h-4" />
-            Bridge RTD não conectado
-          </div>
-          <p className="text-muted-foreground text-xs">
-            Inicie o <strong>ProfitRTDBridge.exe</strong> para receber dados em tempo real do Profit Pro.
-          </p>
+        <div className={cn(
+          "mb-5 rounded-2xl p-4 text-sm backdrop-blur-sm border",
+          eodReady ? "bg-amber-500/5 border-amber-500/25" : "bg-warning/5 border-warning/20"
+        )}>
+          {eodReady ? (
+            <>
+              <div className="flex items-center gap-2 text-amber-500 font-bold mb-1">
+                <Moon className="w-4 h-4" />
+                Mostrando fim de dia{eodDate ? ` · ${eodDate.slice(8, 10)}/${eodDate.slice(5, 7)}` : ""}
+              </div>
+              <p className="text-muted-foreground text-xs">
+                Preços de <strong>fechamento</strong> do último pregão (indicativo — confirme no pregão).
+                Inicie o <strong>ProfitRTDBridge.exe</strong> para cotações em tempo real.
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 text-warning font-bold mb-1">
+                <AlertTriangle className="w-4 h-4" />
+                Bridge RTD não conectado
+              </div>
+              <p className="text-muted-foreground text-xs">
+                Inicie o <strong>ProfitRTDBridge.exe</strong> para receber dados em tempo real do Profit Pro.
+              </p>
+            </>
+          )}
         </div>
       )}
 
@@ -856,8 +891,8 @@ export default function BoxTracker() {
             <div className="flex items-start gap-2.5">
               <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">2</span>
               <div>
-                <p className="text-xs font-semibold text-foreground">Tickers automáticos</p>
-                <p className="text-xs text-muted-foreground">Conecte o Bridge para preços ao vivo — os tickers vindos do Banco de Opções entram automaticamente</p>
+                <p className="text-xs font-semibold text-foreground">Tickers automáticos + grade no Profit</p>
+                <p className="text-xs text-muted-foreground">Conecte o Bridge e, no Profit, <strong className="text-foreground">abra a grade do ativo e expanda o vencimento que vai operar</strong> (seta ▶ ao lado do mês) — só assim as opções cotam ao vivo</p>
               </div>
             </div>
             <div className="flex items-start gap-2.5">
@@ -1514,7 +1549,7 @@ export default function BoxTracker() {
             // Resolve stock ticker for this family
             let resolvedStockTicker = `${family.name}4`;
             for (const s of ["4", "3", "11"]) {
-              const candidate = rows.get(`${family.name}${s}`);
+              const candidate = getRow(`${family.name}${s}`);
               if (candidate && (candidate.ofCompra || candidate.ofVenda || candidate.ultimo)) {
                 resolvedStockTicker = `${family.name}${s}`;
                 break;
@@ -1525,6 +1560,7 @@ export default function BoxTracker() {
                 key={family.id}
                 family={family}
                 rows={rows}
+                getRow={getRow}
                 quantidade={quantidade}
                 calculateBoxPairs={calculateBoxPairs}
                 onRemoveFamily={removeFamily}
@@ -1551,6 +1587,7 @@ export default function BoxTracker() {
 interface FamilyCardProps {
   family: StockFamily;
   rows: Map<string, any>;
+  getRow: (ticker: string) => any;
   quantidade: number;
   calculateBoxPairs: (family: StockFamily) => BoxPair[];
   onRemoveFamily: (id: string) => void;
@@ -1569,6 +1606,7 @@ interface FamilyCardProps {
 function FamilyCard({
   family,
   rows,
+  getRow,
   quantidade,
   calculateBoxPairs,
   onRemoveFamily,
@@ -1625,7 +1663,7 @@ function FamilyCard({
   const boxPairs = calculateBoxPairs(family);
   const bestPair = boxPairs.find((p) => p.lucroPercent !== null && p.lucroPercent > 0);
 
-  const stockRow = rows.get(stockTicker);
+  const stockRow = getRow(stockTicker);
   const stockBid = (stockRow?.ofCompra && stockRow.ofCompra !== 0) ? stockRow.ofCompra : stockRow?.ultimo ?? null;
   const stockAsk = (stockRow?.ofVenda && stockRow.ofVenda !== 0) ? stockRow.ofVenda : stockRow?.ultimo ?? null;
   const hasLiveStock = stockRow?.ultimo !== null && stockRow?.ultimo !== undefined && stockRow?.ultimo !== 0;
@@ -1973,7 +2011,7 @@ function FamilyCard({
                 {family.tickers
                   .filter((t) => !boxPairs.some((p) => p.callSymbol === t.symbol || p.putSymbol === t.symbol))
                   .map((ticker) => {
-                    const liveRow = rows.get(ticker.symbol);
+                    const liveRow = getRow(ticker.symbol);
                     return (
                       <tr
                         key={ticker.id}

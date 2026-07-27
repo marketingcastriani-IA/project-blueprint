@@ -2,9 +2,12 @@
 // Shared B3 utilities used by BoxTracker, CollarTracker, etc.
 // ============================================================
 
+import { countBusinessDays } from "./b3-calendar";
+
 /**
  * Calculate business days between today and a target date string.
  * Supports "dd/MM/yyyy" and "yyyy-MM-dd" formats.
+ * Usa o calendário da B3 (exclui feriados), via countBusinessDays.
  */
 export function calcDiasUteis(vencimentoStr: string | null): number | null {
   if (!vencimentoStr) return null;
@@ -13,7 +16,9 @@ export function calcDiasUteis(vencimentoStr: string | null): number | null {
     const [d, m, y] = vencimentoStr.split("/").map(Number);
     target = new Date(y, m - 1, d);
   } else if (/^\d{4}-\d{2}-\d{2}/.test(vencimentoStr)) {
-    target = new Date(vencimentoStr);
+    // Constrói a data LOCAL (new Date("yyyy-MM-dd") seria interpretado como UTC → −1 dia)
+    const [y, m, d] = vencimentoStr.slice(0, 10).split("-").map(Number);
+    target = new Date(y, m - 1, d);
   } else {
     return null;
   }
@@ -24,14 +29,7 @@ export function calcDiasUteis(vencimentoStr: string | null): number | null {
   target.setHours(0, 0, 0, 0);
   if (target <= hoje) return 0;
 
-  let dias = 0;
-  const cursor = new Date(hoje);
-  while (cursor < target) {
-    cursor.setDate(cursor.getDate() + 1);
-    const dow = cursor.getDay();
-    if (dow !== 0 && dow !== 6) dias++;
-  }
-  return dias;
+  return countBusinessDays(hoje, target); // exclui feriados da B3
 }
 
 /**

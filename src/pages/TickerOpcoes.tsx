@@ -73,7 +73,7 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
   const { options, families, vencimentos, loading } = useB3Options();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const [selectedFamily, setSelectedFamily] = useState<string>("all");
+  const [selectedFamily, setSelectedFamily] = useState<string>("PETR");
   const [selectedVencimento, setSelectedVencimento] = useState<string>("all");
   const [selectedTipo, setSelectedTipo] = useState<string>("all");
   const [precoBase, setPrecoBase] = useState("");
@@ -93,8 +93,8 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
   const [precoMax, setPrecoMax] = useState("");
   const [displayLimit, setDisplayLimit] = useState(100);
 
-  // RTD Bridge — auto-fill preço base from live data
-  const { status, rows, addTicker } = useSharedRtdBridge();
+  // RTD Bridge — auto-fill preço base from live data (ou fim de dia via getRow)
+  const { status, rows, addTicker, getRow, eodReady } = useSharedRtdBridge();
 
   // All candidate stock tickers for a family (try 4 first — most liquid PN shares)
   const stockCandidates = useMemo(() => {
@@ -106,11 +106,11 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
   const stockTicker = useMemo(() => {
     if (stockCandidates.length === 0) return null;
     for (const c of stockCandidates) {
-      const row = rows.get(c);
+      const row = getRow(c);
       if (row?.ultimo && row.ultimo > 0) return c;
     }
     return stockCandidates[0];
-  }, [stockCandidates, rows]);
+  }, [stockCandidates, getRow]);
 
   // Subscribe ALL candidate tickers to RTD when family is selected
   useEffect(() => {
@@ -133,8 +133,8 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
   // Auto-fill preço base from live data OR fallback to estimated price
   useEffect(() => {
     if (precoBaseManual) return;
-    if (stockTicker && status === "connected") {
-      const row = rows.get(stockTicker);
+    if (stockTicker) {
+      const row = getRow(stockTicker); // RT ao vivo ou fechamento (EOD)
       const live = row?.ultimo;
       if (live && live > 0) {
         setPrecoBase(live.toFixed(2));
@@ -144,12 +144,12 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
     if (estimatedPriceFromOptions && estimatedPriceFromOptions > 0) {
       setPrecoBase(estimatedPriceFromOptions.toFixed(2));
     }
-  }, [stockTicker, rows, status, precoBaseManual, estimatedPriceFromOptions]);
+  }, [stockTicker, getRow, precoBaseManual, estimatedPriceFromOptions]);
 
   const precoBaseNum = parseFloat(precoBase) || 0;
   const strikeMinCalc = precoBaseNum > 0 ? precoBaseNum * (1 - pctAbaixo / 100) : 0;
   const strikeMaxCalc = precoBaseNum > 0 ? precoBaseNum * (1 + pctAcima / 100) : Infinity;
-  const livePrice = stockTicker ? rows.get(stockTicker)?.ultimo ?? null : null;
+  const livePrice = stockTicker ? getRow(stockTicker)?.ultimo ?? null : null;
 
   // Pre-compute paired strike keys BEFORE filtering (needed for onlyPaired filter)
   const allPairedStrikeKeys = useMemo(() => {
@@ -291,7 +291,7 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
       else g.puts.push(o);
     });
 
-    const stockRow = stockTicker ? rows.get(stockTicker) : null;
+    const stockRow = stockTicker ? getRow(stockTicker) : null;
     // Ativo ao vivo (RTD do ativo ou preço ao vivo); nunca um valor manual/estimado.
     const liveStock = (livePrice && livePrice > 0 && !precoBaseManual) ? livePrice : null;
     const stockAsk = stockRow?.ofVenda ?? stockRow?.ultimo ?? liveStock;
@@ -315,15 +315,18 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
       const call = g.calls[0];
       const put = g.puts[0];
 
-      const callRow = rows.get(call.ticker);
-      const putRow = rows.get(put.ticker);
+      const callRow = getRow(call.ticker);
+      const putRow = getRow(put.ticker);
       const callBid = callRow?.ofCompra ?? null;
       const putAsk = putRow?.ofVenda ?? null;
       const liveStrike = callRow?.strike ?? putRow?.strike ?? null;
+      // Fonte da oportunidade: só é "ao vivo" se as 3 pernas vierem do Profit (RT).
+      const boxLive = callRow?._fonte === "rt" && putRow?._fonte === "rt" && stockRow?._fonte === "rt";
 
-      // Box só é confiável com TUDO ao vivo e do mesmo feed: BID da call, ASK da
-      // put, ASK do ativo e o strike ajustado do Profit. Sem isso, os preços de
-      // fechamento do JSON geram lucros-fantasma (strike desatualizado por proventos).
+      // Box só é confiável com BID da call, ASK da put, ASK do ativo e o strike, todos
+      // do MESMO feed: RT do Profit, OU o fechamento do COTAHIST (fim de dia). Misturar
+      // fontes/dias gera lucro-fantasma (strike desatualizado por proventos). No EOD tudo
+      // é do mesmo pregão, então é coerente — mas indicativo (confirme no pregão).
       if (callBid === null || callBid <= 0) return;
       if (putAsk === null || putAsk <= 0) return;
       if (stockAsk === null || stockAsk <= 0) return;
@@ -347,13 +350,13 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
         opportunities.push({
           strike: strikeReal, vencimento: call.vencimento,
           call, put, custo, lucro, lucroPct,
-          stockPrice: usedStock, callPrice, putPrice, isLive: true,
+          stockPrice: usedStock, callPrice, putPrice, isLive: boxLive,
         });
       }
     });
 
     return opportunities.sort((a, b) => b.lucroPct - a.lucroPct).slice(0, 10);
-  }, [filtered, selectedFamily, precoBaseNum, rows, stockTicker, livePrice, precoBaseManual]);
+  }, [filtered, selectedFamily, precoBaseNum, getRow, stockTicker, livePrice, precoBaseManual]);
 
   const toggleRow = useCallback((ticker: string) => {
     setSelectedRows((prev) => {
@@ -443,15 +446,15 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
     return list[0] || "all";
   }, [availableVencimentos]);
 
-  // Default: ao escolher um ativo, já seleciona o próximo vencimento mensal
-  const prevFamilyRef = useRef<string | null>(null);
+  // Default: ao escolher um ativo, já seleciona o próximo vencimento mensal — 1x por
+  // família (inclusive no ativo pré-selecionado, quando o catálogo termina de carregar).
+  const appliedDefaultForRef = useRef<string | null>(null);
   useEffect(() => {
-    if (selectedFamily !== "all" && prevFamilyRef.current !== selectedFamily) {
-      if (nextMonthlyExpiry && nextMonthlyExpiry !== "all") {
-        setSelectedVencimento(nextMonthlyExpiry);
-      }
+    if (selectedFamily === "all" || nextMonthlyExpiry === "all") return;
+    if (appliedDefaultForRef.current !== selectedFamily) {
+      setSelectedVencimento(nextMonthlyExpiry);
+      appliedDefaultForRef.current = selectedFamily;
     }
-    prevFamilyRef.current = selectedFamily;
   }, [selectedFamily, nextMonthlyExpiry]);
 
   // ─── INTEGRATION: Send single ticker to RTD ────────────────
@@ -1104,8 +1107,8 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
                 </p>
               ) : status === "connected" ? (
                 <p className="text-muted-foreground text-xs leading-relaxed">
-                  <b className="text-foreground">Abra a grade de opções do {selectedFamily} no seu Profit Pro</b> —
-                  o Profit só envia as cotações (BID/ASK) das opções que estão abertas nele. Assim que abrir, os
+                  <b className="text-foreground">Abra a grade de opções do {selectedFamily} no Profit e expanda o vencimento que vai operar</b> (clique na seta ▶ ao lado do mês) —
+                  o Profit só envia as cotações (BID/ASK) das opções que estão <b className="text-foreground">abertas e visíveis</b> nele. Assim que expandir, os
                   dados chegam em segundos. Se mesmo assim não aparecer, o ativo pode não ter arbitragem positiva
                   neste vencimento (comum em papéis de baixa liquidez).
                 </p>
@@ -1327,8 +1330,8 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
                   </TableRow>
                 ) : (
                   displayed.map((opt, i) => {
-                    // Strike ao vivo do Profit (ajustado por proventos) tem prioridade sobre o nominal do JSON
-                    const liveStrike = rows.get(opt.ticker)?.strike;
+                    // Strike do Profit (ao vivo) ou do fechamento (EOD) tem prioridade sobre o nominal do JSON
+                    const liveStrike = getRow(opt.ticker)?.strike;
                     const effStrike = (liveStrike != null && liveStrike > 0) ? liveStrike : opt.strike;
                     const distPct = precoBaseNum > 0 ? ((effStrike - precoBaseNum) / precoBaseNum) * 100 : null;
                     const isSentToRtd = sentToRtd.has(opt.ticker);
@@ -1383,10 +1386,10 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
                         </TableCell>
                         <TableCell className="text-right font-mono tabular-nums">
                           {(() => {
-                            const rtdRow = rows.get(opt.ticker);
+                            const rtdRow = getRow(opt.ticker);
                             const rtdUltimo = rtdRow?.ultimo;
                             const displayPrice = (rtdUltimo && rtdUltimo > 0) ? rtdUltimo : opt.precoUltimo;
-                            const isLive = rtdUltimo && rtdUltimo > 0;
+                            const isLive = rtdRow?._fonte === "rt" && !!rtdUltimo && rtdUltimo > 0;
                             return displayPrice > 0 ? (
                               <span className={isLive ? "text-primary font-semibold" : ""}>
                                 R$ {displayPrice.toFixed(2)}

@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { 
-  Terminal, Download, ExternalLink, AlertTriangle, Info, 
-  ShieldCheck, Monitor, ChevronDown, ChevronUp, BookOpen,
-  RefreshCw, CheckCircle2, ArrowRight, Smartphone
+import {
+  Terminal, Download, AlertTriangle, Info,
+  ShieldCheck, ChevronDown, ChevronUp, BookOpen, RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { ConStatus } from "@/hooks/useRtdBridge";
@@ -17,52 +15,53 @@ interface BridgeSetupGuideProps {
   connect: () => void;
 }
 
-const steps = [
+type Step = {
+  number: number;
+  title: string;
+  description: string;
+  important?: boolean;
+  tip?: string;
+  download?: { href: string; label: string };
+};
+
+const steps: Step[] = [
   {
     number: 1,
-    title: "Abra o Profit Pro como Administrador",
-    description: "Clique com o botão direito no ícone do Profit Pro e selecione \"Executar como administrador\". Isso é obrigatório para o RTD funcionar corretamente.",
-    important: true,
-    image: "/images/guide-profit-admin.png",
-    imageAlt: "Profit Pro - Executar como administrador",
-    tip: "O Profit Pro DEVE rodar como Administrador para o servidor RTD ser acessível pelo Bridge.",
+    title: "Abra o Profit Pro e faça login",
+    description: "Abra o Profit normalmente (2 cliques) e faça login. Não precisa ser administrador.",
+    tip: "Regra de ouro: Profit e Bridge sempre no MESMO nível. Como o Profit abre normal, o Bridge também roda normal.",
   },
   {
     number: 2,
-    title: "Selecione o vencimento na Grade de Opções",
-    description: "No Profit, vá em Opções (menu superior) e abra a grade de opções do ativo desejado (ex: PETR4). Selecione o vencimento que deseja monitorar para expandir os strikes.",
-    image: "/images/guide-profit-opcoes.png",
-    imageAlt: "Profit Pro - Grade de opções com vencimentos",
-    tip: "A grade de opções no Profit exibe todos os vencimentos disponíveis. Clique no vencimento desejado para expandir os strikes e enviar os dados ao app.",
+    title: "Importe a configuração das grades",
+    description: "Baixe nosso arquivo e importe no Profit (Arquivo → Importar/Exportar Configurações → Importar → Adicionar). As grades dos ativos aparecem prontas — você só abre o vencimento no passo 5.",
+    download: { href: "/downloads/config-profit-opcoesx.prt", label: "Baixar configuração (.prt)" },
+    tip: "Depois de importar, abra o Desktop importado no canto superior direito → Desktop.",
   },
   {
     number: 3,
-    title: "Abra a grade do vencimento desejado",
-    description: "Clique no vencimento para expandir a grade com todos os strikes (Calls e Puts). Os dados desta grade serão transmitidos para o Opções PRO X via RTD Bridge.",
-    image: "/images/guide-profit-grade.png",
-    imageAlt: "Profit Pro - Grade expandida com strikes e preços",
-    tip: "Cada linha da grade representa uma opção com seu strike, último preço, delta, intrínseco/extrínseco, bid/ask etc. Esses dados chegam ao app em tempo real.",
+    title: "Baixe e execute o ProfitRTD Bridge",
+    description: "Baixe o .zip, descompacte em qualquer pasta e dê 2 cliques em \"iniciar_bridge.bat\" (sem administrador — mesmo nível do Profit).",
+    download: { href: "/downloads/ProfitRTDBridge.zip", label: "Baixar Bridge (pronto)" },
+    tip: "Já vem pronto (executável) — não precisa instalar nada. Rode no MESMO nível do Profit (normalmente sem admin).",
   },
   {
     number: 4,
-    title: "Baixe e execute o ProfitRTD Bridge",
-    description: "Baixe o arquivo .zip (botão abaixo), descompacte em qualquer pasta. Clique com botão direito em \"iniciar_bridge.bat\" e selecione \"Executar como administrador\".",
-    important: true,
-    image: "/images/guide-run-admin.png",
-    imageAlt: "Windows - Executar iniciar_bridge.bat como administrador",
-    tip: "O Bridge e o Profit DEVEM rodar com o mesmo nível de permissão. Se o Profit está como Admin, o Bridge também deve estar.",
+    title: "Aguarde a conexão",
+    description: "Quando aparecer \"WebSocket rodando na porta 8765\" na janela do Bridge, o app conecta sozinho.",
+    tip: "Nas próximas vezes a conexão é instantânea — o Bridge já fica pronto.",
   },
   {
     number: 5,
-    title: "Aguarde a compilação e conexão",
-    description: "Na primeira execução, o Bridge compila automaticamente (~60 segundos). Aguarde a mensagem \"WebSocket rodando na porta 8765\". A partir daí, o app conecta automaticamente!",
-    tip: "Nas próximas vezes, a compilação é instantânea pois o .exe já estará pronto na pasta \"publish\".",
+    title: "Abra a grade e expanda o vencimento que vai operar",
+    important: true,
+    description: "Na grade de opções do ativo (ex: PETR4), clique na seta ▶ ao lado do mês que vai operar (ex: Agosto · 21/08) para abrir os strikes. O Profit só cota as opções que estão abertas E VISÍVEIS — com o mês fechado, os preços não chegam.",
+    tip: "Não precisa expandir todos os meses — só o vencimento que o app está usando (por padrão, o próximo). Deixe esse aberto e os dados fluem sozinhos.",
   },
   {
     number: 6,
-    title: "Pronto! Dados fluindo para o app",
-    description: "O app Opções PRO X detecta o Bridge automaticamente e começa a receber dados em tempo real. Adicione os tickers que deseja monitorar no campo acima.",
-    tip: "O Bridge roda localmente na sua máquina. Nenhum dado é enviado para servidores externos — total segurança.",
+    title: "Pronto! Dados em tempo real",
+    description: "O app detecta o Bridge automaticamente e passa a receber as cotações ao vivo. Tudo automático daqui pra frente.",
   },
 ];
 
@@ -71,117 +70,84 @@ export default function BridgeSetupGuide({ status, errorMsg, reconnectCount, con
   const [showFullGuide, setShowFullGuide] = useState(true);
 
   return (
-    <Card className="border-primary/20 bg-gradient-to-br from-primary/5 via-background to-warning/5 overflow-hidden">
-      <CardContent className="pt-6 space-y-5">
+    <div className="rounded-2xl border-2 border-primary/30 bg-gradient-to-br from-primary/[0.08] via-card to-card shadow-[0_10px_40px_-14px_hsl(var(--primary)/0.3)] overflow-hidden">
+      <div className="p-4 sm:p-5 space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20">
-              <Terminal className="w-5 h-5 text-primary" />
+            <div className="h-12 w-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shadow-[0_0_22px_-4px_hsl(var(--primary))] shrink-0">
+              <Terminal className="h-6 w-6" />
             </div>
             <div>
-              <h3 className="font-black text-base tracking-tight text-foreground">
-                Guia de Conexão — ProfitRTD Bridge
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                Configure uma vez, depois é automático
-              </p>
+              <h3 className="text-base sm:text-lg font-black text-foreground leading-tight">Conectar o Profit em tempo real</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Configure uma vez — depois conecta sozinho.</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              className="gap-1.5 text-xs"
-              asChild
-            >
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs h-9" asChild>
               <a href="/downloads/Manual_Bridge_OpcoesProX.pdf" download>
-                <BookOpen className="w-3.5 h-3.5" />
-                Manual PDF
+                <BookOpen className="w-3.5 h-3.5" /> Manual PDF
               </a>
             </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="gap-1.5 text-xs text-muted-foreground"
-              onClick={() => setShowFullGuide(!showFullGuide)}
-            >
+            <Button size="sm" variant="ghost" className="gap-1.5 text-xs h-9 text-muted-foreground" onClick={() => setShowFullGuide(!showFullGuide)}>
               {showFullGuide ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              {showFullGuide ? "Recolher" : "Expandir guia"}
+              {showFullGuide ? "Recolher" : "Ver passos"}
             </Button>
           </div>
         </div>
 
         {/* Steps */}
         {showFullGuide && (
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {steps.map((step) => {
               const isExpanded = expandedStep === step.number;
               return (
                 <div
                   key={step.number}
                   className={cn(
-                    "rounded-xl border transition-all duration-200 cursor-pointer",
-                    step.important
-                      ? "border-destructive/30 bg-destructive/5 hover:border-destructive/50"
-                      : "border-border/50 bg-card/50 hover:border-primary/30",
-                    isExpanded && "ring-1 ring-primary/20"
+                    "rounded-xl border transition-all",
+                    step.important ? "border-amber-500/40 bg-amber-500/[0.06]" : "border-border bg-background/60",
+                    isExpanded && "ring-2 ring-primary/15"
                   )}
-                  onClick={() => setExpandedStep(isExpanded ? null : step.number)}
                 >
-                  {/* Step header */}
-                  <div className="flex items-start gap-3 p-3.5">
+                  <div className="flex items-start gap-3 p-3.5 cursor-pointer" onClick={() => setExpandedStep(isExpanded ? null : step.number)}>
                     <div className={cn(
-                      "shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black mt-0.5",
-                      step.important
-                        ? "bg-destructive/20 text-destructive border border-destructive/30"
-                        : "bg-primary/15 text-primary border border-primary/25"
+                      "shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black mt-0.5 text-white",
+                      step.important ? "bg-amber-500" : "bg-primary"
                     )}>
                       {step.number}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className={cn(
-                          "font-bold text-sm",
-                          step.important ? "text-destructive" : "text-foreground"
-                        )}>
-                          {step.title}
-                        </span>
+                        <span className="font-bold text-sm text-foreground">{step.title}</span>
                         {step.important && (
-                          <Badge variant="destructive" className="text-xs px-1.5 py-0 h-4 font-black uppercase">
-                            <ShieldCheck className="w-2.5 h-2.5 mr-0.5" />
-                            Admin obrigatório
+                          <Badge className="text-[10px] px-1.5 py-0 h-4 font-black uppercase bg-amber-500 text-white border-0">
+                            <ShieldCheck className="w-2.5 h-2.5 mr-0.5" /> Essencial
                           </Badge>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                        {step.description}
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{step.description}</p>
+                      {step.download && (
+                        <a
+                          href={step.download.href}
+                          download
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-2 mt-2.5 h-10 px-4 rounded-lg bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 active:scale-[0.98] transition-all shadow-md shadow-primary/25"
+                        >
+                          <Download className="h-4 w-4" /> {step.download.label}
+                        </a>
+                      )}
                     </div>
                     <div className="shrink-0 text-muted-foreground">
                       {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </div>
                   </div>
-
-                  {/* Expanded content */}
-                  {isExpanded && (
-                    <div className="px-3.5 pb-3.5 space-y-3">
-                      {step.image && (
-                        <div className="rounded-lg overflow-hidden border border-border/50 shadow-lg">
-                          <img
-                            src={step.image}
-                            alt={step.imageAlt}
-                            className="w-full h-auto object-contain bg-muted/30"
-                            loading="lazy"
-                          />
-                        </div>
-                      )}
-                      {step.tip && (
-                        <div className="flex items-start gap-2 p-2.5 rounded-lg bg-info/10 border border-info/20 text-xs text-info">
-                          <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                          <span className="leading-relaxed">{step.tip}</span>
-                        </div>
-                      )}
+                  {isExpanded && step.tip && (
+                    <div className="px-3.5 pb-3.5">
+                      <div className="flex items-start gap-2 p-2.5 rounded-lg bg-info/10 border border-info/20 text-xs text-info">
+                        <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                        <span className="leading-relaxed">{step.tip}</span>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -190,42 +156,31 @@ export default function BridgeSetupGuide({ status, errorMsg, reconnectCount, con
           </div>
         )}
 
-        {/* Error message */}
+        {/* Error */}
         {errorMsg && (
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-xs text-destructive">
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/25 text-xs text-destructive font-medium">
             <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{errorMsg}</span>
           </div>
         )}
 
-        {/* Action buttons */}
+        {/* Ações */}
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" className="gap-2 font-bold shadow-md shadow-primary/10" asChild>
-            <a href="/downloads/ProfitRTDBridge.zip" download>
-              <Download className="w-3.5 h-3.5" /> Baixar ProfitRTD Bridge v3.2
-            </a>
-          </Button>
-          <Button size="sm" variant="outline" className="gap-2" onClick={connect}>
+          <Button size="sm" variant="outline" className="gap-2 h-10" onClick={connect}>
             <RefreshCw className="w-3.5 h-3.5" />
-            Tentar Reconectar {reconnectCount > 0 && `(${reconnectCount}/10)`}
-          </Button>
-          <Button size="sm" variant="ghost" className="gap-2 text-muted-foreground" asChild>
-            <a href="https://dotnet.microsoft.com/download/dotnet/6.0" target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="w-3.5 h-3.5" /> .NET 6 SDK (gratuito)
-            </a>
+            Tentar reconectar {reconnectCount > 0 && `(${reconnectCount}/10)`}
           </Button>
         </div>
 
-        {/* Security note */}
-        <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/5 border border-primary/15 text-xs text-muted-foreground">
+        {/* Segurança */}
+        <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/40 border border-border text-xs text-muted-foreground">
           <ShieldCheck className="w-3.5 h-3.5 shrink-0 mt-0.5 text-primary" />
           <span>
-            O Bridge v3.2 acessa o RTD do Profit <strong className="text-foreground">diretamente via COM — sem precisar de Excel</strong>. 
-            Roda <strong className="text-foreground">localmente na sua máquina</strong> e transmite via WebSocket. 
-            <strong className="text-foreground"> Nenhum dado sai da sua rede local.</strong>
+            O Bridge roda <strong className="text-foreground">localmente na sua máquina</strong> e transmite via WebSocket.{" "}
+            <strong className="text-foreground">Nenhum dado sai da sua rede.</strong>
           </span>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

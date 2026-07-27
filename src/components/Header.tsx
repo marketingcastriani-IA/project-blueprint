@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 
 
 function RtdIndicator({ size = 'md' }: { size?: 'sm' | 'md' }) {
-  const { status: rtdStatus } = useSharedRtdBridge();
+  const { status: rtdStatus, eodReady, eodDate } = useSharedRtdBridge();
   const small = size === 'sm';
 
   // Conectado: moldura com luz de LED correndo ao redor
@@ -43,38 +43,71 @@ function RtdIndicator({ size = 'md' }: { size?: 'sm' | 'md' }) {
     );
   }
 
+  // Conectando ao Bridge
+  if (rtdStatus === 'connecting') {
+    return (
+      <div className="flex items-center gap-2 shrink-0">
+        <div
+          className={cn(
+            "flex items-center gap-1.5 rounded-full font-black uppercase border-2 transition-all shrink-0 animate-pulse",
+            small ? "px-2.5 py-1 text-[9px] tracking-wider" : "px-3.5 py-1.5 text-[11px] tracking-widest",
+            "bg-yellow-500/20 text-yellow-300 border-yellow-500/60 shadow-[0_0_12px_rgba(234,179,8,0.4)]"
+          )}
+          title="Conectando ao Bridge..."
+        >
+          <Wifi className={cn("shrink-0", small ? "h-3 w-3" : "h-4 w-4")} />
+          <span>CONECTANDO</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Sem tempo real, mas com preços de FIM DE DIA disponíveis
+  if (eodReady) {
+    const dataFmt = eodDate ? `${eodDate.slice(8, 10)}/${eodDate.slice(5, 7)}` : '';
+    return (
+      <div className="flex items-center gap-2 shrink-0">
+        <div
+          className={cn(
+            "flex items-center gap-1.5 rounded-full font-black uppercase border-2 shrink-0",
+            small ? "px-2.5 py-1 text-[9px] tracking-wider" : "px-3.5 py-1.5 text-[11px] tracking-widest",
+            "bg-amber-500/15 text-amber-300 border-amber-500/50 shadow-[0_0_12px_rgba(245,158,11,0.3)]"
+          )}
+          title={`Cotações de fim de dia (fechamento de ${dataFmt}). Conecte o Profit para tempo real.`}
+        >
+          <Moon className={cn("shrink-0", small ? "h-3 w-3" : "h-4 w-4")} />
+          <span>FIM DE DIA{dataFmt ? ` · ${dataFmt}` : ''}</span>
+        </div>
+        <span className={cn(
+          "text-amber-200/70 font-semibold italic whitespace-nowrap",
+          small ? "text-[8px]" : "text-[10px]"
+        )}>
+          Conecte o Profit p/ ao vivo
+        </span>
+      </div>
+    );
+  }
+
+  // Offline sem dados
   return (
     <div className="flex items-center gap-2 shrink-0">
       <div
         className={cn(
           "flex items-center gap-1.5 rounded-full font-black uppercase border-2 transition-all shrink-0",
           small ? "px-2.5 py-1 text-[9px] tracking-wider" : "px-3.5 py-1.5 text-[11px] tracking-widest",
-          rtdStatus === 'connecting'
-            ? "bg-yellow-500/20 text-yellow-300 border-yellow-500/60 animate-pulse shadow-[0_0_12px_rgba(234,179,8,0.4)]"
-            : "bg-white/5 text-slate-400 border-white/15"
+          "bg-white/5 text-slate-400 border-white/15"
         )}
-        title={rtdStatus === 'connecting' ? 'Conectando ao Bridge...' : 'Offline — use o menu Conectar Profit Pro'}
+        title="Offline — use o menu Conectar Profit Pro"
       >
-        {rtdStatus === 'connecting' ? (
-          <>
-            <Wifi className={cn("shrink-0", small ? "h-3 w-3" : "h-4 w-4")} />
-            <span>CONECTANDO</span>
-          </>
-        ) : (
-          <>
-            <WifiOff className={cn("shrink-0", small ? "h-3 w-3" : "h-4 w-4")} />
-            <span>OFFLINE</span>
-          </>
-        )}
+        <WifiOff className={cn("shrink-0", small ? "h-3 w-3" : "h-4 w-4")} />
+        <span>OFFLINE</span>
       </div>
-      {rtdStatus !== 'connecting' && (
-        <span className={cn(
-          "text-slate-400 font-semibold italic whitespace-nowrap",
-          small ? "text-[8px]" : "text-[10px]"
-        )}>
-          Aperte CONECTAR no menu
-        </span>
-      )}
+      <span className={cn(
+        "text-slate-400 font-semibold italic whitespace-nowrap",
+        small ? "text-[8px]" : "text-[10px]"
+      )}>
+        Aperte CONECTAR no menu
+      </span>
     </div>
   );
 }

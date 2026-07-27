@@ -190,15 +190,15 @@ export default function MetricsCards({ metrics, cdiReturn = 0, investedCapital =
       tip: breakevenTip,
     },
     {
-      title: 'Eficiência vs CDI',
+      title: 'Vs CDI (melhor caso)',
       value: efficiency !== null ? `${efficiency.toFixed(0)}%` : 'N/A',
       subtitle: efficiency !== null
-        ? (efficiency >= 100 ? 'supera o CDI' : 'abaixo do CDI')
+        ? (efficiency >= 100 ? 'supera o CDI só no teto' : 'abaixo do CDI')
         : undefined,
       icon: Percent,
       theme: efficiency !== null && efficiency >= 100 ? 'blue' : 'purple',
-      tip: 'Lucro máximo da estrutura como % do rendimento CDI no mesmo período.',
-      badge: efficiency !== null && efficiency >= 100 ? 'VENCE O CDI' : null,
+      tip: 'Lucro MÁXIMO da estrutura (melhor cenário no vencimento) como % do CDI no mesmo período — não é o retorno garantido.',
+      badge: null,
     },
   ];
 

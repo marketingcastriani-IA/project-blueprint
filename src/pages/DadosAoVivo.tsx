@@ -6,7 +6,7 @@ import {
   Radio, Plus, Trash2, Wifi, WifiOff, RefreshCw,
   TrendingUp, TrendingDown, Activity, AlertTriangle, CheckCircle2,
   Terminal, Download, ExternalLink, Info, Save, CalendarIcon, Loader2,
-  Edit, DollarSign, Percent, Briefcase, Zap, BookOpen
+  Edit, DollarSign, Percent, Briefcase, Zap, BookOpen, ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -99,6 +99,16 @@ export default function DadosAoVivo() {
   const { status, rows, errorMsg, reconnectCount, connect, addTicker, removeTicker, updateRow } = useSharedRtdBridge();
 
   const [newTicker, setNewTicker] = useState("");
+  const [guideOpen, setGuideOpen] = useState(() => {
+    try { return localStorage.getItem("profit-workspace-guide-open") !== "false"; } catch { return true; }
+  });
+  const toggleGuide = () => {
+    setGuideOpen((v) => {
+      const next = !v;
+      try { localStorage.setItem("profit-workspace-guide-open", String(next)); } catch {}
+      return next;
+    });
+  };
   const [analysisName, setAnalysisName] = useState("");
   const [saving, setSaving] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -467,6 +477,71 @@ export default function DadosAoVivo() {
               </Button>
             </CardContent>
           </Card>
+        )}
+
+        {/* Configuração pronta do Profit — baixe 1 arquivo e importe */}
+        {status === "connected" && (
+          <div className="rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary/[0.10] via-card to-card shadow-[0_10px_40px_-14px_hsl(var(--primary)/0.35)] overflow-hidden">
+            <div className="p-4 sm:p-5">
+              {/* Cabeçalho + botão de download em destaque */}
+              <div className="flex flex-col md:flex-row md:items-center gap-4">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <div className="h-12 w-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center shadow-[0_0_22px_-4px_hsl(var(--primary))] shrink-0">
+                    <Download className="h-6 w-6" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-base sm:text-lg font-black text-foreground leading-tight">Configuração pronta do Profit</h3>
+                      <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/25">recomendado</span>
+                    </div>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                      Baixe <b className="text-foreground">1 arquivo</b> e importe no Profit — todas as grades passam a cotar sozinhas. Faz uma vez só.
+                    </p>
+                  </div>
+                </div>
+                <a
+                  href="/downloads/config-profit-opcoesx.prt"
+                  download
+                  className="inline-flex items-center justify-center gap-2 h-12 px-5 rounded-xl bg-primary text-primary-foreground font-black text-sm hover:bg-primary/90 active:scale-[0.98] transition-all shadow-lg shadow-primary/30 shrink-0 whitespace-nowrap"
+                >
+                  <Download className="h-5 w-5" /> Baixar configuração (.prt)
+                </a>
+              </div>
+
+              {/* Passo a passo (colapsável) */}
+              {guideOpen && (
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[
+                    { n: 1, t: "Baixe o arquivo", d: "Clique no botão acima e salve a configuração (.prt) no seu PC." },
+                    { n: 2, t: "Importe no Profit", d: "Arquivo → Importar/Exportar Configurações → aba Importar → selecione o arquivo → Adicionar." },
+                    { n: 3, t: "Abra o Desktop", d: "Canto sup. direito → Desktop → o importado. Pronto: todas as grades cotando." },
+                  ].map((s) => (
+                    <div key={s.n} className="rounded-xl border border-border/60 bg-background/70 p-3.5 shadow-sm">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-black flex items-center justify-center shrink-0">{s.n}</span>
+                        <span className="text-sm font-bold text-foreground">{s.t}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{s.d}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Rodapé: alternativa manual + recolher */}
+              <div className="mt-3 flex items-center justify-between gap-3 flex-wrap">
+                <p className="text-[11px] text-muted-foreground">
+                  Prefere manual? Abra a grade de opções de cada ativo (PETR, VALE, ITUB…) e salve o Desktop.
+                </p>
+                <button
+                  onClick={toggleGuide}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 transition-colors shrink-0"
+                >
+                  {guideOpen ? "Recolher passos" : "Ver passo a passo"}
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${guideOpen ? "rotate-180" : ""}`} />
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Banco de Opções embutido — sempre aberto, direto na tela */}

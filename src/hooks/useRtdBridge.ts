@@ -48,6 +48,8 @@ export interface RtdRow {
   precoEntrada: number | null;
   quantidade: number;
   expiryDate?: string;
+  /** Origem da cotação: "rt" = tempo real do Profit; "eod" = fim de dia (COTAHIST). */
+  _fonte?: "rt" | "eod";
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────

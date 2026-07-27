@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "catalogo": "node scripts/gerar-catalogo-opcoes.mjs"
+    "catalogo": "node scripts/gerar-catalogo-opcoes.mjs",
+    "eod": "node scripts/gerar-eod-opcoes.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
