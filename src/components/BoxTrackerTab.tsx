@@ -1327,15 +1327,17 @@ export default function BoxTracker() {
                 key={`top-${i}`}
                 className={cn(
                   "relative overflow-hidden rounded-2xl border transition-all duration-300",
-                  isWinner
-                    ? "bg-card border-success/40 shadow-[0_0_30px_hsl(var(--success)/0.15)] ring-1 ring-success/20"
+                  isAboveCdi
+                    ? "bg-card border-success/50 shadow-[0_0_30px_hsl(var(--success)/0.15)] ring-1 ring-success/25"
+                    : isWinner
+                    ? "bg-card border-amber-500/40 shadow-md ring-1 ring-amber-500/15"
                     : "bg-card border-border hover:border-muted-foreground/30 hover:shadow-md"
                 )}
               >
                 {/* Header with trophy */}
                 <div className={cn(
                   "flex items-center gap-3 px-5 py-3",
-                  isWinner ? "bg-success/5" : "bg-muted/30"
+                  isAboveCdi ? "bg-success/5" : isWinner ? "bg-amber-500/5" : "bg-muted/30"
                 )}>
                   <img
                     src={trophyImg}
@@ -1350,8 +1352,16 @@ export default function BoxTracker() {
                       {i === 0 ? "Melhor Box" : i === 1 ? "2º Melhor" : "3º Melhor"}
                     </span>
                     <span className="text-xl font-extrabold text-foreground tracking-tight">{pair.familyName}</span>
+                    {pctCdi !== null && (
+                      <span className={cn(
+                        "inline-flex w-fit items-center gap-1 mt-0.5 text-[10px] font-black px-1.5 py-0.5 rounded-full",
+                        isAboveCdi ? "bg-success/15 text-success" : "bg-destructive/10 text-destructive"
+                      )}>
+                        {isAboveCdi ? "✓ vence o CDI" : "✕ abaixo do CDI"}
+                      </span>
+                    )}
                   </div>
-                  {isWinner && (
+                  {isAboveCdi && (
                     <span className="flex h-2.5 w-2.5">
                       <span className="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-success opacity-75" />
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-success" />
