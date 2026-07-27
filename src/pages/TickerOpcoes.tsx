@@ -1193,16 +1193,22 @@ export default function TickerOpcoes({ embedded = false }: { embedded?: boolean 
                     </div>
                   </div>
 
-                  {/* Rodapé: códigos, preços e vencimento */}
+                  {/* Rodapé: decomposição das 3 pernas — a soma dá o "Monta por" */}
                   <div className="mt-2 pt-2 border-t border-border/40 space-y-1">
+                    <p className="text-[9px] uppercase tracking-wide text-muted-foreground/70">Como monta (a soma = "monta por")</p>
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-mono font-semibold text-foreground">{opp.call.ticker} <span className="font-sans font-normal text-muted-foreground">call</span></span>
-                      <span className="font-mono font-semibold text-foreground">{opp.put.ticker} <span className="font-sans font-normal text-muted-foreground">put</span></span>
+                      <span><span className="font-mono font-semibold text-foreground">{stockTicker ?? opp.call.family}</span> <span className="text-muted-foreground">compra ação</span></span>
+                      <span className="font-mono text-foreground/80">+ {opp.stockPrice.toFixed(2)}</span>
                     </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      Ativo {opp.stockPrice.toFixed(2)} · Call {opp.callPrice.toFixed(2)} · Put {opp.putPrice.toFixed(2)}
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span><span className="font-mono font-semibold text-foreground">{opp.put.ticker}</span> <span className="text-emerald-600 dark:text-emerald-400">compra put</span></span>
+                      <span className="font-mono text-foreground/80">+ {opp.putPrice.toFixed(2)}</span>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span><span className="font-mono font-semibold text-foreground">{opp.call.ticker}</span> <span className="text-rose-600 dark:text-rose-400">vende call</span></span>
+                      <span className="font-mono text-foreground/80">− {opp.callPrice.toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-1 mt-1 border-t border-border/30">
                       <span className="text-[11px] text-muted-foreground">Vence {opp.vencimento}</span>
                       <span className="inline-flex items-center gap-1 text-[11px] font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
                         <Send className="h-2.5 w-2.5" /> Rastrear
